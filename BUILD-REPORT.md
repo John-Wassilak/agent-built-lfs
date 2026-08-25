@@ -149,12 +149,13 @@ Same harness: `bin/extract-blfs.py` + `./bin/lfsbuild --plan state/blfs-plan.jso
 
 | | |
 |---|---|
-| Deliverable | `lfs-13.0-systemd-claude-20260825.tar.gz` — 753 MB, 73,293 entries |
-| SHA256 | `ea1b548a5026e2be4b199a7b93ac9d4a05368f2476ee65a57c5e65b21ea7d5fd` |
+| Deliverable | `lfs-13.0-systemd-claude-20260825.tar.gz` — 759 MB, 75,100 entries |
+| SHA256 | `f8352835a088dfedeefb6ddd1e0677cc841cce27e7586609c6c45a17617bb9e0` |
 | Tree size | 2.4 GB uncompressed |
 | Claude Code | **2.1.245** |
 | Node / npm | v22.22.0 / 10.9.4 |
 | OpenSSH | 10.2p1 (against OpenSSL 3.6.1) |
+| curl / wget | 8.18.0 / 1.25.0 (both with libpsl) |
 
 ## What was needed, and what wasn't
 
@@ -179,12 +180,33 @@ tracks system security updates). That turned a 6-package subtree into one packag
 
 **OpenSSH needed nothing.** 87 of the 90 minutes was Node.
 
-## Total closure: 6 BLFS packages + 2 hand-authored steps
+## Total closure: 11 BLFS packages + 2 hand-authored steps
+
+Claude Code itself needs six:
 
 ```
 which 2.23        libtasn1 4.21.0    p11-kit 0.26.2    make-ca 1.16.1
 openssh 10.2p1    nodejs 22.22.0     + sshd-unit, claude-code (hand-authored)
 ```
+
+Then five more added deliberately, because curl and wget are required or recommended by a
+large share of BLFS and every future package would otherwise hit the same detour:
+
+```
+libunistring 1.4.1   libidn2 2.3.8   libpsl 0.21.5   curl 8.18.0   wget 1.25.0
+```
+
+libpsl is not really optional: BLFS records that both upstream and the BLFS editors
+"highly recommend not disabling support for libpsl due to severe security implications" --
+it is what stops a cookie being set across a public suffix boundary. Verified linked into
+both binaries (`libpsl.so.5`), and `curl --version` reports the `PSL` feature. curl was
+configured with `--with-ca-path=/etc/ssl/certs`, so it uses the make-ca store directly;
+confirmed with a verified fetch from `registry.npmjs.org` (200) and `github.com` via wget.
+curl also picked up libidn2, so it handles internationalised domain names.
+
+These five took 4.2 min in total. They are not needed by Claude Code -- Node has its own
+bundled roots and its own HTTP stack -- but they remove a recurring obstacle from every
+later BLFS package.
 
 ## What the review caught here
 

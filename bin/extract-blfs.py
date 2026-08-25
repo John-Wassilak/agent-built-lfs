@@ -16,6 +16,8 @@ Scope is deliberately tight -- the dependency closure of the four things asked f
            which BLFS lists only as "recommended" -- taking the bundled copies keeps
            the closure small and uses the versions upstream tests against.
   openssh  ssh and sshd. No required dependencies beyond LFS.
+  curl/wget  not needed by Claude Code, but dependencies of a large share of BLFS,
+           so worth having now. Closure: libunistring -> libidn2 -> libpsl.
 
 Order below is dependency order and is what the plan preserves.
 """
@@ -65,6 +67,16 @@ PACKAGES = [
     ("make-ca",  "postlfs/make-ca.html",   "make-ca-1.16.1.tar.gz"),
     ("openssh",  "postlfs/openssh.html",   "openssh-10.2p1.tar.gz"),
     ("nodejs",   "general/nodejs.html",    "node-v22.22.0.tar.xz"),
+    # Added after the fact: curl and wget are required or recommended by a large
+    # share of BLFS, so having them present saves repeated detours later. Their
+    # closure is libunistring -> libidn2 -> libpsl. libpsl is not optional in
+    # practice: BLFS notes that building curl without it has "severe security
+    # implications" (it is what stops cookies being set across public suffixes).
+    ("libunistring", "general/libunistring.html", "libunistring-1.4.1.tar.xz"),
+    ("libidn2",      "general/libidn2.html",      "libidn2-2.3.8.tar.gz"),
+    ("libpsl",       "basicnet/libpsl.html",      "libpsl-0.21.5.tar.gz"),
+    ("curl",         "basicnet/curl.html",        "curl-8.18.0.tar.xz"),
+    ("wget",         "basicnet/wget.html",        "wget-1.25.0.tar.gz"),
 ]
 
 

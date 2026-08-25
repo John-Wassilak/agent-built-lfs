@@ -146,3 +146,9 @@ blfs-openssh	chroot	60.0	0
 blfs-nodejs	chroot	5223.6	0
 blfs-sshd-unit	chroot	0.2	0
 blfs-claude-code	chroot	13.7	0
+ch07-kernfs	root-host	0.0	0
+blfs-libunistring	chroot	116.3	0
+blfs-libidn2	chroot	19.5	0
+blfs-libpsl	chroot	4.7	0
+blfs-curl	chroot	58.6	0
+blfs-wget	chroot	51.0	0

@@ -142,3 +142,9 @@ blfs-openssh
 blfs-nodejs
 blfs-sshd-unit
 blfs-claude-code
+ch07-kernfs
+blfs-libunistring
+blfs-libidn2
+blfs-libpsl
+blfs-curl
+blfs-wget
