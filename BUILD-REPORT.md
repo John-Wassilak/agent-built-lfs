@@ -398,3 +398,93 @@ book. The full set is in `recipes/review-overrides.json` and
    `lfsbuild --only <step> --force`, then `lfsmaint db` to re-record it.
 3. When a new book release lands, `lfsmaint fetch-lists` then `lfsmaint drift` shows the
    whole delta at once.
+
+---
+
+# USB deployment
+
+`/dev/sdc` (Lexar USB Flash Drive, 31.5 GB) wiped and rebuilt as a bootable LFS stick
+on 2026-08-25. You wrote "sdac"; no such device exists, and `/dev/sdc` was the only USB —
+confirmed before wiping.
+
+## Layout
+
+MBR (not GPT) because the target is legacy BIOS, with 1 MiB alignment so GRUB has the
+post-MBR gap for `core.img`.
+
+```
+/dev/sdc1   2048       4196351   2.0G  82 swap   LABEL=LFSSWAP
+/dev/sdc2   4196352   61439999  27.3G  83 ext4   LABEL=LFSROOT  (bootable)
+```
+
+Labels match `/etc/fstab` exactly as built, so nothing needed editing.
+
+## Boot chain
+
+```
+MBR boot.img (GRUB, 55aa)  ->  sector 1 diskboot.img (5256be1b)  ->  core.img in the
+post-MBR gap  ->  /boot/grub/i386-pc (305 modules)  ->  grub.cfg  ->  kernel
+```
+
+`grub-install --target=i386-pc --recheck /dev/sdc`, run **inside a chroot on the stick**
+so it used the target's own GRUB rather than the host's.
+
+Two decisions in `grub.cfg` that matter for a removable device:
+
+- **`search --set=root --fs-uuid`** instead of a fixed `(hdN,M)`. The book flags this
+  directly: a GRUB designator changes depending on what else is plugged in at boot.
+- **`root=PARTUUID=219159d2-02`, not `root=UUID=`.** The kernel resolves PARTUUID from
+  the partition table unaided; a *filesystem* UUID would require an initramfs, and this
+  system deliberately has none. The book is explicit about this trap.
+- **`rootwait`** added, because USB enumeration is slower than the kernel's root probe.
+
+Verified: `grub-script-check` passes, the referenced kernel exists (14,582,784 bytes),
+and both the PARTUUID and fs-UUID in `grub.cfg` match the real partitions.
+
+## Payload for the permanent drive
+
+`/root/lfs-13.0-systemd-claude-20260825.tar.gz` (823 MB) plus its `.sha256`, checksummed
+**after** being read back off the flash — `52c8bd90…f609c`, matching the source byte for
+byte.
+
+## Verification after extraction
+
+```
+setuid files : 18 (su, passwd both 4755 root:root)   hardlinked: 3723
+claude       : present      kernel: vmlinuz-6.18.10-lfs-13.0-systemd
+ssh hostkeys : 0            (a unique set is generated on first boot)
+files        : 75792        e2fsck: clean, 73565 inodes, 0 errors
+```
+
+## The stick is slow, and that is the stick
+
+It writes at roughly **1.1 MB/s for small files** (USB 2.0 bus at 480 Mbps, but the flash
+itself is the bottleneck), degrading to ~255 KB/s under sustained load. Extracting 2.5 GB
+of mostly small files took well over an hour. Sequential writes are far better — the
+823 MB tarball copied at about 4.4 MB/s.
+
+Booting from this stick will feel sluggish for the same reason. That is expected and
+temporary; copy to the permanent drive and it goes away.
+
+## First boot
+
+1. GRUB menu appears, 5s timeout, single entry.
+2. Log in as `root` / `lfs-changeme`. **Change it immediately.**
+3. sshd generates its host keys on first start (`ExecStartPre=ssh-keygen -A`).
+4. Networking is DHCP on any wired interface; `systemd-resolved` provides DNS.
+5. `claude` needs authenticating once, interactively.
+6. `lfsmaint report` to confirm the package database came across intact.
+
+## Moving to the permanent drive
+
+The tarball in `/root` is the whole OS. On the target disk: partition, then
+`mkfs.ext4 -L LFSROOT` and `mkswap -L LFSSWAP` — keep those labels and `/etc/fstab`
+needs no edit. Extract with the same flags used here:
+
+```
+tar -xpf lfs-13.0-systemd-claude-20260825.tar.gz -C /mnt/target \
+    --numeric-owner --xattrs --acls
+```
+
+Then `grub-install` to that disk from a chroot, and update `grub.cfg` — both the
+`search --fs-uuid` line and `root=PARTUUID=` will need the new disk's identifiers.
