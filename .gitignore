@@ -3,3 +3,5 @@ snapshots/
 book/
 sources-staging/
 state/*.tmp
+*.tar.gz
+*.tar.zst

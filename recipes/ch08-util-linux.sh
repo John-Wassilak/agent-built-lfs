@@ -45,8 +45,6 @@ make
 
 # --- block 3 --------------------------------------------------
 touch /etc/fstab
-chown -R tester .
-su tester -c "make -k check"
 
 # --- block 4 --------------------------------------------------
 #   ctx: k tests will fail if the host's kernel does not have the option

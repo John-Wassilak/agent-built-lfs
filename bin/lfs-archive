@@ -2,11 +2,16 @@
 # Archive the LFS tree -- used both for checkpoint snapshots and the final Phase 6 tarball.
 #
 # The flags here are not incidental:
+#   -p               permissions verbatim, not masked by the caller's umask. This one is
+#                    load-bearing: the tree has 17 setuid/setgid binaries (su, passwd,
+#                    ping, umount, ...) that are broken if their mode bits are lost.
 #   --numeric-owner  the LFS tree's uid/gid map is its own, not the host's
-#   --xattrs         Chapter 8 libcap sets file capabilities; plain tar silently drops them
-#   --acls           preserved for the same reason
-#   -p               permissions verbatim, not masked by the caller's umask
+#   --xattrs/--acls  belt and braces. Verified: a by-the-book LFS 13.0 tree carries NO
+#                    file capabilities and no security.* xattrs -- those arrive with BLFS
+#                    packages later. Kept so the same command stays correct after BLFS.
 #   --sparse         several installed files are sparse
+#
+# Hardlinks (3562 files here with link count > 1) are preserved by tar by default.
 #
 # It refuses to run while the virtual kernel filesystems are still bound into the tree.
 # Without that check you archive the host's /proc and /dev into the tarball, which is a
@@ -62,6 +67,10 @@ echo "entries : $(tar -tf "$OUT" 2>/dev/null | wc -l)"
 echo "sha256  : $(sha256sum "$OUT" | cut -d' ' -f1)"
 
 # --- leak check ----------------------------------------------------------------
+echo
+echo "=== preservation check ==="
+echo "setuid/setgid entries in archive: $(tar -tvf "$OUT" 2>/dev/null | grep -cE '^[-][rwx-]{2}[sS]|^[-][rwx-]{5}[sS]')"
+echo "hardlinked entries in archive   : $(tar -tvf "$OUT" 2>/dev/null | grep -c ' link to ')"
 echo
 echo "=== leak check (must be empty) ==="
 leak=$(tar -tf "$OUT" 2>/dev/null | grep -E '^\./(proc|sys)/.|^\./dev/pts/.' | head -5)

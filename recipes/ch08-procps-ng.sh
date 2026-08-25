@@ -26,8 +26,9 @@ make
 
 # --- block 2 --------------------------------------------------
 #   ctx: To run the test suite, run:
-chown -R tester .
-su tester -c "PATH=$PATH make check"
+#   REVIEWED [drop]: procps-ng test suite plus its `chown -R tester .` prerequisite. Not in the critical three.
+# chown -R tester .
+# su tester -c "PATH=$PATH make check"
 
 # --- block 3 --------------------------------------------------
 #   ctx: One test named ps with output flag bsdtime,cputime,etime,etimes is known to fail if the

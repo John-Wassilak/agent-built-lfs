@@ -645,9 +645,9 @@
     "page": "gmp",
     "title": "8.22. GMP-6.3.0",
     "blocks": 7,
-    "enabled": 5,
-    "disabled": 2,
-    "reviewed": 1
+    "enabled": 4,
+    "disabled": 3,
+    "reviewed": 2
   },
   {
     "name": "ch08-gperf",
@@ -1025,9 +1025,9 @@
     "page": "procps-ng",
     "title": "8.81. Procps-ng-4.0.6",
     "blocks": 4,
-    "enabled": 4,
-    "disabled": 0,
-    "reviewed": 0
+    "enabled": 3,
+    "disabled": 1,
+    "reviewed": 1
   },
   {
     "name": "ch08-psmisc",
@@ -1097,7 +1097,7 @@
     "blocks": 1,
     "enabled": 1,
     "disabled": 0,
-    "reviewed": 0
+    "reviewed": 1
   },
   {
     "name": "ch08-systemd",
@@ -1107,7 +1107,7 @@
     "blocks": 8,
     "enabled": 8,
     "disabled": 0,
-    "reviewed": 0
+    "reviewed": 1
   },
   {
     "name": "ch08-tar",
@@ -1147,7 +1147,7 @@
     "blocks": 5,
     "enabled": 4,
     "disabled": 1,
-    "reviewed": 1
+    "reviewed": 2
   },
   {
     "name": "ch08-vim",
@@ -1155,9 +1155,9 @@
     "page": "vim",
     "title": "8.75. Vim-9.2.0078",
     "blocks": 10,
-    "enabled": 9,
-    "disabled": 1,
-    "reviewed": 1
+    "enabled": 8,
+    "disabled": 2,
+    "reviewed": 2
   },
   {
     "name": "ch08-wheel",
@@ -1215,9 +1215,9 @@
     "page": "clock",
     "title": "9.5. Configuring the System Clock",
     "blocks": 6,
-    "enabled": 6,
-    "disabled": 0,
-    "reviewed": 0
+    "enabled": 0,
+    "disabled": 6,
+    "reviewed": 6
   },
   {
     "name": "ch09-console",
@@ -1265,9 +1265,9 @@
     "page": "symlinks",
     "title": "9.4. Managing Devices",
     "blocks": 2,
-    "enabled": 2,
-    "disabled": 0,
-    "reviewed": 0
+    "enabled": 0,
+    "disabled": 2,
+    "reviewed": 2
   },
   {
     "name": "ch09-systemd-custom",
@@ -1275,9 +1275,9 @@
     "page": "systemd-custom",
     "title": "9.10. Systemd Usage and Configuration",
     "blocks": 5,
-    "enabled": 5,
-    "disabled": 0,
-    "reviewed": 0
+    "enabled": 1,
+    "disabled": 4,
+    "reviewed": 4
   },
   {
     "name": "ch10-fstab",

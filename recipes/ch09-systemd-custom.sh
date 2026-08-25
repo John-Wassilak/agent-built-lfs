@@ -23,7 +23,8 @@ EOF
 #   ctx: The boot messages can always be reviewed by using the journalctl -b command as the root
 #   ctx: user. 9.10.3. Disabling tmpfs for /tmp By default, /tmp is created as a tmpfs. If this
 #   ctx: is not desired, it can be overridden by executing the following command:
-ln -sfv /dev/null /etc/systemd/system/tmp.mount
+#   REVIEWED [drop]: Masks tmp.mount to disable tmpfs for /tmp. Book: 'By default /tmp is created as a tmpfs. If this is not desired...'. We want tmpfs on /tmp -- it avoids write wear on the USB target. The book also warns this symlink makes the system unusable if a separate /tmp partition is used.
+# ln -sfv /dev/null /etc/systemd/system/tmp.mount
 
 # --- block 2 --------------------------------------------------
 #   ctx: es type v which in turn references type d (directory). This then creates the specified
@@ -31,19 +32,21 @@ ln -sfv /dev/null /etc/systemd/system/tmp.mount
 #   ctx: Contents of the directory will be subject to time based cleanup if the age argument is
 #   ctx: specified. If the default parameters are not desired, then the file should be copied to
 #   ctx: /etc/tmpfiles.d and edited as desired. For example:
-mkdir -p /etc/tmpfiles.d
-cp /usr/lib/tmpfiles.d/tmp.conf /etc/tmpfiles.d
+#   REVIEWED [drop]: Book: 'If the default parameters are not desired, then the file should be copied to /etc/tmpfiles.d and edited as desired. For example:'. Conditional, and copying it unedited just shadows an identical file.
+# mkdir -p /etc/tmpfiles.d
+# cp /usr/lib/tmpfiles.d/tmp.conf /etc/tmpfiles.d
 
 # --- block 3 --------------------------------------------------
 #   ctx: 9.10.5. Overriding Default Services Behavior The parameters of a unit can be overridden
 #   ctx: by creating a directory and a configuration file in /etc/systemd/system. For example:
-mkdir -pv /etc/systemd/system/foobar.service.d
-
-cat > /etc/systemd/system/foobar.service.d/foobar.conf << EOF
-[Service]
-Restart=always
-RestartSec=30
-EOF
+#   REVIEWED [drop]: Book's illustration of unit overriding ('For example:') for a service literally named foobar. Would create /etc/systemd/system/foobar.service.d/ for a service that does not exist.
+# mkdir -pv /etc/systemd/system/foobar.service.d
+# 
+# cat > /etc/systemd/system/foobar.service.d/foobar.conf << EOF
+# [Service]
+# Restart=always
+# RestartSec=30
+# EOF
 
 # --- block 4 --------------------------------------------------
 #   ctx: s of frequently used commands: coredumpctl -r: lists all core dumps in reverse
@@ -51,10 +54,11 @@ EOF
 #   ctx: coredumpctl -1 debug: loads the last core dump into GDB. Core dumps may use a lot of
 #   ctx: disk space. The maximum disk space used by core dumps can be limited by creating a
 #   ctx: configuration file in /etc/systemd/coredump.conf.d. For example:
-mkdir -pv /etc/systemd/coredump.conf.d
-
-cat > /etc/systemd/coredump.conf.d/maxuse.conf << EOF
-[Coredump]
-MaxUse=5G
-EOF
+#   REVIEWED [drop]: Book's example coredump cap of MaxUse=5G. On a 29 GB target this would LOOSEN the limit, since the systemd default is 10% of the filesystem (~2.9 GB). Keeping the stricter default.
+# mkdir -pv /etc/systemd/coredump.conf.d
+# 
+# cat > /etc/systemd/coredump.conf.d/maxuse.conf << EOF
+# [Coredump]
+# MaxUse=5G
+# EOF
 

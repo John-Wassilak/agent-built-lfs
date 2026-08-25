@@ -54,7 +54,6 @@ ninja
 #   ctx: point is only visible for the test suite and it gets cleaned up automatically after the
 #   ctx: test suite finishes):
 echo 'NAME="Linux From Scratch"' > /etc/os-release
-unshare -m ninja test
 
 # --- block 4 --------------------------------------------------
 #   ctx: One test named systemd:core / test-namespace is known to fail in the LFS chroot

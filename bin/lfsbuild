@@ -44,7 +44,6 @@ SPECIAL = {
     "ch10-grub": "skip",         # deferred to the USB phase: no target device yet
     "ch08-pkgmgt": "skip",       # discussion, no commands to run
     "ch08-aboutdebug": "skip",   # discussion
-    "ch11-theend": "skip",       # informational
     "ch11-getcounted": "skip",   # informational
     "ch11-whatnow": "skip",      # informational
     "ch11-afterlfs": "skip",     # informational

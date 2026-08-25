@@ -87,6 +87,10 @@
     "0": {
       "action": "drop",
       "reason": "Not a runnable command ('ABI=32 ./configure ...'). Applies only when CFLAGS is set in the environment and 32-bit fallback is wanted. Our build sets no CFLAGS."
+    },
+    "5": {
+      "action": "drop",
+      "reason": "Summarizes gmp-check-log, which is produced only by the `make check | tee gmp-check-log` block. That test suite is not in the critical three, so the log never exists and awk aborts the build."
     }
   },
   "ch08-grub": {
@@ -111,6 +115,11 @@
     "2": {
       "action": "drop",
       "reason": "Book states this test can be run only after booting into the completed LFS system; it is not runnable in the chroot."
+    },
+    "3": {
+      "action": "replace",
+      "cmd": "touch /etc/fstab",
+      "reason": "Block mixes a test prerequisite with the test. `touch /etc/fstab` is kept (harmless, and ch10-fstab overwrites it with the real file); the `chown -R tester .` and `make -k check` are dropped per the critical-only policy."
     }
   },
   "ch09-network": {
@@ -202,6 +211,10 @@
     "9": {
       "action": "drop",
       "reason": "`vim -c ':options'` opens vim interactively so a human can browse settings. Purely exploratory; would block the driver."
+    },
+    "4": {
+      "action": "drop",
+      "reason": "vim's test suite. Not one of the critical three (glibc/gcc/binutils), so out of scope per the tests policy. It also failed here, and its output is redirected to vim-test.log so the failure never reaches the build log. Block starts with `su tester`, which is why the test-command regex missed it."
     }
   },
   "ch08-groff": {
@@ -266,6 +279,80 @@
     "3": {
       "action": "drop",
       "reason": "'localectl set-x11-keymap LAYOUT [MODEL] ...' is a placeholder for X11, which LFS does not install, and needs a running systemd."
+    }
+  },
+  "ch08-systemd": {
+    "3": {
+      "action": "replace",
+      "cmd": "echo 'NAME=\"Linux From Scratch\"' > /etc/os-release",
+      "reason": "Block mixes a test prerequisite with the test itself (`unshare -m ninja test`). Test dropped per the critical-only policy; the /etc/os-release write is kept since later steps may read it, and ch11-theend replaces it with the full version."
+    }
+  },
+  "ch08-procps-ng": {
+    "2": {
+      "action": "drop",
+      "reason": "procps-ng test suite plus its `chown -R tester .` prerequisite. Not in the critical three."
+    }
+  },
+  "ch08-stripping": {
+    "0": {
+      "action": "replace",
+      "cmd": "save_usrlib=\"$(cd /usr/lib; ls ld-linux*[^g])\n             libc.so.6\n             libthread_db.so.1\n             libquadmath.so.0.0.0\n             libstdc++.so.6.0.34\n             libitm.so.1.0.0\n             libatomic.so.1.2.0\"\ncd /usr/lib\nfor LIB in $save_usrlib; do\n    objcopy --only-keep-debug --compress-debug-sections=zstd $LIB $LIB.dbg\n    cp $LIB /tmp/$LIB\n    strip --strip-debug /tmp/$LIB\n    objcopy --add-gnu-debuglink=$LIB.dbg /tmp/$LIB\n    install -vm755 /tmp/$LIB /usr/lib\n    rm /tmp/$LIB\ndone\nonline_usrbin=\"bash find strip\"\nonline_usrlib=\"libbfd-2.46.0.20260210.so\n               libsframe.so.3.0.0\n               libhistory.so.8.3\n               libncursesw.so.6.6\n               libm.so.6\n               libreadline.so.8.3\n               libz.so.1.3.2\n               libzstd.so.1.5.7\n               $(cd /usr/lib; find libnss*.so* -type f)\"\nfor BIN in $online_usrbin; do\n    cp /usr/bin/$BIN /tmp/$BIN\n    strip --strip-debug /tmp/$BIN\n    install -vm755 /tmp/$BIN /usr/bin\n    rm /tmp/$BIN\ndone\nfor LIB in $online_usrlib; do\n    cp /usr/lib/$LIB /tmp/$LIB\n    strip --strip-debug /tmp/$LIB\n    install -vm755 /tmp/$LIB /usr/lib\n    rm /tmp/$LIB\ndone\nfor i in $(find /usr/lib -type f -name \\*.so* ! -name \\*dbg) \\\n         $(find /usr/lib -type f -name \\*.a)                 \\\n         $(find /usr/{bin,sbin,libexec} -type f); do\n    case \"$online_usrbin $online_usrlib $save_usrlib\" in\n        *$(basename $i)* )\n            ;;\n        * ) strip --strip-debug $i || true\n            ;;\n    esac\ndone\nunset BIN LIB save_usrlib online_usrbin online_usrlib",
+      "reason": "Book's own command with `|| true` added to the per-file strip in the final loop. The find pattern *.so* matches GNU ld linker scripts (libc.so, libm.so, libgcc_s.so) and, by glob accident, systemd .socket unit files -- none are ELF, so strip reports 'file format not recognized'. In the interactive shell the book assumes, that is harmless stderr noise and the loop continues; under the driver's set -e it aborts. This preserves the book's actual behaviour."
+    }
+  },
+  "ch09-symlinks": {
+    "0": {
+      "action": "drop",
+      "reason": "Exploratory command the book offers so a human can inspect a video device's udev attributes ('Figure out the attributes that identify the device uniquely'). This machine has no /sys/class/video4linux/video0, so udevadm exits non-zero and aborts the step."
+    },
+    "1": {
+      "action": "drop",
+      "reason": "Book's example udev rules ('Then write rules that create the symlinks, e.g.') hard-coded to a specific webcam (idProduct 1910, idVendor 0d81) and TV tuner. Installing them would create rules for hardware that does not exist. Section 9.4 is optional guidance for systems with duplicate device classes."
+    }
+  },
+  "ch09-clock": {
+    "0": {
+      "action": "drop",
+      "reason": "Creates /etc/adjtime with LOCAL, which is the book's opt-in for a hardware clock kept in local time. systemd assumes UTC when this file is absent, and UTC is the correct default for a Linux-only machine."
+    },
+    "1": {
+      "action": "drop",
+      "reason": "`timedatectl set-local-rtc 1` is the same local-time opt-in via a different route, and timedatectl needs a running systemd (PID 1), unavailable in the chroot."
+    },
+    "2": {
+      "action": "drop",
+      "reason": "Placeholder: `timedatectl set-time YYYY-MM-DD HH:MM:SS`. Also requires a running systemd."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "Placeholder: `timedatectl set-timezone TIMEZONE`. The timezone is already set by ch08-glibc via /etc/localtime -> America/Chicago."
+    },
+    "4": {
+      "action": "drop",
+      "reason": "`timedatectl list-timezones` is informational, and requires a running systemd."
+    },
+    "5": {
+      "action": "drop",
+      "reason": "Optional: disables systemd-timesyncd for users running another NTP client. We keep timesyncd enabled."
+    }
+  },
+  "ch09-systemd-custom": {
+    "1": {
+      "action": "drop",
+      "reason": "Masks tmp.mount to disable tmpfs for /tmp. Book: 'By default /tmp is created as a tmpfs. If this is not desired...'. We want tmpfs on /tmp -- it avoids write wear on the USB target. The book also warns this symlink makes the system unusable if a separate /tmp partition is used."
+    },
+    "2": {
+      "action": "drop",
+      "reason": "Book: 'If the default parameters are not desired, then the file should be copied to /etc/tmpfiles.d and edited as desired. For example:'. Conditional, and copying it unedited just shadows an identical file."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "Book's illustration of unit overriding ('For example:') for a service literally named foobar. Would create /etc/systemd/system/foobar.service.d/ for a service that does not exist."
+    },
+    "4": {
+      "action": "drop",
+      "reason": "Book's example coredump cap of MaxUse=5G. On a 29 GB target this would LOOSEN the limit, since the systemd default is 10% of the filesystem (~2.9 GB). Keeping the stricter default."
     }
   }
 }

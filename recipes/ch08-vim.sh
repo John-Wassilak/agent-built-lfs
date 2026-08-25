@@ -30,8 +30,9 @@ sed '/test_plugin_glvs/d' -i src/testdir/Make_all.mak
 
 # --- block 4 --------------------------------------------------
 #   ctx: Now run the tests as user tester:
-su tester -c "TERM=xterm-256color LANG=en_US.UTF-8 make -j1 test" \
-   &> vim-test.log
+#   REVIEWED [drop]: vim's test suite. Not one of the critical three (glibc/gcc/binutils), so out of scope per the tests policy. It also failed here, and its output is redirected to vim-test.log so the failure never reaches the build log. Block starts with `su tester`, which is why the test-command regex missed it.
+# su tester -c "TERM=xterm-256color LANG=en_US.UTF-8 make -j1 test" \
+#    &> vim-test.log
 
 # --- block 5 --------------------------------------------------
 #   ctx: terminal (especially while we are overriding the TERM variable to satisfy some

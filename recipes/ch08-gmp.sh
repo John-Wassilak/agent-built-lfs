@@ -48,7 +48,8 @@ make html
 #   ctx: message Illegal instruction. In this case, gmp should be reconfigured with the option
 #   ctx: --host=none-linux-gnu and rebuilt. Ensure that at least 199 tests in the test suite
 #   ctx: passed. Check the results by issuing the following command:
-awk '/# PASS:/{total+=$3} ; END{print total}' gmp-check-log
+#   REVIEWED [drop]: Summarizes gmp-check-log, which is produced only by the `make check | tee gmp-check-log` block. That test suite is not in the critical three, so the log never exists and awk aborts the build.
+# awk '/# PASS:/{total+=$3} ; END{print total}' gmp-check-log
 
 # --- block 6 --------------------------------------------------
 #   ctx: Install the package and its documentation:
