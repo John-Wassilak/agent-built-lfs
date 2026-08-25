@@ -137,3 +137,104 @@ extracts as `4755 root:root`. Hardlinks (3,562 files with link count > 1) are pr
 2. Change the root password.
 3. BLFS plus maintenance tooling — a DESTDIR package manager seeded from the 82 Chapter 8
    manifests, and an advisory/version drift tracker against the LFS and BLFS books.
+
+---
+
+# BLFS phase — Claude Code running in the LFS system
+
+Added 2026-08-25, **89.8 min** total. 8 steps, 952 files tracked across 8 manifests.
+Same harness: `bin/extract-blfs.py` + `./bin/lfsbuild --plan state/blfs-plan.json`.
+
+## Result
+
+| | |
+|---|---|
+| Deliverable | `lfs-13.0-systemd-claude-20260825.tar.gz` — 753 MB, 73,293 entries |
+| SHA256 | `ea1b548a5026e2be4b199a7b93ac9d4a05368f2476ee65a57c5e65b21ea7d5fd` |
+| Tree size | 2.4 GB uncompressed |
+| Claude Code | **2.1.245** |
+| Node / npm | v22.22.0 / 10.9.4 |
+| OpenSSH | 10.2p1 (against OpenSSL 3.6.1) |
+
+## What was needed, and what wasn't
+
+**DHCP: nothing to install.** LFS 13.0-systemd already ships systemd-networkd, and Chapter 9
+enabled it. I added `/etc/systemd/network/10-dhcp.network` matching `en* eth*` so it works
+on unknown hardware. systemd-resolved was already enabled too. No dhcpcd, no ISC dhclient.
+
+**The real gap was CA certificates.** A by-the-book LFS system has an empty `/etc/ssl/certs`.
+That closure is `libtasn1 -> p11-kit -> make-ca`. Now: 516 certs, a 185 KB `ca-bundle.crt`,
+and 172 anchors in p11-kit. Verified by completing a real verified TLS handshake from inside
+the chroot to `registry.npmjs.org`, `api.anthropic.com`, and `github.com`.
+
+Worth noting: Node carries **146 bundled root certificates**, so npm would have worked
+without any of this. The system store matters for everything *else* — `openssl`, and any tool
+Claude Code shells out to.
+
+**Node.js needed exactly one dependency: `which`.** BLFS's configure line passes
+`--shared-brotli --shared-cares --shared-libuv --shared-nghttp2 --with-intl=system-icu`
+because BLFS assumes you installed its "recommended" packages. Node bundles all of them, so
+I dropped those flags and kept `--shared-openssl --shared-zlib` (LFS provides both, so Node
+tracks system security updates). That turned a 6-package subtree into one package.
+
+**OpenSSH needed nothing.** 87 of the 90 minutes was Node.
+
+## Total closure: 6 BLFS packages + 2 hand-authored steps
+
+```
+which 2.23        libtasn1 4.21.0    p11-kit 0.26.2    make-ca 1.16.1
+openssh 10.2p1    nodejs 22.22.0     + sshd-unit, claude-code (hand-authored)
+```
+
+## What the review caught here
+
+BLFS needed a different kind of scrutiny than LFS. **13 review decisions across 6 recipes** (9 drop, 4 replace).
+
+- **Every `make install` was missing.** BLFS marks root-only commands with
+  `<pre class="root">`, and my LFS parser only captured `class="userinput"`. LFS uses exactly
+  one `root` block in the whole book, so this never showed up before. The first extraction
+  produced 12 blocks with no install step anywhere; fixing the parser gave 29.
+- **`which` would have destroyed itself.** The page is "Which-2.23 *and Alternatives*", and
+  the last block is the alternative — a shell script for people who don't install the
+  package. Running it after `make install` overwrites the real binary with a script.
+- **`make install-sshd` is not openssh's target.** It belongs to blfs-systemd-units, which
+  the openssh page merely references. Running it in the openssh tree fails.
+- **BLFS's sshd hardening would have locked us out.** The book appends `PermitRootLogin no`,
+  `PasswordAuthentication no` and `KbdInteractiveAuthentication no`. On a system whose only
+  account is root and which has no `authorized_keys`, applying all three yields an sshd that
+  nobody can log into. Set `PermitRootLogin yes` deliberately instead — see the warning below.
+- **The PAM block would have failed.** It builds `/etc/pam.d/sshd` from `/etc/pam.d/login`,
+  but Linux-PAM is not in LFS and Shadow was built without it, so the source file is absent.
+- **`make-ca` block 5 operates on a fictional certificate** — `Makebelieve_CA_Root.pem`, the
+  book's worked example of distrusting a CA.
+- **`systemctl enable` can't run in a chroot**, so `update-pki.timer` and `sshd.service` are
+  enabled by creating the `.wants` symlinks by hand — exactly what enable does.
+- **Host keys were baked in and I removed them.** OpenSSH's `make install` runs its
+  `host-key` target, so the tree shipped with three host keys. For an artifact that gets
+  copied, every machine sharing one host key is wrong. Removed, with a drop-in
+  (`ExecStartPre=/usr/bin/ssh-keygen -A`) generating a unique set on first boot. Verified: 0
+  host keys in the tarball. `sshd -t` reporting "no hostkeys available" in the chroot is the
+  expected state, not a fault.
+
+One correction to something I claimed earlier: I said make-ca needed a downloader in the
+target. It doesn't — it fetches certdata.txt with **`openssl s_client`**, not wget or curl.
+So `update-pki.timer` is genuinely functional with no extra packages, and I enabled it. The
+build itself still uses a pre-staged, verified `certdata.txt` via `make-ca -f -C`, so it stays
+deterministic and offline.
+
+## Security posture — read this before exposing the box
+
+- **Root password is `lfs-changeme`** and **`PermitRootLogin yes`** with password auth on.
+  That combination is deliberate: it is the only way the machine is reachable out of the box
+  when root is the sole account. Do this on first boot: change the password, add
+  `~/.ssh/authorized_keys`, then set `PermitRootLogin prohibit-password` and
+  `PasswordAuthentication no` in `/etc/ssh/sshd_config`.
+- Claude Code needs credentials; run `claude` once interactively to authenticate.
+
+## Enabled at boot
+
+```
+sshd.service                       systemd-networkd.service
+systemd-resolved.service           systemd-timesyncd.service
+update-pki.timer (weekly CA refresh)
+```

@@ -1,0 +1,79 @@
+{
+  "_comment": [
+    "Review decisions for the BLFS subset, applied by bin/extract-blfs.py.",
+    "Same contract as recipes/review-overrides.json: drop / replace / enable / defer.",
+    "BLFS pages carry far more optional and alternative commands than LFS, and mark",
+    "root-only commands with <pre class=\"root\">, which is where every 'make install' lives."
+  ],
+
+  "blfs-which": {
+    "2": {
+      "action": "drop",
+      "reason": "The page is 'Which-2.23 and Alternatives'. This block is the alternative: 'The second option (for those who don't want to install the package) is to create a simple script'. We install the real package in blocks 0-1, so running this would overwrite the just-installed /usr/bin/which binary with a shell script."
+    }
+  },
+
+  "blfs-libtasn1": {
+    "2": {
+      "action": "drop",
+      "reason": "Installs the GTK-Doc API documentation ('If you did not pass --enable-gtk-doc ... you can install the API documentation'). GTK-Doc is not installed and the docs are not needed."
+    }
+  },
+
+  "blfs-make-ca": {
+    "2": {
+      "action": "replace",
+      "cmd": "/usr/sbin/make-ca -f -C /sources/certdata.txt",
+      "reason": "Book uses 'make-ca -g', which downloads certdata.txt from Mozilla at build time. We supply certdata.txt as a verified build input instead (staged in /sources), so the cert store is deterministic and the build needs no network. Note make-ca downloads via 'openssl s_client', not wget/curl, so -g will still work on the booted system."
+    },
+    "3": {
+      "action": "replace",
+      "cmd": "install -vdm755 /etc/systemd/system/timers.target.wants\nln -sfv /usr/lib/systemd/system/update-pki.timer /etc/systemd/system/timers.target.wants/update-pki.timer",
+      "reason": "'systemctl enable' cannot run in the chroot ('System has not been booted with systemd as init system'). Creating the WantedBy=timers.target symlink by hand is exactly what enable would do. This is worth keeping enabled: make-ca fetches via openssl s_client, so the weekly refresh works on the booted system with no extra packages."
+    },
+    "4": {
+      "action": "drop",
+      "reason": "Optional: adds the CAcert roots, which are not in Mozilla's store. Also fetches them with wget, which is not installed."
+    },
+    "5": {
+      "action": "drop",
+      "reason": "The book's worked example of distrusting a CA, operating on /etc/ssl/certs/Makebelieve_CA_Root.pem -- a fictional certificate that does not exist. Would fail immediately."
+    },
+    "6": {
+      "action": "drop",
+      "reason": "A bare 'export _PIP_STANDALONE_CERT=...' illustrating the variable. Setting it inside a build script has no lasting effect; block 7 is the persistent version and is kept."
+    }
+  },
+
+  "blfs-openssh": {
+    "3": {
+      "action": "replace",
+      "cmd": "echo \"PermitRootLogin yes\" >> /etc/ssh/sshd_config",
+      "reason": "The book appends 'PermitRootLogin no', which is the right default on a system with normal user accounts. This system has only root, so 'no' would make sshd unreachable and defeat the purpose of installing it. Set to 'yes' deliberately and flagged in the build report: change the root password on first boot and move to key-only auth."
+    },
+    "4": {
+      "action": "drop",
+      "reason": "Interactive 'ssh-keygen' followed by 'ssh-copy-id ... REMOTE_USERNAME@REMOTE_HOSTNAME' -- literal placeholders, and it would block on a prompt."
+    },
+    "5": {
+      "action": "drop",
+      "reason": "Appends 'PasswordAuthentication no' and 'KbdInteractiveAuthentication no', i.e. key-only auth. No authorized_keys exists on this system, so applying it together with the block above would leave no way to log in at all."
+    },
+    "6": {
+      "action": "drop",
+      "reason": "Builds /etc/pam.d/sshd from /etc/pam.d/login. Linux-PAM is not part of LFS 13.0 and Shadow was built without it, so /etc/pam.d/login does not exist and the sed would fail."
+    },
+    "7": {
+      "action": "drop",
+      "reason": "'make install-sshd' is a target of the blfs-systemd-units package, not of openssh's own Makefile -- the book shows it under 'Systemd Unit' referring to blfs-systemd-units-20251204. Running it in the openssh tree fails. Handled instead by the blfs-sshd-unit step."
+    }
+  },
+
+  "blfs-nodejs": {
+    "1": {
+      "action": "replace",
+      "cmd": "./configure --prefix=/usr    \\\n            --shared-openssl \\\n            --shared-zlib &&\nmake",
+      "reason": "The book's configure line passes --shared-brotli, --shared-cares, --shared-libuv, --shared-nghttp2 and --with-intl=system-icu, because BLFS assumes you installed those 'recommended' dependencies. We deliberately did not: Node bundles all of them, and using the bundled copies keeps the dependency closure to the one package Node actually requires (which). Configure would fail outright looking for the missing system libraries. --shared-openssl and --shared-zlib are kept because LFS provides both (OpenSSL 3.6.1, zlib 1.3.2), so Node benefits from system security updates rather than carrying its own copy."
+    }
+  }
+}

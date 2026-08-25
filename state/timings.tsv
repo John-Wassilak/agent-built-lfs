@@ -137,3 +137,12 @@ ch09-systemd-custom	chroot	0.0	0
 ch10-fstab	chroot	0.0	0
 ch10-kernel	chroot	827.1	0
 ch11-theend	chroot	0.0	0
+ch07-kernfs	root-host	0.0	0
+blfs-which	chroot	3.8	0
+blfs-libtasn1	chroot	22.9	0
+blfs-p11-kit	chroot	47.7	0
+blfs-make-ca	chroot	14.9	0
+blfs-openssh	chroot	60.0	0
+blfs-nodejs	chroot	5223.6	0
+blfs-sshd-unit	chroot	0.2	0
+blfs-claude-code	chroot	13.7	0

@@ -133,3 +133,12 @@ ch10-kernel
 ch10-grub
 ch11-reboot
 ch11-theend
+ch07-kernfs
+blfs-which
+blfs-libtasn1
+blfs-p11-kit
+blfs-make-ca
+blfs-openssh
+blfs-nodejs
+blfs-sshd-unit
+blfs-claude-code

@@ -55,8 +55,8 @@ SPECIAL = {
 MANIFEST_ROOTS = "/usr /etc /opt /var /boot /srv /root /bin /sbin /lib"
 
 
-def load_plan():
-    return json.load(open(PLAN))
+def load_plan(path=PLAN):
+    return json.load(open(path))
 
 
 def completed():
@@ -112,7 +112,7 @@ def build_script(step, srcdir):
         "",
     ]
 
-    want_manifest = chroot and step["chapter"] == "08"
+    want_manifest = chroot and step.get("manifest", step["chapter"] == "08")
     if want_manifest:
         L += [
             "# --- manifest stamp (installed-file provenance) ---",
@@ -258,7 +258,7 @@ def run_step(step, dry=False):
 
     argv = exec_argv(step, path)
     log = f"{LOGS}/{name}.log"
-    print(f"  RUN   {step['seq']:3}/{133} {name:28} [{step['context']}] "
+    print(f"  RUN   {step['seq']:3} {name:28} [{step['context']}] "
           f"src={srcdir or '-'}", flush=True)
 
     t0 = time.time()
@@ -324,9 +324,10 @@ def main():
     ap.add_argument("--chapter")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--force", action="store_true", help="re-run even if completed")
+    ap.add_argument("--plan", default=PLAN, help="plan file (default: the LFS plan)")
     a = ap.parse_args()
 
-    plan = load_plan()
+    plan = load_plan(a.plan)
     done = completed()
 
     if a.status:

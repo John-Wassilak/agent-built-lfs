@@ -1,0 +1,7 @@
+https://ftpmirror.gnu.org/which/which-2.23.tar.gz
+https://ftpmirror.gnu.org/libtasn1/libtasn1-4.21.0.tar.gz
+https://github.com/p11-glue/p11-kit/releases/download/0.26.2/p11-kit-0.26.2.tar.xz
+https://github.com/lfs-book/make-ca/archive/v1.16.1/make-ca-1.16.1.tar.gz
+https://nodejs.org/dist/v22.22.0/node-v22.22.0.tar.xz
+https://www.linuxfromscratch.org/patches/blfs/13.0/node-v22.22.0-python_build_fix-1.patch
+https://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-10.2p1.tar.gz
