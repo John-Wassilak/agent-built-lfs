@@ -18,6 +18,9 @@ Scope is deliberately tight -- the dependency closure of the four things asked f
   openssh  ssh and sshd. No required dependencies beyond LFS.
   curl/wget  not needed by Claude Code, but dependencies of a large share of BLFS,
            so worth having now. Closure: libunistring -> libidn2 -> libpsl.
+  git      no new dependencies -- cURL (http/https remotes) and OpenSSH (ssh remotes)
+           are both already present. Man pages come from the prebuilt tarball rather
+           than building them, which would need asciidoc and xmlto.
 
 Order below is dependency order and is what the plan preserves.
 """
@@ -77,6 +80,9 @@ PACKAGES = [
     ("libpsl",       "basicnet/libpsl.html",      "libpsl-0.21.5.tar.gz"),
     ("curl",         "basicnet/curl.html",        "curl-8.18.0.tar.xz"),
     ("wget",         "basicnet/wget.html",        "wget-1.25.0.tar.gz"),
+    # git: no new dependencies. Its one recommended dep is cURL (for http/https
+    # remotes), and OpenSSH covers git-over-ssh -- both already installed above.
+    ("git",          "general/git.html",          "git-2.53.0.tar.xz"),
 ]
 
 

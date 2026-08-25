@@ -149,13 +149,14 @@ Same harness: `bin/extract-blfs.py` + `./bin/lfsbuild --plan state/blfs-plan.jso
 
 | | |
 |---|---|
-| Deliverable | `lfs-13.0-systemd-claude-20260825.tar.gz` — 759 MB, 75,100 entries |
-| SHA256 | `f8352835a088dfedeefb6ddd1e0677cc841cce27e7586609c6c45a17617bb9e0` |
+| Deliverable | `lfs-13.0-systemd-claude-20260825.tar.gz` — 820 MB, 75,674 entries |
+| SHA256 | `e69836ca656a40969502685fa7e612c6c770e981614e30d47b68b735863b4cf6` |
 | Tree size | 2.4 GB uncompressed |
 | Claude Code | **2.1.245** |
 | Node / npm | v22.22.0 / 10.9.4 |
 | OpenSSH | 10.2p1 (against OpenSSL 3.6.1) |
 | curl / wget | 8.18.0 / 1.25.0 (both with libpsl) |
+| git | 2.53.0 (https via curl, ssh via OpenSSH) |
 
 ## What was needed, and what wasn't
 
@@ -180,7 +181,7 @@ tracks system security updates). That turned a 6-package subtree into one packag
 
 **OpenSSH needed nothing.** 87 of the 90 minutes was Node.
 
-## Total closure: 11 BLFS packages + 2 hand-authored steps
+## Total closure: 12 BLFS packages + 2 hand-authored steps
 
 Claude Code itself needs six:
 
@@ -195,6 +196,18 @@ large share of BLFS and every future package would otherwise hit the same detour
 ```
 libunistring 1.4.1   libidn2 2.3.8   libpsl 0.21.5   curl 8.18.0   wget 1.25.0
 ```
+
+And git 2.53.0, which needed **no new dependencies** — its one recommended dep is cURL (for
+http/https remotes) and OpenSSH covers ssh remotes, both already present. That is the payoff
+from installing curl first. 1.5 min, 345 files.
+
+Six of git's nine command blocks had to be dropped: the page offers two mutually exclusive
+documentation paths, build-your-own (`make html`, `make man`, needing asciidoc and xmlto)
+versus untar-prebuilt. Enabling both, which is what a naive extraction does, fails either
+way. We take the prebuilt `git-manpages` tarball and skip the HTML docs.
+
+Verified with a real shallow clone of `https://github.com/git/git.git` inside the chroot —
+4,874 files — which exercises git, curl, and the make-ca trust store together in one shot.
 
 libpsl is not really optional: BLFS records that both upstream and the BLFS editors
 "highly recommend not disabling support for libpsl due to severe security implications" --
@@ -252,6 +265,16 @@ deterministic and offline.
   `~/.ssh/authorized_keys`, then set `PermitRootLogin prohibit-password` and
   `PasswordAuthentication no` in `/etc/ssh/sshd_config`.
 - Claude Code needs credentials; run `claude` once interactively to authenticate.
+
+## A note on how Claude Code is packaged
+
+The npm package is not a JavaScript bundle. It installs a **392 MB prebuilt native x86-64
+binary** at `node_modules/@anthropic-ai/claude-code-linux-x64/claude`, with
+`bin/claude.exe` a hardlink to it — 17 files in total, which is the whole 375 MB. So Node
+is needed for npm to install and update it, but the CLI itself executes natively against
+glibc 2.43 rather than running through Node. Confirmed working in the chroot
+(`claude --version` -> 2.1.245). That also means the tarball carries one very large
+incompressible file, which is most of the jump from 759 MB to 820 MB.
 
 ## Enabled at boot
 

@@ -148,3 +148,5 @@ blfs-libidn2
 blfs-libpsl
 blfs-curl
 blfs-wget
+ch07-kernfs
+blfs-git

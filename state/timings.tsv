@@ -152,3 +152,5 @@ blfs-libidn2	chroot	19.5	0
 blfs-libpsl	chroot	4.7	0
 blfs-curl	chroot	58.6	0
 blfs-wget	chroot	51.0	0
+ch07-kernfs	root-host	0.0	0
+blfs-git	chroot	87.0	0
