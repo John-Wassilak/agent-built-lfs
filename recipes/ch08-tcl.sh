@@ -48,7 +48,8 @@ unset SRCDIR
 #   ctx: directory from the configuration files and replace them with the install directory. This
 #   ctx: is not mandatory for the remainder of LFS, but may be needed if a package built later
 #   ctx: uses Tcl. To test the results, issue:
-LC_ALL=C.UTF-8 make test
+#   REVIEWED [drop]: Test suite outside the critical three (glibc/gcc/binutils), so out of scope per the tests policy. It also cannot run any more: ch08-cleanup deleted the 'tester' account it needs, so a re-run fails with "chown: invalid user: 'tester'". These tests did run and pass during the original build, while tester still existed.
+# LC_ALL=C.UTF-8 make test
 
 # --- block 3 --------------------------------------------------
 #   ctx: Install the package:

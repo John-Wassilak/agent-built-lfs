@@ -354,5 +354,67 @@
       "action": "drop",
       "reason": "Book's example coredump cap of MaxUse=5G. On a 29 GB target this would LOOSEN the limit, since the systemd default is 10% of the filesystem (~2.9 GB). Keeping the stricter default."
     }
+  },
+  "ch07-createfiles": {
+    "5": {
+      "action": "drop",
+      "reason": "'exec /usr/bin/bash --login' is the book telling a human to restart their shell so id/whoami show the names just added to /etc/passwd. As a script line it REPLACES the shell, so everything after it silently never runs -- here that lost block 6, which creates /var/log/{btmp,lastlog,faillog,wtmp}. Confirmed missing from the built tree."
+    }
+  },
+  "ch08-bash": {
+    "5": {
+      "action": "drop",
+      "reason": "Same 'exec /usr/bin/bash --login'. It truncated the generated script before the unpack cleanup and the manifest capture, which is why ch08-bash had no manifest and /sources/bash-5.3 was left behind."
+    },
+    "2": {
+      "action": "drop",
+      "reason": "'chown -R tester .' is the prerequisite for bash's test suite in block 3. Test suite outside the critical three (glibc/gcc/binutils), so out of scope per the tests policy. It also cannot run any more: ch08-cleanup deleted the 'tester' account it needs, so a re-run fails with \"chown: invalid user: 'tester'\". These tests did run and pass during the original build, while tester still existed."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "bash's test suite, run as tester via expect. Test suite outside the critical three (glibc/gcc/binutils), so out of scope per the tests policy. It also cannot run any more: ch08-cleanup deleted the 'tester' account it needs, so a re-run fails with \"chown: invalid user: 'tester'\". These tests did run and pass during the original build, while tester still existed."
+    }
+  },
+  "ch08-sed": {
+    "2": {
+      "action": "drop",
+      "reason": "Test suite outside the critical three (glibc/gcc/binutils), so out of scope per the tests policy. It also cannot run any more: ch08-cleanup deleted the 'tester' account it needs, so a re-run fails with \"chown: invalid user: 'tester'\". These tests did run and pass during the original build, while tester still existed."
+    }
+  },
+  "ch08-gawk": {
+    "3": {
+      "action": "drop",
+      "reason": "Test suite outside the critical three (glibc/gcc/binutils), so out of scope per the tests policy. It also cannot run any more: ch08-cleanup deleted the 'tester' account it needs, so a re-run fails with \"chown: invalid user: 'tester'\". These tests did run and pass during the original build, while tester still existed."
+    }
+  },
+  "ch08-findutils": {
+    "2": {
+      "action": "drop",
+      "reason": "Test suite outside the critical three (glibc/gcc/binutils), so out of scope per the tests policy. It also cannot run any more: ch08-cleanup deleted the 'tester' account it needs, so a re-run fails with \"chown: invalid user: 'tester'\". These tests did run and pass during the original build, while tester still existed."
+    }
+  },
+  "ch08-make": {
+    "2": {
+      "action": "drop",
+      "reason": "Test suite outside the critical three (glibc/gcc/binutils), so out of scope per the tests policy. It also cannot run any more: ch08-cleanup deleted the 'tester' account it needs, so a re-run fails with \"chown: invalid user: 'tester'\". These tests did run and pass during the original build, while tester still existed."
+    }
+  },
+  "ch08-coreutils": {
+    "6": {
+      "action": "drop",
+      "reason": "Test suite outside the critical three (glibc/gcc/binutils), so out of scope per the tests policy. It also cannot run any more: ch08-cleanup deleted the 'tester' account it needs, so a re-run fails with \"chown: invalid user: 'tester'\". These tests did run and pass during the original build, while tester still existed."
+    }
+  },
+  "ch08-tcl": {
+    "2": {
+      "action": "drop",
+      "reason": "Test suite outside the critical three (glibc/gcc/binutils), so out of scope per the tests policy. It also cannot run any more: ch08-cleanup deleted the 'tester' account it needs, so a re-run fails with \"chown: invalid user: 'tester'\". These tests did run and pass during the original build, while tester still existed."
+    }
+  },
+  "ch08-openssl": {
+    "2": {
+      "action": "drop",
+      "reason": "Test suite outside the critical three (glibc/gcc/binutils), so out of scope per the tests policy. It also cannot run any more: ch08-cleanup deleted the 'tester' account it needs, so a re-run fails with \"chown: invalid user: 'tester'\". These tests did run and pass during the original build, while tester still existed."
+    }
   }
 }

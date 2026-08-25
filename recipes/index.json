@@ -305,9 +305,9 @@
     "page": "createfiles",
     "title": "7.6. Creating Essential Files and Symlinks",
     "blocks": 7,
-    "enabled": 7,
-    "disabled": 0,
-    "reviewed": 0
+    "enabled": 6,
+    "disabled": 1,
+    "reviewed": 1
   },
   {
     "name": "ch07-creatingdirs",
@@ -425,9 +425,9 @@
     "page": "bash",
     "title": "8.37. Bash-5.3",
     "blocks": 6,
-    "enabled": 6,
-    "disabled": 0,
-    "reviewed": 0
+    "enabled": 3,
+    "disabled": 3,
+    "reviewed": 3
   },
   {
     "name": "ch08-bc",
@@ -485,9 +485,9 @@
     "page": "coreutils",
     "title": "8.61. Coreutils-9.10",
     "blocks": 10,
-    "enabled": 9,
-    "disabled": 1,
-    "reviewed": 0
+    "enabled": 8,
+    "disabled": 2,
+    "reviewed": 1
   },
   {
     "name": "ch08-dbus",
@@ -565,9 +565,9 @@
     "page": "findutils",
     "title": "8.64. Findutils-4.10.0",
     "blocks": 4,
-    "enabled": 4,
-    "disabled": 0,
-    "reviewed": 0
+    "enabled": 3,
+    "disabled": 1,
+    "reviewed": 1
   },
   {
     "name": "ch08-flex",
@@ -595,9 +595,9 @@
     "page": "gawk",
     "title": "8.63. Gawk-5.3.2",
     "blocks": 7,
-    "enabled": 7,
-    "disabled": 0,
-    "reviewed": 0
+    "enabled": 6,
+    "disabled": 1,
+    "reviewed": 1
   },
   {
     "name": "ch08-gcc",
@@ -865,9 +865,9 @@
     "page": "make",
     "title": "8.71. Make-4.4.1",
     "blocks": 4,
-    "enabled": 4,
-    "disabled": 0,
-    "reviewed": 0
+    "enabled": 3,
+    "disabled": 1,
+    "reviewed": 1
   },
   {
     "name": "ch08-man-db",
@@ -955,9 +955,9 @@
     "page": "openssl",
     "title": "8.49. OpenSSL-3.6.1",
     "blocks": 6,
-    "enabled": 6,
-    "disabled": 0,
-    "reviewed": 0
+    "enabled": 5,
+    "disabled": 1,
+    "reviewed": 1
   },
   {
     "name": "ch08-packaging",
@@ -1055,9 +1055,9 @@
     "page": "sed",
     "title": "8.32. Sed-4.9",
     "blocks": 4,
-    "enabled": 4,
-    "disabled": 0,
-    "reviewed": 0
+    "enabled": 3,
+    "disabled": 1,
+    "reviewed": 1
   },
   {
     "name": "ch08-setuptools",
@@ -1125,9 +1125,9 @@
     "page": "tcl",
     "title": "8.17. Tcl-8.6.17",
     "blocks": 9,
-    "enabled": 9,
-    "disabled": 0,
-    "reviewed": 0
+    "enabled": 8,
+    "disabled": 1,
+    "reviewed": 1
   },
   {
     "name": "ch08-texinfo",

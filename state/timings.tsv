@@ -154,3 +154,10 @@ blfs-curl	chroot	58.6	0
 blfs-wget	chroot	51.0	0
 ch07-kernfs	root-host	0.0	0
 blfs-git	chroot	87.0	0
+ch07-kernfs	root-host	0.0	0
+blfs-fix-varlog	chroot	0.2	0
+ch08-bash	chroot	154.3	1
+ch08-bash	chroot	140.1	0
+ch07-kernfs	root-host	0.0	0
+blfs-lfsmaint	chroot	0.6	0
+blfs-lfsmaint	chroot	0.3	0

@@ -114,10 +114,10 @@ class PageParser(HTMLParser):
 
 TEST_CMD = re.compile(
     r"""^\s*(
-          make\s+(-k\s+)?(-C\s+\S+\s+)?(check|test)\b
-        | make\s+.*\b(check|test)\b
-        | ninja\s+test\b
-        | meson\s+test\b
+          make\s+(-k\s+)?(-C\s+\S+\s+)?(check|tests?)\b
+        | make\s+.*\b(check|tests?)\b
+        | ninja\s+tests?\b
+        | meson\s+tests?\b
         | ctest\b
         | \./?config\S*\s+test\b
         )""",

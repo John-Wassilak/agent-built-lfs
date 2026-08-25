@@ -1,0 +1,16 @@
+[Unit]
+Description=LFS maintenance check: security advisories and version drift
+Documentation=file:///usr/share/doc/lfsmaint/README
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# Refresh the book version lists, then report. Output goes to the journal:
+#   journalctl -u lfsmaint-check.service
+# Non-zero exit from a check should not mark the unit failed, hence the '-' prefix.
+ExecStart=-/usr/sbin/lfsmaint fetch-lists
+ExecStart=-/usr/sbin/lfsmaint advisories
+ExecStart=-/usr/sbin/lfsmaint drift
+Nice=10
+IOSchedulingClass=idle

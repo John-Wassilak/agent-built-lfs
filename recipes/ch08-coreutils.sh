@@ -52,8 +52,9 @@ chown -R tester .
 #   ctx: building LFS in a graphical terminal or a session in SSH or GNU Screen because the
 #   ctx: standard input is connected to a PTY from host distro, and the device node for such a
 #   ctx: PTY cannot be accessed from the LFS chroot environment):
-su tester -c "PATH=$PATH make -k RUN_EXPENSIVE_TESTS=yes check" \
-   < /dev/null
+#   REVIEWED [drop]: Test suite outside the critical three (glibc/gcc/binutils), so out of scope per the tests policy. It also cannot run any more: ch08-cleanup deleted the 'tester' account it needs, so a re-run fails with "chown: invalid user: 'tester'". These tests did run and pass during the original build, while tester still existed.
+# su tester -c "PATH=$PATH make -k RUN_EXPENSIVE_TESTS=yes check" \
+#    < /dev/null
 
 # --- block 7 --------------------------------------------------
 #   ctx: Remove the temporary group:

@@ -1,0 +1,5 @@
+/etc/systemd/system/timers.target.wants/lfsmaint-check.timer
+/usr/lib/systemd/system/lfsmaint-check.service
+/usr/lib/systemd/system/lfsmaint-check.timer
+/usr/sbin/lfsmaint
+/usr/share/doc/lfsmaint/README

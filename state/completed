@@ -150,3 +150,9 @@ blfs-curl
 blfs-wget
 ch07-kernfs
 blfs-git
+ch07-kernfs
+blfs-fix-varlog
+ch08-bash
+ch07-kernfs
+blfs-lfsmaint
+blfs-lfsmaint

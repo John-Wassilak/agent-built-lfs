@@ -149,8 +149,8 @@ Same harness: `bin/extract-blfs.py` + `./bin/lfsbuild --plan state/blfs-plan.jso
 
 | | |
 |---|---|
-| Deliverable | `lfs-13.0-systemd-claude-20260825.tar.gz` — 820 MB, 75,674 entries |
-| SHA256 | `e69836ca656a40969502685fa7e612c6c770e981614e30d47b68b735863b4cf6` |
+| Deliverable | `lfs-13.0-systemd-claude-20260825.tar.gz` — 823 MB, 75,791 entries |
+| SHA256 | `52c8bd90e4969d7ff2eb345a341b525032858e1ed3ce6c41bd812f0d777f609c` |
 | Tree size | 2.4 GB uncompressed |
 | Claude Code | **2.1.245** |
 | Node / npm | v22.22.0 / 10.9.4 |
@@ -283,3 +283,118 @@ sshd.service                       systemd-networkd.service
 systemd-resolved.service           systemd-timesyncd.service
 update-pki.timer (weekly CA refresh)
 ```
+
+---
+
+# Maintenance tooling
+
+`lfsmaint`, installed at `/usr/sbin/lfsmaint` in the target. Python 3 standard library
+only — there is no pip on this system and the tool has to keep working without one.
+Network access goes over the make-ca trust store. State lives in `/var/lib/lfsmaint`.
+
+It runs **on the LFS system**, not just on the build host — verified inside the chroot
+against its own Python 3.14.3, including a live HTTPS query to upstream's advisory app.
+
+## What it does
+
+**Package database.** 127 packages, 53,754 files, built from the per-package manifests
+the harness recorded during the build (stamp file before each `make install`, then
+`find -newer` across the install roots).
+
+```
+lfsmaint report            one-page summary
+lfsmaint list [pattern]    installed packages and versions
+lfsmaint owns PATH         which package installed PATH
+lfsmaint files PKG         what PKG installed
+lfsmaint verify [PKG]      recorded files now missing
+lfsmaint orphans           files present but owned by nothing
+```
+
+**Security advisories.** Queries upstream's advisory application for the book release
+and reports only what names an installed package. Current state of this system:
+
+```
+LFS/BLFS 13.0 advisories: 203 total, 49 affecting installed packages
+  12 Critical   vim, perl, xz, python, xml-parser, inetutils, linux, glibc, util-linux
+  16 High       node.js, openssh, expat, OpenSSL, attr, acl, python, glibc, vim
+  20 Medium     curl, systemd, libcap, p11-kit, openssl, util-linux, ...
+   1 Low
+```
+
+These apply by construction: advisories filed against release 13.0 target the versions
+13.0 ships, which is exactly what we built. This is a real backlog, not noise.
+
+Name matching needs normalisation because upstream spells things inconsistently —
+`node.js`, `node-js`, `OpenSSL`, `Linux`, `p11kit` vs `p11-kit` all had to fold onto the
+installed names.
+
+**Version drift.** Compares installed versions against a book's `wget-list`.
+Against LFS 13.1-rc2: **49 identical, 43 where the book has moved ahead**, including the
+whole toolchain — gcc 15.2.0→16.2.0, glibc 2.43→2.44, binutils 2.46→2.47,
+linux 6.18.10→7.1.8, openssl 3.6.1→4.0.1. That is the upgrade path for most of the
+advisories above.
+
+`lfsmaint fetch-lists` downloads the lists itself, so `drift` needs no arguments.
+
+**Weekly check.** `lfsmaint-check.timer` (Mon 03:00, 30m jitter, `Persistent=true`) runs
+fetch-lists → advisories → drift and logs to the journal:
+`journalctl -u lfsmaint-check.service`.
+
+## verify: classifying expected removals
+
+A naive `verify` reports 97 missing files on a perfectly correct system, which buries
+anything real. All 97 turned out to be deliberate:
+
+```
+  72  pruned by ch08-cleanup: find /usr/lib /usr/libexec -name \*.la -delete
+  19  pruned by ch08-cleanup: the cross-toolchain is removed once ch8 is self-hosted
+   6  removed on purpose: sshd regenerates unique host keys on first boot
+
+nothing unexplained -- every recorded file is either present or removed by a known step
+```
+
+So `verify` now separates accounted-for removals from unexplained ones. Anything
+appearing under UNEXPLAINED in future is a genuine problem.
+
+`orphans` reports ~38,000 files owned by nothing. That is honest but blunt: the harness
+only manifested Chapter 8 onward, so everything from LFS chapters 4–7 is unowned by
+construction, along with anything created at runtime.
+
+## Two real defects the tooling exposed
+
+Building the database is what surfaced these — neither was visible during the build.
+
+**`/var/log/{btmp,lastlog,faillog,wtmp}` were never created.** `ch07-createfiles` block 5
+is `exec /usr/bin/bash --login` — the book telling a human to restart their shell so
+`id` shows the names just added to `/etc/passwd`. As a script line it *replaces the
+shell*, so block 6, which creates the login-accounting files, silently never ran. Fixed
+as a tracked remediation step rather than by re-running ch07-createfiles, which is no
+longer safe: its `cat > /etc/passwd` would delete the `sshd` user OpenSSH added and
+re-add the `tester` account ch08-cleanup removed. Verified: all four now exist, with
+`lastlog` group `utmp` as the book specifies.
+
+**`ch08-bash` had no manifest and left its source tree behind** — same `exec` truncation,
+this time discarding the manifest capture and the unpack cleanup. Rebuilt; 163 files now
+recorded.
+
+Both `exec` blocks are now dropped by review decision, so re-extraction stays correct.
+
+A third, smaller one: the test-block detector used `\btest\b`, which does not match
+`make tests`, so bash's test suite stayed enabled and failed on the rebuild
+(`chown: invalid user: 'tester'` — ch08-cleanup deletes that account). Regex fixed to
+`\btests?\b`, and the nine non-critical test blocks across eight recipes are now
+disabled to match the stated policy, so any future re-run of those packages works.
+
+## Review decisions total
+
+**80 for LFS, 19 for BLFS** across 34 recipes, every one carrying a reason citing the
+book. The full set is in `recipes/review-overrides.json` and
+`recipes/blfs-overrides.json`.
+
+## Suggested cadence
+
+1. Read the weekly journal entry. Critical/High advisories are the actionable signal.
+2. To upgrade a package: bump the version in the plan, re-run that step with
+   `lfsbuild --only <step> --force`, then `lfsmaint db` to re-record it.
+3. When a new book release lands, `lfsmaint fetch-lists` then `lfsmaint drift` shows the
+   whole delta at once.

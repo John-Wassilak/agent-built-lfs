@@ -1,0 +1,10 @@
+[Unit]
+Description=Weekly LFS maintenance check
+
+[Timer]
+OnCalendar=Mon 03:00:00
+RandomizedDelaySec=30m
+Persistent=true
+
+[Install]
+WantedBy=timers.target

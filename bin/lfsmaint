@@ -1,0 +1,603 @@
+#!/usr/bin/env python3
+"""lfsmaint -- maintenance tooling for a hand-built LFS system.
+
+LFS ships no package manager and no updater. This provides the three things that
+absence actually costs you:
+
+  1. a package database, so you know what is installed and which package owns a file
+  2. an advisory check against upstream's security advisory application
+  3. version drift, so you know where the book has moved ahead of you
+
+Python 3 standard library only -- no pip, no third-party modules -- because it has to
+run on the LFS system itself, where there is no package index. Network access uses
+urllib over the system trust store built by make-ca.
+
+  lfsmaint db                 (re)build the package database from manifests
+  lfsmaint list [pattern]     installed packages and versions
+  lfsmaint owns PATH          which package installed PATH
+  lfsmaint files PKG          what PKG installed
+  lfsmaint verify [PKG]       files recorded but now missing from the tree
+  lfsmaint orphans            files present but owned by no package
+  lfsmaint advisories         security advisories affecting installed packages
+  lfsmaint drift              installed versions vs the current books
+  lfsmaint report             one-page health summary
+
+Use --root to operate on a tree other than /, e.g. --root /mnt/lfs from the build host.
+"""
+
+import argparse
+import json
+import os
+import re
+import sqlite3
+import sys
+import urllib.parse
+import urllib.request
+
+BOOK_RELEASE = "13.0"
+ADVISORY_URL = "https://www.linuxfromscratch.org/advisories/index.php"
+UA = "lfsmaint/1.0 (LFS maintenance tooling)"
+
+# Directories a package may install into. /sources is excluded on purpose: builds
+# happen there and it is not part of the installed system.
+INSTALL_ROOTS = ["usr", "etc", "opt", "var", "boot", "srv", "root", "bin", "sbin", "lib"]
+
+
+# --------------------------------------------------------------------------- paths
+def state_dir(root):
+    return os.path.join(root, "var/lib/lfsmaint")
+
+
+def db_path(root):
+    return os.path.join(state_dir(root), "packages.db")
+
+
+def manifest_dir(root):
+    return os.path.join(state_dir(root), "manifests")
+
+
+# ------------------------------------------------------------------- version parse
+_VER = re.compile(r"^(?P<name>.+?)[-_]v?(?P<ver>\d[\w.]*?)(?:-src)?$")
+
+
+def split_name_version(tarball):
+    """Derive (name, version) from a source tarball filename.
+
+    Handles the awkward cases seen in LFS/BLFS: tcl8.6.17-src.tar.gz (no separator),
+    node-v22.22.0.tar.xz (v prefix), flit_core-3.12.0.tar.gz (underscore),
+    sqlite-autoconf-3510200.tar.gz (compound name).
+    """
+    if not tarball:
+        return None, None
+    base = re.sub(r"\.(tar\.(gz|xz|bz2)|tgz|patch)$", "", tarball)
+    m = _VER.match(base)
+    if m:
+        return m.group("name"), m.group("ver")
+    # no separator before the digits, e.g. tcl8.6.17 or expect5.45.4
+    m = re.match(r"^(?P<name>[A-Za-z+._-]+?)(?P<ver>\d[\w.]*)$", base)
+    if m:
+        return m.group("name"), m.group("ver")
+    return base, None
+
+
+def normalise(name):
+    """Fold a package name for cross-source matching.
+
+    Upstream advisories spell things differently from the books: p11kit vs p11-kit,
+    OpenSSL vs openssl, Linux vs linux, node vs nodejs. Strip everything that varies.
+    """
+    n = name.lower()
+    n = re.sub(r"[^a-z0-9]", "", n)
+    for a, b in (("nodejs", "node"), ("pythone", "python")):
+        if n == a:
+            n = b
+    return n
+
+
+def npm_version(root, files):
+    """Version of an npm-installed package, read from the package.json it installed.
+
+    Steps installed via `npm install -g` have no source tarball, so the version cannot
+    come from a filename. It is worth recovering: advisory and drift matching key on it.
+    """
+    for f in files:
+        if f.endswith("/package.json") and "/node_modules/" in f:
+            try:
+                d = json.load(open(os.path.join(root, f.lstrip("/"))))
+                if d.get("version"):
+                    return d["version"]
+            except Exception:
+                pass
+    return None
+
+
+# ------------------------------------------------------------------------ database
+SCHEMA = """
+CREATE TABLE IF NOT EXISTS packages (
+    step      TEXT PRIMARY KEY,
+    name      TEXT NOT NULL,
+    norm      TEXT NOT NULL,
+    version   TEXT,
+    tarball   TEXT,
+    book      TEXT,
+    title     TEXT,
+    nfiles    INTEGER DEFAULT 0,
+    seconds   REAL
+);
+CREATE TABLE IF NOT EXISTS files (
+    path      TEXT NOT NULL,
+    step      TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_files_path ON files(path);
+CREATE INDEX IF NOT EXISTS idx_files_step ON files(step);
+CREATE INDEX IF NOT EXISTS idx_pkg_norm  ON packages(norm);
+CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT);
+"""
+
+
+def connect(root, create=False):
+    p = db_path(root)
+    if not create and not os.path.exists(p):
+        sys.exit(f"no package database at {p}\nrun: lfsmaint --root {root} db")
+    os.makedirs(os.path.dirname(p), exist_ok=True)
+    con = sqlite3.connect(p)
+    con.executescript(SCHEMA)
+    return con
+
+
+def cmd_db(a):
+    """Build the database from the harness plans and manifests."""
+    con = connect(a.root, create=True)
+    con.execute("DELETE FROM packages")
+    con.execute("DELETE FROM files")
+
+    plans = []
+    for p in a.plan or []:
+        plans.extend(json.load(open(p)))
+    if not plans:
+        sys.exit("no plan files given; pass --plan state/plan.json --plan state/blfs-plan.json")
+
+    timings = {}
+    if a.timings and os.path.exists(a.timings):
+        for line in open(a.timings):
+            f = line.rstrip("\n").split("\t")
+            if len(f) >= 3:
+                try:
+                    timings[f[0]] = float(f[2])
+                except ValueError:
+                    pass
+
+    mdir = a.manifests or manifest_dir(a.root)
+    npkg = nfile = 0
+    for s in plans:
+        step = s["name"]
+        tb = s.get("tarball") or ""
+        name, ver = split_name_version(tb)
+        book = "BLFS" if s.get("chapter") == "blfs" else "LFS"
+        mf = os.path.join(mdir, step + ".txt")
+        files = []
+        if os.path.exists(mf):
+            files = [l.strip() for l in open(mf) if l.strip()]
+        if not name:
+            # No source tarball. Either a pure procedure step (configuration,
+            # cleanup -- installs nothing and has no manifest), or a step that
+            # installs without a tarball, like the npm install of Claude Code.
+            # Only the former should be skipped.
+            if not files:
+                continue
+            name = re.sub(r"^(ch\d\d|blfs)-", "", step)
+            ver = npm_version(a.root, files)
+        con.execute(
+            "INSERT OR REPLACE INTO packages"
+            " (step,name,norm,version,tarball,book,title,nfiles,seconds)"
+            " VALUES (?,?,?,?,?,?,?,?,?)",
+            (step, name, normalise(name), ver, tb, book, s.get("title"),
+             len(files), timings.get(step)),
+        )
+        con.executemany("INSERT INTO files (path,step) VALUES (?,?)",
+                        ((f, step) for f in files))
+        npkg += 1
+        nfile += len(files)
+
+    con.execute("INSERT OR REPLACE INTO meta VALUES ('book_release',?)", (BOOK_RELEASE,))
+    con.commit()
+    print(f"database: {db_path(a.root)}")
+    print(f"packages: {npkg}   files: {nfile}")
+    dup = con.execute(
+        "SELECT path, COUNT(*) c FROM files GROUP BY path HAVING c > 1 ORDER BY c DESC"
+    ).fetchall()
+    if dup:
+        print(f"\n{len(dup)} file(s) claimed by more than one package "
+              f"(later package overwrote earlier -- normal for LFS ch5/6 vs ch8):")
+        for path, c in dup[:5]:
+            owners = [r[0] for r in con.execute(
+                "SELECT step FROM files WHERE path=?", (path,))]
+            print(f"  {path}  <- {', '.join(owners)}")
+        if len(dup) > 5:
+            print(f"  ... and {len(dup)-5} more")
+
+
+def cmd_list(a):
+    con = connect(a.root)
+    q = "SELECT book,name,version,nfiles,seconds FROM packages"
+    args = ()
+    if a.pattern:
+        q += " WHERE name LIKE ?"
+        args = (f"%{a.pattern}%",)
+    q += " ORDER BY book DESC, name"
+    rows = con.execute(q, args).fetchall()
+    print(f"{'BOOK':5} {'PACKAGE':24} {'VERSION':14} {'FILES':>6}  BUILD")
+    for book, name, ver, n, sec in rows:
+        t = f"{sec/60:.1f}m" if sec else "-"
+        print(f"{book:5} {name:24} {ver or '?':14} {n:6}  {t}")
+    print(f"\n{len(rows)} packages")
+
+
+def cmd_owns(a):
+    con = connect(a.root)
+    target = a.path if a.path.startswith("/") else "/" + a.path
+    rows = con.execute(
+        "SELECT p.name,p.version,p.book,f.path FROM files f JOIN packages p"
+        " ON p.step=f.step WHERE f.path=?", (target,)).fetchall()
+    if not rows:
+        like = con.execute(
+            "SELECT p.name,p.version,p.book,f.path FROM files f JOIN packages p"
+            " ON p.step=f.step WHERE f.path LIKE ? LIMIT 10", (f"%{a.path}%",)).fetchall()
+        if like:
+            print(f"no exact match for {target}; similar paths:")
+            for n, v, b, path in like:
+                print(f"  {path}  <- {n}{('-'+v) if v else ''} ({b})")
+        else:
+            print(f"no package owns {target}")
+        return
+    for n, v, b, path in rows:
+        print(f"{path}  <-  {n}{('-'+v) if v else ''}  ({b})")
+
+
+def cmd_files(a):
+    con = connect(a.root)
+    step = con.execute(
+        "SELECT step,name,version FROM packages WHERE name=? OR step=? OR name LIKE ?",
+        (a.pkg, a.pkg, f"%{a.pkg}%")).fetchone()
+    if not step:
+        sys.exit(f"no such package: {a.pkg}")
+    rows = con.execute("SELECT path FROM files WHERE step=? ORDER BY path",
+                       (step[0],)).fetchall()
+    print(f"{step[1]}{('-'+step[2]) if step[2] else ''}  ({len(rows)} files)")
+    for (p,) in rows:
+        print(f"  {p}")
+
+
+# Files a package installs and something later deliberately removes. Without this,
+# `verify` reports 97 "missing" files on a correct system and the noise hides anything
+# that actually matters.
+EXPECTED_GONE = [
+    (re.compile(r"\.la$"),
+     "pruned by ch08-cleanup: find /usr/lib /usr/libexec -name \\*.la -delete"),
+    (re.compile(r"-lfs-linux-gnu"),
+     "pruned by ch08-cleanup: the cross-toolchain is removed once ch8 is self-hosted"),
+    (re.compile(r"^/etc/ssh/ssh_host_.*key(\.pub)?$"),
+     "removed on purpose: sshd regenerates unique host keys on first boot"),
+    (re.compile(r"/info/dir$"),
+     "shared info index, rewritten by whichever package installs last"),
+    (re.compile(r"/charset\.alias$"),
+     "shared file, overwritten between packages"),
+]
+
+
+def explain_gone(path):
+    for rx, why in EXPECTED_GONE:
+        if rx.search(path):
+            return why
+    return None
+
+
+def cmd_verify(a):
+    con = connect(a.root)
+    q = ("SELECT p.name,p.version,f.path FROM files f JOIN packages p ON p.step=f.step")
+    args = ()
+    if a.pkg:
+        q += " WHERE p.name LIKE ?"
+        args = (f"%{a.pkg}%",)
+    unexplained = {}
+    explained = {}
+    total = 0
+    for name, ver, path in con.execute(q, args):
+        total += 1
+        if os.path.lexists(os.path.join(a.root, path.lstrip("/"))):
+            continue
+        why = explain_gone(path)
+        if why:
+            explained.setdefault(why, []).append(path)
+        else:
+            unexplained.setdefault(f"{name}-{ver}", []).append(path)
+
+    print(f"checked {total} recorded files under {a.root}")
+    nex = sum(len(v) for v in explained.values())
+    if nex:
+        print(f"\n{nex} missing but accounted for:")
+        for why, paths in sorted(explained.items(), key=lambda kv: -len(kv[1])):
+            print(f"  {len(paths):4}  {why}")
+
+    nun = sum(len(v) for v in unexplained.values())
+    if not nun:
+        print("\nnothing unexplained -- every recorded file is either present or "
+              "removed by a known step")
+        return
+    print(f"\n{nun} UNEXPLAINED missing across {len(unexplained)} package(s):")
+    for pkg, paths in sorted(unexplained.items()):
+        print(f"  {pkg}: {len(paths)}")
+        for p in paths[:4]:
+            print(f"      {p}")
+        if len(paths) > 4:
+            print(f"      ... and {len(paths)-4} more")
+
+
+def cmd_orphans(a):
+    con = connect(a.root)
+    owned = {r[0] for r in con.execute("SELECT DISTINCT path FROM files")}
+    orphan = []
+    for d in INSTALL_ROOTS:
+        base = os.path.join(a.root, d)
+        if not os.path.isdir(base):
+            continue
+        for dirpath, dirnames, filenames in os.walk(base, followlinks=False):
+            for fn in filenames:
+                full = os.path.join(dirpath, fn)
+                rel = "/" + os.path.relpath(full, a.root)
+                if rel not in owned:
+                    orphan.append(rel)
+    print(f"{len(orphan)} file(s) under {a.root} owned by no package")
+    print("(expected: anything configuration created at runtime, plus every file from")
+    print(" LFS chapters 4-7, which the harness did not manifest)")
+    for p in orphan[:25]:
+        print(f"  {p}")
+    if len(orphan) > 25:
+        print(f"  ... and {len(orphan)-25} more")
+
+
+# ----------------------------------------------------------------------- advisories
+def fetch_advisories(release, cache, offline=False):
+    """Query upstream's advisory application. Cached so this works offline."""
+    if offline or not release:
+        if os.path.exists(cache):
+            return json.load(open(cache))
+        sys.exit("no cached advisories and --offline given")
+    data = urllib.parse.urlencode({"stype": "Book", "release": release,
+                                   "submit": "Search"}).encode()
+    req = urllib.request.Request(ADVISORY_URL, data=data,
+                                 headers={"User-Agent": UA})
+    try:
+        html_text = urllib.request.urlopen(req, timeout=45).read().decode(
+            "utf-8", "replace")
+    except Exception as e:
+        if os.path.exists(cache):
+            print(f"warning: fetch failed ({e}); using cached advisories",
+                  file=sys.stderr)
+            return json.load(open(cache))
+        sys.exit(f"advisory fetch failed and no cache: {e}")
+
+    rows = re.findall(r"<tr[^>]*>(.*?)</tr>", html_text, re.S)
+    out = []
+    for r in rows:
+        cells = [re.sub(r"<[^>]+>", "", c).strip()
+                 for c in re.findall(r"<t[dh][^>]*>(.*?)</t[dh]>", r, re.S)]
+        cells = [c.replace("&amp;", "&") for c in cells]
+        if len(cells) >= 4 and re.match(r"^sa-\d+\.\d+-\d+$", cells[0]):
+            out.append({"id": cells[0], "package": cells[1],
+                        "date": cells[2], "severity": cells[3]})
+    if out:
+        os.makedirs(os.path.dirname(cache), exist_ok=True)
+        json.dump(out, open(cache, "w"), indent=1)
+    return out
+
+
+SEV_ORDER = {"Critical": 0, "High": 1, "Medium": 2, "Low": 3}
+
+
+def cmd_advisories(a):
+    con = connect(a.root)
+    release = con.execute(
+        "SELECT v FROM meta WHERE k='book_release'").fetchone()
+    release = release[0] if release else BOOK_RELEASE
+    cache = os.path.join(state_dir(a.root), f"advisories-{release}.json")
+    adv = fetch_advisories(release, cache, a.offline)
+
+    installed = {}
+    for name, ver, book in con.execute("SELECT name,version,book FROM packages"):
+        installed.setdefault(normalise(name), (name, ver, book))
+
+    hits = []
+    for x in adv:
+        n = normalise(x["package"])
+        if n in installed:
+            hits.append((x, installed[n]))
+
+    hits.sort(key=lambda h: (SEV_ORDER.get(h[0]["severity"], 9), h[0]["date"]),
+              reverse=False)
+    print(f"LFS/BLFS {release} advisories: {len(adv)} total, "
+          f"{len(hits)} affecting installed packages\n")
+    if not hits:
+        print("nothing installed here is named in the advisory list")
+        return
+    print(f"{'SEVERITY':9} {'ADVISORY':15} {'PACKAGE':18} {'INSTALLED':14} DATE")
+    for x, (name, ver, book) in hits:
+        print(f"{x['severity']:9} {x['id']:15} {x['package']:18} "
+              f"{(name+'-'+(ver or '?')):14} {x['date']}")
+    crit = sum(1 for x, _ in hits if x["severity"] in ("Critical", "High"))
+    print(f"\n{crit} of {len(hits)} are Critical or High.")
+    print(f"Detail: https://www.linuxfromscratch.org/advisories/  "
+          f"(search by package name)")
+    print("Note: an advisory names a package, not a version -- it may predate what you")
+    print("have installed. Check the advisory text before acting.")
+
+
+# ----------------------------------------------------------------- fetch book lists
+# Where to get version data. LFS publishes a wget-list per release and per release
+# candidate. BLFS publishes one per release but NOT for its development book, whose
+# downloads directory carries only a book tarball -- so BLFS development drift is not
+# available from a list and is out of scope here.
+LIST_URLS = {
+    "lfs-13.0":  "https://www.linuxfromscratch.org/lfs/downloads/13.0-systemd/wget-list",
+    "lfs-13.1":  "https://www.linuxfromscratch.org/lfs/downloads/13.1-systemd-rc2/wget-list",
+    "blfs-13.0": "https://www.linuxfromscratch.org/blfs/downloads/13.0-systemd/wget-list",
+}
+
+
+def cmd_fetch_lists(a):
+    d = os.path.join(state_dir(a.root), "lists")
+    os.makedirs(d, exist_ok=True)
+    for name, url in LIST_URLS.items():
+        dest = os.path.join(d, name + ".wget-list")
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": UA})
+            body = urllib.request.urlopen(req, timeout=45).read()
+            open(dest, "wb").write(body)
+            print(f"  ok    {name:10} {len(body.splitlines()):4} entries  -> {dest}")
+        except Exception as e:
+            print(f"  FAIL  {name:10} {e}")
+    print(f"\nnow: lfsmaint --root {a.root} drift "
+          f"--wget-list {d}/lfs-13.1.wget-list --wget-list {d}/blfs-13.0.wget-list")
+
+
+# ---------------------------------------------------------------------------- drift
+def cmd_drift(a):
+    """Compare installed versions against the versions in a book's wget-list."""
+    con = connect(a.root)
+    installed = {}
+    for name, ver, book in con.execute("SELECT name,version,book FROM packages"):
+        if ver:
+            installed[normalise(name)] = (name, ver, book)
+
+    sources = a.wget_list or []
+    if not sources:
+        # Default to whatever fetch-lists has already downloaded, so the timer unit
+        # and interactive use both work with no arguments.
+        d = os.path.join(state_dir(a.root), "lists")
+        if os.path.isdir(d):
+            sources = sorted(os.path.join(d, f) for f in os.listdir(d)
+                             if f.endswith(".wget-list"))
+        if not sources:
+            sys.exit("no wget-lists found; run: lfsmaint fetch-lists")
+        print("using fetched lists: " + ", ".join(os.path.basename(x) for x in sources))
+
+    book_ver = {}
+    missing = [x for x in sources if not os.path.exists(x)]
+    if missing:
+        for m in missing:
+            print(f"warning: no such wget-list, skipping: {m}", file=sys.stderr)
+        sources = [x for x in sources if os.path.exists(x)]
+        if not sources:
+            sys.exit("no usable wget-list given")
+    for src in sources:
+        for line in open(src):
+            line = line.strip()
+            if not line:
+                continue
+            fn = line.rsplit("/", 1)[-1]
+            n, v = split_name_version(fn)
+            if n and v:
+                book_ver.setdefault(normalise(n), (n, v))
+
+    def vkey(v):
+        return [int(x) if x.isdigit() else x for x in re.split(r"[.\-_]", v)]
+
+    same = newer = older = 0
+    rows = []
+    for k, (name, ver, book) in sorted(installed.items()):
+        if k not in book_ver:
+            continue
+        bn, bv = book_ver[k]
+        if bv == ver:
+            same += 1
+            continue
+        try:
+            direction = "BOOK NEWER" if vkey(bv) > vkey(ver) else "ahead of book"
+        except TypeError:
+            direction = "differs"
+        if direction == "BOOK NEWER":
+            newer += 1
+        else:
+            older += 1
+        rows.append((name, ver, bv, direction, book))
+
+    print(f"compared {len(installed)} installed packages against "
+          f"{len(book_ver)} book entries\n")
+    print(f"  identical      : {same}")
+    print(f"  book is newer  : {newer}")
+    print(f"  ahead of book  : {older}\n")
+    if rows:
+        print(f"{'PACKAGE':22} {'INSTALLED':14} {'BOOK':14} STATUS")
+        for name, ver, bv, d, book in rows:
+            print(f"{name:22} {ver:14} {bv:14} {d}")
+
+
+# --------------------------------------------------------------------------- report
+def cmd_report(a):
+    con = connect(a.root)
+    npkg = con.execute("SELECT COUNT(*) FROM packages").fetchone()[0]
+    nfile = con.execute("SELECT COUNT(*) FROM files").fetchone()[0]
+    per = con.execute("SELECT book,COUNT(*) FROM packages GROUP BY book").fetchall()
+    print(f"=== lfsmaint report for {a.root} ===\n")
+    print(f"packages tracked : {npkg}  (" +
+          ", ".join(f"{b}: {c}" for b, c in per) + ")")
+    print(f"files tracked    : {nfile}")
+    rel = con.execute("SELECT v FROM meta WHERE k='book_release'").fetchone()
+    print(f"book release     : {rel[0] if rel else '?'}")
+    biggest = con.execute(
+        "SELECT name,version,nfiles FROM packages ORDER BY nfiles DESC LIMIT 5"
+    ).fetchall()
+    print("\nlargest packages by file count:")
+    for n, v, c in biggest:
+        print(f"  {n}-{v}: {c}")
+    slow = con.execute(
+        "SELECT name,seconds FROM packages WHERE seconds IS NOT NULL"
+        " ORDER BY seconds DESC LIMIT 5").fetchall()
+    print("\nslowest builds:")
+    for n, s in slow:
+        print(f"  {n}: {s/60:.1f} min")
+    print("\nnext: lfsmaint advisories    (security) "
+          "/ lfsmaint drift --wget-list ...  (versions)")
+
+
+# ----------------------------------------------------------------------------- main
+def main():
+    ap = argparse.ArgumentParser(prog="lfsmaint")
+    ap.add_argument("--root", default="/", help="tree to operate on (default /)")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+
+    p = sub.add_parser("db", help="build the package database")
+    p.add_argument("--plan", action="append", help="plan json (repeatable)")
+    p.add_argument("--manifests", help="manifest directory")
+    p.add_argument("--timings", help="timings.tsv")
+    p.set_defaults(fn=cmd_db)
+
+    p = sub.add_parser("list"); p.add_argument("pattern", nargs="?")
+    p.set_defaults(fn=cmd_list)
+
+    p = sub.add_parser("owns"); p.add_argument("path"); p.set_defaults(fn=cmd_owns)
+    p = sub.add_parser("files"); p.add_argument("pkg"); p.set_defaults(fn=cmd_files)
+    p = sub.add_parser("verify"); p.add_argument("pkg", nargs="?")
+    p.set_defaults(fn=cmd_verify)
+    p = sub.add_parser("orphans"); p.set_defaults(fn=cmd_orphans)
+
+    p = sub.add_parser("advisories")
+    p.add_argument("--offline", action="store_true", help="use cached data only")
+    p.set_defaults(fn=cmd_advisories)
+
+    p = sub.add_parser("drift")
+    p.add_argument("--wget-list", action="append", help="book wget-list (repeatable)")
+    p.set_defaults(fn=cmd_drift)
+
+    p = sub.add_parser("fetch-lists", help="download book wget-lists for drift")
+    p.set_defaults(fn=cmd_fetch_lists)
+
+    p = sub.add_parser("report"); p.set_defaults(fn=cmd_report)
+
+    a = ap.parse_args()
+    a.root = os.path.abspath(a.root)
+    a.fn(a)
+
+
+if __name__ == "__main__":
+    main()

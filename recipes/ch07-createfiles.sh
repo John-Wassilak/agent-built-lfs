@@ -95,7 +95,8 @@ install -o tester -d /home/tester
 # --- block 5 --------------------------------------------------
 #   ctx: To remove the “I have no name!” prompt, start a new shell. Since the /etc/passwd and
 #   ctx: /etc/group files have been created, user name and group name resolution will now work:
-exec /usr/bin/bash --login
+#   REVIEWED [drop]: 'exec /usr/bin/bash --login' is the book telling a human to restart their shell so id/whoami show the names just added to /etc/passwd. As a script line it REPLACES the shell, so everything after it silently never runs -- here that lost block 6, which creates /var/log/{btmp,lastlog,faillog,wtmp}. Confirmed missing from the built tree.
+# exec /usr/bin/bash --login
 
 # --- block 6 --------------------------------------------------
 #   ctx: The login, agetty, and init programs (and others) use a number of log files to record

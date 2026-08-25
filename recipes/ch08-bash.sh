@@ -23,19 +23,21 @@ make
 # --- block 2 --------------------------------------------------
 #   ctx: Skip down to “Install the package” if not running the test suite. To prepare the tests,
 #   ctx: ensure that the tester user can write to the sources tree:
-chown -R tester .
+#   REVIEWED [drop]: 'chown -R tester .' is the prerequisite for bash's test suite in block 3. Test suite outside the critical three (glibc/gcc/binutils), so out of scope per the tests policy. It also cannot run any more: ch08-cleanup deleted the 'tester' account it needs, so a re-run fails with "chown: invalid user: 'tester'". These tests did run and pass during the original build, while tester still existed.
+# chown -R tester .
 
 # --- block 3 --------------------------------------------------
 #   ctx: The test suite of this package is designed to be run as a non-root user who owns the
 #   ctx: terminal connected to standard input. To satisfy the requirement, spawn a new pseudo
 #   ctx: terminal using Expect and run the tests as the tester user:
-LC_ALL=C.UTF-8 su -s /usr/bin/expect tester << "EOF"
-set timeout -1
-spawn make tests
-expect eof
-lassign [wait] _ _ _ value
-exit $value
-EOF
+#   REVIEWED [drop]: bash's test suite, run as tester via expect. Test suite outside the critical three (glibc/gcc/binutils), so out of scope per the tests policy. It also cannot run any more: ch08-cleanup deleted the 'tester' account it needs, so a re-run fails with "chown: invalid user: 'tester'". These tests did run and pass during the original build, while tester still existed.
+# LC_ALL=C.UTF-8 su -s /usr/bin/expect tester << "EOF"
+# set timeout -1
+# spawn make tests
+# expect eof
+# lassign [wait] _ _ _ value
+# exit $value
+# EOF
 
 # --- block 4 --------------------------------------------------
 #   ctx: Any output from diff (prefixed with < and >) indicates a test failure, unless there is
@@ -48,5 +50,6 @@ make install
 # --- block 5 --------------------------------------------------
 #   ctx: Run the newly compiled bash program (replacing the one that is currently being
 #   ctx: executed):
-exec /usr/bin/bash --login
+#   REVIEWED [drop]: Same 'exec /usr/bin/bash --login'. It truncated the generated script before the unpack cleanup and the manifest capture, which is why ch08-bash had no manifest and /sources/bash-5.3 was left behind.
+# exec /usr/bin/bash --login
 

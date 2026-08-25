@@ -118,6 +118,39 @@ echo "### sshd.service enabled; host keys generated on first start"
 """,
     },
     {
+        "name": "lfsmaint",
+        "tarball": "lfsmaint-1.0.tar.gz",
+        "why": "Installs the maintenance tooling into the target: package database, "
+               "security advisory check, version drift, and a weekly timer. Packaged "
+               "as a tarball so its install is a tracked step like any other package.",
+        "cmd": """bash install.sh
+
+# Seed the database inside the target from the manifests the harness recorded.
+# --plan is not available here (the plans live on the build host), so the database
+# is built on the host and copied in; this only verifies the tool runs.
+/usr/sbin/lfsmaint --root / report 2>&1 | head -8 || \\
+    echo "(no database yet -- built on the host and copied in)"
+""",
+    },
+    {
+        "name": "fix-varlog",
+        "tarball": "",
+        "why": "Remediation. ch07-createfiles block 5 was `exec /usr/bin/bash --login`, "
+               "which replaced the shell and silently discarded block 6 -- the block that "
+               "creates the login-accounting files. Re-running ch07-createfiles is NOT safe "
+               "now: its `cat > /etc/passwd` would delete the sshd user OpenSSH added and "
+               "re-add the tester account ch08-cleanup removed. So apply just the lost block.",
+        "cmd": """# Exactly block 6 of LFS 13.0 section 7.6, and nothing else.
+touch /var/log/{btmp,lastlog,faillog,wtmp}
+chgrp -v utmp /var/log/lastlog
+chmod -v 664  /var/log/lastlog
+chmod -v 600  /var/log/btmp
+
+echo "### login accounting files:"
+ls -l /var/log/{btmp,lastlog,faillog,wtmp}
+""",
+    },
+    {
         "name": "claude-code",
         "tarball": "",
         "why": "Installs Claude Code from npm. Needs working DNS inside the chroot, "

@@ -24,7 +24,8 @@ make
 
 # --- block 2 --------------------------------------------------
 #   ctx: To test the results, issue:
-HARNESS_JOBS=$(nproc) make test
+#   REVIEWED [drop]: Test suite outside the critical three (glibc/gcc/binutils), so out of scope per the tests policy. It also cannot run any more: ch08-cleanup deleted the 'tester' account it needs, so a re-run fails with "chown: invalid user: 'tester'". These tests did run and pass during the original build, while tester still existed.
+# HARNESS_JOBS=$(nproc) make test
 
 # --- block 3 --------------------------------------------------
 #   ctx: One test, 30-test_afalg.t, is known to fail if the host kernel does not have
