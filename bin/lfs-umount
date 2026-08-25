@@ -1,0 +1,19 @@
+#!/bin/bash
+# Unmount the virtual kernel filesystems from the LFS tree, deepest first.
+# Run before archiving, and before doing anything destructive to $LFS.
+set -u
+LFS=/mnt/lfs
+
+for m in /dev/shm /dev/pts /dev /proc /sys /run; do
+    tgt="$LFS$m"
+    if grep -qE " $tgt " /proc/mounts; then
+        sudo umount -v "$tgt" || sudo umount -lv "$tgt"
+    fi
+done
+
+echo
+still=$(grep -E " $LFS/" /proc/mounts | awk '{print $2}')
+if [ -n "$still" ]; then
+    echo "STILL MOUNTED:"; echo "$still"; exit 1
+fi
+echo "clean: nothing mounted under $LFS"

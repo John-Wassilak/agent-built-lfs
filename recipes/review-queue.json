@@ -1,0 +1,416 @@
+[
+  {
+    "recipe": "ch08-Python",
+    "block": 2,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make test TESTOPTS=\"--timeout 120\"",
+    "context": "Some tests are known to occasionally hang indefinitely. So to test the results, run the test suite but set a 2-minute time limit for each test case:"
+  },
+  {
+    "recipe": "ch08-acl",
+    "block": 2,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make check",
+    "context": "The Acl tests must be run on a filesystem that supports access controls. To test the results, issue:"
+  },
+  {
+    "recipe": "ch08-attr",
+    "block": 2,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make check",
+    "context": "The tests must be run on a filesystem that supports extended attributes such as the ext2, ext3, or ext4 filesystems. To test the results, issue:"
+  },
+  {
+    "recipe": "ch08-autoconf",
+    "block": 2,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make check",
+    "context": "To test the results, issue:"
+  },
+  {
+    "recipe": "ch08-automake",
+    "block": 2,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make -j$(($(nproc)>4?$(nproc):4)) check",
+    "context": "Using four parallel jobs speeds up the tests, even on systems with less logical cores, due to internal delays in individual tests. To test the results, issue:"
+  },
+  {
+    "recipe": "ch08-bc",
+    "block": 2,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make test",
+    "context": "To test bc, run:"
+  },
+  {
+    "recipe": "ch08-bison",
+    "block": 2,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make check",
+    "context": "To test the results, issue:"
+  },
+  {
+    "recipe": "ch08-coreutils",
+    "block": 3,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make NON_ROOT_USERNAME=tester check-root",
+    "context": "Skip down to \u201cInstall the package\u201d if not running the test suite. Now the test suite is ready to be run. First, run the tests that are meant to be run as user root:"
+  },
+  {
+    "recipe": "ch08-dbus",
+    "block": 2,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "ninja test",
+    "context": "To test the results, issue:"
+  },
+  {
+    "recipe": "ch08-dejagnu",
+    "block": 2,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make check",
+    "context": "To test the results, issue:"
+  },
+  {
+    "recipe": "ch08-diffutils",
+    "block": 2,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make check",
+    "context": "To test the results, issue:"
+  },
+  {
+    "recipe": "ch08-e2fsprogs",
+    "block": 3,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make check",
+    "context": "To run the tests, issue:"
+  },
+  {
+    "recipe": "ch08-expat",
+    "block": 2,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make check",
+    "context": "To test the results, issue:"
+  },
+  {
+    "recipe": "ch08-expect",
+    "block": 4,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make test",
+    "context": "To test the results, issue:"
+  },
+  {
+    "recipe": "ch08-file",
+    "block": 2,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make check",
+    "context": "To test the results, issue:"
+  },
+  {
+    "recipe": "ch08-flex",
+    "block": 2,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make check",
+    "context": "To test the results, issue:"
+  },
+  {
+    "recipe": "ch08-gdbm",
+    "block": 2,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make check",
+    "context": "To test the results, issue:"
+  },
+  {
+    "recipe": "ch08-gettext",
+    "block": 2,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make check",
+    "context": "To test the results, issue:"
+  },
+  {
+    "recipe": "ch08-gmp",
+    "block": 4,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make check 2>&1 | tee gmp-check-log",
+    "context": "Important The test suite for GMP in this section is considered critical. Do not skip it under any circumstances. Test the results:"
+  },
+  {
+    "recipe": "ch08-gperf",
+    "block": 2,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make check",
+    "context": "To test the results, issue:"
+  },
+  {
+    "recipe": "ch08-grep",
+    "block": 3,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make check",
+    "context": "To test the results, issue:"
+  },
+  {
+    "recipe": "ch08-groff",
+    "block": 2,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make check",
+    "context": "To test the results, issue:"
+  },
+  {
+    "recipe": "ch08-gzip",
+    "block": 2,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make check",
+    "context": "To test the results, issue:"
+  },
+  {
+    "recipe": "ch08-inetutils",
+    "block": 3,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make check",
+    "context": "To test the results, issue:"
+  },
+  {
+    "recipe": "ch08-intltool",
+    "block": 3,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make check",
+    "context": "To test the results, issue:"
+  },
+  {
+    "recipe": "ch08-kbd",
+    "block": 4,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make check",
+    "context": "To test the results, issue:"
+  },
+  {
+    "recipe": "ch08-less",
+    "block": 2,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make check",
+    "context": "To test the results, issue:"
+  },
+  {
+    "recipe": "ch08-libcap",
+    "block": 2,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make test",
+    "context": "The meaning of the make option: lib=lib This parameter sets the library directory to /usr/lib rather than /usr/lib64 on x86_64. It has no effect on x86. To test the results, issue:"
+  },
+  {
+    "recipe": "ch08-libffi",
+    "block": 2,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make check",
+    "context": "To test the results, issue:"
+  },
+  {
+    "recipe": "ch08-libtool",
+    "block": 2,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make check",
+    "context": "To test the results, issue:"
+  },
+  {
+    "recipe": "ch08-libxcrypt",
+    "block": 3,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make check",
+    "context": "To test the results, issue:"
+  },
+  {
+    "recipe": "ch08-lz4",
+    "block": 1,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make -j1 check",
+    "context": "To test the results, issue:"
+  },
+  {
+    "recipe": "ch08-m4",
+    "block": 2,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make check",
+    "context": "To test the results, issue:"
+  },
+  {
+    "recipe": "ch08-man-db",
+    "block": 2,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make check",
+    "context": "To test the results, issue:"
+  },
+  {
+    "recipe": "ch08-mpc",
+    "block": 2,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make check",
+    "context": "To test the results, issue:"
+  },
+  {
+    "recipe": "ch08-mpfr",
+    "block": 2,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make check",
+    "context": "Important The test suite for MPFR in this section is considered critical. Do not skip it under any circumstances. Test the results and ensure that all 198 tests passed:"
+  },
+  {
+    "recipe": "ch08-patch",
+    "block": 2,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make check",
+    "context": "To test the results, issue:"
+  },
+  {
+    "recipe": "ch08-pcre2",
+    "block": 2,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make check",
+    "context": "To test the results, issue:"
+  },
+  {
+    "recipe": "ch08-psmisc",
+    "block": 2,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make check",
+    "context": "To run the test suite, run:"
+  },
+  {
+    "recipe": "ch08-tar",
+    "block": 2,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make check",
+    "context": "To test the results, issue:"
+  },
+  {
+    "recipe": "ch08-texinfo",
+    "block": 3,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make check",
+    "context": "To test the results, issue:"
+  },
+  {
+    "recipe": "ch08-xml-parser",
+    "block": 2,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make test",
+    "context": "To test the results, issue:"
+  },
+  {
+    "recipe": "ch08-xz",
+    "block": 2,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make check",
+    "context": "To test the results, issue:"
+  },
+  {
+    "recipe": "ch08-zlib",
+    "block": 2,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make check",
+    "context": "To test the results, issue:"
+  },
+  {
+    "recipe": "ch08-zstd",
+    "block": 1,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make check",
+    "context": "Note In the test output there are several places that indicate 'failed'. These are expected and only 'FAIL' is an actual test failure. There should be no test failures. To test the results, issue:"
+  },
+  {
+    "recipe": "ch10-kernel",
+    "block": 4,
+    "tags": [
+      "admon:caution"
+    ],
+    "cmd": "mount /boot",
+    "context": "ied to the /boot directory. Caution If you've decided to use a separate /boot partition for the LFS system (maybe sharing a /boot partition with the host distro), the files copied below should go there. The easiest way to do that is to create the entry for /boot in /etc/fstab first (read the previous section for details), then issue the following command as the root user in the chroot environment:"
+  }
+]

@@ -1,0 +1,5 @@
+logs/
+snapshots/
+book/
+sources-staging/
+state/*.tmp

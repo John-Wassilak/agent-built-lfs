@@ -1,0 +1,71 @@
+#!/bin/bash
+# Archive the LFS tree -- used both for checkpoint snapshots and the final Phase 6 tarball.
+#
+# The flags here are not incidental:
+#   --numeric-owner  the LFS tree's uid/gid map is its own, not the host's
+#   --xattrs         Chapter 8 libcap sets file capabilities; plain tar silently drops them
+#   --acls           preserved for the same reason
+#   -p               permissions verbatim, not masked by the caller's umask
+#   --sparse         several installed files are sparse
+#
+# It refuses to run while the virtual kernel filesystems are still bound into the tree.
+# Without that check you archive the host's /proc and /dev into the tarball, which is a
+# corrupt image that only reveals itself at boot.
+
+set -uo pipefail
+
+LFS=/mnt/lfs
+OUT=${1:?usage: lfs-archive <output.tar.zst|output.tar.gz> [--final]}
+FINAL=${2:-}
+
+# --- mount guard ---------------------------------------------------------------
+mounted=()
+for m in /dev/pts /dev/shm /dev /proc /sys /run; do
+    if grep -qE " ${LFS}${m} " /proc/mounts; then mounted+=("$LFS$m"); fi
+done
+if [ ${#mounted[@]} -gt 0 ]; then
+    echo "REFUSING: virtual kernel filesystems still mounted:" >&2
+    printf '  %s\n' "${mounted[@]}" >&2
+    echo >&2
+    echo "Unmount them first:  sudo bin/lfs-umount" >&2
+    exit 1
+fi
+echo "mount guard: clean, no virtual filesystems under $LFS"
+
+# --- exclusions ----------------------------------------------------------------
+EX=(--exclude=./sources --exclude=./tmp/* --exclude=./var/tmp/*)
+[ -n "$FINAL" ] && echo "mode: FINAL deliverable" || echo "mode: checkpoint snapshot"
+
+case "$OUT" in
+    *.zst) COMP=(--zstd) ;;
+    *.gz)  COMP=(--gzip) ;;
+    *.xz)  COMP=(--xz) ;;
+    *)     echo "unknown compression for $OUT" >&2; exit 1 ;;
+esac
+
+echo "archiving $LFS -> $OUT"
+t0=$(date +%s)
+sudo tar --create "${COMP[@]}" --file "$OUT" \
+    -p --numeric-owner --xattrs --acls --sparse \
+    "${EX[@]}" -C "$LFS" . 2> >(grep -v 'socket ignored' >&2)
+rc=$?
+t1=$(date +%s)
+[ $rc -eq 0 ] || { echo "tar failed rc=$rc" >&2; exit $rc; }
+
+sudo chown "$(id -u):$(id -g)" "$OUT"
+echo
+echo "=== archive report ==="
+echo "file    : $OUT"
+echo "size    : $(du -h "$OUT" | cut -f1)"
+echo "elapsed : $((t1-t0))s"
+echo "entries : $(tar -tf "$OUT" 2>/dev/null | wc -l)"
+echo "sha256  : $(sha256sum "$OUT" | cut -d' ' -f1)"
+
+# --- leak check ----------------------------------------------------------------
+echo
+echo "=== leak check (must be empty) ==="
+leak=$(tar -tf "$OUT" 2>/dev/null | grep -E '^\./(proc|sys)/.|^\./dev/pts/.' | head -5)
+if [ -n "$leak" ]; then
+    echo "LEAK DETECTED:"; echo "$leak"; exit 1
+fi
+echo "clean: no proc/, sys/, or dev/pts entries"

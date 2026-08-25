@@ -1,0 +1,271 @@
+{
+  "_comment": [
+    "Persistent review decisions, applied by bin/extract-recipes.py.",
+    "Editing recipes by hand does not survive re-extraction; decisions belong here.",
+    "action: 'drop'   -> block is prose/illustration, never run (emitted commented)",
+    "action: 'enable' -> block was auto-disabled but the book does instruct it",
+    "action: 'defer'  -> real instruction, but handled elsewhere (e.g. driver preflight)",
+    "Every entry needs a reason citing the book."
+  ],
+  "ch04-settingenvironment": {
+    "2": {
+      "action": "defer",
+      "reason": "Real instruction from an Important admonition, but it runs as root on the HOST, not as the lfs user. Driver handles it in preflight. No-op here: Gentoo ships /etc/bash/bashrc, not /etc/bash.bashrc."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "Prose illustration, not an instruction. Book is explaining parallel make using a hypothetical i9-13900K with 32 logical cores. Running it would invoke make in $HOME with no target."
+    },
+    "4": {
+      "action": "drop",
+      "reason": "Same prose illustration as block 3. The real MAKEFLAGS setting is block 5, which appends -j$(nproc) to .bashrc."
+    }
+  },
+  "ch04-addinguser": {
+    "3": {
+      "action": "drop",
+      "reason": "Book instructs a human reader to become the lfs user for Chapters 5-6. As a driver step it would open an interactive shell and hang. The driver switches context per step via sudo -u lfs with the book's exact environment."
+    },
+    "1": {
+      "action": "drop",
+      "reason": "Interactive password prompt; would hang the driver. The lfs account is reached via sudo -u lfs and needs no password."
+    }
+  },
+  "ch08-glibc": {
+    "5": {
+      "action": "test",
+      "reason": "Book: 'The test suite for Glibc is considered critical. Do not skip it under any circumstance.' Enabled non-fatal; a few failures are documented as safe to ignore."
+    },
+    "9": {
+      "action": "drop",
+      "reason": "Conditional on upgrading an LFS system prior to 12.1. This is a fresh build; there is no prior nscd."
+    },
+    "10": {
+      "action": "drop",
+      "reason": "Same pre-12.1 upgrade condition, and systemctl cannot manage services inside the chroot."
+    },
+    "11": {
+      "action": "drop",
+      "reason": "DESTDIR procedure for upgrading Glibc on a running system. Not applicable to a fresh build."
+    },
+    "12": {
+      "action": "drop",
+      "reason": "Conditional on upgrading an LFS system prior to 12.0 where GCC lacked --disable-fixincludes. Not applicable."
+    },
+    "19": {
+      "action": "drop",
+      "reason": "tzselect is an interactive helper the book offers so a human can look up their timezone name. It blocks on a prompt and cannot run unattended."
+    },
+    "20": {
+      "action": "replace",
+      "cmd": "ln -sfv /usr/share/zoneinfo/America/Chicago /etc/localtime",
+      "reason": "Book prints a literal <xxx> placeholder for the timezone, which would create a dangling symlink. Substituted with America/Chicago to match the host (/etc/localtime -> America/Chicago)."
+    },
+    "6": {
+      "action": "drop",
+      "reason": "Diagnostic the book offers for spotting timed-out tests. grep exits 1 when nothing matches, which under set -e aborts the build immediately after make. Test analysis is recorded in state/testreports/ instead."
+    }
+  },
+  "ch08-gcc": {
+    "7": {
+      "action": "test",
+      "reason": "Book: GCC test suite is critical. Runs as the unprivileged tester user created in ch07-createfiles. Enabled non-fatal so documented failures do not abort the build."
+    }
+  },
+  "ch08-binutils": {
+    "3": {
+      "action": "test",
+      "reason": "Book: 'The test suite for Binutils in this section is considered critical. Do not skip it under any circumstances.' Enabled non-fatal."
+    },
+    "4": {
+      "action": "replace",
+      "cmd": "grep -h \"^FAIL:\" $(find -name \"*.log\") || echo \"### no FAIL lines in binutils test logs\"",
+      "reason": "Diagnostic listing failing tests. Bare grep exits 1 when there are NO failures -- the good outcome -- which would abort the build under set -e. Made non-fatal so the list is still reported."
+    }
+  },
+  "ch08-gmp": {
+    "0": {
+      "action": "drop",
+      "reason": "Not a runnable command ('ABI=32 ./configure ...'). Applies only when CFLAGS is set in the environment and 32-bit fallback is wanted. Our build sets no CFLAGS."
+    }
+  },
+  "ch08-grub": {
+    "0": {
+      "action": "enable",
+      "reason": "Warning admonition but a genuine instruction: unset C/CPP/CXX/LD FLAGS before building GRUB. Harmless and required."
+    }
+  },
+  "ch08-libxcrypt": {
+    "5": {
+      "action": "drop",
+      "reason": "Optional rebuild providing obsolete API ABI 1, only 'if you must have such functions' for binary-only apps or LSB compliance. Not needed."
+    }
+  },
+  "ch08-ncurses": {
+    "6": {
+      "action": "drop",
+      "reason": "Optional rebuild providing ABI 5 libraries for binary-only applications or LSB compliance. Not needed."
+    }
+  },
+  "ch08-util-linux": {
+    "2": {
+      "action": "drop",
+      "reason": "Book states this test can be run only after booting into the completed LFS system; it is not runnable in the chroot."
+    }
+  },
+  "ch09-network": {
+    "0": {
+      "action": "drop",
+      "reason": "Only for systems with no network or managed by NetworkManager. We want normal systemd-networkd behaviour."
+    },
+    "5": {
+      "action": "drop",
+      "reason": "Only when another resolvconf provider generates /etc/resolv.conf. We use systemd-resolved."
+    },
+    "1": {
+      "action": "drop",
+      "reason": "Disables systemd predictable interface naming. We keep the default, which is more robust when the tree moves to unknown hardware."
+    },
+    "2": {
+      "action": "drop",
+      "reason": "Example renaming a NIC by hard-coded MAC 12:34:45:78:90:AB. Hardware-specific illustration."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "Static-IP example with a placeholder device name and the book's 192.168.0.2 sample addresses. We use DHCP."
+    },
+    "4": {
+      "action": "replace",
+      "cmd": "cat > /etc/systemd/network/10-dhcp.network << \"EOF\"\n[Match]\nName=en* eth*\n\n[Network]\nDHCP=ipv4\n\n[DHCPv4]\nUseDomains=true\nEOF",
+      "reason": "Book leaves <network-device-name> as a placeholder. Target hardware is unknown at build time, so match any wired interface (en*/eth*) with DHCP."
+    },
+    "6": {
+      "action": "replace",
+      "cmd": "ln -sfv /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf",
+      "reason": "Book's manual resolv.conf has placeholders for domain and nameserver IPs. systemd-resolved remains enabled, so the stub symlink is the correct form."
+    },
+    "7": {
+      "action": "replace",
+      "cmd": "echo \"lfs\" > /etc/hostname",
+      "reason": "Book prints the literal placeholder <lfs>, which would write angle brackets into /etc/hostname."
+    },
+    "8": {
+      "action": "replace",
+      "cmd": "cat > /etc/hosts << \"EOF\"\n127.0.0.1  localhost.localdomain localhost\n127.0.1.1  lfs.localdomain lfs\n::1        localhost ip6-localhost ip6-loopback\nff02::1    ip6-allnodes\nff02::2    ip6-allrouters\nEOF",
+      "reason": "Book's template line is the placeholder '<192.168.0.2> <FQDN> [alias1] ...'. Written for hostname lfs with loopback entries only, since the address is DHCP-assigned."
+    }
+  },
+  "ch10-kernel": {
+    "1": {
+      "action": "replace",
+      "cmd": "bash /sources/kernel-config.sh",
+      "reason": "`make menuconfig` is an interactive ncurses UI and cannot run unattended. Replaced by bin/kernel-config.sh (staged to /sources), which runs `make defconfig` as the book recommends, applies every option the book lists as required, forces the boot path to =y because LFS builds no initramfs, and ends with a gate that fails loudly if any boot-path driver ended up a module."
+    },
+    "5": {
+      "action": "replace",
+      "cmd": "cp -v arch/x86/boot/bzImage /boot/vmlinuz-6.18.10-lfs-13.0-systemd",
+      "reason": "Book uses `cp -iv`; -i prompts on overwrite and would hang the driver on a re-run."
+    },
+    "6": {
+      "action": "replace",
+      "cmd": "cp -v System.map /boot/System.map-6.18.10",
+      "reason": "Interactive -i flag removed."
+    },
+    "7": {
+      "action": "replace",
+      "cmd": "cp -v .config /boot/config-6.18.10",
+      "reason": "Interactive -i flag removed."
+    }
+  },
+  "ch07-cleanup": {
+    "3": {
+      "action": "drop",
+      "reason": "Book tells a human reader to leave the chroot. As a script line, 'exit' would end the step early and silently skip anything after it."
+    },
+    "4": {
+      "action": "drop",
+      "reason": "Part of the book's OPTIONAL backup procedure and runs on the HOST, not in the chroot. Unmounting is handled by bin/lfs-umount when we choose to."
+    },
+    "5": {
+      "action": "drop",
+      "reason": "Book's OPTIONAL temp-system backup tarball, also host-side. We take equivalent checkpoints with bin/lfs-archive, which additionally preserves xattrs/ACLs and runs a leak check."
+    }
+  },
+  "ch08-shadow": {
+    "9": {
+      "action": "replace",
+      "cmd": "echo \"root:lfs-changeme\" | chpasswd\necho \"### ROOT PASSWORD set non-interactively to: lfs-changeme -- CHANGE ON FIRST BOOT\"",
+      "reason": "Book runs interactive `passwd root`, which blocks the driver. Set non-interactively instead. A locked/empty root account would leave the booted system unusable, so a known temporary password is set and reported in the final summary."
+    }
+  },
+  "ch08-vim": {
+    "9": {
+      "action": "drop",
+      "reason": "`vim -c ':options'` opens vim interactively so a human can browse settings. Purely exploratory; would block the driver."
+    }
+  },
+  "ch08-groff": {
+    "0": {
+      "action": "replace",
+      "cmd": "PAGE=letter ./configure --prefix=/usr",
+      "reason": "Book prints a literal <paper_size> placeholder. US Letter chosen to match the America/Chicago locale already configured."
+    }
+  },
+  "ch09-locale": {
+    "1": {
+      "action": "drop",
+      "reason": "'LC_ALL=<locale name> locale charmap' is a query the book offers so a human can discover their locale name. Placeholder, not an instruction."
+    },
+    "2": {
+      "action": "drop",
+      "reason": "Same class of placeholder locale queries."
+    },
+    "3": {
+      "action": "replace",
+      "cmd": "cat > /etc/locale.conf << \"EOF\"\nLANG=en_US.UTF-8\nEOF",
+      "reason": "Book prints placeholder LANG=<ll>_<CC>.<charmap><@modifiers>. en_US.UTF-8 matches the America/Chicago timezone and is built by ch08-glibc."
+    },
+    "5": {
+      "action": "drop",
+      "reason": "localectl with a placeholder value, and it cannot reach systemd inside the chroot. Block 3 writes /etc/locale.conf directly."
+    },
+    "6": {
+      "action": "drop",
+      "reason": "localectl needs a running systemd, unavailable in the chroot."
+    }
+  },
+  "ch10-fstab": {
+    "0": {
+      "action": "replace",
+      "cmd": "cat > /etc/fstab << \"EOF\"\n# file system   mount-point    type      options             dump  fsck\n#                                                                  order\n\nLABEL=LFSROOT   /              ext4      defaults            1     1\nLABEL=LFSSWAP   swap           swap      pri=1               0     0\n\nproc            /proc          proc      nosuid,noexec,nodev 0     0\nsysfs           /sys           sysfs     nosuid,noexec,nodev 0     0\ndevpts          /dev/pts       devpts    gid=5,mode=620      0     0\ntmpfs           /run           tmpfs     defaults            0     0\ndevtmpfs        /dev           devtmpfs  mode=0755,nosuid    0     0\ntmpfs           /dev/shm       tmpfs     nosuid,nodev        0     0\ncgroup2         /sys/fs/cgroup cgroup2   nosuid,noexec,nodev 0     0\nEOF",
+      "reason": "Book's template uses /dev/<xxx> and /dev/<yyy> placeholders. Written with LABEL= so the tree is not bound to a device node that does not exist yet: label the USB root LFSROOT and swap LFSSWAP when creating them."
+    }
+  },
+  "ch11-theend": {
+    "1": {
+      "action": "replace",
+      "cmd": "cat > /etc/lsb-release << \"EOF\"\nDISTRIB_ID=\"Linux From Scratch\"\nDISTRIB_RELEASE=\"13.0-systemd\"\nDISTRIB_CODENAME=\"claude-managed\"\nDISTRIB_DESCRIPTION=\"Linux From Scratch\"\nEOF",
+      "reason": "Book prints DISTRIB_CODENAME=<your name here>. Set to claude-managed to identify this build."
+    },
+    "2": {
+      "action": "replace",
+      "cmd": "cat > /etc/os-release << \"EOF\"\nNAME=\"Linux From Scratch\"\nVERSION=\"13.0-systemd\"\nID=lfs\nPRETTY_NAME=\"Linux From Scratch 13.0-systemd\"\nVERSION_CODENAME=\"claude-managed\"\nHOME_URL=\"https://www.linuxfromscratch.org/lfs/\"\nRELEASE_TYPE=\"stable\"\nEOF",
+      "reason": "Same <your name here> placeholder in VERSION_CODENAME."
+    }
+  },
+  "ch09-console": {
+    "1": {
+      "action": "replace",
+      "cmd": "cat > /etc/vconsole.conf << \"EOF\"\nKEYMAP=us\nFONT=Lat2-Terminus16\nEOF",
+      "reason": "Book's example sets KEYMAP=de-latin1 (a German layout) as an illustration. Changed to us to match the en_US.UTF-8 locale and America/Chicago timezone configured elsewhere."
+    },
+    "2": {
+      "action": "drop",
+      "reason": "'localectl set-keymap MAP' is a placeholder, and localectl needs a running systemd, unavailable in the chroot. Block 1 writes /etc/vconsole.conf directly."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "'localectl set-x11-keymap LAYOUT [MODEL] ...' is a placeholder for X11, which LFS does not install, and needs a running systemd."
+    }
+  }
+}
