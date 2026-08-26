@@ -75,6 +75,21 @@ $K --enable  CRYPTO_USER_API_SKCIPHER
 # Linux 5.6 but not enabled by defconfig on this kernel either.
 $K --module  WIREGUARD
 
+# --- added 2026-08-26: HDA audio codec drivers ---
+# Root cause of "no audio hardware at all" (both HDA controllers logging
+# "Cannot probe codecs, giving up" since before this project started
+# tracking it): the HDA *controller* driver (SND_HDA_INTEL) was enabled by
+# `make defconfig`, but every actual *codec* driver was not -- confirmed
+# directly in the running kernel's own .config, all "is not set". Without
+# a codec driver the controller can enumerate the codec but has nothing to
+# claim/configure it with. REALTEK for the onboard Intel PCH codec (this
+# Gigabyte Z77 board's era), HDMI for the GK104's own HDMI/DP audio
+# function, GENERIC as a fallback for either if the specific driver
+# doesn't match.
+$K --module  SND_HDA_CODEC_REALTEK
+$K --module  SND_HDA_CODEC_HDMI
+$K --module  SND_HDA_GENERIC
+
 # --- book: Device Drivers, udev/systemd requirements ---
 $K --disable UEVENT_HELPER
 $K --enable  DEVTMPFS
