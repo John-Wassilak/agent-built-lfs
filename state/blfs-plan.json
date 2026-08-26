@@ -2910,5 +2910,19 @@
     "blocks": 2,
     "enabled": 1,
     "disabled": 0
+  },
+  {
+    "seq": 209,
+    "order": "blfs.209",
+    "name": "blfs-usbutils",
+    "chapter": "blfs",
+    "page": "usbutils",
+    "title": "usbutils-019",
+    "context": "chroot",
+    "tarball": "usbutils-019.tar.xz",
+    "manifest": true,
+    "blocks": 2,
+    "enabled": 1,
+    "disabled": 0
   }
 ]
