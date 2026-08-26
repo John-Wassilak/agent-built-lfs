@@ -76,16 +76,28 @@ $K --enable  CRYPTO_USER_API_SKCIPHER
 $K --module  WIREGUARD
 
 # --- added 2026-08-26: HDA audio codec drivers ---
-# Root cause of "no audio hardware at all" (both HDA controllers logging
-# "Cannot probe codecs, giving up" since before this project started
-# tracking it): the HDA *controller* driver (SND_HDA_INTEL) was enabled by
-# `make defconfig`, but every actual *codec* driver was not -- confirmed
-# directly in the running kernel's own .config, all "is not set". Without
-# a codec driver the controller can enumerate the codec but has nothing to
-# claim/configure it with. REALTEK for the onboard Intel PCH codec (this
-# Gigabyte Z77 board's era), HDMI for the GK104's own HDMI/DP audio
-# function, GENERIC as a fallback for either if the specific driver
-# doesn't match.
+# Necessary but NOT sufficient on its own for "no audio hardware at all"
+# (both HDA controllers logging "Cannot probe codecs, giving up"): every
+# codec driver was unset in the running kernel's own .config (confirmed
+# directly), so even a codec the controller *did* detect would have had
+# nothing to bind to. REALTEK for the onboard Intel PCH codec, HDMI for
+# the GK104's own HDMI/DP audio, GENERIC as a fallback.
+#
+# The other half of the real fix is NOT here -- it's a boot parameter,
+# not a compile option: "Cannot probe codecs, giving up" is printed by
+# the *controller's* own bus-level codec-presence scan, before any codec
+# driver is even relevant. Root cause (per the kernel's own HD-audio
+# docs): the BIOS misreports which codec slots exist. Fixed with
+# `snd_hda_intel.probe_mask=0x1FF,0x1FF` on the kernel command line in
+# grub.cfg -- force-probes slots 0-7 on both controllers regardless of
+# what the BIOS claims. Confirmed working: the GK104's HDMI codec now
+# shows up in /proc/asound/cards with a real playback PCM device. The
+# onboard codec still doesn't respond on any forced slot -- looks like
+# genuinely dead/BIOS-disabled hardware, not a software gap.
+#
+# Whoever regenerates grub.cfg next needs to re-add the probe_mask
+# parameter by hand -- it doesn't come from this script or from
+# CONFIG_CMDLINE, so nothing carries it forward automatically.
 $K --module  SND_HDA_CODEC_REALTEK
 $K --module  SND_HDA_CODEC_HDMI
 $K --module  SND_HDA_GENERIC

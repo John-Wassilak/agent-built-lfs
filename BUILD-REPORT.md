@@ -1260,5 +1260,49 @@ unrelated `dbus` doc-file gap documented weeks ago.
 
 Package db: 320 packages, 76114 files. `lfsmaint verify`: clean.
 
-Next: operator to confirm the audio kernel rebuild timing, then
-Firefox -- the last package in this plan.
+## Audio: HDMI output working, onboard codec confirmed dead (2026-08-26)
+
+Kernel rebuilt (`6.18.10-audio`: `CONFIG_LOCALVERSION`), rebooted --
+**codec probing still failed identically**, on both controllers. Real
+lesson here, said plainly: the codec-driver kernel config fix from the
+previous checkpoint was the wrong layer. `snd_hda_intel` is compiled
+directly into the kernel (`=y`), and "Cannot probe codecs, giving up" is
+printed by the *controller* during its own bus-level codec-presence scan
+-- before any codec driver ever gets a chance to matter. Confirmed via
+the upstream kernel HD-audio documentation
+(`Documentation/sound/hd-audio/notes.rst`): this exact message is
+attributed there to the BIOS misreporting which codec slots exist,
+worked around with the `probe_mask` module parameter's force-bit
+(`0x100`) to bypass BIOS slot reporting and probe directly.
+
+Tested live via a `grub.cfg` kernel-cmdline edit (no rebuild needed --
+`probe_mask` is a boot parameter, not a compile-time option) --
+`snd_hda_intel.probe_mask=0x1FF,0x1FF` (force-probe slots 0-7 on both
+controllers) -- and rebooted. **Real result, not another guess**:
+`/proc/asound/cards` now shows `1 [NVidia]: HDA-Intel - HDA NVidia`
+(the GK104's own HDMI/DP audio codec) with a genuine playback-capable
+PCM device (`/proc/asound/card1/pcm3p`). The onboard Intel PCH codec
+(`0000:00:1b.0`) still reports zero response across every forced slot
+(0, 1, 3 all `Codec #N probe error`) -- with the BIOS-reporting excuse
+eliminated by the force-probe, this one looks like genuinely dead or
+BIOS-disabled hardware, not a fixable software gap.
+
+**Operational note for any future kernel/GRUB regeneration**: the
+`probe_mask` parameter lives in `grub.cfg`'s kernel command line, not
+in `kernel-config.sh` -- it's a boot parameter, not a compile-time
+`CONFIG_*` option, so it won't survive a bare `kernel-config.sh` rerun
+without also re-adding it to whatever GRUB entry gets generated next.
+
+Kernel cleanup, only after confirming this one boots and works
+(established precedent): removed the now-superseded `-nouveau` kernel
+(files, `/lib/modules`, `grub.cfg` entry) -- `6.18.10-audio` is a strict
+superset (same nouveau/cryptsetup/wireguard config plus the audio
+fixes), so nothing was lost.
+
+`aplay`/`alsa-utils` aren't installed (only `alsa-lib` was pulled in
+earlier, as PulseAudio's dependency) -- confirmed the working PCM
+device via `/proc/asound/card1/` directly instead. Whether audio is
+*audible* depends on what's actually connected to the monitor's HDMI
+output, out of scope to verify remotely.
+
+Next: Firefox -- the last package in this plan.
