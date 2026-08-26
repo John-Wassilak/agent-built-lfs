@@ -1142,5 +1142,18 @@ plain `bash -c` matches it. Firefox will hit the identical issue if its
 own build step isn't run via a login shell -- noted for when that tier
 starts.
 
-Package db: 316 packages (before Alacritty's own manifest lands),
-75584 files.
+Alacritty finished (`alacritty --version` confirms 0.17.0), but its raw
+manifest capture came back with **5956 files** -- a third real gotcha in
+the same build, this one in the manifest-capture technique itself:
+`/root/.cargo/registry/cache/**/*.crate` (every downloaded dependency's
+cached tarball) is *inside* `/root`, one of `MANIFEST_ROOTS`, so the
+`-cnewer` sweep swept up all 5945 of them as if they were installed
+package files. The real install is 5 files (binary, desktop entry, icon,
+2 terminfo entries) -- confirmed by hand and written directly. Left the
+cargo cache itself in place (genuinely useful for Firefox's own Rust
+dependencies, not clutter) but this needs excluding from the sweep
+itself for any future cargo-based batch script, Firefox included --
+`grep -v "^/root/.cargo"` alongside the existing `/root/buildN`
+exclusion.
+
+Package db: 316 packages, 75589 files.

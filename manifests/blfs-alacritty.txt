@@ -1,0 +1,5 @@
+/usr/bin/alacritty
+/usr/share/applications/Alacritty.desktop
+/usr/share/pixmaps/Alacritty.svg
+/usr/share/terminfo/a/alacritty
+/usr/share/terminfo/a/alacritty-direct
