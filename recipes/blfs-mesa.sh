@@ -17,6 +17,16 @@
 # with a hand-written vendor JSON alone -- the existing standalone
 # libEGL.so.1.0.0 doesn't implement glvnd's vendor entry points, only the
 # plain direct EGL ABI. A real Mesa rebuild is the only fix.
+#
+# GLX note (checked 2026-08-26, no rebuild needed): unlike EGL, Mesa's own
+# src/glx/meson.build has NO vendor-JSON-generation step at all -- it only
+# builds libGLX_mesa.so.0 under -D glvnd. That's not a gap to patch here:
+# libglvnd's GLX vendor selection is a different, file-less mechanism --
+# libGLX.so queries the X server per-screen via the GLX_EXT_libglvnd
+# extension at runtime. XWayland doesn't implement that extension, so the
+# documented fallback is the __GLX_VENDOR_LIBRARY_NAME=mesa environment
+# variable, set in home-john/start-hyprland.sh (inherited by XWayland as
+# Hyprland's child), not anything in this recipe or a vendor.d directory.
 set -e
 
 # --- block 0 --------------------------------------------------

@@ -1305,4 +1305,42 @@ device via `/proc/asound/card1/` directly instead. Whether audio is
 *audible* depends on what's actually connected to the monitor's HDMI
 output, out of scope to verify remotely.
 
-Next: Firefox -- the last package in this plan.
+## Disk cleanup, GLX vendor investigation (2026-08-26)
+
+**Disk cleanup**: removed ~2.1GB of leftover build directories under
+`/root/` (`build*` dirs from completed packages, left in place during
+the session rather than cleaned per-package). Kept `build12` and
+`kbuild` (kernel source/build tree, still in active use for boot
+parameter changes). 93G free on target after cleanup.
+
+**GLX vendor gap, investigated and resolved without a rebuild**: after
+fixing Mesa's EGL vendor dispatch (`-D glvnd=enabled`, above), checked
+whether GLX had an equivalent gap -- `/usr/share/glvnd/glx_vendor.d/`
+doesn't exist, while `/usr/share/glvnd/egl_vendor.d/50_mesa.json` does.
+Re-fetched Mesa 25.3.5 source to inspect the build system directly
+rather than guess: `src/egl/meson.build` has an explicit
+`configure_file()` block that generates and installs a vendor JSON;
+`src/glx/meson.build` has no equivalent at all -- it only builds
+`libGLX_mesa.so.0`. This isn't a Mesa bug or a missing meson flag.
+libglvnd's own documentation confirms GLX vendor selection uses a
+different mechanism entirely: `libGLX.so` queries the X server per
+screen at runtime via the `GLX_EXT_libglvnd` extension, rather than
+reading a static config file the way EGL does. The documented fallback
+for an X server that doesn't implement that extension (XWayland is one)
+is the `__GLX_VENDOR_LIBRARY_NAME` environment variable, checked once
+at `libGLX.so` init.
+
+Fix: added `export __GLX_VENDOR_LIBRARY_NAME=mesa` to
+`start-hyprland.sh` (name matches what Mesa registered itself under --
+`libGLX_mesa.so.0`, same vendor name as the EGL JSON). XWayland is
+spawned as Hyprland's child and inherits it. No Mesa rebuild needed;
+documented the GLX/EGL asymmetry in `blfs-mesa.sh`'s rationale comment
+so a future rebuild doesn't waste time re-investigating the same dead
+end. Not independently verified against a running GLX app (no GLX
+test tool installed, and XWayland/GLX apps aren't the near-term
+priority) -- this is the correct fix per libglvnd's own documented
+behavior, not a guess, but flagging that it hasn't been exercised
+end-to-end yet.
+
+Next: Go toolchain + cliphist, then Firefox -- the last package in
+this plan.

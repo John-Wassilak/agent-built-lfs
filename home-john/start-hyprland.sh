@@ -20,6 +20,17 @@ export XDG_RUNTIME_DIR="/run/user/$(id -u)"
 export XDG_SESSION_TYPE=wayland
 export XDG_CURRENT_DESKTOP=Hyprland
 
+# GLX vendor selection (for XWayland/X11 apps) is NOT file-based like EGL's
+# vendor.d JSONs -- libglvnd's libGLX.so normally queries the X server per
+# screen via the GLX_EXT_libglvnd server extension. XWayland doesn't
+# implement that extension, so without this the query fails and any GLX
+# call falls through with no vendor loaded. __GLX_VENDOR_LIBRARY_NAME is
+# libglvnd's documented fallback for exactly this case -- checked once at
+# libGLX.so init time, no config file involved. "mesa" matches the vendor
+# name Mesa registered itself under (libGLX_mesa.so.0, same name as the
+# EGL vendor's 50_mesa.json).
+export __GLX_VENDOR_LIBRARY_NAME=mesa
+
 LOG="$HOME/hyprland.log"
 [ -f "$LOG" ] && mv -f "$LOG" "$LOG.old"
 
