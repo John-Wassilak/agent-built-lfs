@@ -915,3 +915,78 @@ this -- it was never inside the npm package's own directory tree.
 john`) against `john`'s own npm prefix from the start, rather than as root
 against the system-wide one -- so a future rebuild from scratch doesn't
 reintroduce the same problem.
+
+## LLVM+clang, seatd fix, pciutils/pipewire/wireplumber/wireguard-tools, kernel rebuild, and a successful reboot into nouveau (2026-08-26)
+
+**LLVM-21.1.8 with clang** built clean -- the largest single build in this
+project (~4343 ninja targets). `clang --version` / `llvm-config --version`
+both confirm working. 303 packages, 74772 files.
+
+**A real, blocking gap found while setting up a way to launch Hyprland
+without a display manager**: this system has no PAM installed at all
+(a deliberate simplification from early in the build, for a then-headless
+box). Without PAM, `systemd-logind` never learns a session exists --
+`loginctl list-sessions` showed zero, always, even from an active SSH
+login. `seatd` (tier 8) had been built logind-only
+(`-D server=disabled`), on the reasoning that logind was "already
+present" -- true, but useless without session registration. Net effect:
+Hyprland would have had no working path to acquire the seat (GPU, input
+devices) at all, regardless of group membership. Fixed by rebuilding
+seatd with `-D server=enabled`, installing its bundled `seatd.service`
+(grants access via a `seat` group, not logind), and enrolling `john` in
+`video`/`input`/`seat`. Confirmed running and the socket reachable.
+
+**pciutils, pipewire, wireplumber, wireguard-tools** all built clean, no
+surprises. Hit the *same* stale-`blfs-plan.json`-on-target bug as the
+tier-12 outage recovery and the libxscrnsaver gap before it -- these four
+packages' plan entries had been added to this repo's `state/blfs-plan.json`
+earlier in the session but never repushed to target before the batch ran,
+so `lfsmaint db` silently couldn't attribute their files to anything.
+Third time this exact bug has bitten -- **repushing `blfs-plan.json` to
+target is now a non-negotiable step before every `lfsmaint db` rebuild**,
+not just something to remember. Fixed; `owns` lookups confirm correct.
+
+**Kernel rebuilt** with the three batched additions from earlier
+(`CONFIG_DRM_NOUVEAU`, cryptsetup's crypto options, `CONFIG_WIREGUARD`),
+`CONFIG_LOCALVERSION="-nouveau"`. New GRUB entry added (index 2, backed up
+the old grub.cfg first) and set as default -- needed for an SSH-triggered
+`reboot` to land on it without physical console interaction. The two
+older kernel entries (plain and `-nftables`) were deliberately left in
+place as fallback, not cleaned up yet -- that happens only after the new
+one is confirmed working, per this project's own established precedent
+from the netfilter kernel.
+
+**Reboot successful.** Booted `6.18.10-nouveau` cleanly. `nouveau` bound
+to the GK104 (GTX 770), 2048 MiB GDDR5 VRAM detected, DRM registered, a
+real `renderD128` node now exists alongside `card0` (didn't exist
+before -- no GPU driver had ever been bound). `wireguard` and `dm-crypt`
+modules both load cleanly. One thing the reboot did *not* fix, contrary to
+this session's own earlier speculation: the GPU's HDA audio codec
+(`0000:01:00.1`) still fails to probe even with nouveau now bound --
+`/proc/asound/cards` is still empty. Not blocking Hyprland (video-only),
+still unexplained.
+
+**A second PAM-shaped gap found and fixed**: `XDG_RUNTIME_DIR` is normally
+created by `pam_systemd` at login -- without PAM, nothing was creating it,
+and Hyprland (like any Wayland compositor) hard-needs it for its socket.
+Fixed with a static `systemd-tmpfiles.d` rule
+(`/etc/tmpfiles.d/xdg-runtime-john.conf`: `d /run/user/1000 0700 john john
+-`) rather than anything depending on the temporary NOPASSWD sudo grant,
+since that's getting reverted once this build finishes. Applied
+immediately and persists across reboots on its own.
+
+**`~/start-hyprland.sh`** deployed to `john`'s home directory (tracked in
+this repo at `home-john/start-hyprland.sh` for reference) -- sets
+`XDG_RUNTIME_DIR`/`XDG_SESSION_TYPE`/`XDG_CURRENT_DESKTOP` and execs
+Hyprland. Meant to be run manually after a physical-console login, not
+auto-started -- this box has no display manager by design.
+`Hyprland --help` confirmed clean (exits 0, no missing shared libraries)
+post-reboot. Real interactive verification (does a session actually come
+up on the real screen) is next, at the physical console -- outside what
+this SSH-driven process can exercise.
+
+Package db: 307 packages, 75520 files (pre-kernel-rebuild; the kernel
+itself isn't BLFS-tracked the way userspace packages are).
+
+Next: physical-console Hyprland test, then Firefox (Tier 15's last
+package) once confirmed.

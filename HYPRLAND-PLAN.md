@@ -178,6 +178,45 @@ Package db: 288 packages, 70034 files, as of this checkpoint.
 Next: Tier 13 (libplacebo, ffmpeg), Tier 14 (mpv), real LLVM+clang, Tier 15
 (Firefox) -- resuming now.
 
+## Progress checkpoint (2026-08-26, later still): nouveau bound, kernel rebooted, LLVM done
+
+Tiers 13-14 (libplacebo/ffmpeg, mpv) and LLVM+clang all complete -- detail
+in `BUILD-REPORT.md`. Also added, per operator request: `pciutils`,
+`pipewire`+`wireplumber`, `wireguard-tools`.
+
+**The `CONFIG_DRM_NOUVEAU` question from this doc's own "open questions"
+section above, finally resolved**: folded into a kernel rebuild alongside
+cryptsetup's crypto options and `CONFIG_WIREGUARD`
+(`CONFIG_LOCALVERSION="-nouveau"`), new GRUB entry, rebooted successfully.
+`nouveau` bound to the GK104 cleanly -- 2048 MiB GDDR5 detected, DRM
+registered, a real `renderD128` render node exists now (didn't before).
+Matches this doc's own earlier prediction: OpenGL acceleration via
+nouveau, no Vulkan (lavapipe needs LLVM's disabled here; NVK ruled out for
+Kepler).
+
+**A real, blocking discovery in the process of setting up a way to launch
+Hyprland without a display manager**: this system has no PAM, so
+`systemd-logind` never sees a session and `seatd` (built logind-only back
+in tier 8) had no daemon to fall back on -- Hyprland would have had no
+working path to the GPU/input devices at all. Rebuilt seatd with its
+standalone server enabled, plus a `tmpfiles.d` rule for
+`XDG_RUNTIME_DIR` (also normally a PAM job). Full detail in
+`BUILD-REPORT.md`. `~/start-hyprland.sh` deployed for the operator to run
+at the physical console -- `Hyprland --help` confirmed clean post-reboot,
+but a real interactive session hasn't been tested yet (can't be, over
+SSH).
+
+One thing that did *not* get fixed by the nouveau reboot, despite this
+project's own earlier speculation that it might: the GPU's HDA audio
+codec still fails to probe. Still no audio hardware registered at all.
+Not blocking Hyprland, unexplained.
+
+Package db: 307 packages, 75520 files, as of this checkpoint (kernel
+itself not BLFS-tracked).
+
+Next: physical-console Hyprland test (operator), then Firefox -- the last
+package in this plan.
+
 ## The NVIDIA situation — read this first
 
 The card is PCI `10de:1184`, confirmed against the pci-ids database as
