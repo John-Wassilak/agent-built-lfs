@@ -488,3 +488,252 @@ tar -xpf lfs-13.0-systemd-claude-20260825.tar.gz -C /mnt/target \
 
 Then `grub-install` to that disk from a chroot, and update `grub.cfg` — both the
 `search --fs-uuid` line and `root=PARTUUID=` will need the new disk's identifiers.
+
+# Permanent-drive deployment (2026-08-25)
+
+Deployed to `/dev/sdb` (WDC WD1600AVJS, 149.1G) on the target server, replacing a live
+Gentoo install already on that disk (confirmed with the operator before wiping). Same
+partition geometry the disk already had — 16G swap + 133G ext4, 1MiB aligned — reused
+rather than resized, same `LFSSWAP`/`LFSROOT` labels so `/etc/fstab` needed no edits.
+`grub-install --target=i386-pc /dev/sdb` run inside a chroot on the extracted tree;
+`grub.cfg` is not part of the base tarball (it is disk-identity-specific), so it was
+hand-written from the stick's template with `/dev/sdb`'s own fs-UUID and PARTUUID.
+`/dev/sda`, the host's own boot disk, was never touched.
+
+## Baseline hardware audit, first boot from sdb
+
+`systemctl --failed` clean, `is-system-running` → `running`, storage/USB/network
+controllers all have their drivers compiled directly into the kernel (no initramfs
+needed for any of them). Two real gaps found, both fixed as tracked BLFS steps
+(`blfs-linux-firmware-rtl-nic`, `blfs-intel-microcode`, seq 18-19 in
+`state/blfs-plan.json`) rather than patched by hand:
+
+- **r8169 0000:06:00.0** failed to load `rtl_nic/rtl8168e-3.fw` on every boot — the
+  machine's only network interface. Fixed by fetching the one blob this NIC needs from
+  the LFS project's official mirror, not the full linux-firmware tree.
+- **CPU microcode was stale**: i5-2500K (family 6, model 42, stepping 7) at revision
+  `0x28`, applied once by the board's 2012 BIOS and never updated. `/proc/cpuinfo`'s
+  `bugs:` line listed `old_microcode` and `vmscape` as unmitigated.
+
+### Microcode reverses the no-initramfs design — deliberately, for this one purpose
+
+BLFS's `firmware.html` is explicit that late microcode loading is no longer supported
+upstream (the kernel taints and warns on it); early loading via an initrd is the only
+endorsed path. That is a direct conflict with this system's original no-initramfs
+design (see "Boot chain" above). Decided with the operator to add a minimal initrd
+containing nothing but this CPU's microcode blob (`kernel/x86/microcode/GenuineIntel.bin`,
+built with the newly-added `cpio` package) rather than late-load or skip it — `root=`
+is still `PARTUUID=`, not `UUID=`, so the original reasoning for avoiding a general-
+purpose initramfs still holds; this initrd carries no early-boot logic at all.
+
+`grub.cfg` gained one line, `initrd /boot/microcode.img`, placed after the `linux` line
+(the in-root-partition form, since `/boot` is not a separate mountpoint here).
+
+Verified after reboot: `microcode: Updated early from: 0x00000028` → `0x0000002f`,
+`old_microcode` is gone from `bugs:`. `vmscape` is still listed — this CPU generation
+has no full fix in any released microcode, so that one is not something this change
+resolves.
+
+RTC was also switched from local-time to UTC (`timedatectl set-local-rtc 0`) — one-line
+fix, `timedatectl` had flagged the local-time RTC as unreliable across DST changes.
+
+Package count: **130 packages, 53,826 files tracked** (BLFS: 19, up from 16) —
+`cpio-2.15` (build dependency for the microcode initrd), `linux-firmware-rtl-nic`, and
+`intel-microcode` added to `state/blfs-plan.json` and `recipes/`, database rebuilt on
+the host and copied to the target, matching the existing convention.
+
+# General post-LFS setup, sudo, and a firewall (2026-08-25)
+
+Standard BLFS "get the system ready for real use" work, plus the first two cases of
+this project's two-tier sourcing policy in practice: **BLFS recipe where the book has
+one, otherwise another distro's official packaging (checked AUR first) as the build
+reference.** `htop` (previous session) and `iptables`'s dependency-free pieces all
+turned out to live in Arch's official `extra` repo rather than AUR.
+
+**Shell startup files + first non-root user.** `postlfs/profile.html` extracted
+normally (12 blocks), four of them (`~/.bash_profile`, `~/.profile`, `~/.bashrc`,
+`~/.bash_logout`) redirected to `/etc/skel` via overrides, exactly as the book itself
+suggests for multi-user setups. `/etc/vimrc` already existed from the LFS build;
+only `~/.vimrc` was added to skel (hand-authored — its BLFS source is a `<pre
+class="screen">` block, which the extractor's parser doesn't capture). Copied the
+same skel files into `/root`, which had none since the original build — chapter 4's
+were for the temporary `lfs` user, not root. Created `john` (UID/GID 1000, `useradd
+-m`) with the password locked (`usermod -L`) — no auth wired up yet, by design,
+until told otherwise.
+
+**sudo.** Straightforward BLFS build, no Recommended deps apply here. `wheel` group
+already existed from the base Shadow setup; added the book's suggested
+`/etc/sudoers.d/00-sudo` (`%wheel ALL=(ALL) ALL`) and put `john` in `wheel`. PAM
+block dropped — Linux-PAM isn't part of this system.
+
+**vim** — already satisfied by the LFS base build. BLFS's own `vim.html` page is
+solely about optionally recompiling with GTK-3 GUI support for a desktop X11
+environment (its one Recommended dependency is literally "a graphical environment
+and GTK-3.24.51"). Wrong call for a headless server; skipped rather than installed
+reflexively. First instance of the new standing policy — install BLFS's Recommended
+deps by default, but verify each one actually fits this system first.
+
+**Kernel: added netfilter support (second boot entry, `6.18.10-nftables`).** The
+running kernel had neither `CONFIG_NF_TABLES` nor `CONFIG_NETFILTER_XTABLES_LEGACY`
+set — an artifact of starting from plain `make defconfig`, not a deliberate choice.
+Neither the classic iptables backend nor the modern nftables one existed in the
+kernel; iptables would have built successfully as a userspace binary but failed on
+its first `-A INPUT` with no `filter` table to attach to. Fixed by extending
+`kernel-config.sh` (now the permanent, tracked kernel config for all future
+rebuilds) with `NETFILTER_XTABLES_LEGACY=y` and the `IP_NF_FILTER` /
+`IP_NF_NAT` / `IP_NF_MANGLE` / `IP_NF_TARGET_REJECT` module set (IPv4 and IPv6),
+following the book's own `--disable-nftables` choice for the iptables build rather
+than switching to the nft backend. Verified the real Kconfig symbol names and
+dependency structure directly from this kernel's source tree rather than trusting
+memory of older kernel versions — the table-registration options now depend on a
+new `IP_NF_IPTABLES_LEGACY` symbol that didn't exist in earlier kernels.
+
+Built as a **second, non-default GRUB entry** (`6.18.10-nftables`) rather than
+overwriting the working kernel: `CONFIG_LOCALVERSION="-nftables"` gives it its own
+`/lib/modules/6.18.10-nftables` directory, so the currently-running kernel's modules
+are never touched. `default=0` in `grub.cfg` still points at the original kernel;
+the new one is entry 1, selected manually to test, promoted to default only once
+confirmed. Recovery if something's wrong needs no USB stick — just reselect the old
+entry from the GRUB menu.
+
+**iptables**, built against the new kernel. `postlfs/iptables.html`'s "Personal
+Firewall" example (single interface, matches this box) used as-is with one addition:
+an explicit `ACCEPT` for new inbound SSH before the closing LOG/policy-DROP line —
+the book's own script allows no inbound service at all, and this box is administered
+entirely over SSH. The "Masquerading Router" example (two-interface NAT/routing)
+dropped — not applicable, one NIC. Systemd wiring via `blfs-systemd-units-20251204`
+(same package `sshd.service` came from) — `make install-iptables`, and since the
+system is live now rather than mid-chroot-build, the Makefile's own `systemctl
+enable` ran for real instead of needing the DESTDIR/manual-symlink trick
+`blfs-sshd-unit` needed. `iptables.service` is `WantedBy=multi-user.target`, so the
+firewall applies on every boot automatically.
+
+Package count: **137 packages, 54,186 files tracked** (BLFS: 26, up from 20) —
+`shell-startup-files`, `skel-vimrc-and-root`, `adduser-john`, `sudo`, `iptables`,
+`iptables-unit` added.
+
+## Follow-up same day: promoted the netfilter kernel, quieted logging
+
+`6.18.10-nftables` promoted to the GRUB default (`set default=1`) after the
+operator confirmed it live — booted, `iptables.service` applied cleanly, SSH
+reachable throughout. The plain `6.18.10` kernel stays as entry 0, unchanged,
+fallback only.
+
+Two logging changes, both operator-requested:
+
+- **`iptables`'s LOG rule dropped from the firewall script entirely.** The book's
+  Personal Firewall example logs every dropped packet; on an internet-facing host
+  that's a constant stream of scan/probe noise, and it won't be reviewed. Simpler
+  to not generate it than to filter it after the fact. `recipes/blfs-iptables.sh`
+  regenerated from the updated override; the live script was overwritten and
+  `iptables.service` restarted to apply it without a reboot.
+- **Console log level lowered** (`loglevel=3` added to both `grub.cfg` kernel
+  command lines, `dmesg -n 3` applied live for the currently running session).
+  Routine kernel messages (link up/down, driver info) were interrupting work at
+  the console; only err-and-worse now prints there. `dmesg`/`journalctl` still see
+  everything — this only affects what's echoed to the tty in real time.
+
+## Hyprland desktop stack (in progress, started 2026-08-25)
+
+Full plan and rationale in `HYPRLAND-PLAN.md`, including the NVIDIA/Kepler
+driver-scope decision and a running progress checkpoint. Short version: Tiers
+1-4 (build tooling through Mesa/libepoxy/libglvnd) built and verified —
+OpenGL acceleration via the nouveau gallium driver works, Vulkan does not
+(lavapipe needs LLVM, which was deliberately not built; NVK's Kepler support
+is doubtful regardless). Tier 6 (Rust toolchain, Cairo/Pango/gdk-pixbuf/
+librsvg) is now complete. `cryptsetup` and `pass` (and their dependency
+chains) were queued alongside this build per separate operator requests, not
+part of the Hyprland stack itself — both are also now complete and verified
+(`cryptsetup 2.8.4`, `pass version`); `cryptsetup` still needs a follow-up
+kernel rebuild before it can actually open/create encrypted volumes
+(`CONFIG_DM_CRYPT`, `CONFIG_CRYPTO_XTS`, `CONFIG_CRYPTO_USER_API_SKCIPHER`
+not yet set) — see `HYPRLAND-PLAN.md`'s checkpoint section.
+
+Tier 8 (input/session) and Tier 9 (XWayland) are now also complete --
+`Xwayland -version` confirmed working. See `HYPRLAND-PLAN.md`'s checkpoint
+for the real dependency gaps found along the way (lua5.4's install-path
+bug, libevdev/libinput's test-framework and GTK defaults, and two xwayland
+dependencies -- libxkbfile, libfontenc/libXfont2 -- the book never
+documents at all).
+
+Tier 10 (the full Hyprland ecosystem, 26 packages) is now also complete --
+**Hyprland itself is built and verified working** (`Hyprland --help` prints
+usage cleanly with no missing shared libraries). Along the way: two more
+"claimed but never added" recipe gaps (libjpeg-turbo, muparser), an
+undocumented iniparser dependency, a cascading version-bump chain
+(wayland-protocols needed 1.49 not the book's 1.47, which needed wayland
+1.26.0 not 1.24.0), an undocumented hard requirement on Lua 5.5 specifically
+(distinct from libinput's Lua 5.4), and one genuine GCC 15.2/libstdc++ gap
+(`std::ranges::starts_with` unimplemented even under C++26 mode) patched
+directly in Hyprland's source. Full detail in `HYPRLAND-PLAN.md`'s
+checkpoint.
+
+Tier 11 (GTK3/PulseAudio prerequisites) is now also complete --
+`pulseaudio --version` and `gtk-launch --version` both confirmed working.
+Two more undocumented X11-legacy dependencies found the same way as Tier
+9/10's (libXtst/libXi for at-spi2-core, libICE/libSM for PulseAudio). Full
+detail in `HYPRLAND-PLAN.md`'s checkpoint.
+
+Remaining: Tiers 12-15 (media codecs, ffmpeg, mpv, Firefox), researched
+just-in-time.
+
+272 packages tracked as of this checkpoint (161 BLFS steps), 69839 files.
+
+## Power/internet outage during Tier 12, and recovery (2026-08-26)
+
+Tier 12 (media codecs: nasm, libusb, dav1d, libaom, libvpx, x264, x265,
+lame, libass, svt-av1, fdk-aac, libva, libxscrnsaver, sdl3, sdl2-compat --
+14 packages, one hand-authored recipe added mid-batch) ran to completion on
+target in a scripted batch (`build-tier12.sh` / `build-tier12-resume.sh` in
+`/root/build7`), with one real dependency gap hit and fixed the same way as
+every other tier: SDL3 hard-requires `libXScrnSaver` for its X11 backend,
+undocumented anywhere in SDL3's own book/PKGBUILD dependency list --
+discovered when the first pass's cmake configure failed outright
+(`Couldn't find dependency package for XSCRNSAVER`). Fixed by hand-authoring
+`blfs-libxscrnsaver` (no BLFS book page) from Arch's `extra` packaging and
+resuming. The whole tier finished cleanly (`##### ALL TIER 12 PACKAGES BUILT
+#####`) minutes before the host lost power and internet -- confirmed by
+comparing installed-file timestamps against the build logs, not assumed.
+
+The reboot wiped `/tmp` (tmpfs) before the per-package manifests captured
+during the batch could be copied back to this repo or into
+`/var/lib/lfsmaint/manifests` on target, so this checkpoint's manifests for
+those 14 packages are **reconstructed, not the original captures**: diffed
+the live target filesystem against the last confirmed pre-Tier-12 install
+(`pulseaudio`, timestamp-anchored) and attributed each resulting file to a
+package by name, cross-checked against the batch script's own
+`BEGIN`/`END` markers in `build.log`/`build-resume.log`. Coverage is
+complete (zero unattributed files in the diff) and manually spot-checked,
+but a handful of packages show a small (1-3 file) undercount against the
+counts the live build echoed at the time -- most likely install-time
+side-effect files whose final mtime got overwritten by a later package in
+the same batch, so they don't show up attributed to the right package in a
+post-hoc timestamp diff. Not treated as material: same order of magnitude
+as noise already tolerated elsewhere in this project's manifest capture
+(shared files like `/etc/udev/hwdb.bin`, `/etc/mtab`, `/var/log/journal/*`
+are already claimed by dozens of packages each, by design -- `lfsmaint db`
+treats this as normal LFS/BLFS behavior, not an error).
+
+One real, unrelated bug found and fixed during this reconciliation: the
+existing `blfs-screen` manifest (built in the same window, from a one-off
+script rather than the batch harness) was contaminated with ~120 lines of
+`libvpx`'s own build-tree files under `/root/build7/libvpx-1.16.0/` --
+its capture script reused a stale timestamp stamp instead of resetting one
+per build. Screen's real installed footprint is 27 files; the manifest has
+been corrected.
+
+Also found stale during this pass: `/var/lib/lfsmaint/blfs-plan.json` on
+target was a 176-entry snapshot that predated the `blfs-libxscrnsaver`
+addition, which meant `lfsmaint db` was silently unable to attribute any of
+libxscrnsaver's files to a package (no error -- the plan entry just wasn't
+there to insert). Fixed by pushing this repo's current `state/plan.json`
+and `state/blfs-plan.json` to target and rebuilding. `lfsmaint verify` after
+the rebuild shows nothing unexpected: 91 missing-but-accounted-for files
+(known `ch08-cleanup` `.la`-file pruning and cross-toolchain removal) and 3
+long-standing missing `dbus` doc files unrelated to today's work.
+
+Database rebuilt on target: **288 packages tracked (177 BLFS), 70,034
+files.**
+
+Tier 12 confirmed complete. Remaining: Tier 13 (libplacebo, ffmpeg), Tier
+14 (mpv), real LLVM+clang, Tier 15 (Firefox) -- resuming now.

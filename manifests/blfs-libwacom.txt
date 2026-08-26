@@ -1,0 +1,8 @@
+/usr/bin/libwacom-list-devices
+/usr/bin/libwacom-list-local-devices
+/usr/bin/libwacom-show-stylus
+/usr/lib/libwacom.so
+/usr/lib/libwacom.so.9
+/usr/lib/libwacom.so.9.0.0
+/usr/lib/pkgconfig/libwacom.pc
+/usr/lib/udev/hwdb.d/65-libwacom.hwdb

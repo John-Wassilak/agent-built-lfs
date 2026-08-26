@@ -1,0 +1,16 @@
+/etc/mtab
+/etc/udev/hwdb.bin
+/usr/bin/brotli
+/usr/lib/libbrotlicommon.so
+/usr/lib/libbrotlicommon.so.1
+/usr/lib/libbrotlicommon.so.1.2.0
+/usr/lib/libbrotlidec.so
+/usr/lib/libbrotlidec.so.1
+/usr/lib/libbrotlidec.so.1.2.0
+/usr/lib/libbrotlienc.so
+/usr/lib/libbrotlienc.so.1
+/usr/lib/libbrotlienc.so.1.2.0
+/usr/lib/pkgconfig/libbrotlicommon.pc
+/usr/lib/pkgconfig/libbrotlidec.pc
+/usr/lib/pkgconfig/libbrotlienc.pc
+/var/log/README

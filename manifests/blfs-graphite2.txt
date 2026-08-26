@@ -1,0 +1,11 @@
+/etc/mtab
+/etc/udev/hwdb.bin
+/usr/bin/gr2fonttest
+/usr/lib/libgraphite2.la
+/usr/lib/libgraphite2.so
+/usr/lib/libgraphite2.so.3
+/usr/lib/libgraphite2.so.3.2.1
+/usr/lib/pkgconfig/graphite2.pc
+/usr/share/graphite2/graphite2-release.cmake
+/usr/share/graphite2/graphite2.cmake
+/var/log/README

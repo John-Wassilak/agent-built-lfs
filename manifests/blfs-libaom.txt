@@ -1,0 +1,10 @@
+/usr/bin/aomdec
+/usr/bin/aomenc
+/usr/lib/cmake/AOM/AOMConfig.cmake
+/usr/lib/cmake/AOM/AOMConfigVersion.cmake
+/usr/lib/cmake/AOM/AOMTargets-release.cmake
+/usr/lib/cmake/AOM/AOMTargets.cmake
+/usr/lib/libaom.so
+/usr/lib/libaom.so.3
+/usr/lib/libaom.so.3.13.1
+/usr/lib/pkgconfig/aom.pc

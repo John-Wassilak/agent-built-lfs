@@ -1,0 +1,17 @@
+/usr/bin/sdl2-config
+/usr/include/SDL2/SDL_config_unix.h
+/usr/include/SDL2/SDL_revision.h
+/usr/lib/cmake/SDL2/SDL2Config.cmake
+/usr/lib/cmake/SDL2/SDL2ConfigVersion.cmake
+/usr/lib/cmake/SDL2/SDL2Targets-release.cmake
+/usr/lib/cmake/SDL2/SDL2Targets.cmake
+/usr/lib/cmake/SDL2/SDL2_testTargets-release.cmake
+/usr/lib/cmake/SDL2/SDL2_testTargets.cmake
+/usr/lib/cmake/SDL2/SDL2mainTargets-release.cmake
+/usr/lib/cmake/SDL2/SDL2mainTargets.cmake
+/usr/lib/libSDL2-2.0.so
+/usr/lib/libSDL2-2.0.so.0
+/usr/lib/libSDL2-2.0.so.0.3200.64
+/usr/lib/libSDL2.so
+/usr/lib/libSDL2main.a
+/usr/lib/pkgconfig/sdl2-compat.pc

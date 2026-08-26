@@ -45,6 +45,22 @@ $K --enable  NET
 $K --enable  INET
 $K --enable  IPV6
 
+# --- added 2026-08-25: netfilter legacy tables, for BLFS's iptables page ---
+# `make defconfig` left NF_TABLES and NETFILTER_XTABLES_LEGACY both unset --
+# neither the nftables nor the classic iptables backend existed in the running
+# kernel, so iptables (built with the book's --disable-nftables) had no `filter`
+# or `nat` table to attach to. The book's own iptables.html builds against the
+# legacy ABI, so that's the path enabled here rather than switching to nf_tables.
+$K --enable  NETFILTER_XTABLES_LEGACY
+$K --module  IP_NF_IPTABLES_LEGACY
+$K --module  IP_NF_FILTER
+$K --module  IP_NF_NAT
+$K --module  IP_NF_MANGLE
+$K --module  IP_NF_TARGET_REJECT
+$K --module  IP6_NF_IPTABLES_LEGACY
+$K --module  IP6_NF_FILTER
+$K --module  IP6_NF_MANGLE
+
 # --- book: Device Drivers, udev/systemd requirements ---
 $K --disable UEVENT_HELPER
 $K --enable  DEVTMPFS

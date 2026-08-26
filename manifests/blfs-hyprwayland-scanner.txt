@@ -1,0 +1,4 @@
+/usr/bin/hyprwayland-scanner
+/usr/lib/cmake/hyprwayland-scanner/hyprwayland-scanner-config-version.cmake
+/usr/lib/cmake/hyprwayland-scanner/hyprwayland-scanner-config.cmake
+/var/lib/systemd/timesync/clock

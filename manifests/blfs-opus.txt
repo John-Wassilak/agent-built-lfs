@@ -1,0 +1,5 @@
+/usr/lib/libopus.so
+/usr/lib/libopus.so.0
+/usr/lib/libopus.so.0.11.1
+/usr/lib/pkgconfig/opus.pc
+/var/lib/systemd/timesync/clock

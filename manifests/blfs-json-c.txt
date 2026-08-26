@@ -1,0 +1,10 @@
+/usr/include/json-c/json.h
+/usr/include/json-c/json_config.h
+/usr/lib/cmake/json-c/json-c-config.cmake
+/usr/lib/cmake/json-c/json-c-targets-release.cmake
+/usr/lib/cmake/json-c/json-c-targets.cmake
+/usr/lib/libjson-c.so
+/usr/lib/libjson-c.so.5
+/usr/lib/libjson-c.so.5.4.0
+/usr/lib/pkgconfig/json-c.pc
+/var/log/journal/fa41fba8515b4edca48224e5e93c9251/system.journal

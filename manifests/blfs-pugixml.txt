@@ -1,0 +1,4 @@
+/usr/lib/libpugixml.so
+/usr/lib/libpugixml.so.1
+/usr/lib/libpugixml.so.1.16
+/var/lib/systemd/timesync/clock

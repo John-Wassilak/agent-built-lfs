@@ -1,0 +1,3 @@
+/etc/mtab
+/etc/profile.d/xorg.sh
+/etc/udev/hwdb.bin

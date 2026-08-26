@@ -1,0 +1,9 @@
+/usr/bin/hyprwire-scanner
+/usr/lib/cmake/hyprwire-scanner/hyprwire-scanner-config-version.cmake
+/usr/lib/cmake/hyprwire-scanner/hyprwire-scanner-config.cmake
+/usr/lib/libhyprwire.so
+/usr/lib/libhyprwire.so.0.3.1
+/usr/lib/libhyprwire.so.3
+/usr/lib/pkgconfig/hyprwire-scanner.pc
+/usr/lib/pkgconfig/hyprwire.pc
+/var/lib/systemd/timesync/clock

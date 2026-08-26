@@ -1,0 +1,6 @@
+/usr/bin/pass
+/usr/bin/passmenu
+/usr/share/bash-completion/completions/pass
+/usr/share/fish/vendor_completions.d/pass.fish
+/usr/share/man/man1/pass.1
+/usr/share/zsh/site-functions/_pass

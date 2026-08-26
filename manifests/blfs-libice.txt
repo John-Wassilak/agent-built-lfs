@@ -1,0 +1,14 @@
+/usr/include/X11/ICE/ICE.h
+/usr/include/X11/ICE/ICEconn.h
+/usr/include/X11/ICE/ICElib.h
+/usr/include/X11/ICE/ICEmsg.h
+/usr/include/X11/ICE/ICEproto.h
+/usr/include/X11/ICE/ICEutil.h
+/usr/lib/libICE.la
+/usr/lib/libICE.so
+/usr/lib/libICE.so.6
+/usr/lib/libICE.so.6.3.0
+/usr/lib/pkgconfig/ice.pc
+/usr/share/doc/libICE/ICElib.xml
+/usr/share/doc/libICE/ice.xml
+/var/log/journal/fa41fba8515b4edca48224e5e93c9251/system.journal

@@ -96,5 +96,410 @@
       "action": "drop",
       "reason": "Reorganises the HTML doc tree that block 7 would have unpacked. With block 7 dropped the paths do not exist and the mv commands would fail."
     }
+  },
+  "blfs-cpio": {
+    "2": {
+      "action": "drop",
+      "reason": "'make -C doc pdf && make -C doc ps', gated on 'If you have texlive-20250308 installed'. texlive is not installed."
+    },
+    "4": {
+      "action": "drop",
+      "reason": "Installs the pdf/ps/dvi docs built by block 2. Not built, so nothing to install and the install would fail."
+    }
+  },
+  "blfs-shell-startup-files": {
+    "7": {
+      "action": "replace",
+      "cmd": "install -dm755 /etc/skel\ncat > /etc/skel/.bash_profile << \"EOF\"\n# Begin ~/.bash_profile\n# Written for Beyond Linux From Scratch\n# by James Robertson <jameswrobertson@earthlink.net>\n# updated by Bruce Dubbs <bdubbs@linuxfromscratch.org>\n\n# Personal environment variables and startup programs.\n\n# Personal aliases and functions should go in ~/.bashrc.  System wide\n# environment variables and startup programs are in /etc/profile.\n# System wide aliases and functions are in /etc/bashrc.\n\nif [ -f \"$HOME/.bashrc\" ] ; then\n  source $HOME/.bashrc\nfi\n\nif [ -d \"$HOME/bin\" ] ; then\n  pathprepend $HOME/bin\nfi\n\n# Having . in the PATH is dangerous\n#if [ $EUID -gt 99 ]; then\n#  pathappend .\n#fi\n\n# End ~/.bash_profile\nEOF\nchmod 600 /etc/skel/.bash_profile",
+      "reason": "Book writes to ~/.bash_profile (whoever runs the command). skel.html explicitly suggests redirecting this to /etc/skel instead so every new user gets it via 'useradd -m'. Also creates /etc/skel here (mode 0755, book's own instruction) since this is the first file placed in it. Each skel file gets chmod 600 per skel.html: 'should be writable only by the owner... unreadable by group and other'."
+    },
+    "8": {
+      "action": "replace",
+      "cmd": "install -dm755 /etc/skel\ncat > /etc/skel/.profile << \"EOF\"\n# Begin ~/.profile\n# Personal environment variables and startup programs.\n\nif [ -d \"$HOME/bin\" ] ; then\n  pathprepend $HOME/bin\nfi\n\n# Set up user specific i18n variables\n#export LANG=<ll>_<CC>.<charmap><@modifiers>\n\n# End ~/.profile\nEOF\nchmod 600 /etc/skel/.profile",
+      "reason": "Same redirection as block 7, for the /bin/sh-invocation equivalent of .bash_profile."
+    },
+    "9": {
+      "action": "replace",
+      "cmd": "install -dm755 /etc/skel\ncat > /etc/skel/.bashrc << \"EOF\"\n# Begin ~/.bashrc\n# Written for Beyond Linux From Scratch\n# by James Robertson <jameswrobertson@earthlink.net>\n\n# Personal aliases and functions.\n\n# Personal environment variables and startup programs should go in\n# ~/.bash_profile.  System wide environment variables and startup\n# programs are in /etc/profile.  System wide aliases and functions are\n# in /etc/bashrc.\n\nif [ -f \"/etc/bashrc\" ] ; then\n  source /etc/bashrc\nfi\n\n# Set up user specific i18n variables\n#export LANG=<ll>_<CC>.<charmap><@modifiers>\n\n# End ~/.bashrc\nEOF\nchmod 600 /etc/skel/.bashrc",
+      "reason": "Same redirection as block 7."
+    },
+    "10": {
+      "action": "replace",
+      "cmd": "install -dm755 /etc/skel\ncat > /etc/skel/.bash_logout << \"EOF\"\n# Begin ~/.bash_logout\n# Written for Beyond Linux From Scratch\n# by James Robertson <jameswrobertson@earthlink.net>\n\n# Personal items to perform on logout.\n\n# End ~/.bash_logout\nEOF\nchmod 600 /etc/skel/.bash_logout",
+      "reason": "Same redirection as block 7."
+    }
+  },
+  "blfs-sudo": {
+    "2": {
+      "action": "replace",
+      "cmd": "cat > /etc/sudoers.d/00-sudo << \"EOF\"\nDefaults secure_path=\"/usr/sbin:/usr/bin\"\n%wheel ALL=(ALL) ALL\nEOF\nchmod 440 /etc/sudoers.d/00-sudo\nusermod -aG wheel john",
+      "reason": "Book's suggested common config as-is (wheel group gets full sudo after entering their own password), plus adding john to wheel -- he's the one human non-root account on this box, and granting sudo through wheel membership is the whole point of the book's suggested config here rather than editing sudoers directly. chmod 440 matches how sudoers.d files ship (root-only read, no write)."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "PAM config for sudo. Linux-PAM is not part of this LFS 13.0 build (Shadow was built without it, confirmed when reviewing blfs-openssh) -- sudo was not built with --without-pam disabled explicitly, but configure auto-detects PAM's absence and skips it, so /etc/pam.d/sudo would configure a subsystem that isn't wired into anything."
+    }
+  },
+  "blfs-iptables": {
+    "2": {
+      "action": "replace",
+      "cmd": "install -v -dm755 /etc/systemd/scripts\n\ncat > /etc/systemd/scripts/iptables << \"EOF\"\n#!/bin/sh\n\n# Begin /etc/systemd/scripts/iptables\n\n# Insert connection-tracking modules\n# (not needed if built into the kernel)\nmodprobe nf_conntrack\nmodprobe xt_LOG\n\n# Enable broadcast echo Protection\necho 1 > /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts\n\n# Disable Source Routed Packets\necho 0 > /proc/sys/net/ipv4/conf/all/accept_source_route\necho 0 > /proc/sys/net/ipv4/conf/default/accept_source_route\n\n# Enable TCP SYN Cookie Protection\necho 1 > /proc/sys/net/ipv4/tcp_syncookies\n\n# Disable ICMP Redirect Acceptance\necho 0 > /proc/sys/net/ipv4/conf/default/accept_redirects\n\n# Do not send Redirect Messages\necho 0 > /proc/sys/net/ipv4/conf/all/send_redirects\necho 0 > /proc/sys/net/ipv4/conf/default/send_redirects\n\n# Drop Spoofed Packets coming in on an interface, where responses\n# would result in the reply going out a different interface.\necho 1 > /proc/sys/net/ipv4/conf/all/rp_filter\necho 1 > /proc/sys/net/ipv4/conf/default/rp_filter\n\n# Log packets with impossible addresses.\necho 1 > /proc/sys/net/ipv4/conf/all/log_martians\necho 1 > /proc/sys/net/ipv4/conf/default/log_martians\n\n# be verbose on dynamic ip-addresses  (not needed in case of static IP)\necho 2 > /proc/sys/net/ipv4/ip_dynaddr\n\n# disable Explicit Congestion Notification\n# too many routers are still ignorant\necho 0 > /proc/sys/net/ipv4/tcp_ecn\n\n# Set a known state\niptables -P INPUT   DROP\niptables -P FORWARD DROP\niptables -P OUTPUT  DROP\n\n# These lines are here in case rules are already in place and the\n# script is ever rerun on the fly. We want to remove all rules and\n# pre-existing user defined chains before we implement new rules.\niptables -F\niptables -X\niptables -Z\n\niptables -t nat -F\n\n# Allow local-only connections\niptables -A INPUT  -i lo -j ACCEPT\n\n# Free output on any interface to any ip for any service\n# (equal to -P ACCEPT)\niptables -A OUTPUT -j ACCEPT\n\n# Permit answers on already established connections\n# and permit new connections related to established ones\n# (e.g. port mode ftp)\niptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT\n\n# Not in the book's example: this box is administered entirely over SSH, and\n# the book's own Personal Firewall script does not allow any inbound service,\n# SSH included -- applying it unmodified would have locked out the only way\n# in. Explicit allow for new inbound SSH connections; the ESTABLISHED,RELATED\n# rule above already covers the rest of each session once it exists.\niptables -A INPUT -p tcp --dport 22 -m conntrack --ctstate NEW -j ACCEPT\n\n# Everything else is dropped by policy (no LOG rule -- the book's example logs\n# every dropped packet, which on an internet-facing host is a constant stream\n# of scan/noise traffic; not wanted here, dropped without a paper trail).\n\n# End /etc/systemd/scripts/iptables\nEOF\nchmod 700 /etc/systemd/scripts/iptables",
+      "reason": "Book's 'Personal Firewall' example (single-interface, matches this box) with two changes: an explicit ACCEPT for new inbound SSH (tcp/22) before the closing rule -- the book's own script allows no inbound service at all, which would have locked out the only access path to this machine -- and the book's final 'LOG everything else' rule dropped entirely (operator's call: never going to review the log, and on an internet-facing host it's a constant stream of scan noise). Everything else is the book's text unchanged."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "The 'Masquerading Router' example -- two network interfaces (LAN1/WAN1), NAT/routing between them. This box has one NIC (enp6s0) and is a single server, not a router; the block references interface names that do not exist here."
+    },
+    "4": {
+      "action": "drop",
+      "reason": "'make install-iptables' is a target of the blfs-systemd-units package's Makefile, not iptables' own -- same situation as blfs-openssh block 7 for sshd.service. Handled by the blfs-iptables-unit step instead, run from the blfs-systemd-units source tree."
+    }
+  },
+  "blfs-glib2": {
+    "1": {
+      "action": "enable",
+      "reason": "Guards itself with 'if [ -e /usr/include/glib-2.0 ]' -- no-op on this fresh install, no prior glib. Flagged only because it sits in the book's upgrade-warning admonition."
+    },
+    "3": {
+      "action": "replace",
+      "cmd": "mkdir build &&\ncd    build &&\n\nmeson setup ..                  \\\n      --prefix=/usr             \\\n      --buildtype=release       \\\n      -D introspection=disabled \\\n      -D glib_debug=disabled    \\\n      -D man-pages=disabled     \\\n      -D sysprof=disabled       &&\nninja",
+      "reason": "man-pages=enabled needs rst2man (from docutils), which was deliberately skipped as glib2's own Recommended dep (one-level policy -- docs generation, not needed for anything else in this build). Flag flipped to match that decision instead of leaving a contradiction between the skipped dependency and a flag that requires it."
+    },
+    "8": {
+      "action": "drop",
+      "reason": "Builds HTML documentation (-D documentation=true), needs rst2html5 (from docutils). Same root cause as block 3's man-pages fix -- docutils deliberately skipped, one-level policy. Block 9's final 'ninja install' still runs and installs the introspection-enabled build from block 7."
+    }
+  },
+  "blfs-icu": {
+    "0": {
+      "action": "drop",
+      "reason": "Command Explanations example showing HOW to check a binary's dependency on ICU later ('ldd <application or library>') -- a literal placeholder, not an install step."
+    },
+    "1": {
+      "action": "drop",
+      "reason": "Same section, readelf variant of the same usage example -- not an install step."
+    }
+  },
+  "blfs-freetype2": {
+    "0": {
+      "action": "drop",
+      "reason": "Extracts the optional supplementary documentation tarball (freetype-doc-2.14.1.tar.xz), which was not fetched -- docs only, not needed. The base docs/ directory still ships in the main source tree, so block 3 (copying docs/ to /usr/share/doc) is kept."
+    }
+  },
+  "blfs-graphite2": {
+    "4": {
+      "action": "drop",
+      "reason": "'If you wish to build the documentation, issue: make docs' -- explicitly optional, not needed."
+    },
+    "6": {
+      "action": "drop",
+      "reason": "Installs the documentation built by block 4. Not built, so nothing to install."
+    }
+  },
+  "blfs-brotli": {
+    "2": {
+      "action": "drop",
+      "reason": "'If desired, build the Python3 bindings' -- explicitly optional. Nothing in this stack needs Python brotli bindings, only the C library installed by blocks 0-1."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "Installs the Python wheel built by block 2. Not built, so nothing to install."
+    }
+  },
+  "blfs-libxml2": {
+    "4": {
+      "action": "drop",
+      "reason": "Test-suite step: stop a running httpd before running libxml2's test suite (which uses port 80). httpd is not installed on this system and the test suite is not being run."
+    },
+    "2": {
+      "action": "drop",
+      "reason": "Reconfigures with docs=enabled, needs doxygen (not installed) -- 'Program doxygen not found', discovered when the build failed. One-level policy: docs generation, not needed."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "Fetches the optional test-suite tarball (xmlts20130923.tar.gz), not staged since the test suite is not being run."
+    }
+  },
+  "blfs-xkeyboard-config": {
+    "1": {
+      "action": "drop",
+      "reason": "Upgrade-only cleanup ('if upgrading from version 2.44 or earlier'). This is a fresh install -- $XORG_PREFIX/share/X11/xkb does not exist yet."
+    }
+  },
+  "blfs-cmake": {
+    "0": {
+      "action": "replace",
+      "cmd": "sed -i '/\"lib64\"/s/64//' Modules/GNUInstallDirs.cmake &&\n\n./configure --prefix=/usr        \\\n            --system-curl         \\\n            --system-zlib         \\\n            --system-expat        \\\n            --mandir=/share/man  \\\n            --docdir=/share/doc/cmake-4.2.3 &&\nmake",
+      "reason": "Book's --system-libs is all-or-nothing (cmake's own bootstrap --help confirms no granular 'system except X' flag) and requires libarchive, libuv, and nghttp2 as system libraries -- none built (deliberately skipped as cmake's own Recommended deps, since nothing in this build's actual dependency chain needs cmake's network-fetch/archive features). Switched to explicit --system-{curl,zlib,expat}, the three cmake's own configure step already confirmed present, letting everything else (libarchive, libuv, nghttp2, bzip2, liblzma, zstd, jsoncpp, cppdap, librhash) fall back to cmake's bundled copies -- the documented default behavior when a recommended dep isn't installed."
+    }
+  },
+  "blfs-mesa": {
+    "0": {
+      "action": "drop",
+      "reason": "lspci to identify installed GPU hardware -- already known (GTX 770/GK104, confirmed against pci-ids during the baseline hardware audit) and pciutils is not installed."
+    },
+    "1": {
+      "action": "drop",
+      "reason": "Applies the optional xdemos patch ('If you have downloaded...') -- not fetched, only needed for testing an Xorg install with extra demo programs, not needed here."
+    },
+    "2": {
+      "action": "replace",
+      "cmd": "mkdir build &&\ncd    build &&\n\nmeson setup ..                     \\\n      --prefix=$XORG_PREFIX        \\\n      --buildtype=release           \\\n      -D platforms=x11,wayland      \\\n      -D gallium-drivers=nouveau \\\n      -D vulkan-drivers=            \\\n      -D valgrind=disabled           \\\n      -D video-codecs=all             \\\n      -D libunwind=disabled          &&\n\nninja",
+      "reason": "Driver scope decided with the operator (2026-08-25): this box's only GPU is a GTX 770 (Kepler). gallium-drivers=auto (the book's default) builds every vendor's driver -- AMD (r300/r600/radeonsi), Intel (iris/crocus), virgl, svga, etc -- none of which this hardware will ever use. nouveau covers the real GPU, llvmpipe is the book's own recommended software-rendering backup. vulkan-drivers=swrast (software) instead of auto -- NVK (nouveau's Vulkan driver) needs rust-bindgen on top of everything else already being built, and its Kepler-generation support is doubtful regardless. Further narrowed to nouveau only (dropping llvmpipe from this override): llvmpipe needs LLVM, which is a very large build (hours) whose only other use here would be Rust's optional system-LLVM link -- not worth it for a software-rendering fallback when the real nouveau driver covers the actual hardware. Rust builds fine with its own bundled LLVM instead. Added -D llvm=disabled explicitly: even with gallium-drivers narrowed to nouveau only, meson still unconditionally probed for LLVM (for some other feature -D video-codecs=all enables) and failed since it is not built. This flag stops meson from looking for it at all. Further correction: vulkan-drivers=swrast turned out to mean lavapipe internally, which meson refuses to build without LLVM ('Feature llvm cannot be disabled: Lavapipe Vulkan driver requires LLVM') -- so -D llvm=disabled and swrast are mutually exclusive. Consistent with the earlier decision to skip LLVM entirely: vulkan-drivers is now empty, no Vulkan driver built at all. NVK (nouveau's real Vulkan driver) was already ruled out for Kepler-support reasons, and lavapipe needs the LLVM build being deliberately avoided -- so on this hardware, under this decision, there is no Vulkan support, only OpenGL via the nouveau gallium driver. A real, known gap, not silently dropped."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "Reconfigures with build-tests=true and runs the full test suite -- doubles build time for verification not otherwise done for any package in this build (test suites have been skipped throughout)."
+    }
+  },
+  "blfs-rust": {
+    "1": {
+      "action": "replace",
+      "cmd": "cat << EOF > bootstrap.toml\n# See bootstrap.toml.example for more possible options,\n# and see src/bootstrap/defaults/bootstrap.dist.toml for a few options\n# automatically set when building from a release tarball\n# (unfortunately, we have to override many of them).\n\n# Tell x.py that the editors have reviewed the content of this file\n# and updated it to follow the major changes of the building system,\n# so x.py will not warn users to review that information.\nchange-id = 148795\n\n[llvm]\n# If building the shipped LLVM source, only enable the x86 target\n# instead of all the targets supported by LLVM.\ntargets = \"X86\"\n\n[build]\ndescription = \"for BLFS 13.0\"\n\n# Omit the documentation to save time and space (the default is to build them).\ndocs = false\n\n# Do not look for new versions of the dependencies online.\nlocked-deps = true\n\n# Only install these extended tools. Cargo, clippy, rustdoc, and rustfmt\n# are installed by a default rustup installation, and rust-src is needed\n# to build the Rust code in Linux kernel (in case you need such a kernel\n# feature).\ntools = [\"cargo\", \"clippy\", \"rustdoc\", \"rustfmt\", \"src\"]\n\n[install]\nprefix = \"/opt/rustc-1.93.1\"\ndocdir = \"share/doc/rustc-1.93.1\"\n\n[rust]\nchannel = \"stable\"\n\n# Enable the same optimizations as the official upstream build.\nlto = \"thin\"\ncodegen-units = 1\n\n# Don't build llvm-bitcode-linker which is only useful for the NVPTX\n# backend that we don't enable.\nllvm-bitcode-linker = false\nEOF",
+      "reason": "Removed '[llvm] link-shared = true' and both [target.*] llvm-config entries. Those are exactly the section the book says to omit when building against Rust's own shipped LLVM instead of a system one (its own words: 'This whole section should be omitted if you wish to build against the shipped llvm') -- decided with the operator to skip building LLVM as its own package (4.7GB, hours) rather than build it standalone just to satisfy this recommended link."
+    },
+    "2": {
+      "action": "replace",
+      "cmd": "export LIBSSH2_SYS_USE_PKG_CONFIG=1\n./x.py build",
+      "reason": "Dropped LIBSQLITE3_SYS_USE_PKG_CONFIG -- sqlite was never built (not used by anything else in this stack), so this would just point pkg-config at a library that does not exist. LIBSSH2_SYS_USE_PKG_CONFIG kept: libssh2 is built (previous step)."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "Full Rust test suite (./x.py test) -- extremely long even by this build's standards, and test suites have been skipped throughout this entire project."
+    },
+    "4": {
+      "action": "drop",
+      "reason": "Summarizes results from the test suite in block 3, which is not run."
+    },
+    "6": {
+      "action": "replace",
+      "cmd": "rm -fv /opt/rustc-1.93.1/share/doc/rustc-1.93.1/*.old   &&\ninstall -vm644 README.md                                \\\n               /opt/rustc-1.93.1/share/doc/rustc-1.93.1 &&\n\ninstall -vdm755 /usr/share/zsh/site-functions      &&\nln -sfv /opt/rustc/share/zsh/site-functions/_cargo \\\n        /usr/share/zsh/site-functions",
+      "reason": "Dropped the final 'mv /etc/bash_completion.d/cargo ...' line -- bash-completion is not installed, so /etc/bash_completion.d does not exist and the mv would fail. The zsh completion symlink is kept even though zsh is not installed either -- it is just a dangling convenience file, costs nothing, and works if zsh is ever added."
+    },
+    "9": {
+      "action": "replace",
+      "cmd": "# Not sourced here: pathprepend (defined in /etc/profile) only exists in a\n# login shell, which this non-interactive batch build never is. The written\n# /etc/profile.d/rustc.sh is still correct for real interactive sessions;\n# this just gets rustc/cargo onto PATH for the rest of *this* build script.\nexport PATH=\"/opt/rustc/bin:$PATH\"",
+      "reason": "The book's `source /etc/profile.d/rustc.sh` calls pathprepend, a function /etc/profile defines for login shells. Running this recipe via `ssh host bash script.sh` (as this whole project's live BLFS builds do) is never a login shell, so the function does not exist and the source line dies with 'command not found' -- discovered when it took down the entire batch script with set -e immediately after Rust itself finished successfully. Direct PATH export achieves the same effect for the packages built later in the same script (cargo-c, cbindgen)."
+    }
+  },
+  "blfs-librsvg": {
+    "2": {
+      "action": "drop",
+      "reason": "Test suite (meson test -v) -- skipped, matches every other package in this build."
+    }
+  },
+  "blfs-lvm2": {
+    "1": {
+      "action": "drop",
+      "reason": "Installs a minimal tool subset specifically so the test suite can run without a full install first ('if you do not want to install the full package before running the tests') -- block 5 does the full install regardless and tests are not being run."
+    },
+    "2": {
+      "action": "drop",
+      "reason": "'mount -o remount,dev /tmp' -- test-suite prep (needs device nodes in /tmp for the tests). Not running the test suite."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "'make check_local' -- the test suite itself, needs en_US.UTF-8 locale generated. Skipped, matches every other package in this build."
+    },
+    "4": {
+      "action": "drop",
+      "reason": "Orphaned continuation lines (--with-thin-check= etc), not a standalone command -- the extractor split this off from a configure invocation shown elsewhere on the page for a variant install. Not executable as its own block."
+    }
+  },
+  "blfs-openldap": {
+    "0": {
+      "action": "enable",
+      "reason": "This is the 'client-only install' the book presents as a Note-boxed alternative -- exactly what's wanted here: GnuPG only needs the client ldap* libraries for LDAP keyserver support, not a running slapd server. --disable-slapd."
+    },
+    "1": {
+      "action": "enable",
+      "reason": "make install for the client-only build above."
+    },
+    "2": {
+      "action": "drop",
+      "reason": "Creates the ldap system user/group for a running slapd daemon. Not installing slapd (client-only build above)."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "The full server build (--enable-slapd and the rest) -- superseded by the client-only build in blocks 0-1."
+    },
+    "4": {
+      "action": "drop",
+      "reason": "Installs and configures the full slapd server tree built by block 3, which is dropped."
+    },
+    "5": {
+      "action": "drop",
+      "reason": "'make install-slapd' is a blfs-systemd-units target, not openldap's own -- same situation as sshd.service/iptables.service. Moot anyway: no slapd server is being installed."
+    },
+    "6": {
+      "action": "drop",
+      "reason": "Starts the slapd server via systemctl. Not installing slapd."
+    },
+    "7": {
+      "action": "drop",
+      "reason": "Tests a running slapd server. Not installing slapd."
+    }
+  },
+  "blfs-pango": {
+    "1": {
+      "action": "drop",
+      "reason": "man-pages=true needs docutils (rst2man), not installed."
+    },
+    "2": {
+      "action": "drop",
+      "reason": "documentation=true needs gi-docgen, not installed."
+    }
+  },
+  "blfs-gdk-pixbuf": {
+    "1": {
+      "action": "drop",
+      "reason": "gtk_doc=true needs Gi-DocGen, not installed."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "DESTDIR-only caveat; this project installs directly (no DESTDIR), so the cache is already correctly generated by ninja install."
+    },
+    "0": {
+      "action": "replace",
+      "cmd": "mkdir build &&\ncd    build &&\n\nmeson setup ..                \\\n      --prefix=/usr           \\\n      --buildtype=release     \\\n      -D man=false            \\\n      -D png=disabled         \\\n      -D gif=disabled         \\\n      -D jpeg=disabled        \\\n      -D tiff=disabled        \\\n      -D thumbnailer=disabled \\\n      --wrap-mode=nofallback  \\\n      $(pkgconf glycin-2 || echo -D glycin=disabled) &&\nninja",
+      "reason": "man option defaults to true in meson_options.txt and requires rst2man (docutils), not installed -- book text never explicitly sets it, so the extracted block missed it."
+    }
+  },
+  "blfs-json-c": {
+    "2": {
+      "action": "drop",
+      "reason": "Optional doxygen docs, not installed."
+    },
+    "4": {
+      "action": "drop",
+      "reason": "Installs the doxygen docs from block 2, which was dropped."
+    }
+  },
+  "blfs-popt": {
+    "1": {
+      "action": "drop",
+      "reason": "Optional doxygen docs, not installed."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "Installs the doxygen docs from block 1, which was dropped."
+    }
+  },
+  "blfs-libassuan": {
+    "1": {
+      "action": "drop",
+      "reason": "Optional PDF/PS docs need texlive, not installed."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "Installs the PDF/PS/DVI docs from block 1, which was dropped."
+    }
+  },
+  "blfs-gnupg": {
+    "1": {
+      "action": "drop",
+      "reason": "Optional PDF docs need texlive, not installed."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "Installs the PDF docs from block 1, which was dropped."
+    }
+  },
+  "blfs-dbus": {
+    "4": {
+      "action": "drop",
+      "reason": "Optional intrusive/assert test-suite run, not wanted."
+    },
+    "5": {
+      "action": "drop",
+      "reason": "Example local-session config snippet from the book text, not an install step."
+    },
+    "6": {
+      "action": "drop",
+      "reason": "Example ~/.xinitrc snippet (eval dbus-launch), not an install step -- would hang a non-interactive batch build."
+    },
+    "7": {
+      "action": "drop",
+      "reason": "Example ~/.bash_logout snippet, not an install step."
+    }
+  },
+  "blfs-libei": {
+    "1": {
+      "action": "drop",
+      "reason": "Optional test suite needing munit/structlog, not installed."
+    }
+  },
+  "blfs-xwayland": {
+    "1": {
+      "action": "drop",
+      "reason": "Test-framework setup (piglit/xts clone, Xvfb spin-up), not wanted."
+    },
+    "2": {
+      "action": "drop",
+      "reason": "Runs the test suite set up in block 1, which was dropped."
+    }
+  },
+  "blfs-gsettings-desktop-schemas": {
+    "2": {
+      "action": "drop",
+      "reason": "DESTDIR-only caveat; this project installs directly, so the compiled schema cache is already correctly generated by ninja install."
+    }
+  },
+  "blfs-gtk3": {
+    "2": {
+      "action": "drop",
+      "reason": "DESTDIR-only caveat; not applicable."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "DESTDIR-only caveat; not applicable."
+    },
+    "0": {
+      "action": "replace",
+      "cmd": "mkdir build &&\ncd    build &&\n\nmeson setup ..            \\\n      --prefix=/usr       \\\n      --buildtype=release \\\n      -D man=false         \\\n      -D broadway_backend=true &&\nninja",
+      "reason": "man=true (hardcoded on by the book) needs docbook-xsl-nons/libxslt for xsltproc, not installed."
+    }
+  },
+  "blfs-alsa-lib": {
+    "1": {
+      "action": "drop",
+      "reason": "Optional API doc build needs Doxygen, not installed."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "Installs the doxygen docs from block 1, which was dropped."
+    }
+  },
+  "blfs-nasm": {
+    "0": {
+      "action": "drop",
+      "reason": "Optional xdoc tarball not fetched (docs only)."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "Installs the docs from block 0, which was dropped."
+    }
+  },
+  "blfs-libusb": {
+    "1": {
+      "action": "drop",
+      "reason": "Optional doxygen API docs, not installed."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "Installs the doxygen docs from block 1, which was dropped."
+    }
+  },
+  "blfs-svt-av1": {
+    "1": {
+      "action": "drop",
+      "reason": "Optional test suite, explicitly called out by the book as very long (31 SBU) and not meaningful."
+    }
+  },
+  "blfs-sdl3": {
+    "2": {
+      "action": "drop",
+      "reason": "Optional test build, not wanted."
+    }
   }
 }

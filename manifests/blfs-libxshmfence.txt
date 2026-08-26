@@ -1,0 +1,10 @@
+/etc/mtab
+/etc/udev/hwdb.bin
+/usr/include/X11/xshmfence.h
+/usr/lib/libxshmfence.la
+/usr/lib/libxshmfence.so
+/usr/lib/libxshmfence.so.1
+/usr/lib/libxshmfence.so.1.0.0
+/usr/lib/pkgconfig/xshmfence.pc
+/var/log/README
+/var/log/journal/fa41fba8515b4edca48224e5e93c9251/system.journal

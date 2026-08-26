@@ -1,0 +1,10 @@
+/etc/mtab
+/etc/udev/hwdb.bin
+/usr/include/epoxy/egl_generated.h
+/usr/include/epoxy/gl_generated.h
+/usr/include/epoxy/glx_generated.h
+/usr/lib/libepoxy.so
+/usr/lib/libepoxy.so.0
+/usr/lib/libepoxy.so.0.0.0
+/usr/lib/pkgconfig/epoxy.pc
+/var/log/README

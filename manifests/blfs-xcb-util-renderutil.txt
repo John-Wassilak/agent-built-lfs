@@ -1,0 +1,6 @@
+/usr/include/xcb/xcb_renderutil.h
+/usr/lib/libxcb-render-util.la
+/usr/lib/libxcb-render-util.so
+/usr/lib/libxcb-render-util.so.0
+/usr/lib/libxcb-render-util.so.0.0.0
+/usr/lib/pkgconfig/xcb-renderutil.pc

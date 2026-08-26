@@ -1,0 +1,9 @@
+/etc/mtab
+/etc/udev/hwdb.bin
+/usr/bin/ccmake
+/usr/bin/cmake
+/usr/bin/cpack
+/usr/bin/ctest
+/var/lib/systemd/timesync/clock
+/var/log/README
+/var/log/journal/fa41fba8515b4edca48224e5e93c9251/system.journal
