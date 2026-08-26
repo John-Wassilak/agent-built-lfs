@@ -1105,9 +1105,31 @@ chromium keybindings dropped (neither fits this build -- dolphin needs
 KDE Frameworks, chromium has no build path here at all), keyboard-
 backlight bindings dropped (desktop box, no such hardware, same
 reasoning as the monitor exclusion). `mpv.conf`'s `hwdec=vaapi` changed
-to `hwdec=auto` -- nouveau has no VAAPI driver, `auto` degrades
-gracefully instead of guaranteed no-op. Reference copies of every
-deployed config tracked in this repo under `home-john/.config/`.
+to `hwdec=auto` so it degrades gracefully instead of a guaranteed
+no-op if hardware decode isn't available for whatever's playing.
+Reference copies of every deployed config tracked in this repo under
+`home-john/.config/`.
+
+**Correction (2026-08-26), verified with a real playback test**: the
+assumption above ("nouveau has no VAAPI driver") was wrong. Played
+`~/test.mkv` (HEVC Main 10, 1920x816) over SSH with `mpv -v`: nouveau's
+own gallium VAAPI driver (`/usr/lib/dri/nouveau_drv_video.so`) loads
+and initializes fine (VA-API 1.23), and mpv's `hevc-vaapi-copy` method
+does get tried. It fails at the codec-profile level, not the driver
+level: `ffmpeg/video] hevc: No support for codec hevc profile 2` (HEVC
+Main 10 = profile 2). This GPU is a GTX 770 (GK104, Kepler, 2012) --
+Kepler predates any HEVC decode block in NVIDIA silicon at all
+(NVDEC's first HEVC support arrived with Maxwell 2 / GM206 in 2015),
+so this isn't a nouveau/Mesa driver gap, it's the hardware itself
+having nothing to decode HEVC with, 10-bit or otherwise. `hwdec=auto`
+already does the right thing here: it tries vaapi, the codec rejects
+the profile, and mpv falls back to software decoding automatically --
+confirmed clean playback through the fallback (no errors after the
+fallback message, real audio+video frames produced). Software HEVC
+1080p10 decode on this box's CPU (i5-2500K, 4C/4T @ 3.3GHz) should
+have enough headroom for real-time playback, though this wasn't
+verified against a live display/timing source (test ran headless,
+`--vo=null --ao=null`, which doesn't prove real-time A/V sync holds).
 
 **New small utilities built**, all hand-authored (none in BLFS), all
 version-matched against Arch's official packaging: `xkbcomp` (above),
