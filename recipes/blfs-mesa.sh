@@ -3,6 +3,20 @@
 # source : book/blfs-13.0/x/mesa.html
 # title  : Mesa-25.3.5
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
+#
+# Rebuilt 2026-08-26 with -D glvnd=enabled: this option is meson
+# type:feature (auto/enabled/disabled) and Mesa was originally built (tier
+# 4) before libglvnd existed, so "auto" detected no glvnd present and
+# defaulted to disabled -- Mesa installed a standalone libEGL.so.1.0.0
+# with no glvnd vendor ABI at all. libglvnd's own libEGL.so.1.1.0 later
+# won the /usr/lib/libEGL.so.1 soname (built after Mesa), with no vendor
+# JSON in /usr/share/glvnd/egl_vendor.d telling it where to dispatch to --
+# real EGL calls (eglQueryString et al.) had nothing behind them. Root
+# cause of Hyprland/aquamarine's first real crash: CDRMRenderer::loadEGLAPI
+# calling into a dispatcher with zero registered vendors. Can't be fixed
+# with a hand-written vendor JSON alone -- the existing standalone
+# libEGL.so.1.0.0 doesn't implement glvnd's vendor entry points, only the
+# plain direct EGL ABI. A real Mesa rebuild is the only fix.
 set -e
 
 # --- block 0 --------------------------------------------------
@@ -36,7 +50,8 @@ meson setup ..                     \
       -D vulkan-drivers=            \
       -D valgrind=disabled           \
       -D video-codecs=all             \
-      -D libunwind=disabled          &&
+      -D libunwind=disabled          \
+      -D glvnd=enabled               &&
 
 ninja
 

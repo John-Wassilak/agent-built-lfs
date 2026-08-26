@@ -1031,3 +1031,44 @@ Fixed: `start-hyprland.sh` now force-sets `XDG_RUNTIME_DIR=/run/user/$(id
 environment. `/run/user/1000` itself confirmed still present and
 correctly owned from the tmpfiles.d rule -- that half of the earlier fix
 was right, only the script's own env-handling was wrong.
+
+## Second attempt failed too: found and fixed a real Mesa/glvnd bug (2026-08-26)
+
+`~/hyprland.log` this time showed real progress -- HDMI-A-1 detected,
+correct modes enumerated -- then a hard `SIGABRT` inside
+`libaquamarine.so`. Full crash-report backtrace led to
+`CDRMRenderer::loadEGLAPI()` (`src/backend/drm/Renderer.cpp` in
+aquamarine 0.14.0, fetched from upstream to read directly rather than
+guessed at): its very first EGL call never got past
+`eglQueryString`/`eglBindAPI`, and no log line from that function
+appeared at all -- consistent with a dead EGL dispatcher, not a real
+GPU/driver problem.
+
+Root cause, confirmed by checking file ownership directly: `/usr/lib/
+libEGL.so.1` (the actual soname apps link against) resolved to
+libglvnd's dispatcher (`libglvnd-1.7.0`), not Mesa's own implementation.
+`/usr/share/glvnd/egl_vendor.d/` didn't exist at all -- zero registered
+vendors, so every EGL call had nothing to dispatch to. Cause: Mesa's
+`glvnd` meson option is `type: feature` (auto-detect), and Mesa was
+built (tier 4) *before* libglvnd existed in this build order, so `auto`
+found nothing to link against and silently defaulted to a standalone,
+non-glvnd-aware `libEGL.so.1.0.0`. libglvnd, built afterward, then won
+the `libEGL.so.1` soname with nothing behind it. Not fixable with a
+hand-written vendor JSON -- the existing standalone library doesn't
+implement glvnd's vendor ABI at all, only the plain direct one.
+
+Fixed with a real Mesa rebuild, `-D glvnd=enabled` added to
+`recipes/blfs-mesa.sh`. Confirmed correct this time:
+`/usr/share/glvnd/egl_vendor.d/50_mesa.json` now exists, points at
+`libEGL_mesa.so.0` (also confirmed present), and `libEGL.so.1` +
+Mesa's vendor plugin now cooperate properly instead of the dispatcher
+having nothing to dispatch to.
+
+One related gap noticed in passing, not fixed (not blocking Hyprland,
+which is EGL-only): the same theoretical problem likely exists for GLX
+(`libGLX_mesa.so` exists, but no `/usr/share/glvnd/glx_vendor.d/` JSON
+registers it) -- XWayland apps needing GLX specifically could hit the
+same dead-dispatcher failure. Follow-up if/when that turns out to
+matter.
+
+Package db: 307 packages, 75515 files.
