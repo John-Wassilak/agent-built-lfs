@@ -737,3 +737,58 @@ files.**
 
 Tier 12 confirmed complete. Remaining: Tier 13 (libplacebo, ffmpeg), Tier
 14 (mpv), real LLVM+clang, Tier 15 (Firefox) -- resuming now.
+
+## Tier 13 complete: Glad, libplacebo, FFmpeg (2026-08-26)
+
+Ran clean in one batch, this time writing each package's manifest directly
+into `/var/lib/lfsmaint/manifests` as soon as it was captured (rather than
+only to `/tmp`) -- the lesson from the outage above. `Glad-2.0.8` (required
+by libplacebo, a pip3 wheel build, no BLFS page issue since the book's own
+recipe covers it) and `libplacebo-7.360.0` both built with zero surprises.
+`FFmpeg-8.0.1` configured and linked against every codec library from tiers
+2/6/7/11/12 (dav1d, libaom, libass, fdk-aac, freetype2, lame, libvorbis,
+libvpx, opus, svt-av1, x264, x265, openssl) with no undocumented gaps this
+time -- the book's own Recommended list for FFmpeg matched this system's
+prior build order closely enough that there was nothing left to discover.
+`ffmpeg -version` confirms the full codec list linked in.
+
+Package db: 291 packages, 70419 files.
+
+Tier 14 (luajit, uchardet, mpv) launched immediately after. Next: real
+LLVM+clang, then Firefox (Tier 15).
+
+## Tier 14 complete: luajit, uchardet, mpv (2026-08-26)
+
+`luajit` and `uchardet` built clean, no surprises. `mpv`'s meson configure
+failed on the first pass: hard-requires `xpresent` (X11 Present extension)
+for tear-free presentation, undocumented anywhere in mpv's own book page
+(same class of gap as SDL3/libXScrnSaver in tier 12) -- not in this BLFS
+mirror, hand-authored `blfs-libxpresent` from Arch's official packaging
+(current upstream tarball, `libXPresent-1.0.2`, confirmed against
+xorg.freedesktop.org's own archive listing rather than assumed) and
+resumed. `mpv --version` confirms working.
+
+**A real, project-wide manifest-capture bug found and fixed here**: the
+`find <roots> -newer stamp` technique used everywhere in this project
+(chroot driver and every hand-rolled batch script alike) tests **mtime**.
+meson/ninja's install step preserves the *source* file's original mtime on
+straight file copies (headers, docs, completions, icons) rather than
+stamping install time -- so any such file whose source predates the
+per-package stamp is invisible to the sweep. Caught because `libplacebo`'s
+manifest had only 5 entries when its book page documents an entire
+`/usr/include/libplacebo` directory (34 headers, verified against the live
+tree), and `mpv`'s had only 6 real files against ~25 actually installed
+(ninja's own verbose install log, cross-checked against the live
+filesystem, gave the true list for both). This most likely affects some
+fraction of every meson-built package's manifest across every earlier tier
+too, not just today's -- not retroactively audited (out of scope for this
+session), but worth knowing if a future `lfsmaint verify` or `owns` lookup
+looks short on a meson package. **Fixed going forward**: switched the
+capture command from `-newer` (mtime) to `-cnewer` (ctime) -- ctime bumps
+on any file creation/copy regardless of a preserved mtime, verified with a
+direct `cp -p` reproduction before relying on it for tier 15.
+
+Package db: 295 packages, 70534 files.
+
+Next: real LLVM+clang, then Firefox (Tier 15) -- the two large builds
+remaining.
