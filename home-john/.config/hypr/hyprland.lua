@@ -6,9 +6,7 @@
 -- blanking wanted), no xdg-desktop-portal lines (not installed), dolphin/
 -- chromium keybindings dropped (neither fits this build), keyboard-backlight
 -- bindings dropped (desktop box, no such hardware, same reasoning as the
--- monitor block). cliphist itself is NOT installed -- it's a Go program and
--- this system has no Go toolchain; wl-paste is here but nothing consumes
--- its --watch output yet.
+-- monitor block).
 
 -------------------------------
 ---- ENVIRONMENT VARIABLES ----
@@ -34,7 +32,8 @@ hl.env("XCURSOR_SIZE",                    "24")
 
 hl.on("hyprland.start", function()
     hl.exec_cmd("wlsunset -l 35.46 -L -97.32")
-    hl.exec_cmd("wl-paste --type text --watch true")
+    hl.exec_cmd("wl-paste --type text --watch cliphist store")
+    hl.exec_cmd("wl-paste --type image --watch cliphist store")
     hl.exec_cmd("dbus-update-activation-environment DISPLAY WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=Hyprland")
     hl.exec_cmd("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")
     hl.exec_cmd("systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")

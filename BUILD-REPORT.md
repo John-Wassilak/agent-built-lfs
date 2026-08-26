@@ -1342,5 +1342,39 @@ priority) -- this is the correct fix per libglvnd's own documented
 behavior, not a guess, but flagging that it hasn't been exercised
 end-to-end yet.
 
-Next: Go toolchain + cliphist, then Firefox -- the last package in
-this plan.
+**Go toolchain + cliphist**: no BLFS book page for either. Go requires
+an existing Go compiler to build from source (true since Go 1.5, no
+bootstrapping from C) -- per Go's own documented policy, building
+go1.27.0 needs a go1.24+ compiler. Same pattern as this project's Rust
+build (`blfs-rust.sh`): fetched the official go1.24.13 linux-amd64
+binary release from go.dev as a bootstrap-only tool, used it to build
+go1.27.0 from source (`GOROOT_BOOTSTRAP=... ./make.bash`), and
+discarded the bootstrap binary and both tarballs afterward -- both
+downloads sha256-verified against go.dev's own published checksums
+before use. Go's source build is "in place" (no separate install
+step): extracted the source tarball directly to `/opt/go-1.27.0`
+(matching this project's `/opt/rustc-*` convention for large
+third-party toolchains), symlinked `/opt/go`, and added
+`/etc/profile.d/go.sh`. `go version` confirms `go1.27.0 linux/amd64`.
+
+cliphist (`go.senan.xyz/cliphist`, v0.7.0) built cleanly via
+`go install ...@latest` as john (needs network access for Go module
+resolution -- confirmed working) and installed to `/usr/bin/cliphist`,
+matching where this project's other hand-built user tools (alacritty)
+ended up. `hyprland.lua`'s autostart block updated from the placeholder
+`wl-paste --type text --watch true` (nothing was consuming its output)
+to the real `wl-paste --type text/image --watch cliphist store` pair,
+mirrored exactly from the operator's laptop dotfiles -- no clipboard-
+picker keybinding exists there either, so none was invented here.
+
+**Not yet exercised end-to-end**: Hyprland was already running
+(started before this work) when the config was deployed, and autostart
+only fires on `hyprland.start` -- restarting an active session is
+disruptive and wasn't done without asking. cliphist will start storing
+clipboard history on the next Hyprland restart/login, not before.
+
+wl-clipboard itself was already installed and working from the earlier
+desktop-utils batch; nothing needed there beyond confirming it
+(`wl-copy`/`wl-paste` present).
+
+Next: Firefox -- the last package in this plan.
