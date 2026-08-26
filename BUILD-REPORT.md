@@ -1157,3 +1157,54 @@ itself for any future cargo-based batch script, Firefox included --
 exclusion.
 
 Package db: 316 packages, 75589 files.
+
+## wofi "doesn't open": a real, foundational gdk-pixbuf bug (2026-08-26)
+
+Operator reported wofi (SUPER+D) not opening. Direct reproduction with a
+correctly-set `WAYLAND_DISPLAY` (my first attempt was missing it,
+red herring) showed the real failure: `Gtk:ERROR:
+../gtk/gtkiconhelper.c:495:ensure_surface_for_gicon: ... Failed to load
+/org/gtk/libgtk/icons/16x16/status/image-missing.png: Unrecognized image
+file format` -- a hard abort trying to load GTK's own *bundled* fallback
+icon. `/usr/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache` existed but listed
+zero loaders; `find` confirmed zero loader `.so` files anywhere.
+
+Root cause, found in the original recipe: `gdk-pixbuf` was built (tier 6)
+with `-D png=disabled -D gif=disabled -D jpeg=disabled -D tiff=disabled`,
+on the reasoning that `glycin` (a newer external Rust-based loader
+service) would replace them -- but this project deliberately skipped
+glycin in that same tier ("circular Rust-image-loader rebuild loop, out
+of scope"), and the recipe's own glycin-detection fallback
+(`$(pkgconf glycin-2 || echo -D glycin=disabled)`) meant glycin ended up
+disabled too. Net effect: gdk-pixbuf could decode **nothing**, and
+nothing downstream had hit a hard crash over it until now -- every icon
+anywhere in this desktop stack was equally broken the whole time.
+
+Fixed: rebuilt gdk-pixbuf with `-D png=enabled -D gif=enabled -D
+jpeg=enabled` (all three backing libraries -- libpng, giflib,
+libjpeg-turbo -- already built; tiff left disabled, libtiff was never
+built and isn't otherwise needed). Confirmed:
+`loaders.cache` now lists real loaders, wofi no longer aborts.
+
+Live-tested wofi via `hyprctl dispatch` against the actual running
+session (not just a manual reproduction) -- it now runs without
+crashing. First check used `hyprctl clients`, which showed nothing;
+turned out to be the wrong command entirely -- wofi is a layer-shell
+surface (it bundles its own wlr-layer-shell protocol code, discovered
+earlier when researching whether it needed gtk-layer-shell), not a
+regular toplevel window, so it never appears there. `hyprctl layers`
+showed it correctly positioned and sized on-screen the whole time.
+
+Two more real, related gaps found and fixed along the way, both
+surfaced by wofi's now-non-fatal GTK warnings: no `hicolor-icon-theme`
+installed at all (the base fallback icon theme essentially every
+`.desktop`-consuming app expects -- BLFS has a real page for this one,
+used as-is) and librsvg built with `-D pixbuf-loader` left at its
+default (`disabled`, not `auto` -- confirmed by reading librsvg's own
+`meson_options.txt`), so gdk-pixbuf had no SVG loader either. Rebuilt
+librsvg with `-D pixbuf-loader=enabled`. Applied the two lessons from
+the alacritty rebuild while doing this one: login shell for cargo
+access, `/root/.cargo` excluded from the manifest sweep from the start.
+
+Package db: 319 packages, 76108 files (before librsvg's own rebuild
+manifest lands).

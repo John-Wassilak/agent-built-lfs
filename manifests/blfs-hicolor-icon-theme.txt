@@ -1,0 +1,4 @@
+/usr/share/icons/hicolor/index.theme
+/usr/share/pkgconfig/default-icon-theme.pc
+/var/log/journal/fa41fba8515b4edca48224e5e93c9251/system.journal
+/var/log/journal/fa41fba8515b4edca48224e5e93c9251/user-1000.journal

@@ -2896,5 +2896,19 @@
     "blocks": 1,
     "enabled": 1,
     "disabled": 0
+  },
+  {
+    "seq": 208,
+    "order": "blfs.208",
+    "name": "blfs-hicolor-icon-theme",
+    "chapter": "blfs",
+    "page": "hicolor-icon-theme",
+    "title": "hicolor-icon-theme-0.18",
+    "context": "chroot",
+    "tarball": "hicolor-icon-theme-0.18.tar.xz",
+    "manifest": true,
+    "blocks": 2,
+    "enabled": 1,
+    "disabled": 0
   }
 ]

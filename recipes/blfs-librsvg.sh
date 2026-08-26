@@ -20,7 +20,11 @@ sed -e "/OUTDIR/s|,| / 'librsvg-2.61.4', '--no-namespace-dir',|" \
 mkdir build &&
 cd    build &&
 
-meson setup --prefix=/usr --buildtype=release .. &&
+# pixbuf-loader is type:feature, value:disabled by default (not auto) --
+# rebuilt 2026-08-26 with it explicitly enabled: gdk-pixbuf had no SVG
+# loader at all, found debugging wofi's icon warnings ("Most likely
+# gdk-pixbuf does not provide SVG support").
+meson setup --prefix=/usr --buildtype=release -D pixbuf-loader=enabled .. &&
 ninja
 
 # --- block 2 --------------------------------------------------

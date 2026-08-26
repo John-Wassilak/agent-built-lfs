@@ -3,6 +3,20 @@
 # source : book/blfs-13.0/x/gdk-pixbuf.html
 # title  : gdk-pixbuf-2.44.5
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
+#
+# Rebuilt 2026-08-26: the book's own recipe disables every built-in loader
+# (png/gif/jpeg/tiff) on the assumption glycin (a newer external loader
+# service) replaces them -- but this project deliberately skipped glycin
+# back in tier 6 (circular Rust rebuild, out of scope), leaving BOTH paths
+# disabled. Net effect: gdk-pixbuf could load precisely nothing --
+# /usr/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache existed but listed zero
+# loaders, confirmed directly, and even GTK's own bundled PNG icons failed
+# to load with "Unrecognized image file format" -- the real bug behind
+# wofi's crash (Gtk:ERROR ensure_surface_for_gicon, SIGABRT). Not a wofi
+# bug at all; anything using icons anywhere in this desktop stack was
+# equally broken, just hadn't hit a hard crash yet. Re-enabled png/gif/
+# jpeg (libpng, giflib, libjpeg-turbo all already built) -- tiff left
+# disabled, libtiff was never built and isn't otherwise needed.
 set -e
 
 # --- block 0 --------------------------------------------------
@@ -18,13 +32,13 @@ meson setup ..                \
       --prefix=/usr           \
       --buildtype=release     \
       -D man=false            \
-      -D png=disabled         \
-      -D gif=disabled         \
-      -D jpeg=disabled        \
+      -D png=enabled          \
+      -D gif=enabled          \
+      -D jpeg=enabled         \
       -D tiff=disabled        \
       -D thumbnailer=disabled \
       --wrap-mode=nofallback  \
-      $(pkgconf glycin-2 || echo -D glycin=disabled) &&
+      -D glycin=disabled &&
 ninja
 
 # --- block 1 --------------------------------------------------
