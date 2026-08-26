@@ -1010,3 +1010,24 @@ stop -- not a script limitation, a property of the seat/VT model itself.
 Aquamarine needs to become DRM master of a real seat with a monitor
 attached, and an SSH session's pty has no VT association for
 seatd to hand a seat to. Has to be a physical/local console login.
+
+## First real attempt failed: the script's own XDG_RUNTIME_DIR logic was wrong
+
+`~/hyprland.log` showed `Bailing out, couldn't create
+/tmp/xdg-john/hypr/...` -- Hyprland was still landing on the `/tmp`
+fallback, not `/run/user/1000`, despite the tmpfiles.d fix. Root cause:
+`/etc/profile` carries the book's own documented fallback
+(`XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-/tmp/xdg-$USER}`) and runs *before*
+`start-hyprland.sh` does, every login. Since nothing else ever pre-sets
+the variable (no PAM), that fallback always fires first and sets it to
+`/tmp/xdg-john` -- a directory nothing creates. The script's own `${VAR:-
+default}` then found it already set and left it alone, silently
+preserving the wrong value instead of overriding it. Correctly refused
+by Hyprland rather than silently creating an insecure runtime dir, per
+the XDG spec -- not a bug in Hyprland.
+
+Fixed: `start-hyprland.sh` now force-sets `XDG_RUNTIME_DIR=/run/user/$(id
+-u)` unconditionally rather than deferring to whatever's already in the
+environment. `/run/user/1000` itself confirmed still present and
+correctly owned from the tmpfiles.d rule -- that half of the earlier fix
+was right, only the script's own env-handling was wrong.
