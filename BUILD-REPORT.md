@@ -889,3 +889,29 @@ were only ever documented as "pending" in prose before now --
 `CONFIG_CRYPTO_USER_API_SKCIPHER` (cryptsetup), and `CONFIG_WIREGUARD` --
 batched into one rebuild rather than three, per operator request. Kernel
 rebuild itself not yet run.
+
+## Claude Code moved from a system-wide to a per-user install (2026-08-26)
+
+Operator flagged that the original install (`npm install -g
+@anthropic-ai/claude-code`, tier 3, back on 2026-08-25) went into npm's
+system-wide default prefix -- `/usr`, which is where Node's own `configure`
+pointed npm at build time, matching every other package on this system.
+Root-owned `/usr/lib/node_modules`, though, means Claude Code's own
+self-updater can never write to its own install directory without sudo --
+it was stuck at whatever version got installed that first day.
+
+Fixed by giving `john` a private npm prefix (`npm config set prefix
+~/.npm-global`, writes to `~/.npmrc`) and reinstalling there --
+`~/.npm-global/bin` added ahead of `/usr/bin` in `~/.bash_profile`'s PATH.
+The reinstall itself confirmed the fix: it pulled 2.1.246, one patch ahead
+of the stuck system copy's 2.1.245. Old system-wide install removed
+(`/usr/lib/node_modules/@anthropic-ai/claude-code`, `/usr/bin/claude`).
+Confirmed `john` owns every file under the new prefix and can write to it
+directly -- self-updates should work going forward without any
+intervention. `~/.claude` (session history, config) is untouched by any of
+this -- it was never inside the npm package's own directory tree.
+
+`recipes/blfs-claude-code.sh` updated to install as `john` (via `sudo -u
+john`) against `john`'s own npm prefix from the start, rather than as root
+against the system-wide one -- so a future rebuild from scratch doesn't
+reintroduce the same problem.
