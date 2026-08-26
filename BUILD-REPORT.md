@@ -1208,3 +1208,57 @@ access, `/root/.cargo` excluded from the manifest sweep from the start.
 
 Package db: 319 packages, 76108 files (before librsvg's own rebuild
 manifest lands).
+
+## Full health/driver pass, usbutils, and the real audio root cause (2026-08-26)
+
+Operator requested `lsusb`/usbutils plus a clean-state check (logs,
+driver bindings) before continuing toward Firefox.
+
+`usbutils-019` built clean (BLFS page, standard). `lsusb` correctly
+resolves real device names via `hwdata`'s `usb.ids`.
+
+**dmesg/journalctl**: no failed systemd units, no new errors beyond
+what's already documented (ACPI SATA `_GTF` BIOS bugs, the journald
+BPF-firewall notice) plus a repeating, benign `nouveau: DDC responded,
+but no EDID for DVI-D-1` (that port has nothing connected). Every
+`systemd-coredump` entry in the journal matched a crash already
+diagnosed and fixed this session (the XDG_RUNTIME_DIR bug, XWayland's
+missing xkbcomp, the welcome-dialog position bug, wofi's gdk-pixbuf
+crashes) -- nothing new.
+
+**The audio gap, actually explained**: `lspci -k` (now possible with
+usbutils' sibling pciutils) plus the running kernel's own `.config`
+gave the real answer this session's earlier guesses missed. The HDA
+*controller* driver (`SND_HDA_INTEL`) is enabled and binds to both HDA
+devices fine -- but every actual *codec* driver is unset:
+`SND_HDA_CODEC_REALTEK`, `SND_HDA_CODEC_HDMI`, `SND_HDA_GENERIC` all
+`is not set`. The controller can enumerate the codec chips but has
+nothing to claim or configure them with -- not a hardware fault, and
+not something nouveau binding was ever going to touch (confirms that
+was the wrong guess, made before this session had the tools to check
+properly). Added all three to `kernel-config.sh`, batched for the next
+kernel rebuild -- **not run yet**, pending operator confirmation since
+it needs a reboot that would interrupt the current live Hyprland
+session.
+
+**Also found via `lspci -k`, not investigated further**: a Broadcom
+BCM4321 802.11b/g/n card with zero kernel driver bound. Ethernet
+already provides connectivity; flagged for the operator to decide if
+wireless is wanted.
+
+**Resources**: 91G disk free, 26G RAM free, 0 swap used, load average
+normal for background compiles in progress. All healthy.
+
+**Two more manifest-accuracy bugs found and fixed via `lfsmaint
+verify`** (the tool doing exactly its job): librsvg's own rebuild
+manifest had picked up usbutils' already-synced files (both builds
+overlapped in time, sharing `/usr`); and usbutils' *original* manifest
+had 26 stray entries from librsvg's Rust build tree, caught by a
+timing race between the two builds' `-newer` sweeps. Both corrected
+by hand; `lfsmaint verify` now clean except the one pre-existing,
+unrelated `dbus` doc-file gap documented weeks ago.
+
+Package db: 320 packages, 76114 files. `lfsmaint verify`: clean.
+
+Next: operator to confirm the audio kernel rebuild timing, then
+Firefox -- the last package in this plan.
