@@ -990,3 +990,23 @@ itself isn't BLFS-tracked the way userspace packages are).
 
 Next: physical-console Hyprland test, then Firefox (Tier 15's last
 package) once confirmed.
+
+## Hyprland confirmed working at the physical console (2026-08-26)
+
+Operator confirmed `~/start-hyprland.sh` brings up a real session.
+Cleaned up the two now-superseded kernel entries (plain `6.18.10` and
+`6.18.10-nftables`) -- `/boot` vmlinuz/System.map/config files and
+`/lib/modules/{6.18.10,6.18.10-nftables}` removed, `grub.cfg` rewritten
+down to the single working `6.18.10-nouveau` entry (`default=0`). Only
+now, with a confirmed-working boot behind it -- never before.
+
+`start-hyprland.sh` updated to redirect Hyprland's stdout/stderr to
+`~/hyprland.log` (previous run rotated to `~/hyprland.log.old` on each
+launch) for troubleshooting -- `tail -f ~/hyprland.log` from an SSH
+session while testing at the console works fine for watching it live.
+
+Confirmed for the operator: Hyprland cannot be started over SSH, full
+stop -- not a script limitation, a property of the seat/VT model itself.
+Aquamarine needs to become DRM master of a real seat with a monitor
+attached, and an SSH session's pty has no VT association for
+seatd to hand a seat to. Has to be a physical/local console login.
