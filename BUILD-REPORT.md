@@ -790,5 +790,34 @@ direct `cp -p` reproduction before relying on it for tier 15.
 
 Package db: 295 packages, 70534 files.
 
-Next: real LLVM+clang, then Firefox (Tier 15) -- the two large builds
-remaining.
+## Tier 15 prerequisites complete: nspr, nss, libarchive, libnotify, startup-notification, libevent (2026-08-26)
+
+Firefox's own Required/Recommended list needed six packages this system
+didn't have yet. `nspr` and `libarchive` built clean. `nss` (which needs
+nspr) built clean too -- confirms the `-cnewer` fix works: its manifest
+now correctly captures all 259 files under `/usr/include/nss`, where the
+old `-newer` technique would have caught only the freshly-generated ones.
+
+`libnotify` failed its first pass on a real, undocumented hard dependency:
+its `meson.build` gates the `gtk4` check behind `required:
+get_option('tests')`, which defaults to true -- the book lists GTK4 as
+"Recommended... required for tests" but its own recipe doesn't pass `-D
+tests=false`, so the configure step fails outright even though nothing
+about a normal build needs GTK4. Confirmed by reading libnotify's actual
+`meson_options.txt`/`meson.build` on target rather than guessing. Fixed
+with `-D tests=false` -- avoided pulling in an entire second GTK toolkit
+(GTK4 plus its own new deps: graphene, ISO Codes, PyGObject) for a test
+suite this project doesn't run anyway. Same class of gap as
+pango/gdk-pixbuf/json-c/popt's doc-tool defaults in earlier tiers.
+`startup-notification` and `libevent` built clean.
+
+**Process change**: long builds (LLVM and Firefox from here on) now launch
+inside a named `screen` session on target rather than bare `nohup &
+disown`, per operator request -- both approaches survive an SSH
+disconnect, but `screen` also allows reattaching to watch live output
+directly (`screen -x <name>`) instead of only grepping log files.
+
+Package db: 303 packages, 71049 files.
+
+Next: real LLVM+clang (launched, running in `screen -S llvm-build`), then
+Firefox (Tier 15) -- the two large builds remaining.
