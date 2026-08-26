@@ -2686,5 +2686,61 @@
     "blocks": 6,
     "enabled": 1,
     "disabled": 0
+  },
+  {
+    "seq": 193,
+    "order": "blfs.193",
+    "name": "blfs-pciutils",
+    "chapter": "blfs",
+    "page": "pciutils",
+    "title": "pciutils-3.14.0 (hand-authored)",
+    "context": "chroot",
+    "tarball": "pciutils-3.14.0.tar.gz",
+    "manifest": true,
+    "blocks": 3,
+    "enabled": 1,
+    "disabled": 0
+  },
+  {
+    "seq": 194,
+    "order": "blfs.194",
+    "name": "blfs-pipewire",
+    "chapter": "blfs",
+    "page": "pipewire",
+    "title": "pipewire-1.6.0 (hand-authored)",
+    "context": "chroot",
+    "tarball": "pipewire-1.6.0.tar.bz2",
+    "manifest": true,
+    "blocks": 2,
+    "enabled": 1,
+    "disabled": 0
+  },
+  {
+    "seq": 195,
+    "order": "blfs.195",
+    "name": "blfs-wireplumber",
+    "chapter": "blfs",
+    "page": "wireplumber",
+    "title": "Wireplumber-0.5.13 (hand-authored)",
+    "context": "chroot",
+    "tarball": "wireplumber-0.5.13.tar.bz2",
+    "manifest": true,
+    "blocks": 2,
+    "enabled": 1,
+    "disabled": 0
+  },
+  {
+    "seq": 196,
+    "order": "blfs.196",
+    "name": "blfs-wireguard-tools",
+    "chapter": "blfs",
+    "page": "wireguard-tools",
+    "title": "wireguard-tools-1.0.20260223 (hand-authored)",
+    "context": "chroot",
+    "tarball": "wireguard-tools-1.0.20260223.tar.xz",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
   }
 ]

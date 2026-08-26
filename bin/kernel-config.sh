@@ -61,6 +61,20 @@ $K --module  IP6_NF_IPTABLES_LEGACY
 $K --module  IP6_NF_FILTER
 $K --module  IP6_NF_MANGLE
 
+# --- added 2026-08-26: batched pending items for the next kernel rebuild ---
+# nouveau: this GPU (GK104/GTX 770, Kepler) currently has no driver bound at
+# all -- `make defconfig` doesn't enable it. Needed for the Hyprland stack's
+# OpenGL acceleration (Mesa already built with gallium-drivers=nouveau).
+$K --module  DRM_NOUVEAU
+# cryptsetup: installed and verified (tier "extended scope", 2026-08-25) but
+# can't open/create encrypted volumes yet -- none of these were set either.
+$K --module  DM_CRYPT
+$K --enable  CRYPTO_XTS
+$K --enable  CRYPTO_USER_API_SKCIPHER
+# wireguard-tools: userspace CLI only needs the kernel module, in-tree since
+# Linux 5.6 but not enabled by defconfig on this kernel either.
+$K --module  WIREGUARD
+
 # --- book: Device Drivers, udev/systemd requirements ---
 $K --disable UEVENT_HELPER
 $K --enable  DEVTMPFS

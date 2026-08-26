@@ -821,3 +821,71 @@ Package db: 303 packages, 71049 files.
 
 Next: real LLVM+clang (launched, running in `screen -S llvm-build`), then
 Firefox (Tier 15) -- the two large builds remaining.
+
+## System scan and security pass, done alongside the LLVM build (2026-08-26)
+
+Operator requested a system health scan and a security pass while LLVM
+compiles in the background (CPU-bound, no conflict with this work).
+
+**Scan findings**: no failed systemd units; firewall is a clean
+default-DROP with only SSH and established traffic allowed; 92G disk free,
+31GB RAM + 15GB swap (fine headroom for Firefox); the journal-corruption
+message in dmesg was systemd's own self-healing response to the power-loss
+reboot, already resolved. Two real gaps found: no audio hardware registers
+at all (`/proc/asound/cards` empty) -- one of the two failing HDA codec
+probes is the NVIDIA GPU's own HDMI audio function, likely fixed once
+nouveau is bound (see kernel section below); the other, the onboard
+motherboard codec, fails for an unexplained reason, not yet chased down.
+`/dev/sda` (465GB) sits unmounted with its own ext4+swap, separate from the
+LFS disk (`sdb`) -- confirmed with the operator to be pre-existing data,
+not touched.
+
+**Security changes**, done in a deliberate order so a working privileged
+path always existed before the previous one was closed:
+1. `john ALL=(ALL) NOPASSWD: ALL` added via `/etc/sudoers.d/90-john-temp-nopasswd`
+   (syntax-validated with `visudo -c`), confirmed working.
+2. `PermitRootLogin no` set in sshd_config (validated with `sshd -t`,
+   restarted, confirmed john's own access still worked and root SSH now
+   gets refused outright).
+3. `passwd -l root` -- confirmed root is still reachable via `sudo -n -i`
+   (sudo doesn't consult the account password, so this doesn't remove
+   access, only the password-guessing surface).
+4. All non-root system/service accounts with a real (non-locked) password
+   hash -- `bin`, `daemon`, `messagebus`, `systemd-journal-gateway`,
+   `systemd-journal-remote`, `systemd-journal-upload`, `systemd-network`,
+   `systemd-resolve`, `systemd-timesync`, `systemd-coredump`, `uuidd`,
+   `systemd-oom`, `nobody`, `sshd` -- locked the same way. None of these
+   should ever need interactive login. `john`'s own password deliberately
+   left alone (operator still logs in as that user).
+
+**Operator-requested config changes**: hostname changed `lfs` -> `server`
+(`hostnamectl set-hostname`, plus the stale `/etc/hosts` 127.0.1.1 line
+fixed to match -- `hostnamectl` alone doesn't touch that file). NTP sync
+and the America/Chicago timezone were already correctly configured from
+the original install, nothing to do there. `en_US.UTF-8` locale generated
+with `localedef` -- `/etc/locale.conf` already pointed at it, but the
+compiled locale itself had never been built, so every session was silently
+falling back to `POSIX`. `/dev/sda2` added to `/etc/fstab` (by UUID) and
+mounted at `/mnt/big_drive`, confirmed by the operator as the intended
+mount point. `/usr/sbin` added to `john`'s own `.bash_profile` PATH for
+interactive convenience -- `sudo`'s own `secure_path` already included it,
+so `sudo ip`/`sudo ss` etc. already worked without full paths; this was
+only missing for direct, non-sudo use.
+
+**New packages queued** (recipes + `state/blfs-plan.json` entries written,
+not yet built -- avoiding CPU contention with the running LLVM build):
+`pciutils` (lspci/lspci, flagged missing during the scan), `pipewire` and
+`wireplumber` (its session manager -- pipewire alone has no automatic
+device management; built without the optional BlueZ/gstreamer/v4l-utils
+chain, none of which this box has a current use for), and
+`wireguard-tools` (no BLFS book page -- hand-authored from upstream,
+version-matched against Arch's current official package rather than
+assumed). All four queued to build after LLVM finishes and before Firefox,
+per operator request.
+
+**Kernel config**: `bin/kernel-config.sh` updated with the three items that
+were only ever documented as "pending" in prose before now --
+`CONFIG_DRM_NOUVEAU`, `CONFIG_DM_CRYPT`/`CONFIG_CRYPTO_XTS`/
+`CONFIG_CRYPTO_USER_API_SKCIPHER` (cryptsetup), and `CONFIG_WIREGUARD` --
+batched into one rebuild rather than three, per operator request. Kernel
+rebuild itself not yet run.
