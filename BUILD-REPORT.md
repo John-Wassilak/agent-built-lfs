@@ -1377,4 +1377,35 @@ wl-clipboard itself was already installed and working from the earlier
 desktop-utils batch; nothing needed there beyond confirming it
 (`wl-copy`/`wl-paste` present).
 
+## WireGuard configured and enabled at boot (2026-08-26)
+
+`wireguard-tools` and the kernel `CONFIG_WIREGUARD` module were already
+in place from the earlier tier (above) but never configured with an
+actual peer -- this machine is `server` (`10.0.0.4/32`) in the
+operator's existing hub-and-spoke VPN, split-tunnel only (VPN subnet
+traffic only, not a full-tunnel default route -- this box is already
+on the same LAN as the router, so there's no reason to route its
+general internet traffic through it).
+
+Copied `server-wg0-split.conf` from the operator's own key store
+(`/mnt/crypt/john/wg/` on the laptop, not part of this repo) to
+`/etc/wireguard/wg0.conf` on target, `600 root:root`. Enabled and
+started `wg-quick@wg0.service` (the systemd template unit
+`wireguard-tools` installs, no separate unit file needed) via
+`systemctl enable --now` -- confirmed both the `multi-user.target`
+and `wg-quick.target` want-symlinks were created, so this comes up on
+every boot without manual intervention.
+
+Verified working, not just "service reports active": `wg show`
+confirms a real handshake with the router
+(`1xPB/eGR2DO7nPpW5ErGe95GfyryQcuR86xer8en/3U=` at
+`192.168.0.30:51820`) and non-zero transfer counters growing on a
+second check (124B received / 948B sent), `wg0` has the correct
+`10.0.0.4/24` address and the `10.0.0.0/24` route installed. `ping` to
+the router's VPN IP (`10.0.0.1`) fails 100% -- ran a control test
+(plain LAN ping to the router's `192.168.0.30`, entirely outside the
+tunnel) which also fails 100%, confirming the router simply doesn't
+answer ICMP at all rather than anything being wrong with this tunnel.
+Not a target-side issue and not touched.
+
 Next: Firefox -- the last package in this plan.
