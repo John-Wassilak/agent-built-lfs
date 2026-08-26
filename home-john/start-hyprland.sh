@@ -23,4 +23,11 @@ export XDG_CURRENT_DESKTOP=Hyprland
 LOG="$HOME/hyprland.log"
 [ -f "$LOG" ] && mv -f "$LOG" "$LOG.old"
 
-exec Hyprland > "$LOG" 2>&1
+# start-hyprland is Hyprland's own watchdog binary (installed by the
+# Hyprland package itself, tier 10) -- launching the bare Hyprland binary
+# directly, as this script originally did, prints "WARNING: Hyprland is
+# being launched without start-hyprland. This is highly advised against."
+# at startup. start-hyprland forwards anything after `--` to Hyprland
+# itself; nothing extra needed here since our config lives at the default
+# ~/.config/hypr/hyprland.lua location.
+exec start-hyprland > "$LOG" 2>&1
