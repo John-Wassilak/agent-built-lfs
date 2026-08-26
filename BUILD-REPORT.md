@@ -1072,3 +1072,75 @@ same dead-dispatcher failure. Follow-up if/when that turns out to
 matter.
 
 Package db: 307 packages, 75515 files.
+
+## Dotfiles mirrored, desktop utilities built, and a real XWayland bug found (2026-08-26)
+
+Third attempt (after the XDG_RUNTIME_DIR and Mesa/glvnd fixes above)
+actually produced a live session -- but the operator reported a
+full-screen window they couldn't interact with. `hyprctl clients` (the
+first time a live query against a running instance was possible this
+session) showed the cause directly: Hyprland's own built-in first-run
+"Welcome" dialog, auto-launched because no real config existed yet, with
+a corrupted window position (`y: 884962` -- effectively off-screen),
+producing the `pixman_region32_init_rect: Invalid rectangle passed`
+errors in the log. Fix: deploy a real config so the welcome dialog never
+launches in the first place (see below) -- not a Hyprland bug worth
+chasing on its own.
+
+**Separately, a real XWayland bug**: the same log showed XWayland's
+embedded X server failing outright -- `xkbcomp: No such file or
+directory`, `XKB: Failed to compile keymap`, `Fatal server error: Failed
+to activate virtual core keyboard`. `xkbcomp` was never built (no BLFS
+page; hand-authored from xorg's own gitlab, matching Arch's
+`xorg-xkbcomp` 1.5.0). Would have blocked any X11 app's keyboard input,
+including Firefox if it ever falls back to XWayland. Fixed.
+
+**Dotfiles mirrored** from the operator's real laptop config
+(`~/config/hypr`, `~/config/mpv`, `~/config/alacritty`, `~/config/wofi`)
+into `~/.config` on target, trimmed for this machine after clarifying
+scope with the operator: no multi-monitor block (single HDMI-A-1, let
+Hyprland auto-detect), no DankMaterialShell/waybar (operator doesn't
+want a shell/bar), no swayidle (no screen blanking wanted), dolphin/
+chromium keybindings dropped (neither fits this build -- dolphin needs
+KDE Frameworks, chromium has no build path here at all), keyboard-
+backlight bindings dropped (desktop box, no such hardware, same
+reasoning as the monitor exclusion). `mpv.conf`'s `hwdec=vaapi` changed
+to `hwdec=auto` -- nouveau has no VAAPI driver, `auto` degrades
+gracefully instead of guaranteed no-op. Reference copies of every
+deployed config tracked in this repo under `home-john/.config/`.
+
+**New small utilities built**, all hand-authored (none in BLFS), all
+version-matched against Arch's official packaging: `xkbcomp` (above),
+`jq` (hyprshot's JSON parsing -- its release tarball vendors a full
+oniguruma copy, confirmed present before relying on it), `grim` + `slurp`
+(screenshot capture/region-select), `wl-clipboard`, `wlsunset` (kept the
+operator's real coordinates, 35.46/-97.32), `wofi` (turned out not to
+need `gtk-layer-shell` at all -- it bundles its own wlr-layer-shell
+protocol code, confirmed by reading its actual meson.build/source rather
+than assuming), `hyprshot` itself (single script, version-pinned against
+Arch's 1.3.0 rather than tracking upstream `main`), and `alacritty`
+(Rust/Cargo, tier 6's toolchain).
+
+**cliphist explicitly NOT built**: it's a Go program, and this project
+has no Go toolchain anywhere -- building one from scratch would be its
+own significant undertaking, out of scope for "install a lightweight
+utility." `wl-clipboard` is installed and wired into the autostart, but
+nothing consumes its `--watch` output yet.
+
+**Two real build-script bugs hit and fixed along the way**: (1) several
+fetch URLs (`slurp`, `wl-clipboard`, `alacritty`, initially `wofi`/
+`wlsunset` too) used GitHub/sourcehut tag-archive links whose basename
+doesn't include the project name (e.g. `v1.5.0.tar.gz`, not
+`slurp-1.5.0.tar.gz`) -- silently downloaded to the wrong filename,
+breaking the batch script's later lookup. (2) Alacritty's build failed
+with `cargo: command not found` when run via `sudo -n bash -c` (non-login
+shell) -- `/opt/rustc/bin` is only added to `PATH` by
+`/etc/profile.d/rustc.sh`, which non-login shells never source. Same
+class of gap as the earlier `XDG_RUNTIME_DIR` script bug: verify what a
+*login* shell actually has on `PATH` before assuming a batch script's
+plain `bash -c` matches it. Firefox will hit the identical issue if its
+own build step isn't run via a login shell -- noted for when that tier
+starts.
+
+Package db: 316 packages (before Alacritty's own manifest lands),
+75584 files.

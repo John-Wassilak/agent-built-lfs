@@ -1,0 +1,14 @@
+# Main mode (drun = .desktop files)
+mode=drun
+
+# Core icon settings
+allow_images=true
+image_size=16
+
+# Emacs keybindings
+key_down=Ctrl-n
+key_up=Ctrl-p
+key_forward=Ctrl-f
+key_backward=Ctrl-b
+key_submit=Ctrl-m
+key_exit=Ctrl-g
