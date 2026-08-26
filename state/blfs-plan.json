@@ -2742,5 +2742,19 @@
     "blocks": 1,
     "enabled": 1,
     "disabled": 0
+  },
+  {
+    "seq": 197,
+    "order": "blfs.197",
+    "name": "blfs-xkbcomp",
+    "chapter": "blfs",
+    "page": "xkbcomp",
+    "title": "xkbcomp-1.5.0 (hand-authored)",
+    "context": "chroot",
+    "tarball": "xkbcomp-xkbcomp-1.5.0.tar.gz",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
   }
 ]
