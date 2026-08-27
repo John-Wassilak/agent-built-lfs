@@ -34,7 +34,6 @@
 /usr/lib/gtk-3.0/3.0.0/immodules/im-ti-er.so
 /usr/lib/gtk-3.0/3.0.0/immodules/im-ti-et.so
 /usr/lib/gtk-3.0/3.0.0/immodules/im-viqr.so
-/usr/lib/gtk-3.0/3.0.0/immodules/im-wayland.so
 /usr/lib/gtk-3.0/3.0.0/immodules/im-xim.so
 /usr/lib/gtk-3.0/3.0.0/printbackends/libprintbackend-file.so
 /usr/lib/gtk-3.0/3.0.0/printbackends/libprintbackend-lpr.so
@@ -50,12 +49,10 @@
 /usr/lib/pkgconfig/gail-3.0.pc
 /usr/lib/pkgconfig/gdk-3.0.pc
 /usr/lib/pkgconfig/gdk-broadway-3.0.pc
-/usr/lib/pkgconfig/gdk-wayland-3.0.pc
 /usr/lib/pkgconfig/gdk-x11-3.0.pc
 /usr/lib/pkgconfig/gtk+-3.0.pc
 /usr/lib/pkgconfig/gtk+-broadway-3.0.pc
 /usr/lib/pkgconfig/gtk+-unix-print-3.0.pc
-/usr/lib/pkgconfig/gtk+-wayland-3.0.pc
 /usr/lib/pkgconfig/gtk+-x11-3.0.pc
 /usr/share/gir-1.0/Gdk-3.0.gir
 /usr/share/gir-1.0/GdkX11-3.0.gir
