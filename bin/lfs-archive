@@ -1,80 +1,321 @@
 #!/bin/bash
-# Archive the LFS tree -- used both for checkpoint snapshots and the final Phase 6 tarball.
+# Archive an LFS system, in one of two modes:
 #
-# The flags here are not incidental:
+#   tree   an offline tree at /mnt/lfs -- the build-host arrangement. Used for the
+#          checkpoint snapshots and the Phase 6 deliverable tarball.
+#   live   this running system, for a restorable backup of a self-hosting box.
+#
+# Detected automatically (a populated tree at /mnt/lfs means build host, otherwise
+# ID=lfs in /etc/os-release means the tree is us); --tree / --live force it.
+#
+# The tar flags are not incidental:
 #   -p               permissions verbatim, not masked by the caller's umask. This one is
-#                    load-bearing: the tree has 17 setuid/setgid binaries (su, passwd,
+#                    load-bearing: the tree has setuid/setgid binaries (su, passwd,
 #                    ping, umount, ...) that are broken if their mode bits are lost.
-#   --numeric-owner  the LFS tree's uid/gid map is its own, not the host's
-#   --xattrs/--acls  belt and braces. Verified: a by-the-book LFS 13.0 tree carries NO
-#                    file capabilities and no security.* xattrs -- those arrive with BLFS
-#                    packages later. Kept so the same command stays correct after BLFS.
+#   --numeric-owner  the LFS uid/gid map is its own, not the restoring host's
+#   --xattrs/--acls  measured on this system: still zero file capabilities and zero
+#                    security.* xattrs even after BLFS, so these are not load-bearing
+#                    today. Kept so the same command stays correct if that changes.
 #   --sparse         several installed files are sparse
+#   --one-file-system  live mode only, and the primary guard there: it stops at every
+#                    mount boundary, so /proc, /sys, /dev, /run, /tmp and any mounted
+#                    data disk are structurally excluded rather than excluded by a
+#                    pattern someone has to remember to update. The mount points
+#                    themselves are still archived as empty directories, which is what
+#                    a restore needs.
 #
-# Hardlinks (3562 files here with link count > 1) are preserved by tar by default.
+# Hardlinks are preserved by tar by default.
 #
-# It refuses to run while the virtual kernel filesystems are still bound into the tree.
-# Without that check you archive the host's /proc and /dev into the tarball, which is a
-# corrupt image that only reveals itself at boot.
+# The two modes guard against the same failure in opposite ways. Tree mode REFUSES to
+# run while the virtual kernel filesystems are bound into the tree, because archiving
+# the host's /proc and /dev produces a corrupt image that only reveals itself at boot.
+# Live mode cannot unmount anything, so it excludes them instead -- and both modes then
+# prove it worked with the same leak check against the finished archive.
 
 set -uo pipefail
 
-LFS=/mnt/lfs
-OUT=${1:?usage: lfs-archive <output.tar.zst|output.tar.gz> [--final]}
-FINAL=${2:-}
+CHROOT_TREE=/mnt/lfs
 
-# --- mount guard ---------------------------------------------------------------
-mounted=()
-for m in /dev/pts /dev/shm /dev /proc /sys /run; do
-    if grep -qE " ${LFS}${m} " /proc/mounts; then mounted+=("$LFS$m"); fi
+MODE=""
+OUT=""
+FINAL=""
+FORCE=""
+DRY=""
+USER_EX=()
+
+usage() {
+    cat >&2 <<'USAGE'
+usage: lfs-archive <output.tar.zst|.tar.gz|.tar.xz> [options]
+
+  --live       archive this running system
+  --tree       archive the offline tree at /mnt/lfs
+  --final      tree mode: label the run as the deliverable rather than a snapshot
+  --dry-run    show what would be archived, and its size, without writing anything
+  --force      proceed even if the destination looks too small
+  --exclude P  omit P (repeatable). Relative to the archive root, so "./home/john/media"
+               or a glob like "./home/*/Downloads/*".
+USAGE
+}
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --live)    MODE=live ;;
+        --tree)    MODE=tree ;;
+        --final)   FINAL=1 ;;
+        --force)   FORCE=1 ;;
+        --dry-run) DRY=1 ;;
+        --exclude) shift; [ $# -gt 0 ] || { echo "--exclude needs a path" >&2; exit 2; }
+                   USER_EX+=(--exclude="$1") ;;
+        --exclude=*) USER_EX+=(--exclude="${1#--exclude=}") ;;
+        -h|--help) usage; exit 0 ;;
+        -*)        echo "unknown option: $1" >&2; usage; exit 2 ;;
+        *)         if [ -z "$OUT" ]; then OUT=$1
+                   else echo "unexpected argument: $1" >&2; usage; exit 2; fi ;;
+    esac
+    shift
 done
-if [ ${#mounted[@]} -gt 0 ]; then
-    echo "REFUSING: virtual kernel filesystems still mounted:" >&2
-    printf '  %s\n' "${mounted[@]}" >&2
-    echo >&2
-    echo "Unmount them first:  sudo bin/lfs-umount" >&2
-    exit 1
-fi
-echo "mount guard: clean, no virtual filesystems under $LFS"
 
-# --- exclusions ----------------------------------------------------------------
-EX=(--exclude=./sources --exclude=./tmp/* --exclude=./var/tmp/*)
-[ -n "$FINAL" ] && echo "mode: FINAL deliverable" || echo "mode: checkpoint snapshot"
+[ -n "$OUT" ] || { usage; exit 2; }
+
+# --- mode ----------------------------------------------------------------------
+if [ -z "$MODE" ]; then
+    if [ -d "$CHROOT_TREE/usr/bin" ]; then
+        MODE=tree
+    elif grep -qx 'ID=lfs' /etc/os-release 2>/dev/null; then
+        MODE=live
+    else
+        echo "cannot tell which mode to run in: no populated tree at $CHROOT_TREE, and" >&2
+        echo "this is not an LFS system. Pass --tree or --live explicitly." >&2
+        exit 2
+    fi
+fi
+
+if [ "$MODE" = tree ]; then
+    SRC=$CHROOT_TREE
+    [ -d "$SRC" ] || { echo "no tree at $SRC; use --live for a running system" >&2; exit 2; }
+else
+    SRC=/
+    [ -n "$FINAL" ] && { echo "--final applies to tree mode only" >&2; exit 2; }
+fi
 
 case "$OUT" in
-    *.zst) COMP=(--zstd) ;;
-    *.gz)  COMP=(--gzip) ;;
-    *.xz)  COMP=(--xz) ;;
+    *.zst) COMP=(--use-compress-program="zstd -T0") ;;   # -T0: all cores. A live root
+    *.gz)  COMP=(--gzip) ;;                              # is tens of GB; single-threaded
+    *.xz)  COMP=(--use-compress-program="xz -T0") ;;     # compression dominates the run.
     *)     echo "unknown compression for $OUT" >&2; exit 1 ;;
 esac
 
-echo "archiving $LFS -> $OUT"
+# --- guards and exclusions ------------------------------------------------------
+ONEFS=()
+if [ "$MODE" = tree ]; then
+    # The tree is offline, so anything mounted into it would be the HOST's -- refuse.
+    mounted=()
+    for m in /dev/pts /dev/shm /dev /proc /sys /run; do
+        if grep -qE " ${SRC}${m} " /proc/mounts; then mounted+=("$SRC$m"); fi
+    done
+    if [ ${#mounted[@]} -gt 0 ]; then
+        echo "REFUSING: virtual kernel filesystems still mounted:" >&2
+        printf '  %s\n' "${mounted[@]}" >&2
+        echo >&2
+        echo "Unmount them first:  sudo bin/lfs-umount" >&2
+        exit 1
+    fi
+    echo "mount guard: clean, no virtual filesystems under $SRC"
+    EX=(--exclude=./sources --exclude='./tmp/*' --exclude='./var/tmp/*')
+    [ -n "$FINAL" ] && echo "mode: tree, FINAL deliverable" || echo "mode: tree, checkpoint snapshot"
+else
+    ONEFS=(--one-file-system)
+    # Everything below is on the root filesystem, so --one-file-system does not cover
+    # it and each exclusion is a real decision:
+    #   tmp, var/tmp   volatile by definition
+    #   lost+found     fsck scratch, meaningless on a restored filesystem
+    #   sources        build staging; every tarball in it is re-downloadable
+    # The pseudo-filesystems are listed too, as belt and braces behind --one-file-system.
+    EX=(--exclude='./proc/*' --exclude='./sys/*' --exclude='./dev/*' --exclude='./run/*'
+        --exclude='./tmp/*' --exclude='./var/tmp/*'
+        --exclude=./lost+found --exclude=./sources)
+    echo "mode: live, running system"
+fi
+
+# Caller-supplied exclusions last, so they can drop bulk that is not part of the system
+# at all. On this box /home is 25 GB of media and old snapshot tarballs against roughly
+# 7 GB of actual OS, which is the difference between a 27 GB archive and a small one.
+EX+=("${USER_EX[@]}")
+
+# Never archive the archive.
+# readlink -m, not -f: -f returns the empty string when any leading component is
+# missing, which silently turns the output path into "" and sends tar's output to a
+# broken pipe. -m resolves the path regardless, and the directory check below is what
+# actually reports the problem.
+OUT_ABS=$(readlink -m "$OUT")
+OUT_DIR=$(dirname "$OUT_ABS")
+if [ ! -d "$OUT_DIR" ]; then
+    echo "output directory does not exist: $OUT_DIR" >&2
+    exit 2
+fi
+# tar runs under sudo, so root's write access is what matters here, not the caller's.
+if ! sudo test -w "$OUT_DIR"; then
+    echo "output directory is not writable by root: $OUT_DIR" >&2
+    exit 2
+fi
+[ "$SRC" = "/" ] && SRCPFX="" || SRCPFX="$SRC"
+case "$OUT_ABS" in
+    "$SRCPFX"/*) EX+=(--exclude="./${OUT_ABS#"$SRCPFX"/}") ;;
+esac
+
+# --- space ----------------------------------------------------------------------
+src_fs=$(df --output=target "$SRC" | tail -1)
+out_fs=$(df --output=target "$OUT_DIR" | tail -1)
+used=$(df --output=used --block-size=1 "$SRC" | tail -1)
+avail=$(df --output=avail --block-size=1 "$OUT_DIR" | tail -1)
+hum() { numfmt --to=iec --suffix=B "$1" 2>/dev/null || echo "$1"; }
+
+echo "source  : $SRC  (filesystem $src_fs, $(hum "$used") used)"
+echo "target  : $OUT_ABS  (filesystem $out_fs, $(hum "$avail") free)"
+
+if [ "$src_fs" = "$out_fs" ]; then
+    echo "WARNING : the archive is being written to the filesystem it is archiving." >&2
+    echo "          tar skips the archive itself, so this terminates, but it consumes" >&2
+    echo "          free space on the very filesystem you are backing up." >&2
+fi
+
+# Writing a multi-GB system backup into RAM is not something anyone means to do, and
+# it can take the machine out. Measured here: a target on /run (tmpfs) sailed past the
+# free-space check and had written 1.5 GB into RAM before it was killed.
+out_fstype=$(df --output=fstype "$OUT_DIR" | tail -1)
+case "$out_fstype" in
+    tmpfs|ramfs)
+        if [ -z "$FORCE" ]; then
+            echo "REFUSING: $OUT_DIR is $out_fstype -- that is RAM, not disk. The archive" >&2
+            echo "          would be held in memory. Override with --force if deliberate." >&2
+            exit 1
+        fi
+        echo "WARNING : writing to $out_fstype ($OUT_DIR) -- this archive lives in RAM." >&2
+        ;;
+esac
+
+# Do not assume a compression ratio: measured on this system, a 43 GB root produced a
+# 27 GB zstd archive -- about 1.6x, not the 3x a system tree suggests, because most of
+# the bulk is already-compressed media. So require room for half the source's used
+# bytes and let --force cover the cases where the content really does compress well.
+if [ "$avail" -lt $((used / 2)) ] && [ -z "$FORCE" ]; then
+    echo "REFUSING: $(hum "$avail") free at the target, against $(hum "$used") of source." >&2
+    echo "          Compression on this kind of tree measured ~1.6x, so this very likely" >&2
+    echo "          will not fit. Override with --force, or exclude bulk with --exclude." >&2
+    exit 1
+fi
+
+# --- dry run --------------------------------------------------------------------
+if [ -n "$DRY" ]; then
+    echo
+    echo "=== would archive ==="
+    echo "tar --create ${COMP[*]} --file $OUT_ABS \\"
+    echo "    -p --numeric-owner --xattrs --acls --sparse ${ONEFS[*]} \\"
+    printf '    %s \\\n' "${EX[@]}"
+    echo "    -C $SRC ."
+    echo
+    echo "measuring content size (du, one filesystem)..."
+    # The tar patterns are archive-relative (./home/*) because tar runs with -C "$SRC".
+    # du walks absolute paths, so ./x has to become $SRC/x or every exclusion silently
+    # matches nothing and the estimate reports the whole filesystem.
+    du_ex=()
+    for e in "${EX[@]}"; do
+        pat=${e#--exclude=}
+        case "$pat" in ./*) pat="${SRCPFX}/${pat#./}" ;; esac
+        du_ex+=("--exclude=$pat")
+    done
+    sudo du -sxh "${du_ex[@]}" "$SRC" 2>/dev/null | sed 's/^/content: /'
+    exit 0
+fi
+
+# --- archive --------------------------------------------------------------------
+echo
+echo "archiving $SRC -> $OUT_ABS"
+ERRLOG=$(mktemp)
 t0=$(date +%s)
-sudo tar --create "${COMP[@]}" --file "$OUT" \
-    -p --numeric-owner --xattrs --acls --sparse \
-    "${EX[@]}" -C "$LFS" . 2> >(grep -v 'socket ignored' >&2)
+sudo tar --create "${COMP[@]}" --file "$OUT_ABS" \
+    -p --numeric-owner --xattrs --acls --sparse "${ONEFS[@]}" \
+    "${EX[@]}" -C "$SRC" . 2> "$ERRLOG"
 rc=$?
 t1=$(date +%s)
-[ $rc -eq 0 ] || { echo "tar failed rc=$rc" >&2; exit $rc; }
 
-sudo chown "$(id -u):$(id -g)" "$OUT"
+# A live filesystem changes underneath tar: files are rewritten or unlinked while it
+# reads them, and it exits 1 for that. Those warnings are expected here and are not a
+# corrupt archive -- every other diagnostic still is.
+BENIGN='socket ignored|file changed as we read it|File removed before we read it|Cannot stat: No such file or directory|Cannot open: No such file or directory'
+real_errors=$(grep -vE "$BENIGN" "$ERRLOG" | grep -v '^$')
+changed=$(grep -cE 'file changed as we read it|File removed before we read it' "$ERRLOG")
+
+if [ -n "$real_errors" ]; then
+    echo "tar reported errors that are not live-filesystem churn:" >&2
+    echo "$real_errors" | head -20 >&2
+    rm -f "$ERRLOG"
+    exit "${rc:-1}"
+fi
+if [ "$rc" -gt 1 ]; then
+    echo "tar failed rc=$rc" >&2
+    rm -f "$ERRLOG"
+    exit "$rc"
+fi
+if [ "$changed" -gt 0 ]; then
+    echo
+    echo "note: $changed file(s) changed or vanished while being read -- expected on a"
+    echo "      running system. Each is archived as it was when tar reached it:"
+    grep -E 'file changed as we read it|File removed before we read it' "$ERRLOG" |
+        sed 's/^/      /' | head -10
+    [ "$changed" -gt 10 ] && echo "      ... and $((changed - 10)) more"
+fi
+rm -f "$ERRLOG"
+
+sudo chown "$(id -u):$(id -g)" "$OUT_ABS"
+
+# --- verification ---------------------------------------------------------------
+# One decompression pass, reused for every check below. The archive is tens of GB in
+# live mode; reading it four times to count four things is not affordable.
+echo
+echo "reading back the archive to verify (one pass)..."
+LIST=$(mktemp)
+tar -tvf "$OUT_ABS" > "$LIST" 2>/dev/null
+t2=$(date +%s)
+
 echo
 echo "=== archive report ==="
-echo "file    : $OUT"
-echo "size    : $(du -h "$OUT" | cut -f1)"
-echo "elapsed : $((t1-t0))s"
-echo "entries : $(tar -tf "$OUT" 2>/dev/null | wc -l)"
-echo "sha256  : $(sha256sum "$OUT" | cut -d' ' -f1)"
+echo "mode    : $MODE"
+echo "file    : $OUT_ABS"
+echo "size    : $(du -h "$OUT_ABS" | cut -f1)"
+echo "elapsed : $((t1-t0))s archive, $((t2-t1))s read-back"
+echo "entries : $(wc -l < "$LIST")"
+echo "sha256  : $(sha256sum "$OUT_ABS" | cut -d' ' -f1)"
 
-# --- leak check ----------------------------------------------------------------
 echo
 echo "=== preservation check ==="
-echo "setuid/setgid entries in archive: $(tar -tvf "$OUT" 2>/dev/null | grep -cE '^[-][rwx-]{2}[sS]|^[-][rwx-]{5}[sS]')"
-echo "hardlinked entries in archive   : $(tar -tvf "$OUT" 2>/dev/null | grep -c ' link to ')"
+echo "setuid/setgid entries in archive: $(grep -cE '^[-][rwx-]{2}[sS]|^[-][rwx-]{5}[sS]' "$LIST")"
+echo "hardlinked entries in archive   : $(grep -c ' link to ' "$LIST")"
+
 echo
 echo "=== leak check (must be empty) ==="
-leak=$(tar -tf "$OUT" 2>/dev/null | grep -E '^\./(proc|sys)/.|^\./dev/pts/.' | head -5)
+# Matches only entries *inside* the pseudo-filesystems. The mount points themselves
+# are archived as empty directories, which is correct and must not trip this.
+leak=$(grep -E ' \./(proc|sys|run)/.|\./dev/pts/.' "$LIST" | head -5)
+rm -f "$LIST"
 if [ -n "$leak" ]; then
     echo "LEAK DETECTED:"; echo "$leak"; exit 1
 fi
-echo "clean: no proc/, sys/, or dev/pts entries"
+echo "clean: no proc/, sys/, run/, or dev/pts entries"
+
+if [ "$MODE" = live ]; then
+    cat <<'RESTORE'
+
+=== restoring this backup ===
+Boot rescue media, then:
+
+  mkfs.ext4 -L LFSROOT /dev/<root-partition>     # fstab mounts by LABEL, not by device
+  mkswap    -L LFSSWAP /dev/<swap-partition>
+  mount /dev/<root-partition> /mnt/target
+  tar --extract --file <archive> -p --numeric-owner --xattrs --acls \
+      --same-owner -C /mnt/target
+
+Then reinstall the bootloader. A filesystem archive holds /boot but not the MBR, so
+the restored disk does not boot until grub-install has written it.
+RESTORE
+fi

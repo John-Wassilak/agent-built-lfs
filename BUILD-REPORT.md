@@ -111,7 +111,7 @@ bin/extract-recipes.py   book HTML -> candidate recipes, applies review-override
 bin/build-plan.py        ordered plan (book order), context + tarball per step
 bin/lfsbuild             driver: logs, timing, resume, Ch.8 manifests, mount guards
 bin/kernel-config.sh     scripted replacement for `make menuconfig`, with a boot-path gate
-bin/lfs-archive          snapshot/deliverable tarball, mount guard + leak + preservation checks
+bin/lfs-archive          tree snapshot/deliverable, or a live-system backup (--live)
 bin/lfs-umount           unmount virtual kernel filesystems, deepest first
 bin/fetch-sources.sh     download + md5-verify all 92 sources
 ```
@@ -2755,4 +2755,140 @@ from a chroot tree, and tarring an offline tree with a mount guard.
 Neither is broken here -- they are simply not operations that apply to a
 running system. Backing up a live system is a different tool with
 different semantics (exclusions for `/proc`, `/sys`, `/run`, and open
-files), not a flag on these.
+files), not a flag on these. *(For `lfs-archive` this call was reversed
+the same day -- see "lfs-archive live mode" below. `lfs-umount` stands.)*
+
+
+## lfs-archive live mode (2026-08-27)
+
+`bin/lfs-archive` now takes `--live` and backs up the running system,
+alongside the original `--tree` mode for an offline tree at `/mnt/lfs`.
+Mode is detected the same way `lfsbuild` does it, and `--tree` mode is
+unchanged.
+
+I argued in the previous entry that this belonged in a separate tool.
+That was wrong on the facts. The two modes share everything that is hard
+about the job -- the tar flag set, the setuid/hardlink preservation
+checks, the leak check, the reporting -- and differ only in how they keep
+the pseudo-filesystems out. Splitting them would have duplicated all of
+the first to vary the second.
+
+### How the two modes keep /proc and /sys out
+
+Opposite approaches to the same failure. Tree mode **refuses to run**
+while the virtual kernel filesystems are bound into the tree, because
+archiving the host's `/proc` and `/dev` produces an image that only
+reveals itself as corrupt at boot. Live mode cannot unmount anything, so
+it uses `--one-file-system` and stops at every mount boundary. That is
+structural rather than a pattern list someone has to remember to update:
+`/proc`, `/sys`, `/dev`, `/run`, `/tmp` and the mounted data disk are all
+separate filesystems and all stop themselves. The mount points are still
+archived as empty directories, which is what a restore needs. Both modes
+then prove it worked with the same leak check against the finished
+archive.
+
+The explicit exclusions in live mode are only the things that *are* on
+the root filesystem, so each one is a real decision: `/tmp` and
+`/var/tmp` (volatile), `/lost+found` (fsck scratch), and `/sources`
+(build staging, every tarball re-downloadable).
+
+### Verified by running it
+
+A full backup of this system, and then a restore out of it:
+
+```
+entries : 727,867
+size    : 27G   (43 GB source, zstd -T0)
+elapsed : 2165s archive, 269s read-back
+sha256  : f60b07226c436b6b01bcd5ccf9cbe7d2c73c4974c922af23f28c280b399cbdba
+setuid/setgid entries in archive: 22
+hardlinked entries in archive   : 2606
+leak check: clean
+```
+
+The 22 setuid/setgid entries are **exactly** the count `find / -xdev
+-perm -4000 -o -perm -2000` reports on the live system, so nothing was
+dropped. Extracting `su`, `passwd`, `ping`, `fstab` and `os-release` back
+out and comparing against the originals: mode, owner, group and size all
+match, and `su` and `fstab` are sha256-identical. The setuid bit survives
+the round trip, which is the whole point of the `-p --numeric-owner`
+pair.
+
+Two files changed while tar was reading them -- a media file mid-write
+and `/sys`'s own directory entry. That is the normal condition of a live
+filesystem, and it is why live mode classifies tar's exit rather than
+trusting it: tar exits 1 for "file changed as we read it", which is not a
+corrupt archive. Anything that is *not* recognised live-filesystem churn
+still fails the run and is printed.
+
+### Four real defects found while building it
+
+**`readlink -f` returns the empty string when a leading path component is
+missing.** The first real run wrote to `/mnt/big_drive/backups/...` where
+`backups/` did not exist yet, `OUT_ABS` became `""`, and tar died on a
+broken pipe after reporting a "not recoverable" error with no indication
+of the actual cause. Now `readlink -m`, which resolves regardless, plus
+an explicit check that the output directory exists and is writable *by
+root* -- the write happens under `sudo`, so testing the caller's own
+access would have been the wrong question.
+
+**The verification pass decompressed the archive four times.** Entry
+count, setuid count, hardlink count and leak check each ran their own
+`tar -tf`. On a 27 GB archive that is four full decompressions to count
+four things. Now one `tar -tvf` pass into a temporary listing that all
+four checks read. Measured: 269s for the single pass.
+
+**`--zstd` is single-threaded.** tar's built-in shorthand invokes `zstd`
+with no thread flag, which on a tens-of-GB root is the whole run. Now
+`--use-compress-program="zstd -T0"`, and `xz -T0` likewise.
+
+**The dry run's size estimate silently ignored every exclusion.** The tar
+patterns are archive-relative (`./home/*`) because tar runs with `-C
+$SRC`; `du` walks absolute paths, so none of them ever matched and the
+estimate reported the whole filesystem. It read 45G with `/home`
+excluded, which is 45G with nothing excluded. Patterns are now translated
+to `$SRC/...` for du: the same command reports 18G.
+
+### What the archive size revealed
+
+27 GB from a 43 GB root, a poor ratio for zstd on a system tree, because
+`/home` is 25 GB and almost all of it is already-compressed media plus
+old snapshot tarballs -- against roughly 7 GB of actual OS
+(`/usr` 5.3G, `/opt` 1.2G, `/var` 135M) and 14 GB of `/root` that is
+mostly the kernel build tree. So `--exclude PATH` was added, repeatable
+and archive-relative, for backing up the system without the bulk:
+
+```
+lfs-archive out.tar.zst --live --exclude './home/*' --exclude ./root/kbuild
+```
+
+That is the difference between a 45G and an 18G estimate on this box.
+Nothing is excluded by default beyond the volatile paths above -- what
+counts as "the system" is the operator's call, not the script's.
+
+The full backup is kept at
+`/mnt/big_drive/backups/lfs-live-20260827.tar.zst`, on the other physical
+disk from the root filesystem.
+
+### A fifth defect, found by getting the test wrong
+
+Testing the free-space refusal, I pointed a live backup at `/run` to
+trip it -- and it did not trip. `/run` had 6.3 GB free against a 43 GB
+source, which cleared the "a tenth of used bytes" threshold, so the
+script cheerfully began writing a real system archive into **tmpfs**. It
+had 1.5 GB in RAM before I killed it. My test was badly chosen, but the
+behaviour it exposed was the script's, and two guards came out of it:
+
+- **A tmpfs or ramfs target is refused outright** (`--force` overrides,
+  with a warning). Writing a multi-GB system backup into RAM is not
+  something anyone means to do, and on a smaller machine it ends in the
+  OOM killer.
+- **The space threshold was calibrated on a guess and is now calibrated
+  on a measurement.** "A tenth of used bytes" assumed roughly 3x
+  compression. The actual run compressed 43 GB to 27 GB -- about 1.6x,
+  because most of the bulk is already-compressed media. The check now
+  requires room for half the source's used bytes and says so, with
+  `--exclude` and `--force` as the two ways past it.
+
+The threshold I originally picked would have passed a target that could
+hold barely a fifth of the archive.
