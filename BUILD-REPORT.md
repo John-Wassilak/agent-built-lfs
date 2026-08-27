@@ -2116,20 +2116,34 @@ not yet done.
 **Phase 5: dunst/naughty D-Bus fix, mpv VDPAU config, rounded corners,
 gap size.**
 
-*dunst vs naughty D-Bus race, fixed.* `naughty` claims
-`org.freedesktop.Notifications` during `rc.lua`'s own early startup
-(`require("naughty")` runs near the top, for internal error popups),
-before `rc.lua`'s later autostart block ever gets to spawn `dunst`.
-Rather than disabling `naughty` internals (more invasive, and awesome
-uses it for its own startup-error reporting), moved `dunst &` into
-`.xinitrc`, started before `exec awesome` -- dunst now wins the D-Bus
-name race by starting first, and `rc.lua`'s autostart block no longer
-spawns it. Both files deployed to the target. **Caveat:** this only
-takes effect on the next full X session start; the currently-running
-session's `naughty` already holds the name and can't be evicted via
-`awesome-client` (D-Bus name ownership isn't Lua state) -- unverified
-until the next `startx`/reboot, same caveat as the VT-freeze-on-quit
-issue below.
+*dunst vs naughty D-Bus race, fixed -- first attempt was wrong, caught
+by verifying on a real reboot instead of trusting the theory.*
+`naughty` claims `org.freedesktop.Notifications` during `rc.lua`'s own
+early startup (`require("naughty")` runs near the top, for internal
+error popups), before `rc.lua`'s later autostart block ever gets to
+spawn `dunst`. First fix attempted: moved `dunst &` into `.xinitrc`,
+started before `exec awesome`, on the theory that starting dunst first
+would let it win the name. Committed, but verified false on the next
+full reboot + fresh `startx` (not a hot-patch): `dbus-send`
+`GetNameOwner`/`GetConnectionUnixProcessID` showed `org.freedesktop.
+Notifications` still owned by awesome's PID, not dunst's, despite
+dunst starting first. Root cause: `naughty/dbus.lua`'s
+`dbus.request_name()` call fires synchronously as a side effect of the
+`require("naughty")` line -- essentially instant -- while dunst is
+slower to initialize (fork, GTK/glib, X connection, config parse), so
+it always loses regardless of process launch order. Also confirmed
+live that dunst does not queue for the name if its own request loses
+(GDBus gives up rather than waiting for the name to free up), so
+releasing the name later/asynchronously wouldn't have helped either.
+
+Real fix: `rc.lua` now calls `dbus.release_name("session",
+"org.freedesktop.Notifications")` immediately after `require("naughty")`,
+and `dunst` is spawned later in the same file's Autostart block --
+deterministic ordering (release, then spawn), not a race. `.xinitrc`
+reverted to a plain `exec awesome`. **Verified via a second clean
+reboot + fresh `startx`:** `dbus-send GetNameOwner` /
+`GetConnectionUnixProcessID` for `org.freedesktop.Notifications`
+resolved to dunst's actual PID from the live process tree.
 
 *mpv VDPAU config, fixed and confirmed live.* `mpv.conf` still had
 `hwdec` effectively disabled from the nouveau/VAAPI era. Tried three
@@ -2155,18 +2169,21 @@ a hard-edged shape cutout, not an anti-aliased/alpha-blended corner
 the way Hyprland (a Wayland compositor) renders them. Getting that
 same smooth blending under X11/awesome would need a standalone
 compositor (e.g. `picom`) layered on top, which is not built in this
-project. Live-tested via `awesome-client`: setting `c.shape` on a
-running client did visibly round its corners in one screenshot
-capture (`import -window root`), confirming the mechanism itself
-works; repeat live hot-patch attempts afterward were visually
-inconsistent in follow-up screenshots (likely an X11
-Expose/redraw-timing quirk specific to hot-patching shape onto an
-already-mapped, already-painted window live, not a flaw in the
-approach) -- the file-based fix in `rc.lua` applies the shape at
-`manage` time, when the client is first mapped, which is the standard
-and well-established pattern for this in awesome and doesn't hit
-whatever caused the hot-patch inconsistency. Full confirmation is
-pending the next session restart, same caveat as the dunst fix above.
+project. **Verified on the same reboot as the dunst fix above**, and
+not simply by eye: at a 10px radius on a ~700-1400px wide window the
+corner cut is real but visually subtle, easy to mistake for "not
+working" from a screenshot (an early screenshot-based check during
+this troubleshooting genuinely looked like a plain square corner).
+Confirmed properly with `compare -metric AE` (ImageMagick) between a
+client's actual auto-shaped corner (as applied automatically by the
+real `manage` signal on a freshly spawned window, no manual
+intervention) and the same client manually forced to
+`gears.shape.rectangle`: 31 pixels differ, consistent with a ~10px
+radius corner arc. A much larger test radius (400px, deliberately
+excessive) made the same mechanism dramatically, unmistakably visible
+in a screenshot, confirming the shape callback and `gears.shape.
+rounded_rect` itself work correctly -- the small default radius was
+just too subtle to eyeball, not a functional bug.
 
 *Gap size increased ~50%.* `beautiful.useless_gap` raised from 5 to 8
 to match the gap size on the operator's other Hyprland machines
