@@ -1575,6 +1575,57 @@ status wasn't researched this session) and video *encode* (NVENC-style
 hardware encode support in nouveau is generally understood to be
 effectively nonexistent, not independently confirmed here).
 
-Next: operator to decide on the video-firmware copy (needs a nouveau
-reload/reboot to activate) and whether/how to revisit reclocking.
-Firefox remains the last package in this plan, still pending.
+## Firmware installed and rebooted -- surfaced a real Mesa/nouveau bug (2026-08-26)
+
+Operator approved installing the video-decode firmware and rebooting.
+Copied `nve0_bsp`/`nve0_vp`/`nvc0_ppp` (with `nve4_fuc08x` symlinks)
+into `/usr/lib/firmware/nouveau/` from this machine's own prior Gentoo
+install (see previous section), registered as a new hand-authored
+package (`blfs-linux-firmware-nouveau-vp`), and rebooted. Clean boot,
+no firmware-load errors in `dmesg` this time (`msvld`/`mspdec`/`msppp`
+load lazily on first use, so a clean boot log alone didn't confirm
+success -- had to actually trigger a decode).
+
+**Retested H.264 decode against `~/test.mp4`. Firmware loading is
+confirmed fixed** -- the earlier "No support for codec h264 profile
+100" rejection is gone. But real hardware decode now hits a different,
+worse failure: `gr: TRAP ... RT_WIDTH_OVERRUN`, channel killed, and a
+hard segfault in `libgallium-25.3.5.so`. **Reproduced independently
+twice** -- once via raw `ffmpeg -hwaccel vaapi`, once via `mpv -v`, both
+crashing at the identical binary offset (`b66c25`). This is a real bug
+in Mesa 25.3.5's nouveau gallium video-decode implementation for this
+GPU generation, not a config issue -- confirmed genuinely reproducible,
+not a fluke, and not something fixable from mpv.conf or a firmware
+detail. (Both crashes only killed the test process itself -- operator
+had not started Hyprland at the time, so no live session was
+affected.)
+
+**This is a regression from the operator's actual daily-use
+standpoint**: before the firmware fix, `hwdec=auto` failed cleanly and
+fell back to software decode automatically. After the fix, the same
+setting now crashes the player outright on real H.264 content, since
+the failure happens mid-decode rather than as a clean rejection mpv
+can catch and fall back from. Fixed by changing `mpv.conf` from
+`hwdec=auto` to `hwdec=no` -- there's no other viable hwdec backend on
+this system anyway (Vulkan hwdec was never reachable either, see
+below), so this isn't giving up a working alternative. Retested
+playback after the change: clean exit, no crash, confirmed working.
+
+**Net assessment**: the firmware install was still the right, correct
+fix for the actual gap it addressed (ENOENT is gone, ruling out
+"missing firmware" as an explanation for anything going forward), but
+it's not enough on its own -- Mesa's gallium nouveau video-decode path
+has a real crash bug on this hardware/driver combination that would
+need a Mesa source-level fix (or a different Mesa version) to actually
+resolve. Not pursued further this session; software decode remains the
+safe, working default.
+
+## Vulkan angle (2026-08-26)
+
+Operator asked to dig into Vulkan next. Mesa was built with
+`-D vulkan-drivers=` (explicitly empty) back when the mesa recipe was
+first written -- no investigation into whether that was even the right
+call for this GPU had been done yet. Researching NVK's (Mesa's Vulkan
+driver for NVIDIA hardware) actual hardware support matrix for
+Kepler/GK104 before deciding whether a Mesa rebuild with Vulkan enabled
+is worth doing.
