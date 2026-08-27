@@ -2260,3 +2260,59 @@ into the already-built `ffmpeg`/`mpv` binaries, `mpv.conf` already
 forces `hwdec=vdpau-copy` so VAAPI never actually runs, and rebuilding
 both packages just to drop a now-inert dependency wasn't worth the
 build time against tonight's priority (getting Firefox building).
+
+**Phase 6 follow-up: the cleanup was incomplete, found and fixed while
+starting the Firefox build.**
+
+Kicking off Firefox surfaced two real gaps in the same-night removal
+above, both found by hitting real failures, not by re-auditing
+speculatively:
+
+*Orphaned files the original manifest-driven removal couldn't see.*
+While building `libXdamage` (see below), `ldconfig -n /usr/lib`
+touched leftover `libwayland-*.so.*`/`libiniparser.so.*` files that
+still physically existed on the target. A broader sweep found roughly
+1,100 more files/directories belonging to the removed packages --
+headers, cmake configs, docs, protocol XML, desktop files, shell
+completions -- none of which were ever in those packages' original
+install manifests to begin with (a pre-existing capture gap from when
+they were first built, not something introduced by the removal itself:
+the manifest-driven deletion correctly removed everything it could
+see, it just couldn't see files nothing ever recorded). Removed all of
+it after cross-checking every hit against every kept package's
+manifest plus install-timestamp correlation, specifically to avoid
+deleting real Wayland-platform-support files that Mesa, the nvidia
+driver, gtk3, libva, vulkan-headers, and libxkbcommon legitimately
+ship as part of their own optional backends (e.g.
+`libnvidia-egl-wayland.so.1`, `libva-wayland.so.2`, `vulkan_wayland.h`)
+-- none of those were touched. Also found and fixed a small,
+unrelated, pre-existing manifest contamination bug: `blfs-spirv-tools`
+(kept) had 17 lines of unrelated files (`/etc/mtab`, other packages'
+`/var/lib/lfsmaint/manifests/*.txt` copies, journal/systemd files)
+swept in by the manifest capture method's coarse `find -cnewer` timing
+during a batch build -- confirmed via a full `lfsmaint db` rebuild that
+this is systemic (1,233 files across the whole tracked set are claimed
+by more than one package this way), and that the harness already
+tolerates it by design (last writer wins) rather than treating it as
+corruption. Only the one flagged case was cleaned up, not a full audit
+of all 205 remaining manifests -- that's a real, known quality gap in
+this project's data, left as a follow-up, not silently declared fixed.
+
+*gtk3's Wayland backend -- wayland wasn't purely a Hyprland dependency
+after all.* Relaunching the Firefox build after the orphan cleanup
+failed again, this time on `pkg-config`: `gdk-3.0.pc` unconditionally
+declares `Requires: wayland-client, wayland-cursor, wayland-egl`,
+because `gtk3` was originally built with meson's `wayland_backend`
+left on its default (`auto`), which silently enabled it since
+`wayland` existed at build time (Hyprland era). Removing `wayland`
+broke `pkg-config gtk+-3.0` entirely -- for Firefox and anything else
+that queries it. Fixed at the root rather than reinstalling `wayland`:
+rebuilt `gtk3` with `-D wayland_backend=false -D x11_backend=true`,
+both explicit now instead of auto-detected. Verified via
+`pkg-config --print-requires gdk-3.0` (no wayland packages listed) and
+a manifest diff against the previous build showing an exactly-scoped
+change (only `im-wayland.so`, `gdk-wayland-3.0.pc`, and
+`gtk+-wayland-3.0.pc` gone, nothing else different).
+
+Rebuilt the target's `lfsmaint` database from the corrected
+manifests/plan afterward so `verify`/`report` reflect reality again.
