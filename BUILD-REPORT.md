@@ -2316,3 +2316,111 @@ change (only `im-wayland.so`, `gdk-wayland-3.0.pc`, and
 
 Rebuilt the target's `lfsmaint` database from the corrected
 manifests/plan afterward so `verify`/`report` reflect reality again.
+
+**Firefox built successfully.** After the libXdamage and gtk3 fixes,
+relaunched `firefox-build.service` and it completed clean on this
+attempt -- ~177 minutes wall clock (13 SBU was the recipe's own
+estimate), no further errors. `firefox --version` reports `Mozilla
+Firefox 140.8.0esr`; installed size is 233M under `/usr/lib/firefox`,
+matching the BLFS book's documented figure exactly. Manifest is
+deliberately small (29 real files) -- Firefox packs almost everything
+into `omni.ja`/`browser/omni.ja` (two bundled resource archives) and
+`libxul.so` (150MB alone), not exploded onto the filesystem as
+individual files, so a low file count is correct here, not a sign of
+a truncated install. Verified beyond `--version`: launched it for real
+against the live X11/awesome session via `awesome-client` +
+`awful.spawn`, confirmed a real `Mozilla Firefox` client window in
+`client.get()`, and screenshotted it -- full browser chrome, address
+bar, new-tab page, rendering correctly (including the expected
+"unofficial build" security notice, normal for a self-compiled,
+unsigned Firefox).
+
+**Second real regression found verifying Firefox live: ImageMagick's
+`import` (and `convert`/`magick`) broke outright.** `import -window
+root` for the verification screenshot above failed first try:
+`libzip.so.5: cannot open shared object file`. libzip had been
+removed in the original Phase 6 cleanup, classified as "needed by
+hyprcursor" and nothing else -- wrong. ImageMagick links against it
+directly for its own zip-based format coders, unrelated to hyprcursor
+entirely; the original audit checked build-time recipe references,
+not the runtime linker dependencies (`DT_NEEDED`) of every kept
+binary against what the removed packages provided, and missed this.
+Rebuilt libzip from the same recipe (git history), re-added its
+manifest and `blfs-plan.json` entry, corrected the recipe's rationale
+comment. `import` works again, confirmed by successfully taking the
+Firefox verification screenshot above.
+
+**Third, larger regression found by a deliberate system-wide sweep
+after the libzip surprise: `dunst`, `rofi`, and `mpv`/`libmpv.so` were
+all silently broken for any fresh start.** Given libzip was found by
+accident, ran `ldd` against every binary in `/usr/bin` and every
+shared library in `/usr/lib`, grepping for `not found`, rather than
+trusting there weren't more surprises. Found 43 hits. The three that
+mattered: `dunst`, `rofi`, and `mpv`/`libmpv.so` all have **hard**
+linker dependencies on `libwayland-client.so.0` (`mpv` and `libmpv.so`
+also `libwayland-cursor.so.0`, `libwayland-egl.so.1`, and
+`libdisplay-info.so.3`) -- not optional/dlopen'd, but `DT_NEEDED`
+entries the dynamic loader must resolve before the process can even
+start. All three were originally built with Wayland support left on
+each project's own meson default (`auto`), same root cause as gtk3's
+bug: `wayland` existed at build time (Hyprland era), so it silently
+enabled. Nothing broke *visibly* that night because the already-running
+`dunst` (from the earlier reboot verification) and any already-running
+`mpv`/`rofi` instances keep their old, already-loaded copies mapped in
+memory -- removing the on-disk `.so` files doesn't unload a running
+process. The real risk was entirely latent: the next `startx`, or the
+next time anything spawned a fresh `rofi`/`mpv` process, every one of
+those three -- notifications, the app launcher, and video playback,
+the actual point of the whole nvidia/VDPAU migration -- would have
+failed to launch at all.
+
+Fixed the same way as gtk3: re-fetched/re-cloned each source (dunst
+v1.13.2, rofi 2.0.0 with its libgwater/libnkutils submodule workaround,
+mpv's already-present VDPAU-rebuild tree), added `-D wayland=disabled`
+explicitly to each meson invocation, rebuilt, reinstalled. Verified
+with `ldd | grep "not found"` (clean on all three) and by actually
+running each (`dunst -v`, `rofi -version`, `mpv --version`) rather than
+just checking the link line. Also found and fixed an unrelated,
+pre-existing manifest bug while re-tracking dunst's rebuild: its
+tracked manifest listed shell-completion filenames with a `.bashcomp`/
+`.fishcomp`/`.zshcomp` suffix that dunst has never actually installed
+under (real files: `dunst`, `dunst.fish`, `_dunst`, no suffix) -- this
+had been silently wrong since dunst was first built, long before
+tonight, and was one of the "pre-existing drift" items the earlier
+orphan-cleanup pass had flagged and deliberately left alone; corrected
+it now that a clean rebuild made the real filenames obvious.
+
+Re-ran the full system-wide `ldd` sweep after all four fixes: down
+from 43 hits to 34, all now confirmed to be inconsequential optional
+components with no connection to anything verified working tonight --
+`libva-utils`' own demo/test binaries and its optional Wayland winsys
+plugin (VAAPI isn't the active hardware-decode path, VDPAU is; the
+X11 winsys path these tools would need instead is untouched), the
+nvidia driver's own optional Wayland/Vulkan interop libraries (unused,
+X11-only setup), Mesa's EGL implementation (the nvidia proprietary
+EGL via libglvnd vendor dispatch is what Xorg/mpv/Firefox actually use
+-- confirmed working throughout tonight regardless), and nouveau's
+Vulkan ICD (nouveau is blacklisted and never loaded). Left all 34
+alone deliberately, not silently -- rebuilding Mesa or libva-utils
+just to silence unused diagnostic binaries wasn't worth it at this
+hour, and none of them sit in the path of anything this project
+actually uses.
+
+Rebuilt the target's `lfsmaint` database again from the fully
+corrected manifest set (318 packages, 76,972 files tracked). `verify`
+now shows zero missing-file flags for `firefox`, `libxdamage`, `gtk3`,
+`libzip`, `dunst`, `rofi`, or `mpv`.
+
+**Standing lesson for future dependency-removal passes in this
+project:** grepping recipes for build-time references to a package
+name is necessary but not sufficient to prove nothing else needs it.
+Three of tonight's four post-removal regressions (gtk3, and then
+dunst/rofi/mpv found by the same pattern) came from packages that
+silently linked an available Wayland backend at build time via a
+meson `auto`-default option, creating a real hard runtime dependency
+that no recipe comment or build script ever mentioned wanting. The
+reliable check is a `DT_NEEDED`/`ldd` sweep of what's actually kept
+against what's actually being removed, done *before* deleting
+anything -- not just a source/recipe grep. This project's removal
+methodology should treat that sweep as a required step from now on,
+not an afterthought caught by accident.

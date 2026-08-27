@@ -17,6 +17,17 @@
 # management (AVHWDeviceContext), and this system's ffmpeg was built
 # without --enable-vdpau (see blfs-ffmpeg.sh's matching note). Confirmed
 # working only after both were rebuilt.
+#
+# Rebuilt again 2026-08-27 with -D wayland=disabled. Real bug: this
+# recipe never set the wayland option, so meson left it on its default
+# (auto), which silently linked libwayland-client/cursor/egl as hard
+# DT_NEEDED dependencies of both `mpv` and `libmpv.so` because wayland
+# was present at build time (Hyprland era). Removing the wayland
+# package that same night left both binaries unable to start at all --
+# not caught immediately because the already-running mpv session (if
+# any) keeps its old, already-loaded copy in memory. Caught by a
+# system-wide `ldd | grep "not found"` sweep while verifying the
+# Firefox build's live desktop.
 set -e
 
 mkdir build
@@ -26,6 +37,7 @@ meson setup --prefix=/usr \
   --buildtype=release \
   -D x11=enabled \
   -D vdpau=enabled \
+  -D wayland=disabled \
   ..
 ninja
 

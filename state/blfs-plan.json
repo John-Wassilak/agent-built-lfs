@@ -2882,5 +2882,19 @@
     "blocks": 3,
     "enabled": 1,
     "disabled": 0
+  },
+  {
+    "seq": 242,
+    "order": "blfs.242",
+    "name": "blfs-libzip",
+    "chapter": "blfs",
+    "page": "libzip",
+    "title": "libzip (hand-authored)",
+    "context": "chroot",
+    "tarball": "libzip-1.11.4.tar.xz",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
   }
 ]
