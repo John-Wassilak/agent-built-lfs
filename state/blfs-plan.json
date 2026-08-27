@@ -3008,5 +3008,19 @@
     "blocks": 1,
     "enabled": 1,
     "disabled": 0
+  },
+  {
+    "seq": 251,
+    "order": "blfs.251",
+    "name": "blfs-opentofu",
+    "chapter": "blfs",
+    "page": "opentofu",
+    "title": "opentofu-1.12.6 (hand-authored)",
+    "context": "chroot",
+    "tarball": "opentofu-v1.12.6.tar.gz",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
   }
 ]
