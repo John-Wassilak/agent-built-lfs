@@ -2647,10 +2647,112 @@ Two things worth a decision, found but not changed:
 - **`bin/lfsbuild` is now dead code on this machine.** Every path in it
   assumes `/mnt/lfs` and a chroot. It either needs a native mode or an
   explicit note that on-target builds are hand-driven; right now it
-  looks usable and is not.
+  looks usable and is not. *(Fixed the same day -- see "lfsbuild native
+  mode" below.)*
 - **`/etc/sudoers.d/00-sudo` grants `%wheel ALL=(ALL:ALL) NOPASSWD: ALL`.**
   Phase 8 reported reverting a passwordless-root grant, and it did remove
   `90-john-temp-nopasswd` -- but this system-wide wheel NOPASSWD line
   predates it and is still in place, so `sudo -n` for `john` still
   succeeds without a password. That may well be intended; it is simply
   not what the Phase 8 entry implies.
+
+
+## lfsbuild native mode (2026-08-27)
+
+`bin/lfsbuild` now runs in two modes and says which one it is in:
+
+```
+mode     : native   tree=/  sources=/sources
+completed: 217/217
+```
+
+- **chroot** -- the original build-host arrangement. The target is a tree
+  at `/mnt/lfs` on another distro, entered with `chroot(8)`. Unchanged.
+- **native** -- the tree *is* this running system. No chroot, no
+  `/mnt/lfs`; steps run as root against `/`.
+
+Detection is automatic: a populated tree at `/mnt/lfs` means build host,
+otherwise `ID=lfs` in `/etc/os-release` means the tree is us. `--native`
+and `--chroot` force it, `--sources` overrides where tarballs live
+(default `/sources`, the same path the chroot used, so recipes that
+reference `../<patch>` behave identically).
+
+The environment natively is the same `env -i` with `PATH=/usr/bin:/usr/sbin`
+the chroot supplied, so recipes written against chroot run unchanged --
+the handful needing `/opt/go` or `/opt/rustc` already put those on `PATH`
+themselves.
+
+**Chapters 4-7 are refused in native mode.** They build the temporary
+toolchain into a bare tree, create and delete accounts, and write `/etc`
+from the book's templates. Run against a live system that means
+overwriting the running toolchain and clobbering real config. Contexts
+`lfs` and `root-host` are refused for the same reason -- both need the
+`lfs` user and an unpopulated `$LFS`. Chapter 8 onward is the supported
+path, which is exactly what the upgrade cadence in this report already
+tells you to do (`lfsbuild --only <step> --force`).
+
+Verified end to end by rebuilding `blfs-rsync` through the driver: 0.9
+min, and the captured manifest is **byte-identical** to the one the
+hand-build produced.
+
+### Three real defects this exposed
+
+**The manifest capture had no noise filter.** A bare `find -newer` over
+the install roots sweeps up whatever the system happened to touch during
+the build -- journal files, `/var/lib/systemd/timesync/clock`,
+`/etc/mtab`, `/etc/udev/hwdb.bin`, `/var/log/README`. That is the direct
+cause of the 1,234 files "claimed by more than one package" that
+`lfsmaint db` reports, where a single journal file is attributed to fifty
+unrelated packages. The generated capture now pipes through a
+`grep -vE` excluding runtime churn: logs and the journal, caches,
+systemd's clock and random-seed, the generated hwdb, `resolv.conf`,
+`ld.so.cache`, sshd host keys, and dotfiles or build trees under `/root`.
+None of it is package-installed content. The rsync rebuild proves the
+effect: the hand-build's raw `find` returned 7 paths (a build log and a
+journal file among them), the driver's filtered capture returns exactly
+the 5 real ones.
+
+**`state/completed` had drifted badly.** It is only ever appended to by
+`run_step`, so the ~200 BLFS packages built by hand on target never
+landed in it -- it listed 16 of 217 BLFS steps as done. A native
+`--resume` would therefore have rebuilt 201 already-installed packages.
+Added `lfsbuild --reconcile`, which marks a step completed when
+`manifests/<step>.txt` exists, that manifest being the evidence its
+install ran and was recorded; `--dry-run` shows what it would mark, and
+it reports separately any step that is neither completed nor manifested.
+Ran it: 201 steps reconciled, and the LFS plan was already consistent
+(133/133, nothing to do).
+
+**`--status` counted across plans.** `state/completed` holds every plan's
+steps, so a BLFS `--status` printed `350/217`. Now counts only the
+selected plan's steps. Same class of bug in `main()`, which re-read the
+default LFS plan for the closing status line after a `--plan
+state/blfs-plan.json` run.
+
+### Smaller fixes made along the way
+
+- `--dry-run` no longer needs the tarball staged -- it substitutes a
+  placeholder source directory so you can read the generated script for
+  a package you have not downloaded yet. Previously it crashed with a
+  `tar` traceback.
+- A missing tarball now exits with the path it looked in, instead of a
+  `CalledProcessError` traceback.
+- `--chroot` on a machine with no `/mnt/lfs` exits with a message
+  pointing at `--native`, instead of a `statvfs` traceback.
+- After a native build the manifest is also installed into
+  `/var/lib/lfsmaint/manifests/`, so the on-target database cannot drift
+  behind this repo the way it just had. The step prints a reminder to
+  run `lfsmaint db` to re-index.
+- Step output, `--list`, the log header, and `state/timings.tsv` now show
+  the effective context (`native`) rather than the plan's literal
+  `chroot` label, which natively would be untrue.
+
+### Not converted, deliberately
+
+`bin/lfs-archive` and `bin/lfs-umount` are still `/mnt/lfs`-only. Both
+are genuinely build-host tools: unmounting virtual kernel filesystems
+from a chroot tree, and tarring an offline tree with a mount guard.
+Neither is broken here -- they are simply not operations that apply to a
+running system. Backing up a live system is a different tool with
+different semantics (exclusions for `/proc`, `/sys`, `/run`, and open
+files), not a flag on these.

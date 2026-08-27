@@ -161,3 +161,4 @@ ch08-bash	chroot	140.1	0
 ch07-kernfs	root-host	0.0	0
 blfs-lfsmaint	chroot	0.6	0
 blfs-lfsmaint	chroot	0.3	0
+blfs-rsync	chroot	54.2	0

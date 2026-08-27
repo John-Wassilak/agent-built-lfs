@@ -11,6 +11,18 @@ timing, resumable state, and (for Chapter 8) an installed-file manifest.
   lfsbuild --resume                  run everything not yet completed
   lfsbuild --dry-run ...             print the generated script, run nothing
 
+Two execution modes, detected automatically and printed by --status:
+
+  chroot   the original build-host arrangement -- the target is a tree at
+           /mnt/lfs on a different distro, entered with chroot(8).
+  native   the tree IS this running system. No chroot and no /mnt/lfs; steps
+           run as root against /. This is what a self-hosting LFS box needs.
+           Chapters 4-7 are refused in this mode: they build the temporary
+           toolchain into a bare tree and would overwrite the running one.
+
+Override the detection with --native / --chroot, and the source directory
+with --sources (default /sources natively, $LFS/sources under chroot).
+
 The unpack / cd / cleanup wrapper from the book's General Instructions is supplied here,
 not stored in recipes. Source directory names are read from the tarball itself rather
 than guessed, because several do not match their filename (tcl8.6.17-src.tar.gz ->
@@ -26,17 +38,51 @@ import sys
 import time
 
 ROOT = "/home/john/lfs"
-LFS = "/mnt/lfs"
 PLAN = f"{ROOT}/state/plan.json"
 DONE = f"{ROOT}/state/completed"
 TIMINGS = f"{ROOT}/state/timings.tsv"
 LOGS = f"{ROOT}/logs"
 RECIPES = f"{ROOT}/recipes"
 MANIFESTS = f"{ROOT}/manifests"
-BUILDDIR = f"{LFS}/sources/.build"          # /sources/.build inside the chroot
 JOBS = os.cpu_count() or 4
 
 VKFS = ["/dev", "/dev/pts", "/proc", "/sys", "/run"]
+
+CHROOT_TREE = "/mnt/lfs"                    # where a build host keeps the target tree
+NATIVE_SOURCES = "/sources"                 # same path the chroot used, so recipes
+                                            # referencing ../<patch> behave identically
+LFSMAINT_MANIFESTS = "/var/lib/lfsmaint/manifests"
+
+# Set by configure_mode() before any step runs.
+MODE = None          # "chroot" | "native"
+LFS = None           # target tree prefix as seen from here: "/mnt/lfs", or "" natively
+TREE = None          # same thing but usable with statvfs: "/mnt/lfs" or "/"
+SOURCES = None       # tarballs and patches, as seen from here
+BUILDDIR = None      # where generated step scripts are staged
+
+# Chapters 4-7 build the temporary toolchain into a bare tree, create and delete
+# accounts, and write /etc from the book's templates. Against a live system that
+# means overwriting the running toolchain and clobbering real config, so native
+# mode refuses them outright. Chapter 8 onward is the supported upgrade path.
+NATIVE_FORBIDDEN_CHAPTERS = {"04", "05", "06", "07"}
+
+# Runtime churn that a bare `find -newer` sweeps into every manifest: logs and the
+# journal, caches, systemd's clock/seed files, udev's generated hwdb, resolv.conf,
+# ld.so.cache, sshd host keys, and anything under /root that is a build tree or a
+# dotfile. None of it is package-installed content. Excluding it here is what stops
+# the same file being claimed by dozens of unrelated packages.
+MANIFEST_NOISE = "|".join([
+    r"^/var/log/",
+    r"^/var/cache/",
+    r"^/var/tmp/",
+    r"^/var/lib/lfsmaint/",
+    r"^/var/lib/systemd/(timesync/clock|random-seed)",
+    r"^/etc/(mtab|resolv\.conf|ld\.so\.cache|adjtime)$",
+    r"^/etc/udev/hwdb\.bin$",
+    r"^/etc/ssh/ssh_host_",
+    r"^/root/\.",
+    r"^/root/build",
+])
 
 # Steps the driver handles specially rather than executing verbatim.
 SPECIAL = {
@@ -53,6 +99,56 @@ SPECIAL = {
 # Install roots scanned for the Chapter 8 manifest. /sources is deliberately absent:
 # builds happen there and would swamp the manifest.
 MANIFEST_ROOTS = "/usr /etc /opt /var /boot /srv /root /bin /sbin /lib"
+
+
+def is_lfs_system():
+    """True when this machine is itself an LFS system (self-hosting)."""
+    try:
+        with open("/etc/os-release") as f:
+            return any(l.strip() == "ID=lfs" for l in f)
+    except OSError:
+        return False
+
+
+def detect_mode():
+    """A populated tree at /mnt/lfs means we are the build host; otherwise, if we
+    are running on LFS, the tree is us."""
+    if os.path.isdir(f"{CHROOT_TREE}/usr/bin"):
+        return "chroot"
+    if is_lfs_system():
+        return "native"
+    return None
+
+
+def configure_mode(mode, sources):
+    global MODE, LFS, TREE, SOURCES, BUILDDIR
+    MODE = mode or detect_mode()
+    if MODE is None:
+        sys.exit(
+            f"cannot tell which mode to run in: no populated tree at {CHROOT_TREE}, "
+            f"and this is not an LFS system (/etc/os-release ID != lfs). "
+            f"Pass --chroot or --native explicitly."
+        )
+    if MODE == "native":
+        LFS, TREE = "", "/"
+        SOURCES = sources or NATIVE_SOURCES
+    else:
+        if not os.path.isdir(CHROOT_TREE):
+            sys.exit(f"chroot mode needs the target tree at {CHROOT_TREE}, which does "
+                     f"not exist here. On a self-hosting system use --native (the "
+                     f"default when no tree is present).")
+        LFS = TREE = CHROOT_TREE
+        SOURCES = sources or f"{CHROOT_TREE}/sources"
+    BUILDDIR = f"{SOURCES}/.build"
+
+
+def ctx_label(step):
+    """What the step's context means in the active mode. The plan says "chroot" for
+    everything that runs inside the target system; natively there is no chroot, so
+    showing that word would be a lie."""
+    if MODE == "native" and step["context"] == "chroot":
+        return "native"
+    return step["context"]
 
 
 def load_plan(path=PLAN):
@@ -81,8 +177,12 @@ def vkfs_state():
 
 def srcdir_of(tarball):
     """Top-level directory inside the tarball. Read, not guessed."""
+    path = f"{SOURCES}/{tarball}"
+    if not os.path.exists(path):
+        sys.exit(f"{tarball} is not staged in {SOURCES}; put it there (with any patch "
+                 f"the recipe applies) and try again")
     out = subprocess.run(
-        ["tar", "-tf", f"{LFS}/sources/{tarball}"],
+        ["tar", "-tf", path],
         capture_output=True, text=True, check=True,
     ).stdout
     for line in out.splitlines():
@@ -93,15 +193,21 @@ def srcdir_of(tarball):
 
 
 def free_gb():
-    st = os.statvfs(LFS)
+    st = os.statvfs(TREE)
     return st.f_bavail * st.f_frsize / 1024**3
 
 
 def build_script(step, srcdir):
     """Assemble the runnable script: book wrapper + reviewed recipe."""
     name = step["name"]
+    # "chroot" is the plan's label for "inside the target system". Natively that is
+    # just this system, so the label still selects the same steps and the same
+    # manifest behaviour -- only the path to the sources differs.
     chroot = step["context"] == "chroot"
-    src = "/sources" if chroot else f"{LFS}/sources"
+    if MODE == "native":
+        src = SOURCES
+    else:
+        src = "/sources" if chroot else f"{LFS}/sources"
     recipe = open(f"{RECIPES}/{name}.sh").read()
 
     L = [
@@ -145,7 +251,8 @@ def build_script(step, srcdir):
         L += [
             "# --- manifest capture ---",
             f"find {MANIFEST_ROOTS} -xdev -newer /tmp/.lfsbuild-stamp "
-            f"! -type d 2>/dev/null | sort > /tmp/manifest.{name}.txt || true",
+            f"! -type d 2>/dev/null | grep -vE '{MANIFEST_NOISE}' "
+            f"| sort > /tmp/manifest.{name}.txt || true",
             f'echo "manifest: $(wc -l < /tmp/manifest.{name}.txt) files"',
             "",
         ]
@@ -157,6 +264,18 @@ def exec_argv(step, script_path):
     """Command line for the step's privilege context."""
     ctx = step["context"]
     term = os.environ.get("TERM", "dumb")
+
+    if MODE == "native":
+        # The same empty environment the chroot supplied, so recipes written against
+        # chroot behave identically. Recipes needing /opt/go or /opt/rustc put those
+        # on PATH themselves, and --login still sources /etc/profile.
+        return [
+            "sudo", "/usr/bin/env", "-i", "HOME=/root", f"TERM={term}",
+            "PS1=(lfs native) \\u:\\w\\$ ", "PATH=/usr/bin:/usr/sbin",
+            f"MAKEFLAGS=-j{JOBS}", f"TESTSUITEFLAGS=-j{JOBS}",
+            "/bin/bash", "--login", "-c", f'/bin/bash "{script_path}"',
+        ]
+
     inner = script_path.replace(f"{LFS}/sources", "/sources")
 
     if ctx == "lfs":
@@ -193,7 +312,23 @@ def preflight(step):
     """Refuse to run a step whose preconditions are not met."""
     ctx = step["context"]
     if free_gb() < 8:
-        return f"only {free_gb():.1f} GB free on {LFS}; need >= 8 GB headroom"
+        return f"only {free_gb():.1f} GB free on {TREE}; need >= 8 GB headroom"
+
+    if MODE == "native":
+        if step["chapter"] in NATIVE_FORBIDDEN_CHAPTERS:
+            return (f"chapter {step['chapter']} builds the temporary toolchain into a "
+                    f"bare tree; run against the live system it would overwrite the "
+                    f"running toolchain and rewrite /etc. Refused in native mode.")
+        if ctx in ("lfs", "root-host"):
+            return (f"context '{ctx}' only exists on a build host -- it needs the lfs "
+                    f"user and an unpopulated $LFS. Refused in native mode.")
+        if not os.path.isdir(SOURCES):
+            return f"sources directory {SOURCES} does not exist"
+        if step["tarball"] and not os.path.exists(f"{SOURCES}/{step['tarball']}"):
+            return (f"{step['tarball']} not found in {SOURCES}; stage it there first, "
+                    f"along with any patch the recipe applies")
+        return None
+
     if ctx == "chroot":
         missing = [m for m, ok in vkfs_state().items() if not ok]
         if missing:
@@ -224,6 +359,13 @@ def run_step(step, dry=False):
         return True
 
     if special == "verify":
+        if MODE == "native":
+            # Refused rather than skipped: this is a chapter 7 step, and native mode
+            # blocks chapter 7 everywhere else. Marking it done would be inventing a
+            # result for a check that cannot run.
+            print(f"  BLOCKED {name}: verifies chroot entry, and there is no chroot "
+                  f"in native mode")
+            return False
         ok, out = verify_chroot()
         print(f"  {'OK   ' if ok else 'FAIL '} {name}  (chroot entry verification)")
         for l in out.splitlines():
@@ -233,17 +375,26 @@ def run_step(step, dry=False):
         return ok
 
     problem = preflight(step)
-    if problem and not dry:
-        print(f"  BLOCKED {name}: {problem}")
-        return False
+    if problem:
+        if not dry:
+            print(f"  BLOCKED {name}: {problem}")
+            return False
+        print(f"  NOTE  {name}: {problem}")
 
-    srcdir = srcdir_of(step["tarball"]) if step["tarball"] else None
+    # A dry run is for reading the generated script, so it must not require the
+    # tarball to be staged -- only a real run does.
+    if not step["tarball"]:
+        srcdir = None
+    elif dry and not os.path.exists(f"{SOURCES}/{step['tarball']}"):
+        srcdir = f"<top-level dir of {step['tarball']}>"
+    else:
+        srcdir = srcdir_of(step["tarball"])
     script = build_script(step, srcdir)
 
     path = f"{BUILDDIR}/{name}.sh"
 
     if dry:
-        print(f"--- {name} ({step['context']}) -> {path} ---")
+        print(f"--- {name} ({ctx_label(step)}) -> {path} ---")
         print(script)
         print("--- argv ---")
         print(" ".join(exec_argv(step, path)))
@@ -258,22 +409,23 @@ def run_step(step, dry=False):
 
     argv = exec_argv(step, path)
     log = f"{LOGS}/{name}.log"
-    print(f"  RUN   {step['seq']:3} {name:28} [{step['context']}] "
+    print(f"  RUN   {step['seq']:3} {name:28} [{ctx_label(step)}] "
           f"src={srcdir or '-'}", flush=True)
 
     t0 = time.time()
     with open(log, "w") as lf:
-        lf.write(f"# {name}  context={step['context']}  {time.ctime()}\n")
+        lf.write(f"# {name}  context={ctx_label(step)}  mode={MODE}  {time.ctime()}\n")
         lf.write(f"# argv: {' '.join(argv)}\n\n")
         lf.flush()
         rc = subprocess.run(argv, stdout=lf, stderr=subprocess.STDOUT).returncode
     dt = time.time() - t0
 
     with open(TIMINGS, "a") as tf:
-        tf.write(f"{name}\t{step['context']}\t{dt:.1f}\t{rc}\n")
+        tf.write(f"{name}\t{ctx_label(step)}\t{dt:.1f}\t{rc}\n")
 
     if rc == 0:
-        # Harvest the Chapter 8 manifest out of the chroot.
+        # Harvest the manifest. Under chroot it is inside the tree; natively it is
+        # simply in /tmp.
         mf = f"{LFS}/tmp/manifest.{name}.txt"
         if os.path.exists(mf):
             os.makedirs(MANIFESTS, exist_ok=True)
@@ -282,7 +434,17 @@ def run_step(step, dry=False):
                             f"{MANIFESTS}/{name}.txt"], check=False)
             subprocess.run(["sudo", "rm", "-f", mf], check=False)
             n = sum(1 for _ in open(f"{MANIFESTS}/{name}.txt"))
-            print(f"        OK  {dt/60:.1f} min   manifest: {n} files")
+            extra = ""
+            # Natively, lfsmaint's database lives on this same machine. Copying the
+            # manifest there now is what keeps /var/lib/lfsmaint from drifting behind
+            # this repo -- the drift that left go, tailscale, openbao and opentofu
+            # recorded as owning zero files.
+            if MODE == "native" and os.path.isdir(LFSMAINT_MANIFESTS):
+                subprocess.run(["sudo", "install", "-m", "644",
+                                f"{MANIFESTS}/{name}.txt",
+                                f"{LFSMAINT_MANIFESTS}/{name}.txt"], check=False)
+                extra = "  -> lfsmaint (run 'lfsmaint db' to re-index)"
+            print(f"        OK  {dt/60:.1f} min   manifest: {n} files{extra}")
         else:
             print(f"        OK  {dt/60:.1f} min")
         mark_done(name)
@@ -296,18 +458,60 @@ def run_step(step, dry=False):
     return False
 
 
+def cmd_reconcile(plan, dry=False):
+    """Mark as completed every step that already has a recorded manifest.
+
+    `state/completed` is only appended to by run_step, so steps built by hand on the
+    target never land in it. Left alone, --resume would then rebuild packages that
+    are already installed. A manifest under manifests/ is the evidence that the
+    step's install ran and its files were recorded, so it is what we reconcile from.
+    """
+    done = completed()
+    add = [s["name"] for s in plan
+           if s["name"] not in done and os.path.exists(f"{MANIFESTS}/{s['name']}.txt")]
+    missing = [s["name"] for s in plan
+               if s["name"] not in done and not os.path.exists(f"{MANIFESTS}/{s['name']}.txt")]
+
+    if not add:
+        print("nothing to reconcile; every step with a manifest is already marked done")
+    else:
+        print(f"{'would mark' if dry else 'marking'} {len(add)} step(s) completed "
+              f"on the evidence of a recorded manifest:")
+        for n in add[:10]:
+            print(f"  {n}")
+        if len(add) > 10:
+            print(f"  ... and {len(add) - 10} more")
+        if not dry:
+            with open(DONE, "a") as f:
+                for n in add:
+                    f.write(n + "\n")
+
+    if missing:
+        print(f"\n{len(missing)} step(s) still not completed and with no manifest "
+              f"-- genuinely unbuilt:")
+        for n in missing[:10]:
+            print(f"  {n}")
+        if len(missing) > 10:
+            print(f"  ... and {len(missing) - 10} more")
+
+
 def cmd_status(plan):
     done = completed()
-    print(f"completed: {len(done)}/{len(plan)}")
+    # state/completed spans every plan, so count only this plan's steps -- otherwise
+    # a BLFS --status reports the LFS steps too and prints e.g. 350/217.
+    here = sum(1 for s in plan if s["name"] in done)
+    print(f"mode     : {MODE}   tree={TREE}  sources={SOURCES}")
+    print(f"completed: {here}/{len(plan)}")
     nxt = [s for s in plan if s["name"] not in done]
     if nxt:
         s = nxt[0]
-        print(f"next     : {s['seq']} ({s['order']}) {s['name']} [{s['context']}]")
+        print(f"next     : {s['seq']} ({s['order']}) {s['name']} [{ctx_label(s)}]")
     else:
         print("next     : -- all steps complete --")
-    print(f"free     : {free_gb():.1f} GB on {LFS}")
-    st = vkfs_state()
-    print("vkfs     : " + ", ".join(f"{m}={'up' if v else 'down'}" for m, v in st.items()))
+    print(f"free     : {free_gb():.1f} GB on {TREE}")
+    if MODE == "chroot":
+        st = vkfs_state()
+        print("vkfs     : " + ", ".join(f"{m}={'up' if v else 'down'}" for m, v in st.items()))
     if os.path.exists(TIMINGS):
         tot = sum(float(l.split("\t")[2]) for l in open(TIMINGS) if l.count("\t") >= 3)
         print(f"buildtime: {tot/3600:.2f} h so far")
@@ -325,13 +529,25 @@ def main():
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--force", action="store_true", help="re-run even if completed")
     ap.add_argument("--plan", default=PLAN, help="plan file (default: the LFS plan)")
+    ap.add_argument("--native", dest="mode", action="store_const", const="native",
+                    help="run against this running system (no chroot)")
+    ap.add_argument("--chroot", dest="mode", action="store_const", const="chroot",
+                    help=f"run against the target tree at {CHROOT_TREE}")
+    ap.add_argument("--sources", help="directory holding tarballs and patches")
+    ap.add_argument("--reconcile", action="store_true",
+                    help="mark steps completed where a manifest proves they were built")
     a = ap.parse_args()
+
+    configure_mode(a.mode, a.sources)
 
     plan = load_plan(a.plan)
     done = completed()
 
     if a.status:
         return cmd_status(plan)
+
+    if a.reconcile:
+        return cmd_reconcile(plan, dry=a.dry_run)
 
     sel = plan
     if a.chapter:
@@ -354,7 +570,7 @@ def main():
     if a.list:
         for s in sel:
             flag = "x" if s["name"] in done else " "
-            print(f"[{flag}] {s['seq']:3} {s['order']:>6} {s['context']:9} "
+            print(f"[{flag}] {s['seq']:3} {s['order']:>6} {ctx_label(s):9} "
                   f"{s['name']:28} {s['tarball']}")
         return
 
@@ -373,7 +589,7 @@ def main():
             print(f"\nSTOPPED at {s['name']}")
             sys.exit(1)
     print("\nall selected steps complete")
-    cmd_status(load_plan())
+    cmd_status(load_plan(a.plan))
 
 
 if __name__ == "__main__":
