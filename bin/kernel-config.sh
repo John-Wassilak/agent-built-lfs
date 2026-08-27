@@ -148,6 +148,15 @@ $K --enable  USB_UHCI_HCD
 $K --enable  USB_STORAGE
 $K --enable  USB_UAS
 
+# --- added 2026-08-27: TUN/TAP device support ---
+# Not set by `make defconfig`. Needed for Tailscale: unlike the in-kernel
+# WIREGUARD module above (which implements its own dedicated netdevice type),
+# Tailscale runs a userspace WireGuard implementation (wireguard-go) that
+# pushes packets through a /dev/net/tun character device -- an entirely
+# different kernel interface, TUN, not the WireGuard module. Confirmed unset
+# in the running kernel's own .config before adding this.
+$K --module  TUN
+
 # Resolve dependencies non-interactively.
 make olddefconfig
 
