@@ -1629,3 +1629,71 @@ call for this GPU had been done yet. Researching NVK's (Mesa's Vulkan
 driver for NVIDIA hardware) actual hardware support matrix for
 Kepler/GK104 before deciding whether a Mesa rebuild with Vulkan enabled
 is worth doing.
+
+Research confirmed Kepler is officially supported by NVK, not
+experimental: Mesa's own docs list "Kepler (GeForce 600 and 700 series)
+and later" as the supported range, requiring only Linux 6.6+ (this
+system runs 6.18.10). One real hardware ceiling found: Kepler cannot
+exceed Vulkan 1.2, because it lacks `vulkanMemoryModel` (required for
+1.3+) -- not a driver gap. NVK doesn't share code with the gallium
+state tracker that has the confirmed video-decode crash bug from
+earlier tonight (separate implementation, doesn't go through gallium
+at all), and no active Kepler-specific NVK crash reports turned up.
+Given tonight's two live incidents already, checked with the operator
+before proceeding to an actual rebuild+live-test rather than deciding
+unilaterally -- approved.
+
+**Rebuild required two new dependencies neither previously needed**:
+`SPIRV-LLVM-Translator-21.1.4` and `libclc-21.1.8` (both real BLFS book
+pages, never built before now -- the book ties `libclc` to the Intel
+iris gallium driver, but it's meson-hard-required the moment
+`vulkan-drivers` includes `nouveau` too, for built-in function
+lowering). Also needed `bindgen` (Rust FFI binding generator, NVK's
+shader compiler "NAK" is Rust-based) -- installed via `cargo install
+bindgen-cli`, same pattern as this project's other Rust tooling. Mesa
+itself needed a login shell (`sudo bash -lc`) to find `rustc` on PATH,
+same fix already established for alacritty/librsvg.
+
+Rebuilt Mesa with `-D vulkan-drivers=nouveau`. Installed cleanly.
+`libvulkan_nouveau.so` and its ICD JSON
+(`/usr/share/vulkan/icd.d/nouveau_icd.x86_64.json`) both present.
+
+**Built `Vulkan-Tools-1.4.341`** (hand-authored, no book page, version-
+matched to the already-installed Vulkan-Loader) to get `vulkaninfo` --
+needed a real tool to confirm the driver actually initializes on
+hardware, not just that files landed in the right place.
+
+**Live test result: works.**
+
+```
+GPU0:
+	deviceName         = GeForce GTX 770 (NVK GK104)
+	driverID           = DRIVER_ID_MESA_NVK
+	driverName         = NVK
+	apiVersion         = 1.2.328
+	conformanceVersion = 1.4.3.0
+```
+
+No crash, no trap, clean enumeration -- and it landed exactly at the
+predicted Vulkan 1.2 ceiling for Kepler, matching the research before
+ever touching hardware. This is the first genuinely new capability
+added to this GPU tonight (video decode firmware fixed a real gap but
+hit an unrelated crash bug; reclocking works but isn't safe to use live
+the way it was tested) -- Vulkan 1.2 workloads now have a real,
+working, hardware-accelerated path on this system where none existed
+before.
+
+**Summary of tonight's full GPU investigation**:
+- DRM/3D desktop rendering (Hyprland, EGL, GLX): working, fixed in
+  earlier sessions.
+- Video decode (VAAPI): firmware gap fixed, but real hardware decode
+  crashes due to a Mesa gallium bug -- `hwdec=no` is the safe setting
+  until that's fixed upstream or a different Mesa version is tried.
+- Reclocking: works, real performance available (405MHz idle to
+  1058MHz/7GHz boost), but live-switching under an active compositor
+  session caused a real crash and visible corruption -- needs to be a
+  boot-time-only setting, not touched further this session.
+- Vulkan (NVK): now working, confirmed live, capped at 1.2 by hardware
+  as expected.
+
+Next: Firefox remains the last package in this plan, still pending.

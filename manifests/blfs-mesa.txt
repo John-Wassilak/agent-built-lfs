@@ -17,6 +17,7 @@
 /usr/lib/libgbm.so
 /usr/lib/libgbm.so.1
 /usr/lib/libgbm.so.1.0.0
+/usr/lib/libvulkan_nouveau.so
 /usr/lib/pkgconfig/dri.pc
 /usr/lib/pkgconfig/gbm.pc
 /usr/share/doc/mesa-25.3.5/ARB_color_buffer_float.txt
@@ -680,6 +681,7 @@
 /usr/share/doc/mesa-25.3.5/xlibdriver.rst
 /usr/share/drirc.d/00-mesa-defaults.conf
 /usr/share/glvnd/egl_vendor.d/50_mesa.json
+/usr/share/vulkan/icd.d/nouveau_icd.x86_64.json
 /var/lib/systemd/timesync/clock
 /var/log/journal/fa41fba8515b4edca48224e5e93c9251/system.journal
 /var/log/journal/fa41fba8515b4edca48224e5e93c9251/user-1000.journal

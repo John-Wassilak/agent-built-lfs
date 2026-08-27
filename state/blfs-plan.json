@@ -2980,5 +2980,47 @@
     "blocks": 1,
     "enabled": 1,
     "disabled": 0
+  },
+  {
+    "seq": 214,
+    "order": "blfs.214",
+    "name": "blfs-spirv-llvm-translator",
+    "chapter": "blfs",
+    "page": "spirv-llvm-translator",
+    "title": "SPIRV-LLVM-Translator-21.1.4",
+    "context": "chroot",
+    "tarball": "SPIRV-LLVM-Translator-21.1.4.tar.gz",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
+  },
+  {
+    "seq": 215,
+    "order": "blfs.215",
+    "name": "blfs-libclc",
+    "chapter": "blfs",
+    "page": "libclc",
+    "title": "libclc-21.1.8",
+    "context": "chroot",
+    "tarball": "libclc-21.1.8.src.tar.xz",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
+  },
+  {
+    "seq": 216,
+    "order": "blfs.216",
+    "name": "blfs-vulkan-tools",
+    "chapter": "blfs",
+    "page": "vulkan-tools",
+    "title": "Vulkan-Tools-1.4.341 (hand-authored)",
+    "context": "chroot",
+    "tarball": "Vulkan-Tools-1.4.341.tar.gz",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
   }
 ]

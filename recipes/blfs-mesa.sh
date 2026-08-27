@@ -27,6 +27,21 @@
 # documented fallback is the __GLX_VENDOR_LIBRARY_NAME=mesa environment
 # variable, set in home-john/start-hyprland.sh (inherited by XWayland as
 # Hyprland's child), not anything in this recipe or a vendor.d directory.
+#
+# Rebuilt 2026-08-26 with -D vulkan-drivers=nouveau (was empty/disabled):
+# NVK (Mesa's Vulkan driver for NVIDIA hardware) officially supports
+# Kepler (GeForce 600/700 series, this card included) per Mesa's own docs
+# -- not experimental/unsupported for this GPU. Requires Linux 6.6+ (this
+# system runs 6.18.10). Kepler is capped at Vulkan 1.2 by hardware (lacks
+# vulkanMemoryModel, required for 1.3+) even though NVK claims 1.4
+# conformance for its newest-supported generations -- a real hardware
+# ceiling, not a driver gap. NVK does not share code with the gallium
+# state tracker (the OpenGL/VAAPI path that has a confirmed crash bug on
+# this card, see BUILD-REPORT.md's GPU deep-dive) -- separate
+# implementation, talks to the kernel more directly, so that bug doesn't
+# carry over here. vulkan-loader (a separate BLFS page) was already
+# installed; no circular-dependency issue applies to this option (that
+# note in the book is about libva, and is unrelated).
 set -e
 
 # --- block 0 --------------------------------------------------
@@ -57,7 +72,7 @@ meson setup ..                     \
       --buildtype=release           \
       -D platforms=x11,wayland      \
       -D gallium-drivers=nouveau \
-      -D vulkan-drivers=            \
+      -D vulkan-drivers=nouveau      \
       -D valgrind=disabled           \
       -D video-codecs=all             \
       -D libunwind=disabled          \
