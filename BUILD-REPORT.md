@@ -2062,3 +2062,53 @@ Next: GRUB/kernel cleanup for the NVIDIA path as the new default, then
 troubleshoot `alacritty` not appearing when launched from awesome
 (`rofi` via SUPER+D confirmed working). Firefox remains the last
 package in the original plan, still pending.
+
+## GRUB/kernel cleanup, alacritty bug found and fixed live (2026-08-26)
+
+**GRUB**: operator decided to commit to NVIDIA/X11/awesome as the
+permanent setup, not a test entry. Restructured `boot/grub.cfg`:
+entry 0 (default) is now the nvidia boot, entry 1 (nouveau) is a
+fallback, not primary. Replaced the old one-directional static
+`/etc/modprobe.d` blacklist (which only ever excluded nvidia) with
+symmetric per-boot exclusion via `modprobe.blacklist=...` on each
+entry's own kernel cmdline -- confirmed correct by directly checking
+`modinfo nvidia-drm`/`modinfo nouveau` against this GPU's actual
+`/sys/.../modalias` (both genuinely match; the auto-load race was
+real, not just theoretical caution). Added `/etc/modprobe.d/
+nvidia-modeset.conf` (`options nvidia-drm modeset=1`) so the driver
+gets the option it needs whenever it loads. `/boot` and
+`/usr/lib/modules` were already clean (single kernel, no stale
+entries) -- no further kernel cleanup needed.
+
+**alacritty not appearing -- real bug found, not a driver issue.**
+Diagnosed live against the operator's actual running session via
+`awesome-client` (executes Lua directly in the live instance) rather
+than guessing: `client.get()` showed three real, running, managed
+`Alacritty` windows (the operator had tried SUPER+Return multiple
+times) -- confirming the spawn itself worked every time. The actual
+bug: every client's `c:tags()` returned empty. Root cause: this
+project's custom `rc.lua` never creates any tags at all. The stock
+awesome rc.lua bundles tag creation inside the same
+`connect_for_each_screen` function as the wibar setup; stripping that
+whole block for the operator's "no waybar" instruction silently took
+tag creation with it. With no tags existing, new clients had nowhere
+visible to go -- real windows, rendering fine, just permanently
+off-tag. This also silently broke the SUPER+1-9 workspace-switching
+keybindings the same way (`screen.tags[i]` was always `nil`).
+
+Fixed in two parts: corrected `rc.lua` (tag creation restored, wibar
+widgets still excluded), and a **live hot-patch** applied directly to
+the operator's running session via `awesome-client` -- created the
+tags and moved the three existing stray windows onto tag 1, all
+without requiring a quit/restart (avoiding the VT-stuck-on-quit issue
+from earlier). Confirmed via `awesome-client`: all three windows now
+show `tags=1`.
+
+Also noted, not yet fixed: `dunst` fails to register as the
+notification daemon (`Cannot acquire 'org.freedesktop.Notifications':
+Name is acquired by 'naughty' with PID`) -- awesome's own built-in
+`naughty` popup system claims the D-Bus name first. Since `dunst` was
+deliberately chosen as mako's replacement, the fix is disabling
+`naughty`'s notification handling in `rc.lua` (it currently isn't
+even referenced there, so it's using awesome's C-side default) --
+not yet done.

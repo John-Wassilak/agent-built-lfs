@@ -67,10 +67,24 @@ awful.layout.layouts = {
 }
 -- }}}
 
--- {{{ Wibar (status bar) -- deliberately NOT built, matching the
--- operator's explicit "no waybar" instruction from the Hyprland setup.
--- No wibar/taglist/tasklist/systray widgets are created below; tags
--- are still fully usable via keybindings without a visible bar.
+-- {{{ Screens / tags
+-- No wibar/taglist/tasklist/systray widgets -- deliberately not built,
+-- matching the operator's explicit "no waybar" instruction from the
+-- Hyprland setup. Tag *creation* is NOT optional, though -- it's what
+-- actually assigns new clients to a viewable workspace at all. Real
+-- bug found and fixed here (2026-08-26): the stock awesome rc.lua
+-- bundles tag creation inside the same connect_for_each_screen
+-- function as the wibar setup; stripping that whole block for "no
+-- wibar" silently took the tag creation with it. Without any tags
+-- existing, every new client had an empty tag list (confirmed live
+-- via awesome-client: `c:tags()` returned nothing for three spawned
+-- alacritty windows) -- they were real, managed, running clients that
+-- were simply never assigned anywhere visible. Also silently broke
+-- the SUPER+1-9 tag-switching keybindings the same way (screen.tags[i]
+-- was always nil).
+awful.screen.connect_for_each_screen(function(s)
+    awful.tag({ "1", "2", "3", "4", "5", "6", "7", "8", "9" }, s, awful.layout.layouts[1])
+end)
 -- }}}
 
 -- {{{ Mouse bindings
