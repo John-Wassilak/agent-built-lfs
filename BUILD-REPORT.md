@@ -1933,8 +1933,132 @@ window/region/output capture natively with zero additional
 dependencies -- confirmed working (`import -help`), a more efficient
 choice given what was already on hand.
 
-Next: config authoring (awesome's `rc.lua`, wiring in rofi/dunst/
-redshift/clipmenu, porting the spirit of the old Hyprland keybindings),
-then Phase 4 testing including the real multi-stream VDPAU
-verification this whole migration was for. Firefox remains the last
+## Phase 4: config authoring and live testing -- VDPAU confirmed working (2026-08-26)
+
+Wrote a custom `~/.config/awesome/rc.lua` porting the spirit (not a
+line-by-line translation) of the old Hyprland config: dwindle-first
+layout order, `beautiful.useless_gap` for Hyprland's gaps_in/gaps_out,
+directional focus/swap via `awful.client.focus.bydirection` (built
+into awesome 4.3, matches Hyprland's arrow-key model directly),
+`wpctl` for volume (wireplumber's own CLI, already installed and
+working -- `pamixer`, what the old config pointed at, was never
+actually built), `import` for screenshots (see Phase 2/3 notes),
+`clipmenu`/`dunst`/`redshift` autostart. `.xinitrc` + a
+`start-awesome.sh` wrapper (successor to `start-hyprland.sh`) round
+out the launch path.
+
+**Two real, structural blockers hit and fixed getting `startx` to run
+at all, neither guessed at**:
+
+1. `xf86OpenConsole: Cannot open virtual console 1 (Permission denied)`
+   -- an unprivileged user's X server has no way to get VT access
+   without `logind` (which this system doesn't run), the same
+   underlying gap that blocked Hyprland, but with a different, much
+   older and more direct fix available for X11 specifically: Xorg has
+   always supported running setuid-root (or via a privileged wrapper)
+   as its OWN mechanism for VT access, predating `logind` by decades.
+   Set `chmod u+s /usr/bin/Xorg` -- confirmed via a direct root-level
+   test first (bypassing the permission error entirely) before
+   applying it to the real binary, not guessed.
+2. Xorg's own driver auto-selection doesn't know to pick
+   `nvidia_drv.so` without an explicit `xorg.conf` -- without one, it
+   falls through to the generic `modesetting`/Glamor path, which hits
+   the *exact same* `kmsro: driver missing` GBM-absence error Hyprland
+   did (confirmed directly: ran bare `Xorg :1 vt1` as root with no
+   config and reproduced it). Generated one with `nvidia-xconfig`, then
+   hand-simplified it -- the generated `InputDevice` sections
+   referenced the legacy `xf86-input-mouse`/`-keyboard` drivers, never
+   built here (only `xf86-input-libinput` was); stripped those,
+   relying on `AutoAddDevices` + the already-installed libinput driver
+   for input instead. Tracked in this repo at `etc/X11/xorg.conf`.
+
+`xauth` was also a real, direct blocker (`startx` calls it internally;
+without it, startx fails outright) -- needed `libXmu` -> `libXt`
+first, neither previously built.
+
+**With those fixed, the full session came up genuinely clean**: real
+EWMH/WM capability negotiation, real physical input devices detected
+by name (a Logitech USB receiver, a Dynex mouse) via libinput, `awesome`
++ `redshift` + `dunst` + `clipmenud` all running simultaneously, no
+crashes, `dmesg` clean. `alacritty` (already built for the Hyprland era)
+worked immediately under X11 with zero changes needed -- confirmed via
+a direct test (real window created, focused, resized, rendered frames,
+clean shutdown) -- it was always cross-platform via `winit`, just never
+exercised under X11 until now.
+
+**VDPAU verification -- the actual point of this whole migration.**
+`vdpauinfo` (hand-authored, no book page) confirmed the real NVIDIA
+VDPAU driver and `H264_HIGH` decode capability at level 51 -- the
+exact profile that crashes under nouveau's VAAPI. But two more real,
+layered gaps stood between that and actual working playback, both
+found by testing rather than assumed:
+
+- `mpv --hwdec=vdpau`: `Unsupported hwdec: vdpau` -- mpv itself was
+  never built with VDPAU support (`-D vdpau=enabled`, not set when it
+  was originally built for the VAAPI-only Hyprland era).
+- After rebuilding mpv: still failed, `--vo=vdpau` got further (real
+  display/monitor detection: `HDMI-0, 1440x900 @ 59.887445 FPS`) but
+  errored generically on device init, and `--vo=gpu --hwdec=vdpau`
+  still said "Unsupported hwdec: vdpau" even post-rebuild. Root cause,
+  confirmed via `ffmpeg -hwaccels` (vdpau not listed at all): mpv's own
+  vdpau source files delegate the actual VDPAU device management to
+  FFmpeg's shared `libavutil`/`libavcodec` (`hwcontext_vdpau.c`), a
+  *separate* already-built package -- mpv's own `-D vdpau=enabled`
+  rebuild alone could never have worked, since the layer underneath it
+  had no VDPAU support compiled in either. Rebuilt FFmpeg with
+  `--enable-vdpau` added (confirmed via `config.mak`:
+  `CONFIG_H264_VDPAU_HWACCEL=yes`).
+
+**Real result, verified multiple independent ways, not just a clean
+log message**:
+- `ffmpeg -hwaccel vdpau` decoded the H.264 test file with zero errors
+  -- no "No support for codec"/"Failed setup" rejection of any kind,
+  unlike every VAAPI attempt all night.
+- Output pixel format was `nv12` (VDPAU's hardware-decode-native
+  format) -- every earlier *software*-fallback test all night produced
+  `yuv420p` instead, a concrete, independent signal beyond just "no
+  error appeared."
+- GPU memory usage jumped from the idle baseline (1MiB, consistent all
+  night) to 87MiB during active single-stream decode -- real VRAM
+  allocation for decode surfaces, confirmed via `nvidia-smi`.
+- Sustained decode throughput: ~265 fps, ~11x realtime, across a
+  3000-frame run.
+- **The actual practical use case** (multiple simultaneous camera
+  feeds): ran 4 concurrent H.264 VDPAU decodes at once. CPU stayed low
+  across all 4 cores (8-12% each, nowhere near saturated) throughout.
+  GPU memory scaled proportionally (188MiB for 4 streams vs 87MiB for
+  1). All 4 streams made genuine, real progress (verified via their
+  individual frame counters, not just "still running") -- noticeably
+  slower in aggregate than 4x the single-stream rate, consistent with
+  real contention on this Kepler card's single hardware decode engine
+  being shared across sessions, not a hang or a fallback to software
+  (CPU usage would have been much higher if it had silently fallen
+  back). A genuine, useful finding for the operator's actual workload:
+  hardware decode works and offloads the CPU correctly, but this
+  specific consumer-tier card's decode engine has real throughput
+  limits under heavy concurrent load -- worth keeping in mind for
+  planning how many simultaneous camera feeds to expect smooth
+  performance from.
+
+**One real operational incident during testing, resolved**: after the
+operator physically quit `awesome`, the console (VT1) was left stuck
+in graphics mode -- blank/frozen, unresponsive to input. Root cause:
+without `logind`, nothing tells the kernel to restore text mode when
+Xorg exits, and `nvidia-drm` doesn't appear to provide a working
+framebuffer-console fallback the way `simpledrm`/nouveau do. `chvt`
+cycling and restarting `getty@tty1.service` both failed to recover it
+-- fixed with a plain reboot, landing back on the working entry
+automatically via the one-shot GRUB mechanism, no manual recovery
+needed. Documented here as a known real limitation of this setup:
+quitting awesome currently requires a reboot to get a working console
+back, not yet solved.
+
+**Decision**: operator has decided to commit to the NVIDIA/X11/awesome
+setup as the permanent replacement for nouveau/Hyprland -- not staying
+in "test mode." GRUB/kernel cleanup to make this the real default,
+and the VT-stuck-on-quit issue, are next.
+
+Next: GRUB/kernel cleanup for the NVIDIA path as the new default, then
+troubleshoot `alacritty` not appearing when launched from awesome
+(`rofi` via SUPER+D confirmed working). Firefox remains the last
 package in the original plan, still pending.

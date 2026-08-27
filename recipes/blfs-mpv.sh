@@ -9,6 +9,14 @@
 # an SSH-driven headless build, no interactive desktop session to benefit
 # from it, matching this project's standing policy of not installing
 # Recommended conveniences that don't fit a headless server.
+#
+# Rebuilt 2026-08-26 with -D vdpau=enabled, as part of the X11/NVIDIA
+# migration's real VDPAU verification (see BUILD-REPORT.md's Phase 4
+# testing). This alone wasn't enough -- mpv's own vdpau.c/vo_vdpau.c
+# call into FFmpeg's shared libavutil for the actual VDPAU device
+# management (AVHWDeviceContext), and this system's ffmpeg was built
+# without --enable-vdpau (see blfs-ffmpeg.sh's matching note). Confirmed
+# working only after both were rebuilt.
 set -e
 
 mkdir build
@@ -17,6 +25,7 @@ cd build
 meson setup --prefix=/usr \
   --buildtype=release \
   -D x11=enabled \
+  -D vdpau=enabled \
   ..
 ninja
 

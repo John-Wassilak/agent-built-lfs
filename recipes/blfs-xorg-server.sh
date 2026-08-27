@@ -31,3 +31,13 @@ ninja
 
 ninja install
 mkdir -pv /etc/X11/xorg.conf.d
+
+# Real, confirmed-necessary post-install step (see BUILD-REPORT.md's
+# Phase 4 testing): without logind (not run on this system), an
+# unprivileged startx fails outright with "xf86OpenConsole: Cannot
+# open virtual console 1 (Permission denied)". Setuid-root is Xorg's
+# own, much older mechanism for VT access, predating logind -- this
+# was the standard way non-display-manager X11 systems worked for
+# decades, not a hack. Confirmed via a direct root-level test first
+# (bypassing the permission error entirely) before applying it here.
+chmod u+s /usr/bin/Xorg
