@@ -2468,3 +2468,105 @@ background or pure foreground pixels, no blend). Confirmed via a live
 test (spawned real alacritty windows, `picom --config
 ~/.config/picom/picom.conf` running against the live session) before
 relying on the config taking effect via the next full session start.
+
+## Phase 8: full system audit -- security, runtime health, cleanup, hardware
+
+Requested after Phase 7: a broad scan across security posture, runtime
+health (logs, failed units), cleanup opportunities, and hardware/
+driver status, aiming for "everything working and configured." Ran
+four parallel research passes, then acted directly on what needed
+fixing rather than just reporting.
+
+**Fixed:**
+
+- **Stale passwordless-root sudo grant reverted.** `/etc/sudoers.d/
+  90-john-temp-nopasswd` (`john ALL=(ALL) NOPASSWD: ALL`) was
+  self-documented as temporary, added 2026-08-26 for build automation,
+  meant to be reverted "once the current build (Firefox/LLVM tier)
+  finishes" -- which it has. Removed. `sudo -n` on the target now
+  correctly requires a password again (the failure itself is the
+  confirmation the revert took).
+- **~1.26GB of build-staging directories removed** from `/root/` on
+  the target: every `build-*` directory from tonight's various builds
+  (Firefox, gtk3, mpv, rofi, dunst, libzip, libconfig, libev, uthash,
+  picom, plus older leftovers from earlier in the project) -- all
+  fully reproducible from the committed recipes, zero reference value
+  kept. `/root/kbuild` (2.8GB, the kernel build tree) was deliberately
+  left alone -- real potential future value given nouveau's driver is
+  still compiled into the kernel rather than excised.
+- **Dead Hyprland/wofi config removed**, repo and target both:
+  `home-john/.config/hypr/`, `.config/wofi/`, `start-hyprland.sh`, plus
+  the now-stale `blfs-libei`/`blfs-xwayland` entries in
+  `recipes/blfs-overrides.json` -- all referencing packages removed in
+  Phase 6, nothing left that would ever read them. Also a loose
+  `/usr/include/hyprcursor.hpp` on the target that Phase 6's
+  orphan-cleanup pass had missed (it removed the `hyprcursor/`
+  subdirectory but not this separate top-level header).
+- **`smartmontools` installed** -- no tooling existed to check disk
+  health at all. Both disks (`WDC WD5000HHTZ-04N21V0`,
+  `WDC WD1600AVJS-63SWA0`) pass SMART overall-health self-assessment.
+- **Audio investigated in depth, real root cause found, not fixable
+  by cmdline flags** -- see `boot/grub.cfg`'s own comment and the
+  separate commit for the full account. Regressed from a previously-
+  documented working state at some point across tonight's several
+  reboots; tried three kernel quirk combinations across three real
+  reboots (`single_cmd=1`, `bdl_pos_adj=0,0`, both together);
+  `single_cmd` is the only one that changes anything (codecs actually
+  respond with real vendor IDs instead of timing out), but it still
+  never succeeds, just fails a different way (`spurious response`).
+  Reverted to the plain cmdline since the extra flags have no net
+  benefit. Genuinely unresolved -- documented as such, not silently
+  dropped or falsely claimed fixed.
+
+**Found and deliberately left for a decision, not silently ignored:**
+
+- **85 of 203 tracked LFS/BLFS security advisories affect currently-
+  installed package versions** (`lfsmaint advisories`): 15 Critical
+  (`glibc-2.43`, `linux-6.18.10`, `xz-5.8.2`, `python-3.14.3`,
+  `firefox-140.8.0esr`, `libssh2-1.11.1`, `libinput-1.31.3`,
+  `util-linux-2.41.3`, `vim-9.2.0078`, `perl-5.42.0`, `xml-parser`,
+  `inetutils`, and others), 38 High. This is the real, ongoing cost of
+  a from-scratch build with no automatic patch channel -- the list
+  will only grow. `lfsmaint`'s own caveat: an advisory names a
+  package, not necessarily confirms the exact installed version is
+  exploitable -- this is a worklist to triage against upstream
+  advisory text, not a confirmed-vulnerable list, and rebuilding all
+  85 wasn't attempted tonight (a much larger undertaking than this
+  session's scope). Worth a dedicated future pass, prioritized by
+  actual exposure (network-facing/privilege-relevant packages first:
+  `openssh`, `glibc`, `openssl`, `xorg-server`, the kernel itself --
+  ahead of things like `giflib`/`libaom` whose exploit path requires
+  opening a malicious local file).
+- **SSH password authentication is enabled** (`passwordauthentication
+  yes` in `sshd_config`), reachable from the LAN (`enp6s0
+  192.168.0.233/24`) as well as the WireGuard VPN (`wg0
+  10.0.0.4/24`) -- not just the VPN. The firewall is otherwise
+  correctly restrictive (`iptables` `INPUT` policy `DROP`, only
+  loopback/established/SSH allowed), so this is a real but bounded
+  exposure: a guessed/leaked password for `john` is a direct path in.
+  Left as-is since it's a legitimate convenience/security tradeoff the
+  operator gets to make, not something to silently change.
+- **Broadcom BCM4321 WiFi card has no driver bound at all** (`lspci
+  -k`) -- genuinely driverless hardware, but the machine reaches the
+  network exclusively via wired `enp6s0` (working) and WireGuard
+  (working), so likely inconsequential unless wireless is wanted.
+- **nvidia.ko triggers a kernel WARN every boot** ("Unpatched return
+  thunk in use" -- the out-of-tree 470.xx module wasn't built with the
+  same CPU speculative-execution mitigation thunk patching as this
+  6.18 kernel; taints the kernel but doesn't crash anything). Not
+  fixable short of a different driver branch; informational.
+
+**Confirmed healthy, no action needed:** zero failed systemd units,
+system state `running`; Xorg log has zero `(EE)`/`(WW)` lines; no
+disk/storage errors, no OOM kills despite the Firefox build peaking at
+10+GB RAM; time sync healthy; journal/log disk usage normal (44M);
+nvidia GPU stack fully clean (driver 470.256.02, `nvidia`/`nvidia_
+modeset`/`nvidia_drm` all loaded, `nvidia_uvm`/`nvidia_peermem`
+correctly absent for a non-CUDA desktop workload); every other PCI
+device correctly driver-bound (USB, SATA/AHCI, the Marvell 88SE9172,
+ethernet); SUID/SGID binary set clean, no unexpected entries; no
+world-writable files outside `/tmp`; `authorized_keys` contains
+exactly the one expected key; no secrets found in cleartext anywhere
+checked; `lfsmaint drift` clean (0 packages behind BLFS book
+versions, 3 deliberately ahead); repo consistency between
+`manifests/`, `recipes/`, and `state/blfs-plan.json` fully intact.
