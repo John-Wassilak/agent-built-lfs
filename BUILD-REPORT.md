@@ -1844,4 +1844,97 @@ decoupled entirely from the normal Hyprland desktop, selected via the
 same GRUB entry 1 + nouveau-blacklist mechanism already in place.
 Not yet decided by the operator whether to pursue that.
 
-Next: Firefox remains the last package in this plan, still pending.
+## X11 + awesome: Phases 1-3 built (2026-08-26)
+
+Operator decided to abandon Hyprland/Wayland entirely rather than
+chase the dead-end EGLStreams path, and asked for a plan targeting an
+X11 window manager instead -- full plan in `AWESOME-X11-PLAN.md`.
+`awesome` chosen (Lua-configured, closest conceptual match to the
+existing Hyprland config style). Built all three of Phases 1-3 in this
+session -- 21 new packages, all tracked in `state/blfs-plan.json` and
+`manifests/`. Full package list and rationale in
+`AWESOME-X11-PLAN.md`'s status section; highlights here are the real
+problems hit and fixed, not routine successful builds:
+
+**Genuine upstream/environment bugs found and fixed, not guessed at**:
+
+- xorg-server's book page never lists `libpciaccess` even though
+  `hw/xfree86/meson.build` hard-requires it -- a real gap in the book
+  page itself.
+- `xcb-util-xrm`'s `configure.ac` calls an autoconf macro
+  (`XCB_UTIL_COMMON`) that only autotools-built `xcb-util` installs to
+  `/usr/share/aclocal` -- this project's `xcb-util` was built via
+  meson, which never produces that file. Fetched the macro directly
+  from its real source (the `xcb-util-m4` submodule) rather than
+  rebuilding `xcb-util` via autotools just for this.
+- ImageMagick's book-documented download URL 404'd outright --
+  imagemagick.org restructured its `/archive/releases/` path since the
+  book was written. Used the book's own documented fallback mirror
+  (`ftp.osuosl.org`), same checksum.
+- **A real pre-existing bug in this project's own packaging**: Lua 5.4
+  and 5.5 were both legitimately built in earlier sessions (5.4 for
+  libinput, 5.5 as an undocumented Hyprland dependency), but upstream
+  Lua's Makefile has zero multi-version header coexistence -- every
+  release installs to the same generic `/usr/include/lua.h`. 5.5's
+  later install silently overwrote 5.4's headers; `pkg-config lua5.4
+  --cflags` kept "working" but silently returned 5.5's header content,
+  and `--libs`'s generic `-llua` resolved through the generic symlink
+  to 5.5's library despite the `.pc` file being named `lua5.4.pc`. Any
+  package built against declared `lua5.4` between 5.5's install and
+  this fix may have silently linked against 5.5 instead -- not
+  re-audited, out of scope for tonight. Fixed properly (not just
+  worked around): gave 5.4 dedicated versioned paths
+  (`/usr/include/lua5.4/`, `liblua5.4.so`), not just for awesome's
+  sake but so `lua5.4.pc` is correct for any future consumer.
+- **A real, unresolved upstream bug in `lua-lgi`** (awesome's hard
+  runtime dependency, despite `AWESOME_IGNORE_LGI` suggesting
+  otherwise -- awesome's own doc/rc-generation scripts
+  unconditionally `require('lgi')`): the latest tag (0.9.2) still
+  calls the pre-5.4 two-argument `lua_resume()` signature
+  unconditionally for any Lua >= 5.2. Lua 5.4 added a required 4th
+  parameter. Documented upstream as "experimental" 5.4 support
+  (lgi-devs/lgi issues #247, #318) but never actually fixed in a
+  release. Patched directly (a version-gated branch, discarded output
+  parameter) rather than waiting on upstream or giving up on lgi.
+- **A real GCC-version compatibility issue in awesome 4.3's own C
+  code** (2019-era, predates GCC 10's default change): relies on old
+  tentative-definition ("common symbol") semantics for header-declared
+  globals, which GCC 10+ no longer defaults to. Without `-fcommon`:
+  "multiple definition" link errors across the entire codebase. Fixed
+  with the standard, widely-used compatibility flag -- not a
+  correctness risk, just restores old-default linker behavior for
+  legacy code.
+- **A genuine dead-code bug in awesome 4.3's own `CMakeLists.txt`**:
+  `add_dependencies(check check-qa check-examples)` references a
+  `check-examples` target that is never defined anywhere in the file
+  (an upstream leftover from a removed feature). Patched out the dead
+  reference -- unrelated to anything actually needed (the `check`
+  target runs tests, never invoked here).
+- awesome's own build system invokes the bare `lua` command with zero
+  version hint for its doc/rc-generation scripts
+  (`CMakeLists.txt`: `COMMAND lua ...`) -- resolves to this system's
+  generic Lua 5.5, which can't see the lua5.4-specific `lgi` install.
+  Built a standalone Lua 5.4 CLI interpreter and used a scoped PATH
+  override for just the build invocation, rather than overwriting the
+  system's actual default `/usr/bin/lua` (which 5.5 legitimately owns
+  until the eventual Hyprland/Wayland cleanup phase).
+- `rofi`'s `meson.build` calls `subproject('libgwater')` and
+  `subproject('libnkutils')` -- both real git submodules never
+  included in GitHub's auto-generated tarball archives (submodule
+  content never is). Cloned both directly from their real upstream
+  repos (found via `.gitmodules`, itself fetched separately since
+  GitHub's tarball omits that file too).
+
+**One deliberate scope simplification, not a bug**: dropped
+`maim`+`slop` (screenshots) after their dependency chain grew to
+include `glew`/`glm`, neither previously built. ImageMagick's own
+`import` command (already installed for awesome's build) covers
+window/region/output capture natively with zero additional
+dependencies -- confirmed working (`import -help`), a more efficient
+choice given what was already on hand.
+
+Next: config authoring (awesome's `rc.lua`, wiring in rofi/dunst/
+redshift/clipmenu, porting the spirit of the old Hyprland keybindings),
+then Phase 4 testing including the real multi-stream VDPAU
+verification this whole migration was for. Firefox remains the last
+package in the original plan, still pending.

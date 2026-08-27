@@ -164,6 +164,51 @@ firefox, pipewire/wireplumber/pulseaudio (audio, unrelated to display
 server choice), wireguard-tools (unrelated), the NVIDIA 470.xx driver
 and `libvdpau` (the whole point of this migration).
 
-## Status
+## Status (updated 2026-08-26)
 
-Not started. Plan written 2026-08-26, awaiting go-ahead to begin Phase 1.
+**Phases 1-3 complete.** Built, installed, and tracked in
+`state/blfs-plan.json`/`manifests/`:
+
+**Phase 1 (Xorg server)**: `libpciaccess` (real gap the book's own
+xorg-server page missed), `xorg-server-21.1.21`, `xf86-input-libinput-1.5.0`,
+`xinit-1.4.4`. Smoke-tested via `Xvfb` (real X11 socket created, clean).
+
+**Phase 2 (awesome)**: `libxdg-basedir-1.2.3`, `xcb-util-cursor-0.1.5`,
+`xcb-util-xrm-1.3` (needed the `xcb-util-m4` macros fetched separately,
+see recipe), `ImageMagick-7.1.2-13` (awesome's own build hard-requires
+`convert` for icon generation), `lua-lgi-0.9.2` (real upstream Lua 5.4
+compatibility bug found and patched -- `lua_resume`'s 4-argument
+signature, unresolved even in the latest tag), `awesome-4.3` itself.
+
+Along the way, found and fixed a real pre-existing bug in this
+project's own Lua packaging: Lua 5.4 and 5.5 were both legitimately
+built earlier, but upstream Lua's Makefile has no multi-version header
+coexistence at all -- 5.5's later install silently overwrote 5.4's
+headers at the shared generic path. Gave 5.4 dedicated versioned
+paths (`/usr/include/lua5.4/`, `liblua5.4.so`) so `pkg-config lua5.4`
+is actually correct again -- see `blfs-lua5.4.sh`'s updated comment
+for the full account.
+
+`awesome --version` confirms: compiled against Lua 5.4.9, LGI loaded,
+D-Bus support enabled.
+
+**Phase 3 (supporting utilities)**: `rofi-2.0.0` (needed two git
+submodules -- libgwater, libnkutils -- fetched separately since
+GitHub's tarball archives omit submodule content), `libXinerama-1.1.5`
++ `dunst-1.13.2`, `redshift-1.12` (RANDR/VidMode only, no GUI/GeoClue),
+`xsel-1.2.1` + `clipnotify-1.0.2` + `xdotool-4.20260303.1` +
+`clipmenu-6.2.0` (dmenu deliberately not built -- rofi covers that role
+via `CM_LAUNCHER=rofi`).
+
+**Deviation from the original plan**: `maim`+`slop` (screenshots) were
+dropped after their dependency chain grew to include `glew`/`glm`,
+neither built. ImageMagick's own `import` command (already installed
+for awesome's build) covers window/region/output capture natively with
+zero additional dependencies -- a more efficient choice given what was
+already on hand, not a capability compromise.
+
+**Not yet done**: config authoring (awesome's `rc.lua`, dunst/redshift
+configs, wiring rofi/dunst/redshift/clipmenu into awesome's autostart
+-- porting the spirit of the old Hyprland keybindings), Phase 4
+testing (including the real multi-stream VDPAU verification), and
+Phase 5 cleanup (still explicitly deferred until acceptance).

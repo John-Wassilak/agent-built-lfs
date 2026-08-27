@@ -1,0 +1,5 @@
+/usr/bin/clipmenu
+/usr/bin/clipmenud
+/usr/bin/clipdel
+/usr/bin/clipctl
+/usr/lib/systemd/user/clipmenud.service
