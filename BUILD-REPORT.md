@@ -2112,3 +2112,66 @@ deliberately chosen as mako's replacement, the fix is disabling
 `naughty`'s notification handling in `rc.lua` (it currently isn't
 even referenced there, so it's using awesome's C-side default) --
 not yet done.
+
+**Phase 5: dunst/naughty D-Bus fix, mpv VDPAU config, rounded corners,
+gap size.**
+
+*dunst vs naughty D-Bus race, fixed.* `naughty` claims
+`org.freedesktop.Notifications` during `rc.lua`'s own early startup
+(`require("naughty")` runs near the top, for internal error popups),
+before `rc.lua`'s later autostart block ever gets to spawn `dunst`.
+Rather than disabling `naughty` internals (more invasive, and awesome
+uses it for its own startup-error reporting), moved `dunst &` into
+`.xinitrc`, started before `exec awesome` -- dunst now wins the D-Bus
+name race by starting first, and `rc.lua`'s autostart block no longer
+spawns it. Both files deployed to the target. **Caveat:** this only
+takes effect on the next full X session start; the currently-running
+session's `naughty` already holds the name and can't be evicted via
+`awesome-client` (D-Bus name ownership isn't Lua state) -- unverified
+until the next `startx`/reboot, same caveat as the VT-freeze-on-quit
+issue below.
+
+*mpv VDPAU config, fixed and confirmed live.* `mpv.conf` still had
+`hwdec` effectively disabled from the nouveau/VAAPI era. Tried three
+configurations directly against the live session (`mpv -v`, checking
+the hwdec line in the log):
+- `hwdec=vdpau` + `vo=vdpau`: works, but mpv's own log flags `vo=vdpau`
+  as a legacy compatibility path with known OSD/scaling/screenshot
+  issues.
+- `vo=gpu-next` (mpv's own suggested modern default): silently fell
+  back to software decode -- an hwdec/libplacebo interop gap not
+  chased down further, since the next option already worked cleanly.
+- `hwdec=vdpau-copy` + `vo=gpu`: **confirmed working end-to-end** --
+  log reports `Using hardware decoding (vdpau-copy)`, clean playback,
+  no errors, standard `vo=gpu` (not the legacy vo). Set as the final
+  config. Deployed to the target and confirmed on-disk.
+
+*Rounded window corners, approximating Hyprland's `decoration.rounding
+= 10`.* awesome has no compositor of its own, so this is done via the
+X11 Shape extension (`gears.shape.rounded_rect` set as each client's
+`shape`, in a `manage`/`property::maximized`/`property::fullscreen`
+signal handler in `rc.lua`, with `beautiful.corner_radius = 10`) --
+a hard-edged shape cutout, not an anti-aliased/alpha-blended corner
+the way Hyprland (a Wayland compositor) renders them. Getting that
+same smooth blending under X11/awesome would need a standalone
+compositor (e.g. `picom`) layered on top, which is not built in this
+project. Live-tested via `awesome-client`: setting `c.shape` on a
+running client did visibly round its corners in one screenshot
+capture (`import -window root`), confirming the mechanism itself
+works; repeat live hot-patch attempts afterward were visually
+inconsistent in follow-up screenshots (likely an X11
+Expose/redraw-timing quirk specific to hot-patching shape onto an
+already-mapped, already-painted window live, not a flaw in the
+approach) -- the file-based fix in `rc.lua` applies the shape at
+`manage` time, when the client is first mapped, which is the standard
+and well-established pattern for this in awesome and doesn't hit
+whatever caused the hot-patch inconsistency. Full confirmation is
+pending the next session restart, same caveat as the dunst fix above.
+
+*Gap size increased ~50%.* `beautiful.useless_gap` raised from 5 to 8
+to match the gap size on the operator's other Hyprland machines
+(applies uniformly to both inter-client gaps and the outer
+screen-edge margin, since no separate `awful.screen.padding` is set).
+Live-verified via `awesome-client` (`beautiful.useless_gap = 8` plus a
+`property::layout` re-emit to force re-tiling without a restart) --
+screenshot confirmed visibly wider gaps between tiled clients.
