@@ -20,6 +20,23 @@ local wibox = require("wibox")
 local beautiful = require("beautiful")
 local naughty = require("naughty")
 
+-- Real bug found and fixed (2026-08-26): naughty's own dbus submodule
+-- (naughty/dbus.lua) claims org.freedesktop.Notifications synchronously
+-- as a side effect of the require above (a bare `dbus.request_name`
+-- call baked into that module's top level) -- effectively instant, so
+-- it always wins the race against dunst (spawned in the Autostart
+-- block below), no matter how early dunst is launched: dunst is slower
+-- to initialize (fork, GTK/glib, X connection, config parse) than
+-- naughty is to claim the name during its own require. First attempt
+-- at fixing this started dunst before awesome, from .xinitrc -- did
+-- not work, confirmed live via dbus-send GetConnectionUnixProcessID
+-- (still owned by awesome's PID). Also confirmed dunst does NOT queue
+-- for the name if its initial request loses -- it just gives up, so
+-- releasing the name later/asynchronously doesn't help either.
+-- Releasing it here, deterministically before dunst is spawned later
+-- in this same file, is the only ordering that actually works.
+dbus.release_name("session", "org.freedesktop.Notifications")
+
 -- {{{ Error handling
 if awesome.startup_errors then
     naughty.notify({ preset = naughty.config.presets.critical,
@@ -319,10 +336,11 @@ client.connect_signal("property::fullscreen", apply_client_shape)
 -- {{{ Autostart
 -- Matches the Hyprland config's autostart block: redshift (wlsunset's
 -- replacement, same fixed lat/long), clipmenud (cliphist's
--- replacement). dunst is deliberately NOT started here -- it has to
--- start before awesome to win the D-Bus notification name race
--- against awesome's own built-in `naughty` (see .xinitrc, which
--- starts it first).
+-- replacement), dunst (mako's replacement). dunst is spawned here,
+-- after the dbus.release_name() call near the top of this file, so it
+-- always finds the notification name free -- see that comment for why
+-- ordering (not just "start dunst first") is what actually matters.
 awful.spawn.with_shell("redshift -l 35.46:-97.32")
 awful.spawn.with_shell("CM_LAUNCHER=rofi clipmenud")
+awful.spawn.with_shell("dunst")
 -- }}}
