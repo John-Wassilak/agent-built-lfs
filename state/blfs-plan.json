@@ -2980,5 +2980,19 @@
     "blocks": 1,
     "enabled": 1,
     "disabled": 0
+  },
+  {
+    "seq": 249,
+    "order": "blfs.249",
+    "name": "blfs-tailscale",
+    "chapter": "blfs",
+    "page": "tailscale",
+    "title": "tailscale-1.102.3 (hand-authored)",
+    "context": "chroot",
+    "tarball": "tailscale-v1.102.3.tar.gz",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
   }
 ]
