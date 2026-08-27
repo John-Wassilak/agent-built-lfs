@@ -1,0 +1,6 @@
+/usr/include/utarray.h
+/usr/include/uthash.h
+/usr/include/utlist.h
+/usr/include/utringbuffer.h
+/usr/include/utstack.h
+/usr/include/utstring.h

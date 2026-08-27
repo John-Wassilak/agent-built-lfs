@@ -2424,3 +2424,47 @@ against what's actually being removed, done *before* deleting
 anything -- not just a source/recipe grep. This project's removal
 methodology should treat that sweep as a required step from now on,
 not an afterthought caught by accident.
+
+## Phase 7: picom -- real anti-aliased rounded corners
+
+Added a compositor to replace `rc.lua`'s `client.shape`-based corner
+rounding (a hard X11 Shape-extension cutout, confirmed via pixel
+comparison in Phase 5 to work but with zero anti-aliasing) with real
+compositor-rendered rounding, shadows, and fade. Dependency check from
+Phase 5's research held up exactly: everything picom needs was already
+present in this project (`libx11`/`libX11-xcb`, `libxcb` with all the
+required extensions, `xcb-util-image`, `xcb-util-renderutil`,
+`pixman`, `dbus`, `libepoxy`, Mesa, `pcre2`) except `libconfig`
+(>=1.7), `libev`, and `uthash` (header-only) -- all three built fresh,
+then picom itself (v13, cloned with `--recurse-submodules` since
+GitHub's auto-generated tarball omits the `test.h` submodule, same gap
+hit with rofi's libgwater/libnkutils in Phase 3).
+
+Real build bug found and fixed: the obvious `libconfig-1.7.3` release
+tarball fails to compile on this system's GCC -- its generated
+`grammar.c` (bison output) uses old K&R-style empty-parameter extern
+declarations (`extern int libconfig_yylex();`) that this toolchain
+treats strictly as zero-argument prototypes, not the old "unspecified
+arguments" K&R meaning (`too many arguments to function
+'libconfig_yylex'`). Used 1.8.2 instead, which doesn't have the issue;
+its GitHub tag tarball has no pre-generated `./configure`, so built it
+via the `CMakeLists.txt` it ships instead of bootstrapping autotools.
+
+Removed the old `client.shape` signal handlers and `beautiful.corner_
+radius` from `rc.lua` entirely -- running both the manual X11 Shape
+cutout and picom's own rounding would double-clip against an
+already-nonrectangular window shape. picom is now the only thing doing
+corner rounding, wired into `rc.lua`'s Autostart block alongside
+redshift/clipmenud/dunst.
+
+Verified with more than a screenshot, learning from Phase 5's mistake
+of trusting a screenshot alone: a pixel-level dump (`magick ... txt:-`)
+across the corner region shows genuine intermediate blended colors --
+e.g. `(45,179,224)` and `(28,114,142)`, values between the black
+background and the `#33CCFF` focused-border color -- which is exactly
+what real anti-aliased compositing produces and the old X11-Shape
+approach structurally cannot (that approach only ever produces pure
+background or pure foreground pixels, no blend). Confirmed via a live
+test (spawned real alacritty windows, `picom --config
+~/.config/picom/picom.conf` running against the live session) before
+relying on the config taking effect via the next full session start.

@@ -1,0 +1,13 @@
+/etc/xdg/autostart/picom.desktop
+/usr/bin/compton
+/usr/bin/compton-trans
+/usr/bin/picom
+/usr/bin/picom-inspect
+/usr/bin/picom-trans
+/usr/include/picom/api.h
+/usr/include/picom/backend.h
+/usr/lib/pkgconfig/picom-api.pc
+/usr/share/applications/compton.desktop
+/usr/share/applications/picom.desktop
+/usr/share/icons/hicolor/48x48/apps/compton.png
+/usr/share/icons/hicolor/scalable/apps/compton.svg

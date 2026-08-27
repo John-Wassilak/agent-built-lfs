@@ -2896,5 +2896,61 @@
     "blocks": 1,
     "enabled": 1,
     "disabled": 0
+  },
+  {
+    "seq": 243,
+    "order": "blfs.243",
+    "name": "blfs-libconfig",
+    "chapter": "blfs",
+    "page": "libconfig",
+    "title": "libconfig-1.8.2 (hand-authored)",
+    "context": "chroot",
+    "tarball": "libconfig-1.8.2.tar.gz",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
+  },
+  {
+    "seq": 244,
+    "order": "blfs.244",
+    "name": "blfs-libev",
+    "chapter": "blfs",
+    "page": "libev",
+    "title": "libev-4.33 (hand-authored)",
+    "context": "chroot",
+    "tarball": "libev-4.33.tar.gz",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
+  },
+  {
+    "seq": 245,
+    "order": "blfs.245",
+    "name": "blfs-uthash",
+    "chapter": "blfs",
+    "page": "uthash",
+    "title": "uthash-2.3.0 (hand-authored)",
+    "context": "chroot",
+    "tarball": "uthash-2.3.0.tar.gz",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
+  },
+  {
+    "seq": 246,
+    "order": "blfs.246",
+    "name": "blfs-picom",
+    "chapter": "blfs",
+    "page": "picom",
+    "title": "picom-13 (hand-authored)",
+    "context": "chroot",
+    "tarball": "picom-v13.tar.gz",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
   }
 ]

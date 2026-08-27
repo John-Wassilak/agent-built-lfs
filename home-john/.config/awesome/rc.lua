@@ -71,18 +71,6 @@ beautiful.border_width = 3
 beautiful.border_normal = "#595959aa"
 beautiful.border_focus = "#33ccffee"
 
--- Approximates Hyprland's decoration.rounding = 10. Real difference:
--- awesome has no compositor of its own, so this is done via the X11
--- Shape extension (gears.shape.rounded_rect set as the client's
--- `shape`, applied below in the Signals section) -- a hard-edged
--- cutout to a rounded-rect region, not an anti-aliased/alpha-blended
--- corner. Hyprland is a Wayland compositor by definition, so its
--- rounded corners blend smoothly against whatever is behind them.
--- Matching that exactly under X11/awesome would need a standalone
--- compositor (e.g. picom) layered on top -- not built in this
--- project. Still reads as "rounded" at normal window sizes/border
--- widths, just without the smooth edge.
-beautiful.corner_radius = 10
 -- }}}
 
 -- {{{ Variable definitions
@@ -315,22 +303,6 @@ end)
 client.connect_signal("focus", function(c) c.border_color = beautiful.border_focus end)
 client.connect_signal("unfocus", function(c) c.border_color = beautiful.border_normal end)
 
--- Rounded corners (see beautiful.corner_radius above). Reset to a
--- plain rectangle when maximized/fullscreen -- a rounded shape there
--- just clips a few screen-edge pixels off the client for no visual
--- benefit, since there's no border/gap left to round against.
-local function apply_client_shape(c)
-    if c.maximized or c.fullscreen then
-        c.shape = gears.shape.rectangle
-    else
-        c.shape = function(cr, w, h)
-            gears.shape.rounded_rect(cr, w, h, beautiful.corner_radius)
-        end
-    end
-end
-client.connect_signal("manage", apply_client_shape)
-client.connect_signal("property::maximized", apply_client_shape)
-client.connect_signal("property::fullscreen", apply_client_shape)
 -- }}}
 
 -- {{{ Autostart
@@ -340,7 +312,15 @@ client.connect_signal("property::fullscreen", apply_client_shape)
 -- after the dbus.release_name() call near the top of this file, so it
 -- always finds the notification name free -- see that comment for why
 -- ordering (not just "start dunst first") is what actually matters.
+--
+-- picom (added 2026-08-27) does rounded corners + shadows + fade now,
+-- replacing the client.shape-based rounding this file used to do by
+-- hand (removed from the Signals section above) -- that was a hard
+-- X11 Shape-extension cutout, no anti-aliasing; picom composites
+-- properly. Running both would double-clip against an already
+-- nonrectangular window shape, so it's exclusively picom's job now.
 awful.spawn.with_shell("redshift -l 35.46:-97.32")
 awful.spawn.with_shell("CM_LAUNCHER=rofi clipmenud")
 awful.spawn.with_shell("dunst")
+awful.spawn.with_shell("picom")
 -- }}}
