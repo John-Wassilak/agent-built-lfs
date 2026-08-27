@@ -1797,4 +1797,51 @@ standalone Xorg server would need to be built first (a new, separate
 undertaking, not started). Next actual step is the reboot into GRUB
 entry 1 to see which of those is true -- not yet done.
 
+## NVIDIA 470xx test result: driver works, Hyprland doesn't (2026-08-26)
+
+Operator chose to test Hyprland under the 470.xx driver first (lowest
+extra effort, everything already staged) rather than building a
+standalone Xorg server up front. Set the one-shot boot
+(`grub-editenv ... set next_entry=1`) and rebooted into GRUB entry 1.
+
+**The driver itself works correctly** -- this is real, confirmed
+signal, not a guess: `nvidia-smi` reports the GPU cleanly (470.256.02,
+34C, 1996MiB VRAM, correct model), and `[drm] Initialized nvidia-drm
+0.0.0 for 0000:01:00.0 on minor 1` shows real DRM/KMS registration.
+The joanbm patch set genuinely works on kernel 6.18.10, not just
+"compiles" -- it actually initializes hardware correctly. `nvidia_drm`
+and `nvidia_modeset` loaded cleanly via `modprobe nvidia-drm
+modeset=1` (nvidia stayed correctly blacklisted from auto-load, no
+race with nouveau observed).
+
+**Hyprland fails exactly as predicted**: `kmsro: driver missing` then
+`terminate called after throwing an instance of 'std::runtime_error':
+CBackend::create() failed!`. `kmsro` is Mesa's "KMS render-only"
+GBM-compatibility layer -- it looked for a GBM-capable render driver
+to pair with the nvidia DRM device and found none, because 470.xx
+genuinely never implements one (GBM support didn't exist in NVIDIA's
+driver until 495, years after Kepler was frozen on 470.xx). Confirms
+the risk identified in research before ever touching hardware, exactly
+as predicted -- not a new, different failure mode.
+
+**Failed safely** -- no hang, no display corruption, no crash-report
+weirdness beyond a standard Hyprland abort (`hyprlandCrashReport407.txt`,
+nothing unusual in it). Hyprland's own watchdog (`start-hyprland`)
+caught the abort and exited cleanly. Rebooted back to the default GRUB
+entry (`next_entry` had already self-cleared, no manual intervention
+needed) -- confirmed nouveau bound correctly, system fully back to its
+normal working state. `lspci -k` now shows both drivers as available
+kernel modules for this device, with nouveau the one actually in use,
+exactly as designed.
+
+**Where this leaves things**: the 470.xx driver itself is solid and
+correctly patched for this kernel -- the blocker is specifically
+Hyprland/Wayland compositing, not the driver or VDPAU. Testing VDPAU
+decode for real would require a standalone Xorg server (not yet
+built, only Xwayland exists, and Xwayland can't run without a Wayland
+compositor backing it) run as a separate, dedicated X11 session --
+decoupled entirely from the normal Hyprland desktop, selected via the
+same GRUB entry 1 + nouveau-blacklist mechanism already in place.
+Not yet decided by the operator whether to pursue that.
+
 Next: Firefox remains the last package in this plan, still pending.
