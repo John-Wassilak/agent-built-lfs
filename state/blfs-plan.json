@@ -2952,5 +2952,19 @@
     "blocks": 1,
     "enabled": 1,
     "disabled": 0
+  },
+  {
+    "seq": 247,
+    "order": "blfs.247",
+    "name": "blfs-smartmontools",
+    "chapter": "blfs",
+    "page": "smartmontools",
+    "title": "smartmontools-7.5",
+    "context": "chroot",
+    "tarball": "smartmontools-7.5.tar.gz",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
   }
 ]
