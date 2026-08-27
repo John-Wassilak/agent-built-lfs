@@ -2192,3 +2192,71 @@ screen-edge margin, since no separate `awful.screen.padding` is set).
 Live-verified via `awesome-client` (`beautiful.useless_gap = 8` plus a
 `property::layout` re-emit to force re-tiling without a restart) --
 screenshot confirmed visibly wider gaps between tiled clients.
+
+**Phase 6: removed Hyprland/Wayland and nouveau, now that X11/awesome/
+nvidia has proven stable across multiple reboots.**
+
+Audited every recipe for whether it was a real dependency of the
+current X11/awesome/nvidia/mpv/ffmpeg stack or purely there for
+Hyprland/Wayland/nouveau, cross-checking each candidate's manifest
+against every other package's manifest before deleting anything (see
+below -- this caught real overlap that would have broken the live
+system if trusted blindly). Removed 35 packages: `hyprland` itself and
+its whole dependency chain (`hyprland-guiutils`, `hyprtoolkit`,
+`iniparser`, `glaze`, `hyprland-protocols`, `hyprwire`, `pugixml`,
+`hyprgraphics`, `hyprcursor`, `libzip`, `hyprlang`, `tomlplusplus`,
+`hyprutils`, `hyprwayland-scanner`, `aquamarine`, `seatd`,
+`libdisplay-info`, `re2`, `abseil-cpp`), core Wayland (`wayland`,
+`wayland-protocols`, `xwayland`, `libei`), the Wayland-era desktop
+tools already replaced by their X11 equivalents (`grim`/`slurp`
+-> ImageMagick `import`, `hyprshot`, `wl-clipboard`/`cliphist` ->
+`clipmenu`, `wlsunset` -> `redshift`, `wofi` -> `rofi`, `mako` ->
+`dunst`), the Go toolchain (`go` -- confirmed its only consumer in
+this project was building `cliphist`), `lua5.5` (Hyprland's own hard
+Lua dependency), and nouveau's video-processor firmware package
+(`linux-firmware-nouveau-vp`). Roughly 16,600 files removed, ~1 GB
+freed. `lfsmaint verify` afterward showed no unexpected breakage in
+any kept package -- the only "missing file" flags it raised for kept
+packages (`dbus` doc files, `dunst` shell-completion files, stray
+`nss`-adjacent build-directory files under `/root/build11`) were
+confirmed, file by file, to be pre-existing drift unrelated to this
+removal, not files this cleanup touched.
+
+Two real overlaps surfaced by the manifest cross-check and handled
+individually rather than blindly trusting either manifest:
+- `/usr/bin/Xvfb` and `/usr/share/man/man1/Xserver.1` were listed in
+  both `xwayland`'s manifest and `xorg-server`'s. The on-disk file's
+  mtime matched `xorg-server`'s more recent rebuild (the setuid fix
+  from Phase 4), confirming `xorg-server` -- kept -- currently owns
+  it; excluded from deletion.
+- The **unversioned** Lua paths (`/usr/bin/lua`, `/usr/bin/luac`,
+  generic `/usr/include/lua.h` and friends, generic `/usr/lib/
+  liblua.so`, generic man pages) were listed in *both* `lua5.4`'s
+  manifest and `lua5.5`'s -- the same clobbering bug documented in
+  Phase 4 (Lua 5.4 was rebuilt to install to versioned `lua5.4/`
+  paths specifically because 5.5 had overwritten the generic ones).
+  `lua5.4`'s manifest was simply stale, never updated after that fix.
+  Confirmed via `ldd /usr/bin/awesome` that awesome links the
+  versioned `liblua.so.5.4`, not the generic path, and grepped for
+  any script shebang using bare `#!/usr/bin/lua` (none) before
+  concluding the generic-path files were genuinely orphaned `lua5.5`
+  content, not anything still in use. Deleted them explicitly after
+  the main pass, and corrected `lua5.4`'s manifest to only list the
+  versioned files it actually still owns.
+
+Also removed the nouveau GRUB fallback entry (`boot/grub.cfg`) now
+that the nvidia/X11/awesome entry has booted cleanly across multiple
+reboots this session -- nouveau's kernel driver stays compiled into
+the kernel image (excising it would mean a kernel reconfigure/rebuild,
+deliberately out of scope for this pass), it's just never reachable
+from GRUB anymore and stays blacklisted via the remaining entry's
+cmdline. No leftover nouveau-specific `/etc/modprobe.d` files existed
+to clean up (nouveau was always blacklisted via kernel cmdline, not a
+static config file).
+
+`libva` (VAAPI) was deliberately left in place even though nouveau was
+its only real reason for existing in this project -- it's still linked
+into the already-built `ffmpeg`/`mpv` binaries, `mpv.conf` already
+forces `hwdec=vdpau-copy` so VAAPI never actually runs, and rebuilding
+both packages just to drop a now-inert dependency wasn't worth the
+build time against tonight's priority (getting Firefox building).

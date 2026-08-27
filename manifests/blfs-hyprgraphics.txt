@@ -1,4 +1,0 @@
-/usr/lib/libhyprgraphics.so
-/usr/lib/libhyprgraphics.so.0.5.1
-/usr/lib/libhyprgraphics.so.4
-/usr/lib/pkgconfig/hyprgraphics.pc

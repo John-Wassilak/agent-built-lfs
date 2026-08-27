@@ -1,6 +1,0 @@
-/usr/lib/firmware/nouveau/nvc0_ppp
-/usr/lib/firmware/nouveau/nve0_bsp
-/usr/lib/firmware/nouveau/nve0_vp
-/usr/lib/firmware/nouveau/nve4_fuc084
-/usr/lib/firmware/nouveau/nve4_fuc085
-/usr/lib/firmware/nouveau/nve4_fuc086

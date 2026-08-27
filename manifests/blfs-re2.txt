@@ -1,8 +1,0 @@
-/usr/lib/cmake/re2/re2Config.cmake
-/usr/lib/cmake/re2/re2ConfigVersion.cmake
-/usr/lib/cmake/re2/re2Targets-none.cmake
-/usr/lib/cmake/re2/re2Targets.cmake
-/usr/lib/libre2.so
-/usr/lib/libre2.so.11
-/usr/lib/libre2.so.11.0.0
-/usr/lib/pkgconfig/re2.pc

@@ -1,6 +1,0 @@
-/usr/bin/hyprcursor-util
-/usr/lib/libhyprcursor.so
-/usr/lib/libhyprcursor.so.0
-/usr/lib/libhyprcursor.so.0.1.13
-/usr/lib/pkgconfig/hyprcursor.pc
-/var/lib/systemd/timesync/clock

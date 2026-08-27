@@ -1,5 +1,0 @@
-/usr/lib/libhyprtoolkit.so
-/usr/lib/libhyprtoolkit.so.0.5.4
-/usr/lib/libhyprtoolkit.so.5
-/usr/lib/pkgconfig/hyprtoolkit.pc
-/var/lib/systemd/timesync/clock

@@ -1,3 +1,0 @@
-/usr/lib/libiniparser.so
-/usr/lib/libiniparser.so.4
-/var/log/journal/fa41fba8515b4edca48224e5e93c9251/system.journal

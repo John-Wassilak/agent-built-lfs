@@ -1,4 +1,0 @@
-/usr/lib/libhyprlang.so
-/usr/lib/libhyprlang.so.0.6.8
-/usr/lib/libhyprlang.so.2
-/var/lib/systemd/timesync/clock

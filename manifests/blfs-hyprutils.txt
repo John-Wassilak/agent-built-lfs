@@ -1,4 +1,0 @@
-/usr/lib/libhyprutils.so
-/usr/lib/libhyprutils.so.0.14.1
-/usr/lib/libhyprutils.so.13
-/usr/lib/pkgconfig/hyprutils.pc

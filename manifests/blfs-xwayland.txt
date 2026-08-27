@@ -1,7 +1,0 @@
-/usr/bin/Xvfb
-/usr/bin/Xwayland
-/usr/lib/pkgconfig/xwayland.pc
-/usr/share/applications/org.freedesktop.Xwayland.desktop
-/usr/share/man/man1/Xserver.1
-/usr/share/man/man1/Xwayland.1
-/var/lib/systemd/timesync/clock

@@ -1,5 +1,0 @@
-/usr/lib/libaquamarine.so
-/usr/lib/libaquamarine.so.0.14.0
-/usr/lib/libaquamarine.so.13
-/usr/lib/pkgconfig/aquamarine.pc
-/var/lib/systemd/timesync/clock

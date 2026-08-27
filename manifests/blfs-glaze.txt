@@ -1,5 +1,0 @@
-/usr/share/glaze/glazeConfig.cmake
-/usr/share/glaze/glazeConfigVersion.cmake
-/usr/share/glaze/glazeTargets.cmake
-/var/lib/systemd/timesync/clock
-/var/log/journal/fa41fba8515b4edca48224e5e93c9251/system.journal
