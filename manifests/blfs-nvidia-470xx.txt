@@ -1,5 +1,5 @@
 /etc/OpenCL/vendors/nvidia.icd
-/etc/modprobe.d/blacklist-nvidia-470xx.conf
+/etc/modprobe.d/nvidia-modeset.conf
 /etc/systemd/system/systemd-hibernate.service.requires/nvidia-hibernate.service
 /etc/systemd/system/systemd-hibernate.service.requires/nvidia-resume.service
 /etc/systemd/system/systemd-suspend.service.requires/nvidia-resume.service

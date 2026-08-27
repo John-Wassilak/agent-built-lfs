@@ -1,11 +1,11 @@
 #!/bin/bash
-# HAND-AUTHORED, EXPERIMENTAL recipe -- proprietary NVIDIA driver, not
-# BLFS. This is NOT the system's primary GPU driver -- nouveau remains
-# default on every normal boot (GRUB entry 0, untouched). This is
-# installed purely to test whether VDPAU hardware H.264 decode works
-# for a security-camera-viewing workload, given nouveau's own VAAPI
-# decode has a confirmed, unfixed upstream crash bug (see BUILD-REPORT.md
-# GPU deep-dive, and Mesa gitlab issue #14058).
+# HAND-AUTHORED recipe -- proprietary NVIDIA driver, not BLFS.
+#
+# This IS the system's primary GPU driver as of 2026-08-26 (operator
+# decision, after Hyprland/Wayland proved a dead end -- see below).
+# Originally built and tested as an experiment on a second GRUB entry
+# before being promoted to boot/grub.cfg's default; nouveau is kept as
+# entry 1, a fallback, not the primary path anymore.
 #
 # GTX 770 (GK104, Kepler) is only supported by NVIDIA's legacy 470.xx
 # branch -- confirmed against NVIDIA's own supported-chips list
@@ -13,11 +13,14 @@
 # in NVIDIA's driver (added in 495, years after Kepler was frozen on
 # 470.xx) -- it only supports the older EGLStreams mechanism. Hyprland
 # (via aquamarine) has no supported EGLStreams path per Hyprland's own
-# wiki, so this is expected to likely break Wayland/Hyprland compositing
-# entirely while (hopefully) fixing VDPAU decode -- a real, accepted
-# tradeoff, not an oversight. See the GRUB entry this depends on
-# (boot/grub.cfg, entry 1) for how this is tested without touching the
-# default/working boot path.
+# wiki -- confirmed live (kmsro: driver missing -> CBackend::create()
+# failed), not just predicted. That's what actually drove the decision
+# to abandon Hyprland/Wayland for X11/awesome (see AWESOME-X11-PLAN.md)
+# rather than a driver choice made for its own sake -- the real goal
+# was fixing nouveau's confirmed-broken VAAPI H.264 decode (Mesa
+# gitlab issue #14058, unfixed upstream), and VDPAU on this driver
+# delivers that, confirmed working end-to-end (see BUILD-REPORT.md's
+# Phase 4 testing).
 #
 # Patched for kernel 6.18.10 using the actively-maintained
 # github.com/joanbm/nvidia-470xx-linux-mainline patch set (used by
@@ -64,26 +67,31 @@ apply_patch enable-drm-modeset-by-default.patch
 make SYSSRC=/root/kbuild/linux-6.18.10 -j"$(nproc)"
 
 # Installed additively -- a NEW directory, does not touch nouveau.ko.
-# depmod registers a PCI-ID alias matching this exact GPU, which now
-# genuinely races nouveau for the device on every boot (wildcard vendor
-# match, confirmed) -- the blacklist file below is not optional.
+# depmod registers a PCI-ID alias matching this exact GPU (confirmed
+# directly via `modinfo nvidia-drm` against the device's own modalias --
+# a real overlap, not just caution), which is exactly what makes
+# per-boot exclusion via GRUB's own modprobe.blacklist=... kernel
+# cmdline parameter work symmetrically on both entries (see
+# boot/grub.cfg): entry 0 blacklists nouveau so this driver's alias
+# wins the udev auto-load race uncontested; entry 1 (nouveau fallback)
+# blacklists this driver's modules the same way, so nouveau's own alias
+# wins instead. No static /etc/modprobe.d blacklist needed for either
+# direction -- an earlier version of this recipe used one exclusively
+# for nvidia, back when this was still just an experiment on a single
+# always-on test entry; removed once this became the permanent
+# default and the exclusion needed to work in both directions.
 install -v -d /lib/modules/6.18.10-audio/kernel/drivers/video/nvidia-470xx
 install -v -m644 nvidia.ko nvidia-drm.ko nvidia-modeset.ko nvidia-uvm.ko nvidia-peermem.ko \
     /lib/modules/6.18.10-audio/kernel/drivers/video/nvidia-470xx/
 depmod -a 6.18.10-audio
 
-cat > /etc/modprobe.d/blacklist-nvidia-470xx.conf << "EOF"
-# nvidia-470xx-linux-mainline patched build, additive alongside nouveau
-# (see BUILD-REPORT.md GPU deep-dive). Never auto-load via udev modalias
-# matching on ANY boot -- only loaded explicitly (modprobe nvidia-drm) on
-# the dedicated TEST grub entry that blacklists nouveau via kernel cmdline.
-# Without this, nvidia.ko now has a matching PCI-ID alias (same GPU) and
-# could race nouveau for the device on the normal/default boot.
-blacklist nvidia
-blacklist nvidia-drm
-blacklist nvidia-modeset
-blacklist nvidia-uvm
-blacklist nvidia-peermem
+# KMS modeset -- required for the X11/awesome desktop to get a working
+# DRM device from nvidia-drm at all. Harmless on the nouveau-fallback
+# entry: the option only takes effect if/when nvidia-drm actually loads,
+# which it won't there (blacklisted on that entry's cmdline).
+install -v -d /etc/modprobe.d
+cat > /etc/modprobe.d/nvidia-modeset.conf << "EOF"
+options nvidia-drm modeset=1
 EOF
 
 # Userspace: --no-install-libglvnd is load-bearing -- this system's
