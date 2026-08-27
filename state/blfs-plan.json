@@ -2966,5 +2966,19 @@
     "blocks": 1,
     "enabled": 1,
     "disabled": 0
+  },
+  {
+    "seq": 213,
+    "order": "blfs.213",
+    "name": "blfs-linux-firmware-nouveau-vp",
+    "chapter": "blfs",
+    "page": "linux-firmware-nouveau-vp",
+    "title": "linux-firmware-nouveau-vp (hand-authored)",
+    "context": "chroot",
+    "tarball": "",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
   }
 ]
