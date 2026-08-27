@@ -11,6 +11,16 @@
 # estimated); expect this to take a while.
 set -e
 
+# Real bug found and fixed (2026-08-27): rustc/cargo live at
+# /opt/rustc/bin, put on PATH for interactive shells via
+# /etc/profile.d (see blfs-rust.sh's pathprepend line) -- but this
+# recipe was first run headlessly (systemd-run, for an overnight
+# build with no login shell involved), which never sources
+# profile.d, so configure failed with "Rust compiler not found" even
+# though it's installed. Exporting it here makes the recipe correct
+# regardless of how/where it's invoked.
+export PATH="/opt/rustc/bin:$PATH"
+
 patch -Np1 -i ../firefox-140.8.0esr-ffmpeg-8.0.patch
 
 GLSL_PTHREAD="third_party/rust/glslopt/glsl-optimizer/include/c11/threads_posix.h"

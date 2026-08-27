@@ -2868,5 +2868,19 @@
     "blocks": 1,
     "enabled": 1,
     "disabled": 0
+  },
+  {
+    "seq": 241,
+    "order": "blfs.241",
+    "name": "blfs-libxdamage",
+    "chapter": "blfs",
+    "page": "x7lib",
+    "title": "libXdamage-1.1.7 (hand-authored)",
+    "context": "chroot",
+    "tarball": "libXdamage-1.1.7.tar.xz",
+    "manifest": true,
+    "blocks": 3,
+    "enabled": 1,
+    "disabled": 0
   }
 ]
