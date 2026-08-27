@@ -80,10 +80,10 @@ make SYSSRC=/root/kbuild/linux-6.18.10 -j"$(nproc)"
 # for nvidia, back when this was still just an experiment on a single
 # always-on test entry; removed once this became the permanent
 # default and the exclusion needed to work in both directions.
-install -v -d /lib/modules/6.18.10-audio/kernel/drivers/video/nvidia-470xx
+install -v -d /lib/modules/6.18.10/kernel/drivers/video/nvidia-470xx
 install -v -m644 nvidia.ko nvidia-drm.ko nvidia-modeset.ko nvidia-uvm.ko nvidia-peermem.ko \
-    /lib/modules/6.18.10-audio/kernel/drivers/video/nvidia-470xx/
-depmod -a 6.18.10-audio
+    /lib/modules/6.18.10/kernel/drivers/video/nvidia-470xx/
+depmod -a 6.18.10
 
 # KMS modeset -- required for the X11/awesome desktop to get a working
 # DRM device from nvidia-drm at all. Harmless on the nouveau-fallback
