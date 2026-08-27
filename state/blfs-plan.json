@@ -2966,5 +2966,19 @@
     "blocks": 1,
     "enabled": 1,
     "disabled": 0
+  },
+  {
+    "seq": 248,
+    "order": "blfs.248",
+    "name": "blfs-go",
+    "chapter": "blfs",
+    "page": "go",
+    "title": "go1.27.0 (hand-authored)",
+    "context": "chroot",
+    "tarball": "go1.27.0.src.tar.gz",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
   }
 ]
