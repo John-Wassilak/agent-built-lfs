@@ -423,22 +423,6 @@
       "reason": "Example ~/.bash_logout snippet, not an install step."
     }
   },
-  "blfs-libei": {
-    "1": {
-      "action": "drop",
-      "reason": "Optional test suite needing munit/structlog, not installed."
-    }
-  },
-  "blfs-xwayland": {
-    "1": {
-      "action": "drop",
-      "reason": "Test-framework setup (piglit/xts clone, Xvfb spin-up), not wanted."
-    },
-    "2": {
-      "action": "drop",
-      "reason": "Runs the test suite set up in block 1, which was dropped."
-    }
-  },
   "blfs-gsettings-desktop-schemas": {
     "2": {
       "action": "drop",
