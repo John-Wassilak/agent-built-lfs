@@ -3022,5 +3022,33 @@
     "blocks": 1,
     "enabled": 1,
     "disabled": 0
+  },
+  {
+    "seq": 217,
+    "order": "blfs.217",
+    "name": "blfs-libvdpau",
+    "chapter": "blfs",
+    "page": "libvdpau",
+    "title": "libvdpau-1.5 (hand-authored)",
+    "context": "chroot",
+    "tarball": "libvdpau-1.5.tar.gz",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
+  },
+  {
+    "seq": 218,
+    "order": "blfs.218",
+    "name": "blfs-nvidia-470xx",
+    "chapter": "blfs",
+    "page": "nvidia-470xx",
+    "title": "NVIDIA-Linux-x86_64-470.256.02 (hand-authored, experimental)",
+    "context": "chroot",
+    "tarball": "NVIDIA-Linux-x86_64-470.256.02.run",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
   }
 ]

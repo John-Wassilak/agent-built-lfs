@@ -1696,4 +1696,105 @@ before.
 - Vulkan (NVK): now working, confirmed live, capped at 1.2 by hardware
   as expected.
 
+## Investigating the nouveau VAAPI bug upstream, and staging NVIDIA 470xx as an experiment (2026-08-26)
+
+Operator asked whether the H.264 VAAPI crash bug found earlier has a
+specific identity and any upstream discussion. Traced the kernel-level
+trap (`gr: GPC0/PROP trap ... RT_WIDTH_OVERRUN`) to
+`nvkm/engine/gr/gf100.c`'s `gf100_gr_trap_gpc_rop()` -- a render-target
+validation fault, shared code across the whole Fermi/Kepler/Maxwell-1
+family. The dmesg log also shows `fifo: fault ... engine 10 [MSVLD]
+... [PRIV_VIOLATION]` -- the actual video-decode engine issuing an
+invalid memory access, which is what corrupts subsequent GPU state and
+crashes the next 3D operation.
+
+**Filed upstream, unaddressed**: Mesa GitLab issue #14058, "vaapi
+decoder in nve4 error" (https://gitlab.freedesktop.org/mesa/mesa/-/issues/14058),
+filed against this exact chip (NVE4) with an identical trap signature
+(`x=128, y=0, format=37`, same `libgallium` segfault). Filed October 7,
+2025. Zero comments, zero triage, no assignee, still open. Two more
+independent reports of the same `MSVLD PRIV_VIOLATION` fault on
+different Kepler chips (GK107 variants) across Mesa 25.1.4-25.3.5,
+including one user who tried the same pstate-forcing workaround
+attempted here tonight -- it didn't help there either. Read via the
+GitLab REST/discussions.json API directly (the web UI is behind an
+Anubis bot-challenge that blocks plain `curl`/WebFetch). Conclusion:
+this is a real, unmaintained gap in nouveau's Kepler video-decode
+support, not something fixable from this side of the driver.
+
+**Operator asked about the proprietary driver as an alternative.**
+Researched thoroughly before touching anything:
+
+- GTX 770 (device 0x1184) is on NVIDIA's 470.xx legacy branch's
+  supported-chips list with VDPAU feature level D -- NVIDIA's own
+  mature VDPAU implementation, not nouveau's broken one.
+- Kernel-compile compatibility (470.xx predates kernel 6.18 by years)
+  is solved by an actively-maintained community patch set,
+  `github.com/joanbm/nvidia-470xx-linux-mainline` (last updated 7 days
+  before this session, patches through kernel 7.3, same patches used
+  by Arch's own `nvidia-470xx-dkms` AUR package).
+- Real risk identified: 470.xx predates GBM support in NVIDIA's driver
+  (added in 495, 2021, years after Kepler was frozen on 470.xx) --
+  only the older EGLStreams mechanism is available. Hyprland
+  (aquamarine) has no supported EGLStreams path per Hyprland's own
+  wiki (which only documents GBM-era drivers, 535+). Community
+  consensus elsewhere confirms EGLStreams support across the
+  wlroots-family compositor ecosystem is effectively dead (KWin
+  dropped it outright).
+
+Given the real chance of breaking Hyprland/Wayland entirely -- the
+primary thing this whole project has been building toward -- checked
+with the operator before proceeding rather than deciding unilaterally.
+Approved, with a rollback set up first.
+
+**Rollback infrastructure** (`boot/grub.cfg` in this repo): added a
+second GRUB entry with `modprobe.blacklist=nouveau`, confirmed
+byte-identical to the working entry everywhere else via `diff` against
+a pre-edit backup, and validated with `grub-script-check` before
+deploying. Added `load_env`/`next_entry` one-shot-boot logic using
+`grubenv` (`grub-editenv` was already present, just unused
+infrastructure) -- `grub-editenv ... set next_entry=1` selects the
+NVIDIA test boot for exactly one boot, self-healing back to the
+default nouveau entry on the following boot even if that boot hangs,
+with no physical console interaction required to recover.
+
+**Built and staged, not yet activated**: patched and built the 470.256.02
+kernel modules (`nvidia.ko`, `nvidia-drm.ko`, `nvidia-modeset.ko`,
+`nvidia-uvm.ko`, `nvidia-peermem.ko`) against this system's own kernel
+source tree -- all patches applied cleanly, build succeeded with only
+harmless warnings. Installed additively under
+`.../nvidia-470xx/` (new directory, `nouveau.ko` untouched).
+
+**Real risk caught before it mattered**: `depmod` registers a wildcard
+PCI-vendor alias (`pci:v000010DEd*`) for `nvidia`/`nvidia_drm` --
+confirmed this now genuinely overlaps with nouveau's own alias for the
+same card, meaning udev could race-bind either driver on the *next
+normal boot* if left alone. Added `/etc/modprobe.d/blacklist-nvidia-470xx.conf`
+before any reboot risk existed.
+
+Userspace libraries installed via `nvidia-installer` with
+`--no-install-libglvnd` (load-bearing) and related flags -- confirmed
+post-install that every generic glvnd file (`libGL.so`, `libEGL.so`,
+`libGLX.so`, `libGLdispatch.so`, etc.) was explicitly skipped by the
+installer's own log, only NVIDIA's vendor-specific files and a new
+`10_nvidia.json` glvnd EGL vendor entry (coexisting with the existing
+`50_mesa.json`) were added. Hyprland's live PID was unchanged
+throughout -- confirmed the current desktop session was completely
+unaffected by any of this.
+
+Built `libvdpau-1.5` (hand-authored, no book page) -- the vendor-
+neutral VDPAU dispatch library applications actually link against.
+Its meson dependency check (`dri2proto`, `x11`) confirms VDPAU's device
+API is inherently X11-tied (`vdp_device_create_x11`) -- there's no
+DRM-render-node-only path the way VAAPI has.
+
+**Open question before the actual test reboot**: Xwayland (this
+system's only X server so far) can't run standalone -- it needs a
+working Wayland compositor to attach to. So testing VDPAU decode
+either needs Hyprland to come up under the 470.xx driver's EGLStreams-
+only path (uncertain, see risk above) to host Xwayland, or a full
+standalone Xorg server would need to be built first (a new, separate
+undertaking, not started). Next actual step is the reboot into GRUB
+entry 1 to see which of those is true -- not yet done.
+
 Next: Firefox remains the last package in this plan, still pending.
