@@ -1430,4 +1430,66 @@ tunnel) which also fails 100%, confirming the router simply doesn't
 answer ICMP at all rather than anything being wrong with this tunnel.
 Not a target-side issue and not touched.
 
+## Video codec/hardware-acceleration troubleshooting (2026-08-26)
+
+Operator asked for a definitive answer on which codecs get real hardware
+decode on this GPU (GTX 770 / GK104-NVE4, Kepler). Installed
+`libva-utils` (hand-authored, no BLFS page, built against the existing
+libva-2.23.0) to get `vainfo`'s authoritative driver-reported profile
+list, rather than inferring hardware support purely from mpv/ffmpeg
+trial and error.
+
+```
+vainfo: Driver version: Mesa Gallium driver 25.3.5 for NVE4
+VAProfileMPEG2Simple / MPEG2Main           : VAEntrypointVLD
+VAProfileVC1Simple / Main / Advanced       : VAEntrypointVLD
+VAProfileH264ConstrainedBaseline / Main /
+  High / High10                            : VAEntrypointVLD
+```
+
+No HEVC, VP9, or AV1 entries at all -- confirms the earlier HEVC
+finding more completely (not just "profile 2 unsupported", the driver
+never advertises any HEVC entrypoint), and confirms the operator's own
+expectation that VP9 is unsupported too. Consistent with GK104/Kepler
+predating any HEVC/VP9 decode block in NVIDIA silicon.
+
+**H.264 is more complicated than the profile list suggests.** vainfo
+lists `VAProfileH264High` as supported. Tested against `~/test.mp4`
+(H.264 High profile, 1280x720, 8-bit -- note: this file's actual name
+claims "HEVC x265" but `ffprobe` shows it's genuinely H.264; flagged to
+the operator as a mismatch between filename and content, not
+investigated further since it wasn't the point of the test) with two
+independent tools:
+
+- `mpv -v --hwdec=auto`: `ffmpeg/video] h264: No support for codec h264
+  profile 100.` -- rejected, falls back to software.
+- Raw `ffmpeg -hwaccel vaapi -hwaccel_device /dev/dri/renderD128`:
+  identical rejection, identical message.
+
+Same failure, two independent call paths, same specific stream -- this
+rules out an mpv-specific negotiation bug. The driver *advertises*
+`VAProfileH264High` in its static capability list, but real decode
+context creation for this particular real-world High-profile encode
+fails at runtime. Not investigated further at the nouveau/Mesa
+gallium-driver source level (would require reading the nva/nve state
+tracker's actual `vaCreateConfig` implementation) -- reporting the
+observed gap honestly rather than guessing which specific picture
+parameter (reference frame count, CABAC feature, etc.) nouveau's
+implementation doesn't actually support despite listing the profile.
+
+Software fallback decode is fast and clean in both cases -- the H.264
+720p stream decoded at over 20x realtime even on ffmpeg's default
+single-pass path (i5-2500K, 4C/4T). MPEG2, VC1, and H.264 Baseline/Main
+are the profiles most likely to actually get real hardware decode on
+this card, based on the profile list -- untested directly (no sample
+files for those), so this is what vainfo advertises, not independently
+confirmed working the way H.264 High was shown NOT to work despite
+being advertised.
+
+**Practical takeaway for the operator**: don't trust `vainfo`'s profile
+list alone as a guarantee of working hardware decode on this card --
+verify against the actual content being played. `hwdec=auto` in
+`mpv.conf` remains the right setting regardless, since it always falls
+back to software cleanly on any rejection.
+
 Next: Firefox -- the last package in this plan.
