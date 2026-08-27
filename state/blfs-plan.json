@@ -3022,5 +3022,19 @@
     "blocks": 1,
     "enabled": 1,
     "disabled": 0
+  },
+  {
+    "seq": 252,
+    "order": "blfs.252",
+    "name": "blfs-rsync",
+    "chapter": "blfs",
+    "page": "rsync",
+    "title": "rsync-3.4.1",
+    "context": "chroot",
+    "tarball": "rsync-3.4.1.tar.gz",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
   }
 ]

@@ -2570,3 +2570,87 @@ exactly the one expected key; no secrets found in cleartext anywhere
 checked; `lfsmaint drift` clean (0 packages behind BLFS book
 versions, 3 deliberately ahead); repo consistency between
 `manifests/`, `recipes/`, and `state/blfs-plan.json` fully intact.
+
+## rsync, and a repo/target state drift found while recording it (2026-08-27)
+
+First package built with the harness repo living **on the target
+itself** rather than on the Gentoo build host. `bin/lfsbuild` cannot
+drive builds here -- it is still hardwired to `LFS = "/mnt/lfs"` and a
+`chroot` execution context, neither of which exists on a self-hosting
+system -- so this followed the same by-hand on-target pattern the last
+several packages used: build in `/root/build-rsync`, capture the
+manifest with a stamp file plus `find -newer`, then record the recipe,
+manifest, and plan entry back into the repo.
+
+**rsync-3.4.1** from the BLFS book (`basicnet/rsync.html`), md5 verified
+(`04ce67866db04fd7a1cde0b78168406e`). The book's *required* security
+patch is applied: upstream commit `797e17f`, an invalid access to the
+files array in `sender.c`, found by Rapid7 -- upstream's own analysis
+says it is not exploitable, but it is a real bug. Configured per the
+book (`--disable-xxhash`, `--without-included-zlib`); the recommended
+dependency `popt-1.19` was already installed, so nothing new was needed.
+
+configure additionally picked up zstd, lz4, and OpenSSL, all already
+tracked packages, so the binary carries zstd/lz4 compression and OpenSSL
+MD4/MD5 beyond the book's baseline. All 7 linked libraries resolve.
+
+Test suite run once by hand at install time (not in the recipe -- this
+project's BLFS policy leaves test blocks disabled): **45 passed, 1
+skipped, 0 failed**. The skip is `crtimes`, which this configuration
+does not support. A functional check copied a tree containing a symlink,
+a binary file, and a user xattr with `rsync -aHAX`: `diff -r
+--no-dereference` reports the copies identical and the xattr survived.
+
+**Client-only install, deliberately.** The book's optional rsyncd daemon
+setup -- the `rsyncd` user/group, `/etc/rsyncd.conf`, and the
+`blfs-systemd-units` `rsyncd.service`/`.socket` -- was not done. None of
+it is needed for the rsync client, and the firewall's `INPUT` policy is
+`DROP` with only SSH open, so a daemon listening on 873 would be
+unreachable weight.
+
+**The drift.** Rebuilding the package database after the install exposed
+that `/var/lib/lfsmaint/` on target had fallen behind the repo: the last
+four builds (`go`, `tailscale`, `openbao`, `opentofu`) were committed
+here but their manifests were never copied into
+`/var/lib/lfsmaint/manifests/`, and `blfs-plan.json` there was stale to
+match. `lfsmaint` therefore listed all four at **0 files** -- present in
+the plan, owning nothing. Three others (`firefox`, `jq`, `xkbcomp`) still
+held the pre-cleanup manifests carrying journal-file contamination that
+the repo copies had already had stripped.
+
+Fixed by syncing the repo's `manifests/` to `/var/lib/lfsmaint/manifests/`
+and re-running `lfsmaint db`. Package count is unchanged at **328**; the
+tracked file count moves 77,042 -> 108,308, almost entirely `go`'s 31,253
+files, which had simply never been counted.
+
+`lfsmaint verify` still reports 24 UNEXPLAINED missing files across 4
+packages. These are **pre-existing and untouched by this work** --
+`git status` confirms the only manifest this session added is
+`blfs-rsync.txt` -- and they split into two known causes:
+
+- **19 are the `find`-timing manifest contamination already committed in
+  `88954d8`**: `/root/build11/*` build files swept into `nss`'s manifest
+  (15), the since-removed `/etc/sudoers.d/90-john-temp-nopasswd` swept
+  into `llvm`'s (1), and 3 `dbus` doc files.
+- **5 are a genuinely stale record**: `NVIDIA-470.256.02`'s manifest
+  still lists its modules under `/usr/lib/modules/6.18.10-audio/`, the
+  pre-rename kernel path. Commits `c485bd2`/`1b93849` renamed the kernel
+  (dropping the `-audio` LOCALVERSION) and rebuilt the modules against
+  it, but nvidia's manifest was never re-captured, so it points at a
+  directory that no longer exists. The modules themselves are fine --
+  the driver loads at every boot. Only the record is wrong. Left as a
+  decision rather than silently re-written: re-tracking it means
+  re-running the nvidia build step to capture a fresh manifest.
+
+Two things worth a decision, found but not changed:
+
+- **`bin/lfsbuild` is now dead code on this machine.** Every path in it
+  assumes `/mnt/lfs` and a chroot. It either needs a native mode or an
+  explicit note that on-target builds are hand-driven; right now it
+  looks usable and is not.
+- **`/etc/sudoers.d/00-sudo` grants `%wheel ALL=(ALL:ALL) NOPASSWD: ALL`.**
+  Phase 8 reported reverting a passwordless-root grant, and it did remove
+  `90-john-temp-nopasswd` -- but this system-wide wheel NOPASSWD line
+  predates it and is still in place, so `sudo -n` for `john` still
+  succeeds without a password. That may well be intended; it is simply
+  not what the Phase 8 entry implies.
