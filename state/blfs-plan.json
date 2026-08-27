@@ -2994,5 +2994,19 @@
     "blocks": 1,
     "enabled": 1,
     "disabled": 0
+  },
+  {
+    "seq": 250,
+    "order": "blfs.250",
+    "name": "blfs-openbao",
+    "chapter": "blfs",
+    "page": "openbao",
+    "title": "openbao-2.6.2 (hand-authored)",
+    "context": "chroot",
+    "tarball": "openbao-v2.6.2.tar.gz",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
   }
 ]

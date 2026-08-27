@@ -1,0 +1,3 @@
+/etc/openbao/config.hcl
+/usr/bin/bao
+/usr/lib/systemd/system/openbao.service
