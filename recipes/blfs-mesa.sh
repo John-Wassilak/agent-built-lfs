@@ -28,16 +28,15 @@ set -e
 mkdir build &&
 cd    build &&
 
-meson setup ..                    \
-      --prefix=$XORG_PREFIX       \
-      --buildtype=release         \
-      -D platforms=x11,wayland    \
-      -D gallium-drivers=nouveau  \
-      -D vulkan-drivers=nouveau   \
-      -D valgrind=disabled        \
-      -D video-codecs=all         \
-      -D libunwind=disabled       \
-      -D glvnd=enabled           &&
+meson setup ..                 \
+      --prefix=$XORG_PREFIX    \
+      --buildtype=release      \
+      -D platforms=x11,wayland \
+      -D gallium-drivers=auto  \
+      -D vulkan-drivers=auto   \
+      -D valgrind=disabled     \
+      -D video-codecs=all      \
+      -D libunwind=disabled   &&
 
 ninja
 

@@ -3,18 +3,6 @@
 # source : book/blfs-13.0/x/gtk3.html
 # title  : GTK-3.24.51
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
-#
-# Rebuilt 2026-08-27 with wayland_backend explicitly disabled. Real bug
-# found: the original build left wayland_backend on its meson default
-# (auto), which silently enabled it because wayland was present at the
-# time (Hyprland era). That made gdk-3.0.pc unconditionally declare
-# Requires: wayland-client, wayland-cursor, wayland-egl -- so removing
-# the wayland package (correctly identified as Hyprland-only) broke
-# `pkg-config gtk+-3.0` for everything, including Firefox's configure,
-# even though nothing in this X11-only project ever used gtk3's
-# Wayland backend. x11_backend is pinned explicitly true for the same
-# reason: correct by declaration, not by whatever auto-detection finds
-# present at build time.
 set -e
 
 # --- block 0 --------------------------------------------------

@@ -723,9 +723,9 @@
     "context": "chroot",
     "tarball": "mesa-25.3.5.tar.xz",
     "manifest": true,
-    "blocks": 1,
-    "enabled": 1,
-    "disabled": 0
+    "blocks": 6,
+    "enabled": 3,
+    "disabled": 3
   },
   {
     "seq": 57,
@@ -863,9 +863,9 @@
     "context": "chroot",
     "tarball": "gdk-pixbuf-2.44.5.tar.xz",
     "manifest": true,
-    "blocks": 1,
-    "enabled": 1,
-    "disabled": 0
+    "blocks": 4,
+    "enabled": 2,
+    "disabled": 2
   },
   {
     "seq": 67,
@@ -877,9 +877,9 @@
     "context": "chroot",
     "tarball": "librsvg-2.61.4.tar.xz",
     "manifest": true,
-    "blocks": 1,
-    "enabled": 1,
-    "disabled": 0
+    "blocks": 4,
+    "enabled": 3,
+    "disabled": 1
   },
   {
     "seq": 68,
@@ -1297,9 +1297,9 @@
     "context": "chroot",
     "tarball": "gtk-3.24.51.tar.xz",
     "manifest": true,
-    "blocks": 1,
-    "enabled": 1,
-    "disabled": 0
+    "blocks": 6,
+    "enabled": 4,
+    "disabled": 2
   },
   {
     "seq": 100,

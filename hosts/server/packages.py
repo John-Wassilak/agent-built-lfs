@@ -84,7 +84,7 @@ PACKAGES = BASE + [
     book(53, "vulkan-headers", "x/vulkan-headers.html", "Vulkan-Headers-vulkan-sdk-1.4.341.0.tar.gz"),
     book(54, "vulkan-loader", "x/vulkan-loader.html", "Vulkan-Loader-vulkan-sdk-1.4.341.0.tar.gz"),
     book(55, "libdrm", "x/libdrm.html", "libdrm-2.4.131.tar.xz"),
-    hand(56, "mesa", "mesa-25.3.5.tar.xz", "Mesa-25.3.5"),
+    book(56, "mesa", "x/mesa.html", "mesa-25.3.5.tar.xz"),
     book(57, "libepoxy", "x/libepoxy.html", "libepoxy-1.5.10.tar.xz"),
 
     # --- Tier 6: Rust toolchain + Cairo/Pango. Decided with the operator to skip
@@ -111,8 +111,8 @@ PACKAGES = BASE + [
     # gdk-pixbuf without it first, then glycin, then rebuild gdk-pixbuf again) and a
     # heavy separate Rust image-loader stack -- out of scope for a one-level policy.
     book(65, "shared-mime-info", "general/shared-mime-info.html", "shared-mime-info-2.4.tar.gz"),
-    hand(66, "gdk-pixbuf", "gdk-pixbuf-2.44.5.tar.xz", "gdk-pixbuf-2.44.5"),
-    hand(67, "librsvg", "librsvg-2.61.4.tar.xz", "librsvg-2.61.4"),
+    book(66, "gdk-pixbuf", "x/gdk-pixbuf.html", "gdk-pixbuf-2.44.5.tar.xz"),
+    book(67, "librsvg", "general/librsvg.html", "librsvg-2.61.4.tar.xz"),
 
     # libjpeg-turbo and muparser: both claimed "already built" in the Tier 10
     # hyprgraphics/hyprland rationale comments below but never actually added to
@@ -178,7 +178,7 @@ PACKAGES = BASE + [
     book(96, "speex", "multimedia/speex.html", "speex-1.2.1.tar.gz"),
     book(97, "gsettings-desktop-schemas", "gnome/gsettings-desktop-schemas.html", "gsettings-desktop-schemas-49.1.tar.xz"),
     book(98, "at-spi2-core", "x/at-spi2-core.html", "at-spi2-core-2.58.3.tar.xz"),
-    hand(99, "gtk3", "gtk-3.24.51.tar.xz", "GTK-3.24.51"),
+    book(99, "gtk3", "x/gtk3.html", "gtk-3.24.51.tar.xz"),
     book(100, "pulseaudio", "multimedia/pulseaudio.html", "pulseaudio-17.0.tar.xz"),
 
     # --- Tier 12: media codecs for FFmpeg/mpv (2026-08-26). All real BLFS book

@@ -267,6 +267,11 @@
     "2": {
       "action": "drop",
       "reason": "Test suite (meson test -v) -- skipped, matches every other package in this build."
+    },
+    "1": {
+      "action": "replace",
+      "cmd": "mkdir build &&\ncd    build &&\n\nmeson setup --prefix=/usr --buildtype=release -D pixbuf-loader=enabled .. &&\nninja",
+      "reason": "Adds -D pixbuf-loader=enabled to the book's configure line. Without it librsvg installs the library but no gdk-pixbuf loader module, so SVG icons and images stay unloadable through gdk-pixbuf -- the same class of silent gap as the gdk-pixbuf loaders above, and worth having wherever gdk-pixbuf is built."
     }
   },
   "blfs-lvm2": {
@@ -342,8 +347,8 @@
     },
     "0": {
       "action": "replace",
-      "cmd": "mkdir build &&\ncd    build &&\n\nmeson setup ..                \\\n      --prefix=/usr           \\\n      --buildtype=release     \\\n      -D man=false            \\\n      -D png=disabled         \\\n      -D gif=disabled         \\\n      -D jpeg=disabled        \\\n      -D tiff=disabled        \\\n      -D thumbnailer=disabled \\\n      --wrap-mode=nofallback  \\\n      $(pkgconf glycin-2 || echo -D glycin=disabled) &&\nninja",
-      "reason": "man option defaults to true in meson_options.txt and requires rst2man (docutils), not installed -- book text never explicitly sets it, so the extracted block missed it."
+      "cmd": "mkdir build &&\ncd    build &&\n\nmeson setup ..                \\\n      --prefix=/usr           \\\n      --buildtype=release     \\\n      -D man=false            \\\n      -D png=enabled          \\\n      -D gif=enabled          \\\n      -D jpeg=enabled         \\\n      -D tiff=disabled        \\\n      -D thumbnailer=disabled \\\n      --wrap-mode=nofallback  \\\n      -D glycin=disabled &&\nninja",
+      "reason": "Two changes to the book's configure line, both required, found 2026-08-26.\n\nman=false: the option defaults to true in meson_options.txt and needs rst2man (docutils), which is not installed.\n\npng/gif/jpeg re-enabled: the book disables every built-in loader on the assumption that glycin, a newer external loader service, replaces them. This build deliberately skipped glycin (circular Rust rebuild, out of scope), which left BOTH paths disabled -- gdk-pixbuf could load precisely nothing. /usr/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache existed and listed zero loaders, confirmed directly, and even GTK's own bundled PNG icons failed with \"Unrecognized image file format\". That was the real cause of a launcher crashing in Gtk:ERROR ensure_surface_for_gicon; nothing about that crash was specific to the launcher -- anything drawing an icon was equally broken and simply had not hit a hard failure yet. Any build that skips glycin needs this, whatever the hardware. libpng, giflib and libjpeg-turbo are all built by then. tiff stays disabled: libtiff is not built and nothing needs it."
     }
   },
   "blfs-json-c": {
@@ -421,8 +426,8 @@
     },
     "0": {
       "action": "replace",
-      "cmd": "mkdir build &&\ncd    build &&\n\nmeson setup ..            \\\n      --prefix=/usr       \\\n      --buildtype=release \\\n      -D man=false         \\\n      -D broadway_backend=true &&\nninja",
-      "reason": "man=true (hardcoded on by the book) needs docbook-xsl-nons/libxslt for xsltproc, not installed."
+      "cmd": "mkdir build &&\ncd    build &&\n\nmeson setup ..            \\\n      --prefix=/usr       \\\n      --buildtype=release \\\n      -D man=false         \\\n      -D broadway_backend=true \\\n      -D x11_backend=true \\\n      -D wayland_backend=false &&\nninja",
+      "reason": "man=false: the book hardcodes man=true, which needs docbook-xsl-nons and libxslt for xsltproc, not installed.\n\nx11_backend and wayland_backend pinned explicitly rather than left on meson's auto default (rebuilt 2026-08-27 after a real failure). Auto silently enabled the Wayland backend because wayland happened to be installed at the time, and that made gdk-3.0.pc unconditionally declare Requires: wayland-client, wayland-cursor, wayland-egl. Removing the wayland package later -- correctly, nothing here used it -- broke `pkg-config gtk+-3.0` for every consumer, Firefox's configure included, even though nothing ever used gtk3's Wayland backend. The lesson is not about Wayland: a backend left on auto encodes whatever was present at build time into the installed .pc file. Declare both. A host that does run Wayland should override this block with wayland_backend=true rather than reverting to auto."
     }
   },
   "blfs-alsa-lib": {
@@ -465,6 +470,20 @@
     "2": {
       "action": "drop",
       "reason": "Optional test build, not wanted."
+    }
+  },
+  "blfs-mesa": {
+    "0": {
+      "action": "drop",
+      "reason": "`lspci | grep VGA`, the book telling a reader to look up their own GPU before choosing drivers. A scripted build already knows: the answer is host.toml's [hardware].gpu, and the driver choice it feeds is block 2's host override. pciutils is also not necessarily installed this early."
+    },
+    "1": {
+      "action": "drop",
+      "reason": "Applies the optional xdemos patch ('If you have downloaded...'). Not fetched: it only adds demo programs for testing an Xorg install, which nothing here needs."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "Reconfigures with build-tests=true and runs the full suite, roughly doubling build time for verification not done for any other package in this build -- test suites are skipped throughout except the critical three in LFS Chapter 8."
     }
   }
 }
