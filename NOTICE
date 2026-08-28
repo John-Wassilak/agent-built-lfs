@@ -1,0 +1,86 @@
+# Licensing
+
+Three different terms apply to different parts of this repository. The short
+version: the harness is MIT, the recipe commands are MIT, and the book prose
+quoted inside the recipes is CC BY-NC-SA 2.0 -- so the repository as a whole
+cannot be used commercially.
+
+## Original work -- MIT (see LICENSE)
+
+Copyright (c) 2026 John Wassilak.
+
+    bin/                    the harness: extractors, plan builder, driver,
+                            maintenance tooling, host resolution
+    packages/               package selection and its rationale
+    overlay/                configuration files
+    hosts/<name>/           host.toml, packages.py, kernel-config.sh, overlay/,
+                            state/, manifests/, and the per-host documentation
+    README.md CLAUDE.md PRACTICES.md
+    hosts/*/BUILD-REPORT.md hosts/*/BOOTSTRAP.md hosts/*/*-PLAN.md
+
+The `reason` fields in recipes/*-overrides.json and hosts/*/*-overrides.json are
+original text. They cite the books and occasionally quote a short phrase to
+identify what is being decided.
+
+## Recipe commands -- MIT, extracted from the books
+
+    recipes/*.sh            command blocks
+    hosts/*/recipes/*.sh    command blocks
+
+Both books permit this explicitly. From each book's legal notice: "Computer
+instructions may be extracted from the book under the MIT License."
+
+    Linux From Scratch, version 13.0-systemd
+    Copyright (c) 1999-2026 Gerard Beekmans
+    https://www.linuxfromscratch.org/lfs/
+
+    Beyond Linux From Scratch (systemd edition), version 13.0
+    Copyright (c) 1999-2026 The BLFS Development Team
+    https://www.linuxfromscratch.org/blfs/
+
+Recipes whose header says HAND-AUTHORED are original work under LICENSE; they
+cover packages the books do not carry, or builds tuned past what a book page
+plus a review decision can express.
+
+## Book prose quoted in the recipes -- CC BY-NC-SA 2.0
+
+Both books are licensed Creative Commons Attribution-NonCommercial-ShareAlike
+2.0. Each generated recipe carries book prose verbatim in two places:
+
+    # title  : <the book page's own section title>
+    #   ctx:  <the paragraph surrounding each command block>
+
+Roughly 2,800 such lines across the recipe tree. They exist because a command
+extracted from a book without the prose that qualified it is not reviewable --
+the whole point of the override mechanism is deciding, against the book's own
+words, whether a block belongs in an unattended build.
+
+That content is not covered by the MIT extraction permission, and its terms
+bind anyone redistributing this repository:
+
+  - **Attribution** -- credit the LFS project and Gerard Beekmans / the BLFS
+    Development Team. Each recipe already names its source page in its header.
+  - **NonCommercial** -- no commercial use of that content.
+  - **ShareAlike** -- derivative works of that content carry the same license.
+
+    https://creativecommons.org/licenses/by-nc-sa/2.0/
+
+To produce a tree free of it, regenerate the recipes without the context lines
+(they come from `render()` in bin/extract-recipes.py and bin/extract-blfs.py)
+and drop `book/`. The result is MIT throughout, and much harder to review.
+
+## What is not in this repository
+
+The books themselves (`book/`) and all upstream source tarballs are fetched, not
+vendored, and are gitignored. `blfs-staging/urls.txt` and `blfs-staging/blfs-md5`
+record what to fetch and what it must hash to. Two small upstream patches are
+tracked because they are build inputs the BLFS mirrors do not version:
+
+    blfs-staging/ffmpeg-8.0.1-chromium_method-1.patch
+    blfs-staging/node-v22.22.0-python_build_fix-1.patch
+
+Both come from the BLFS patches mirror and carry their own upstream terms.
+
+`recipes/blfs-firefox.sh` contains a Google API key. It is BLFS's own published
+key, reproduced verbatim from that book page, not a credential of this project.
+See the comment above it in the recipe.

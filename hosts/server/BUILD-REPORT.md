@@ -89,7 +89,8 @@ produced a broken or wedged build:
 
 Set non-interactively to **`lfs-changeme`**. The book uses interactive `passwd root`, which
 cannot run unattended, and leaving the account locked would make the booted system
-unusable. **Change it on first boot.**
+unusable. **Change it on first boot.** (Historical: superseded 2026-08-26, when root was
+locked and access moved to `john` plus sudo. See "Security posture" below.)
 
 ## Deferred to the USB phase
 
@@ -258,6 +259,16 @@ build itself still uses a pre-staged, verified `certdata.txt` via `make-ca -f -C
 deterministic and offline.
 
 ## Security posture — read this before exposing the box
+
+> **SUPERSEDED 2026-08-26.** This section describes the posture the *build* produced, and
+> is kept as the record of why it was deliberate. It is not the current state. The
+> "System scan and security pass (2026-08-26)" section below closed all of it, in an
+> order that always left a working privileged path. Verified on this machine 2026-08-28:
+> `passwd -S root` reports `L` (locked, so the password below cannot authenticate at all,
+> console included), and `/etc/ssh/sshd_config` has `PermitRootLogin no` and
+> `PasswordAuthentication no`. Privileged access is `john` plus sudo, key-only over ssh.
+> The build-time password is quoted below for the historical record, not because it is
+> live anywhere.
 
 - **Root password is `lfs-changeme`** and **`PermitRootLogin yes`** with password auth on.
   That combination is deliberate: it is the only way the machine is reachable out of the box
@@ -469,7 +480,9 @@ temporary; copy to the permanent drive and it goes away.
 ## First boot
 
 1. GRUB menu appears, 5s timeout, single entry.
-2. Log in as `root` / `lfs-changeme`. **Change it immediately.**
+2. Log in as `root` / `lfs-changeme`. **Change it immediately.** (Historical: on this
+   machine root was locked outright on 2026-08-26 — see the superseded note under
+   "Security posture" above.)
 3. sshd generates its host keys on first start (`ExecStartPre=ssh-keygen -A`).
 4. Networking is DHCP on any wired interface; `systemd-resolved` provides DNS.
 5. `claude` needs authenticating once, interactively.

@@ -63,6 +63,13 @@ EOF
 
 sed -i '/VIRAMA = 47/a CLASS_CHARACTER,' intl/lwbrk/LineBreaker.cpp
 
+# NOT A CREDENTIAL OF THIS PROJECT. This is the Google location-service API key
+# BLFS publishes on its own Firefox page, reproduced verbatim from
+# book/blfs-13.0/xsoft/firefox.html -- it ships in every BLFS mirror and in every
+# distro that follows that page. Firefox's configure refuses to proceed without a
+# key file when the location service is enabled, so the book supplies a shared one.
+# Secret scanners match the AIzaSy prefix and will flag it; nothing is exposed by
+# it, and rotating or removing it is upstream's call, not ours.
 echo "AIzaSyDxKL42zsPjbke5O8_rPVpVrLrJ8aeE9rQ" > google-key
 
 mountpoint -q /dev/shm || mount -t tmpfs devshm /dev/shm

@@ -5,15 +5,17 @@ hosts/*/state/*.tmp
 # The books are upstream content, fetched not authored. Same release for every host.
 book/
 
-# Downloaded source tarballs are a cache, not repo content. The blfs-systemd-units
-# tarball is the exception -- it is tracked because its extracted tree is too.
+# Upstream source is never vendored here. The repo records what to fetch (urls.txt) and
+# what it must hash to (blfs-md5), which is enough to reproduce a build; carrying the
+# tarballs themselves put 63 MB of redownloadable node/git/curl into git history for no
+# gain. Extracted upstream trees are out for the same reason.
 sources-staging/
 snapshots/
-blfs-staging/*.tar.gz
-blfs-staging/*.tar.xz
-blfs-staging/*.tar.bz2
+blfs-staging/*.tar.*
 blfs-staging/*.tgz
-!blfs-staging/blfs-systemd-units-*.tar.xz
+blfs-staging/*.zip
+blfs-staging/bsu/
+blfs-staging/certdata.txt
 *.tar.gz
 *.tar.zst
 
