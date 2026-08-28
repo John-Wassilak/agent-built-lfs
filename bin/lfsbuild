@@ -4,6 +4,12 @@
 Runs plan steps in book order, in the right privilege context, with per-package logs,
 timing, resumable state, and (for Chapter 8) an installed-file manifest.
 
+Everything it reads and writes belongs to one machine, resolved before any step runs:
+the plan, the completed list, timings, logs, manifests, and which recipe a step uses
+(hosts/<host>/recipes/<step>.sh wins over the shared recipes/<step>.sh). The host comes
+from --host, else $LFS_HOST, else the hostname -- so on the machine being built no flag
+is needed, and from elsewhere --host names the machine whose tree you are building.
+
   lfsbuild --status                  what is done, what is next
   lfsbuild --list [--chapter 08]     show the plan
   lfsbuild --only ch05-glibc         run one step
@@ -20,8 +26,8 @@ Two execution modes, detected automatically and printed by --status:
            Chapters 4-7 are refused in this mode: they build the temporary
            toolchain into a bare tree and would overwrite the running one.
 
-Override the detection with --native / --chroot, and the source directory
-with --sources (default /sources natively, $LFS/sources under chroot).
+Override the detection with --native / --chroot, and the source directory with
+--sources (default: the host's build.sources natively, $LFS/sources under chroot).
 
 The unpack / cd / cleanup wrapper from the book's General Instructions is supplied here,
 not stored in recipes. Source directory names are read from the tarball itself rather
@@ -38,21 +44,19 @@ import sys
 import tempfile
 import time
 
-ROOT = "/home/john/lfs"
-PLAN = f"{ROOT}/state/plan.json"
-DONE = f"{ROOT}/state/completed"
-TIMINGS = f"{ROOT}/state/timings.tsv"
-LOGS = f"{ROOT}/logs"
-RECIPES = f"{ROOT}/recipes"
-MANIFESTS = f"{ROOT}/manifests"
-JOBS = os.cpu_count() or 4
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import lfshost  # noqa: E402
 
 VKFS = ["/dev", "/dev/pts", "/proc", "/sys", "/run"]
 
-CHROOT_TREE = "/mnt/lfs"                    # where a build host keeps the target tree
-NATIVE_SOURCES = "/sources"                 # same path the chroot used, so recipes
-                                            # referencing ../<patch> behave identically
 LFSMAINT_MANIFESTS = "/var/lib/lfsmaint/manifests"
+
+# Set by configure_host() before anything else. HOST carries every per-machine path;
+# the module-level names below are the handful used often enough to keep short.
+HOST = None
+PLAN = DONE = TIMINGS = LOGS = MANIFESTS = None
+CHROOT_TREE = None
+JOBS = None
 
 # Set by configure_mode() before any step runs.
 MODE = None          # "chroot" | "native"
@@ -102,6 +106,16 @@ SPECIAL = {
 MANIFEST_ROOTS = "/usr /etc /opt /var /boot /srv /root /bin /sbin /lib"
 
 
+def configure_host(name):
+    """Resolve the machine and bind its paths. Must run before any other function."""
+    global HOST, PLAN, DONE, TIMINGS, LOGS, MANIFESTS, CHROOT_TREE, JOBS
+    HOST = lfshost.resolve(name)
+    PLAN, DONE, TIMINGS = HOST.plan, HOST.done, HOST.timings
+    LOGS, MANIFESTS = HOST.logs, HOST.manifests
+    CHROOT_TREE, JOBS = HOST.chroot_tree, HOST.jobs
+    return HOST
+
+
 def is_lfs_system():
     """True when this machine is itself an LFS system (self-hosting)."""
     try:
@@ -132,7 +146,7 @@ def configure_mode(mode, sources):
         )
     if MODE == "native":
         LFS, TREE = "", "/"
-        SOURCES = sources or NATIVE_SOURCES
+        SOURCES = sources or HOST.sources
     else:
         if not os.path.isdir(CHROOT_TREE):
             sys.exit(f"chroot mode needs the target tree at {CHROOT_TREE}, which does "
@@ -152,7 +166,11 @@ def ctx_label(step):
     return step["context"]
 
 
-def load_plan(path=PLAN):
+def load_plan(path=None):
+    path = path or PLAN
+    if not os.path.exists(path):
+        sys.exit(f"no plan at {os.path.relpath(path, lfshost.ROOT)} -- run "
+                 f"extract-recipes.py and build-plan.py --host {HOST.name} first")
     return json.load(open(path))
 
 
@@ -209,7 +227,9 @@ def build_script(step, srcdir):
         src = SOURCES
     else:
         src = "/sources" if chroot else f"{LFS}/sources"
-    recipe = open(f"{RECIPES}/{name}.sh").read()
+    # Host recipe wins over the shared one: hardware-bound steps (this GPU's driver,
+    # this disk's fstab labels) live with the machine, everything else is shared.
+    recipe = open(lfshost.recipe(HOST, name)).read()
 
     L = [
         "#!/bin/bash",
@@ -511,6 +531,7 @@ def cmd_status(plan):
     # state/completed spans every plan, so count only this plan's steps -- otherwise
     # a BLFS --status reports the LFS steps too and prints e.g. 350/217.
     here = sum(1 for s in plan if s["name"] in done)
+    print(f"host     : {HOST.name}   arch={HOST.arch}  jobs={JOBS}")
     print(f"mode     : {MODE}   tree={TREE}  sources={SOURCES}")
     print(f"completed: {here}/{len(plan)}")
     nxt = [s for s in plan if s["name"] not in done]
@@ -530,6 +551,7 @@ def cmd_status(plan):
 
 def main():
     ap = argparse.ArgumentParser()
+    lfshost.add_host_arg(ap)
     ap.add_argument("--list", action="store_true")
     ap.add_argument("--status", action="store_true")
     ap.add_argument("--resume", action="store_true")
@@ -539,19 +561,23 @@ def main():
     ap.add_argument("--chapter")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--force", action="store_true", help="re-run even if completed")
-    ap.add_argument("--plan", default=PLAN, help="plan file (default: the LFS plan)")
+    ap.add_argument("--blfs", action="store_true",
+                    help="use this host's BLFS plan instead of its LFS plan")
+    ap.add_argument("--plan", help="explicit plan file (default: this host's LFS plan, "
+                                   "or its BLFS plan with --blfs)")
     ap.add_argument("--native", dest="mode", action="store_const", const="native",
                     help="run against this running system (no chroot)")
     ap.add_argument("--chroot", dest="mode", action="store_const", const="chroot",
-                    help=f"run against the target tree at {CHROOT_TREE}")
+                    help="run against the target tree (build.chroot_tree in host.toml)")
     ap.add_argument("--sources", help="directory holding tarballs and patches")
     ap.add_argument("--reconcile", action="store_true",
                     help="mark steps completed where a manifest proves they were built")
     a = ap.parse_args()
 
+    configure_host(a.host)
     configure_mode(a.mode, a.sources)
 
-    plan = load_plan(a.plan)
+    plan = load_plan(a.plan or (HOST.blfs_plan if a.blfs else HOST.plan))
     done = completed()
 
     if a.status:

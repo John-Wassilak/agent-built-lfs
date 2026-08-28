@@ -1,0 +1,3 @@
+{
+  "_comment": "Host-specific review decisions for `laptop`. Merged on top of the shared recipes/review-overrides.json by bin/extract-recipes.py, page by page and block by block. Two entries are needed before Chapter 10 runs: ch10-fstab block 0 with this machine's filesystem LABELs, and ch10-kernel blocks naming its /boot paths. Copy the shape from hosts/server/review-overrides.json. See BOOTSTRAP.md step 3."
+}

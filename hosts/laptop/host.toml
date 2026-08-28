@@ -1,0 +1,28 @@
+# `laptop` -- not built yet. See BOOTSTRAP.md for the build path and the hardware audit
+# whose answers fill in the TODOs below.
+#
+# `arch` is deliberately absent: it defaults to the machine lfsbuild is running on, which
+# is right for the build-it-on-the-laptop path. Set it explicitly only if this host is
+# ever built from a machine of a different architecture.
+
+book = "13.0"
+
+[build]
+# 0 = this machine's core count. Consider a literal cap here rather than on `server`:
+# a laptop that thermally throttles finishes a long build faster at -j(cores-1).
+jobs = 0
+chroot_tree = "/mnt/lfs"
+sources = "/sources"
+
+[hardware]
+# Fill these from the audit in BOOTSTRAP.md before touching kernel-config.sh. Every
+# TODO here is a decision the kernel config or a BLFS package selection depends on.
+cpu       = "TODO: lscpu -- model, cores/threads, and whether it needs a microcode blob"
+microcode = "TODO: /proc/cpuinfo 'bugs:' line -- old_microcode means an early-load initrd"
+gpu       = "TODO: lspci -k -- vendor decides mesa's gallium-drivers and the DRM driver"
+graphics  = "TODO: X11 + awesome to match server, unless the GPU makes Wayland viable"
+audio     = "TODO: lspci -k audio + /proc/asound/cards once booted"
+root      = "TODO: lsblk -f -- partition, fs, and the LABEL= to use in fstab"
+boot      = "TODO: is the firmware UEFI or BIOS? decides the GRUB install in ch10"
+battery   = "TODO: laptop-only concerns server has none of -- suspend, lid, backlight"
+wifi      = "TODO: lspci -k / lsusb -- almost certainly needs firmware LFS does not ship"

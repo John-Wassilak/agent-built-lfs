@@ -168,22 +168,7 @@
     "1": {
       "action": "replace",
       "cmd": "bash /sources/kernel-config.sh",
-      "reason": "`make menuconfig` is an interactive ncurses UI and cannot run unattended. Replaced by bin/kernel-config.sh (staged to /sources), which runs `make defconfig` as the book recommends, applies every option the book lists as required, forces the boot path to =y because LFS builds no initramfs, and ends with a gate that fails loudly if any boot-path driver ended up a module."
-    },
-    "5": {
-      "action": "replace",
-      "cmd": "cp -v arch/x86/boot/bzImage /boot/vmlinuz-6.18.10-lfs-13.0-systemd",
-      "reason": "Book uses `cp -iv`; -i prompts on overwrite and would hang the driver on a re-run."
-    },
-    "6": {
-      "action": "replace",
-      "cmd": "cp -v System.map /boot/System.map-6.18.10",
-      "reason": "Interactive -i flag removed."
-    },
-    "7": {
-      "action": "replace",
-      "cmd": "cp -v .config /boot/config-6.18.10",
-      "reason": "Interactive -i flag removed."
+      "reason": "`make menuconfig` is an interactive ncurses UI and cannot run unattended. Replaced by the host's kernel-config.sh (hosts/<host>/kernel-config.sh, staged to /sources alongside bin/kernel-config-base.sh, which it sources by relative path). The base runs `make defconfig` as the book recommends, applies every option the book lists as required, forces the boot path to =y because LFS builds no initramfs, and ends with a gate that fails loudly if any boot-path driver ended up a module; the host file adds that machine's own hardware between the two."
     }
   },
   "ch07-cleanup": {
@@ -245,13 +230,6 @@
     "6": {
       "action": "drop",
       "reason": "localectl needs a running systemd, unavailable in the chroot."
-    }
-  },
-  "ch10-fstab": {
-    "0": {
-      "action": "replace",
-      "cmd": "cat > /etc/fstab << \"EOF\"\n# file system   mount-point    type      options             dump  fsck\n#                                                                  order\n\nLABEL=LFSROOT   /              ext4      defaults            1     1\nLABEL=LFSSWAP   swap           swap      pri=1               0     0\n\nproc            /proc          proc      nosuid,noexec,nodev 0     0\nsysfs           /sys           sysfs     nosuid,noexec,nodev 0     0\ndevpts          /dev/pts       devpts    gid=5,mode=620      0     0\ntmpfs           /run           tmpfs     defaults            0     0\ndevtmpfs        /dev           devtmpfs  mode=0755,nosuid    0     0\ntmpfs           /dev/shm       tmpfs     nosuid,nodev        0     0\ncgroup2         /sys/fs/cgroup cgroup2   nosuid,noexec,nodev 0     0\nEOF",
-      "reason": "Book's template uses /dev/<xxx> and /dev/<yyy> placeholders. Written with LABEL= so the tree is not bound to a device node that does not exist yet: label the USB root LFSROOT and swap LFSSWAP when creating them."
     }
   },
   "ch11-theend": {

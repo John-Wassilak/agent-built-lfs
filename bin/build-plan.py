@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Produce the ordered build plan: book order, execution context, source tarball.
+"""Produce a host's ordered LFS build plan: book order, execution context, source tarball.
+
+Reads the recipe index the extractor wrote for that host and writes hosts/<host>/state/
+plan.json. Book order is identical on every machine -- what differs is only which
+recipes carry host overrides, which the index already accounts for.
 
 Ordering comes from the section number in each page's sect1 title ("8.30. GCC-15.2.0"),
 which is the book's own order -- not filesystem order.
@@ -10,14 +14,16 @@ Execution context per chapter:
   ch07 post + 08-11 -> run as root inside the chroot
 """
 
+import argparse
 import json
 import os
 import re
 import sys
 
-RECIPES = "/home/john/lfs/recipes"
-STATE = "/home/john/lfs/state"
-MD5 = "/home/john/lfs/book/md5sums"
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import lfshost  # noqa: E402
+
+MD5 = f"{lfshost.ROOT}/book/md5sums"
 
 # Pages that are procedures, not package builds: no tarball, no unpack, no cleanup.
 NO_PACKAGE = {
@@ -64,7 +70,7 @@ CH07_HOST = {"ch07-changingowner", "ch07-kernfs", "ch07-chroot"}
 CH04_ROOT = {"ch04-creatingminlayout", "ch04-addinguser"}
 
 
-def load_tarballs():
+def load_tarballs(MD5=MD5):
     names = []
     for line in open(MD5):
         parts = line.split()
@@ -103,7 +109,16 @@ def match_tarball(page, title, tarballs):
 
 
 def main():
-    idx = json.load(open(os.path.join(RECIPES, "index.json")))
+    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    lfshost.add_host_arg(ap)
+    args = ap.parse_args()
+    host = lfshost.resolve(args.host)
+
+    index_path = os.path.join(host.state, "index.json")
+    if not os.path.exists(index_path):
+        sys.exit(f"build-plan: no recipe index at {os.path.relpath(index_path, lfshost.ROOT)}"
+                 f" -- run extract-recipes.py --host {host.name} first")
+    idx = json.load(open(index_path))
     tarballs = load_tarballs()
 
     rows = []
@@ -148,11 +163,11 @@ def main():
         r["seq"] = i
         r["order"] = f"{r['order'][0]}.{r['order'][1]}"
 
-    os.makedirs(STATE, exist_ok=True)
-    with open(os.path.join(STATE, "plan.json"), "w") as f:
+    os.makedirs(host.state, exist_ok=True)
+    with open(host.plan, "w") as f:
         json.dump(rows, f, indent=2)
 
-    print(f"{len(rows)} steps -> state/plan.json")
+    print(f"{len(rows)} steps -> {os.path.relpath(host.plan, lfshost.ROOT)}")
     ctxc = {}
     for r in rows:
         ctxc[r["context"]] = ctxc.get(r["context"], 0) + 1

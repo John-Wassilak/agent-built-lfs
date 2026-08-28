@@ -723,9 +723,9 @@
     "context": "chroot",
     "tarball": "mesa-25.3.5.tar.xz",
     "manifest": true,
-    "blocks": 6,
-    "enabled": 3,
-    "disabled": 3
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
   },
   {
     "seq": 57,
@@ -863,9 +863,9 @@
     "context": "chroot",
     "tarball": "gdk-pixbuf-2.44.5.tar.xz",
     "manifest": true,
-    "blocks": 4,
-    "enabled": 2,
-    "disabled": 2
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
   },
   {
     "seq": 67,
@@ -877,9 +877,9 @@
     "context": "chroot",
     "tarball": "librsvg-2.61.4.tar.xz",
     "manifest": true,
-    "blocks": 4,
-    "enabled": 3,
-    "disabled": 1
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
   },
   {
     "seq": 68,
@@ -1297,9 +1297,9 @@
     "context": "chroot",
     "tarball": "gtk-3.24.51.tar.xz",
     "manifest": true,
-    "blocks": 6,
-    "enabled": 4,
-    "disabled": 2
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
   },
   {
     "seq": 100,
@@ -2123,7 +2123,7 @@
     "context": "chroot",
     "tarball": "glad-2.0.8.tar.gz",
     "manifest": true,
-    "blocks": 2,
+    "blocks": 1,
     "enabled": 1,
     "disabled": 0
   },
@@ -2137,7 +2137,7 @@
     "context": "chroot",
     "tarball": "libplacebo-7.360.0.tar.gz",
     "manifest": true,
-    "blocks": 3,
+    "blocks": 1,
     "enabled": 1,
     "disabled": 0
   },
@@ -2165,7 +2165,7 @@
     "context": "chroot",
     "tarball": "ffmpeg-8.0.1.tar.xz",
     "manifest": true,
-    "blocks": 5,
+    "blocks": 1,
     "enabled": 1,
     "disabled": 0
   },
@@ -2179,7 +2179,7 @@
     "context": "chroot",
     "tarball": "luajit-20260213.tar.xz",
     "manifest": true,
-    "blocks": 2,
+    "blocks": 1,
     "enabled": 1,
     "disabled": 0
   },
@@ -2193,7 +2193,7 @@
     "context": "chroot",
     "tarball": "uchardet-0.0.8.tar.xz",
     "manifest": true,
-    "blocks": 3,
+    "blocks": 1,
     "enabled": 1,
     "disabled": 0
   },
@@ -2207,7 +2207,7 @@
     "context": "chroot",
     "tarball": "mpv-0.41.0.tar.gz",
     "manifest": true,
-    "blocks": 3,
+    "blocks": 1,
     "enabled": 1,
     "disabled": 0
   },
@@ -2249,7 +2249,7 @@
     "context": "chroot",
     "tarball": "nss-3.120.1.tar.gz",
     "manifest": true,
-    "blocks": 3,
+    "blocks": 1,
     "enabled": 1,
     "disabled": 0
   },
@@ -2263,7 +2263,7 @@
     "context": "chroot",
     "tarball": "libarchive-3.8.5.tar.xz",
     "manifest": true,
-    "blocks": 2,
+    "blocks": 1,
     "enabled": 1,
     "disabled": 0
   },
@@ -2277,7 +2277,7 @@
     "context": "chroot",
     "tarball": "libnotify-0.8.8.tar.xz",
     "manifest": true,
-    "blocks": 2,
+    "blocks": 1,
     "enabled": 1,
     "disabled": 0
   },
@@ -2291,7 +2291,7 @@
     "context": "chroot",
     "tarball": "startup-notification-0.12.tar.gz",
     "manifest": true,
-    "blocks": 2,
+    "blocks": 1,
     "enabled": 1,
     "disabled": 0
   },
@@ -2305,7 +2305,7 @@
     "context": "chroot",
     "tarball": "libevent-2.1.12-stable.tar.gz",
     "manifest": true,
-    "blocks": 2,
+    "blocks": 1,
     "enabled": 1,
     "disabled": 0
   },
@@ -2319,7 +2319,7 @@
     "context": "chroot",
     "tarball": "llvm-21.1.8.src.tar.xz",
     "manifest": true,
-    "blocks": 4,
+    "blocks": 1,
     "enabled": 1,
     "disabled": 0
   },
@@ -2333,7 +2333,7 @@
     "context": "chroot",
     "tarball": "firefox-140.8.0esr.source.tar.xz",
     "manifest": true,
-    "blocks": 6,
+    "blocks": 1,
     "enabled": 1,
     "disabled": 0
   },
@@ -2347,7 +2347,7 @@
     "context": "chroot",
     "tarball": "pciutils-3.14.0.tar.gz",
     "manifest": true,
-    "blocks": 3,
+    "blocks": 1,
     "enabled": 1,
     "disabled": 0
   },
@@ -2361,7 +2361,7 @@
     "context": "chroot",
     "tarball": "pipewire-1.6.0.tar.bz2",
     "manifest": true,
-    "blocks": 2,
+    "blocks": 1,
     "enabled": 1,
     "disabled": 0
   },
@@ -2375,7 +2375,7 @@
     "context": "chroot",
     "tarball": "wireplumber-0.5.13.tar.bz2",
     "manifest": true,
-    "blocks": 2,
+    "blocks": 1,
     "enabled": 1,
     "disabled": 0
   },
@@ -2473,7 +2473,7 @@
     "context": "chroot",
     "tarball": "hicolor-icon-theme-0.18.tar.xz",
     "manifest": true,
-    "blocks": 2,
+    "blocks": 1,
     "enabled": 1,
     "disabled": 0
   },
@@ -2487,7 +2487,7 @@
     "context": "chroot",
     "tarball": "usbutils-019.tar.xz",
     "manifest": true,
-    "blocks": 2,
+    "blocks": 1,
     "enabled": 1,
     "disabled": 0
   },
@@ -2599,7 +2599,7 @@
     "context": "chroot",
     "tarball": "xorg-server-21.1.21.tar.xz",
     "manifest": true,
-    "blocks": 2,
+    "blocks": 1,
     "enabled": 1,
     "disabled": 0
   },
@@ -2893,7 +2893,7 @@
     "context": "chroot",
     "tarball": "libXdamage-1.1.7.tar.xz",
     "manifest": true,
-    "blocks": 3,
+    "blocks": 1,
     "enabled": 1,
     "disabled": 0
   },

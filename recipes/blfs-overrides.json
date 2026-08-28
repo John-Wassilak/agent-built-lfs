@@ -233,25 +233,6 @@
       "reason": "Book's --system-libs is all-or-nothing (cmake's own bootstrap --help confirms no granular 'system except X' flag) and requires libarchive, libuv, and nghttp2 as system libraries -- none built (deliberately skipped as cmake's own Recommended deps, since nothing in this build's actual dependency chain needs cmake's network-fetch/archive features). Switched to explicit --system-{curl,zlib,expat}, the three cmake's own configure step already confirmed present, letting everything else (libarchive, libuv, nghttp2, bzip2, liblzma, zstd, jsoncpp, cppdap, librhash) fall back to cmake's bundled copies -- the documented default behavior when a recommended dep isn't installed."
     }
   },
-  "blfs-mesa": {
-    "0": {
-      "action": "drop",
-      "reason": "lspci to identify installed GPU hardware -- already known (GTX 770/GK104, confirmed against pci-ids during the baseline hardware audit) and pciutils is not installed."
-    },
-    "1": {
-      "action": "drop",
-      "reason": "Applies the optional xdemos patch ('If you have downloaded...') -- not fetched, only needed for testing an Xorg install with extra demo programs, not needed here."
-    },
-    "2": {
-      "action": "replace",
-      "cmd": "mkdir build &&\ncd    build &&\n\nmeson setup ..                     \\\n      --prefix=$XORG_PREFIX        \\\n      --buildtype=release           \\\n      -D platforms=x11,wayland      \\\n      -D gallium-drivers=nouveau \\\n      -D vulkan-drivers=            \\\n      -D valgrind=disabled           \\\n      -D video-codecs=all             \\\n      -D libunwind=disabled          &&\n\nninja",
-      "reason": "Driver scope decided with the operator (2026-08-25): this box's only GPU is a GTX 770 (Kepler). gallium-drivers=auto (the book's default) builds every vendor's driver -- AMD (r300/r600/radeonsi), Intel (iris/crocus), virgl, svga, etc -- none of which this hardware will ever use. nouveau covers the real GPU, llvmpipe is the book's own recommended software-rendering backup. vulkan-drivers=swrast (software) instead of auto -- NVK (nouveau's Vulkan driver) needs rust-bindgen on top of everything else already being built, and its Kepler-generation support is doubtful regardless. Further narrowed to nouveau only (dropping llvmpipe from this override): llvmpipe needs LLVM, which is a very large build (hours) whose only other use here would be Rust's optional system-LLVM link -- not worth it for a software-rendering fallback when the real nouveau driver covers the actual hardware. Rust builds fine with its own bundled LLVM instead. Added -D llvm=disabled explicitly: even with gallium-drivers narrowed to nouveau only, meson still unconditionally probed for LLVM (for some other feature -D video-codecs=all enables) and failed since it is not built. This flag stops meson from looking for it at all. Further correction: vulkan-drivers=swrast turned out to mean lavapipe internally, which meson refuses to build without LLVM ('Feature llvm cannot be disabled: Lavapipe Vulkan driver requires LLVM') -- so -D llvm=disabled and swrast are mutually exclusive. Consistent with the earlier decision to skip LLVM entirely: vulkan-drivers is now empty, no Vulkan driver built at all. NVK (nouveau's real Vulkan driver) was already ruled out for Kepler-support reasons, and lavapipe needs the LLVM build being deliberately avoided -- so on this hardware, under this decision, there is no Vulkan support, only OpenGL via the nouveau gallium driver. A real, known gap, not silently dropped."
-    },
-    "3": {
-      "action": "drop",
-      "reason": "Reconfigures with build-tests=true and runs the full test suite -- doubles build time for verification not otherwise done for any package in this build (test suites have been skipped throughout)."
-    }
-  },
   "blfs-rust": {
     "1": {
       "action": "replace",

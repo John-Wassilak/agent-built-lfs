@@ -1,0 +1,27 @@
+{
+  "_comment": "Host-specific review decisions for this machine. Merged on top of the shared recipes/review-overrides.json by bin/extract-*.py: a page here overrides the shared page block-by-block, so shared mechanism decisions survive while the hardware-bound ones live with the host. Every entry here names a concrete device, label, GPU driver or /boot path -- if a decision is true of any LFS box, it belongs in the shared file instead.",
+  "ch10-fstab": {
+    "0": {
+      "action": "replace",
+      "cmd": "cat > /etc/fstab << \"EOF\"\n# file system   mount-point    type      options             dump  fsck\n#                                                                  order\n\nLABEL=LFSROOT   /              ext4      defaults            1     1\nLABEL=LFSSWAP   swap           swap      pri=1               0     0\n\nproc            /proc          proc      nosuid,noexec,nodev 0     0\nsysfs           /sys           sysfs     nosuid,noexec,nodev 0     0\ndevpts          /dev/pts       devpts    gid=5,mode=620      0     0\ntmpfs           /run           tmpfs     defaults            0     0\ndevtmpfs        /dev           devtmpfs  mode=0755,nosuid    0     0\ntmpfs           /dev/shm       tmpfs     nosuid,nodev        0     0\ncgroup2         /sys/fs/cgroup cgroup2   nosuid,noexec,nodev 0     0\nEOF",
+      "reason": "Book's template uses /dev/<xxx> and /dev/<yyy> placeholders. Written with LABEL= so the tree is not bound to a device node that does not exist yet: label the USB root LFSROOT and swap LFSSWAP when creating them."
+    }
+  },
+  "ch10-kernel": {
+    "5": {
+      "action": "replace",
+      "cmd": "cp -v arch/x86/boot/bzImage /boot/vmlinuz-6.18.10-lfs-13.0-systemd",
+      "reason": "Book uses `cp -iv`; -i prompts on overwrite and would hang the driver on a re-run."
+    },
+    "6": {
+      "action": "replace",
+      "cmd": "cp -v System.map /boot/System.map-6.18.10",
+      "reason": "Interactive -i flag removed."
+    },
+    "7": {
+      "action": "replace",
+      "cmd": "cp -v .config /boot/config-6.18.10",
+      "reason": "Interactive -i flag removed."
+    }
+  }
+}

@@ -1,0 +1,25 @@
+# `server` -- the first machine this repo built, and the one it now runs on.
+#
+# Only arch, book and [build] are read by the tooling. [hardware] is reference: it is
+# what you check before touching kernel-config.sh or deciding whether a BLFS package
+# makes sense here, and it is why the audit in BUILD-REPORT.md exists.
+
+arch = "x86_64"
+book = "13.0"
+
+[build]
+# 0 means "this machine's core count". Set a literal only to cap a machine.
+jobs = 0
+chroot_tree = "/mnt/lfs"
+sources = "/sources"
+
+[hardware]
+cpu       = "Intel Core i5-2500K, 4 cores / 4 threads, 3.3 GHz (3.4 GHz all-core turbo)"
+microcode = "06-2a-07, early-loaded from a hand-built initrd (blfs-intel-microcode)"
+gpu       = "NVIDIA GTX 770 (GK104, Kepler, 2 GiB) on the proprietary 470.xx branch"
+graphics  = "X11 + awesome; VDPAU decode, NVENC encode. Wayland is a dead end on 470.xx"
+audio     = "GK104 HDMI codec only, force-probed with snd_hda_intel.probe_mask=0x1FF,0x1FF"
+root      = "LABEL=LFSROOT (sdb2, ext4), swap LABEL=LFSSWAP (sdb1)"
+data      = "sda2 ext4 mounted at /mnt/big_drive, not part of the LFS install"
+boot      = "GRUB (BIOS/MBR) on sdb, no initramfs except the microcode one"
+kernel     = "6.18.10, boot path built in, schedutil governor"

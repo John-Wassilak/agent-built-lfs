@@ -19,8 +19,8 @@
     "title": "4.3. Adding the LFS User",
     "context": "root-host",
     "tarball": "",
-    "enabled": 3,
-    "disabled": 1,
+    "enabled": 2,
+    "disabled": 2,
     "seq": 2
   },
   {
@@ -31,8 +31,8 @@
     "title": "4.4. Setting Up the Environment",
     "context": "lfs",
     "tarball": "",
-    "enabled": 6,
-    "disabled": 1,
+    "enabled": 4,
+    "disabled": 3,
     "seq": 3
   },
   {
@@ -55,8 +55,8 @@
     "title": "5.3. GCC-15.2.0 - Pass 1",
     "context": "lfs",
     "tarball": "gcc-15.2.0.tar.xz",
-    "enabled": 6,
-    "disabled": 1,
+    "enabled": 7,
+    "disabled": 0,
     "seq": 5
   },
   {
@@ -139,8 +139,8 @@
     "title": "6.5. Coreutils-9.10",
     "context": "lfs",
     "tarball": "coreutils-9.10.tar.xz",
-    "enabled": 3,
-    "disabled": 1,
+    "enabled": 4,
+    "disabled": 0,
     "seq": 12
   },
   {
@@ -403,8 +403,8 @@
     "title": "7.10. Python-3.14.3",
     "context": "chroot",
     "tarball": "Python-3.14.3.tar.xz",
-    "enabled": 2,
-    "disabled": 1,
+    "enabled": 3,
+    "disabled": 0,
     "seq": 34
   },
   {
@@ -439,8 +439,8 @@
     "title": "7.13. Cleaning up and Saving the Temporary System",
     "context": "chroot",
     "tarball": "",
-    "enabled": 6,
-    "disabled": 0,
+    "enabled": 3,
+    "disabled": 3,
     "seq": 37
   },
   {
@@ -571,8 +571,8 @@
     "title": "8.12. Readline-8.3",
     "context": "chroot",
     "tarball": "readline-8.3.tar.gz",
-    "enabled": 6,
-    "disabled": 1,
+    "enabled": 7,
+    "disabled": 0,
     "seq": 48
   },
   {
@@ -607,8 +607,8 @@
     "title": "8.15. Bc-7.0.3",
     "context": "chroot",
     "tarball": "bc-7.0.3.tar.xz",
-    "enabled": 2,
-    "disabled": 2,
+    "enabled": 3,
+    "disabled": 1,
     "seq": 51
   },
   {
@@ -631,8 +631,8 @@
     "title": "8.17. Tcl-8.6.17",
     "context": "chroot",
     "tarball": "tcl8.6.17-src.tar.gz",
-    "enabled": 6,
-    "disabled": 3,
+    "enabled": 8,
+    "disabled": 1,
     "seq": 53
   },
   {
@@ -643,8 +643,8 @@
     "title": "8.18. Expect-5.45.4",
     "context": "chroot",
     "tarball": "expect5.45.4.tar.gz",
-    "enabled": 4,
-    "disabled": 2,
+    "enabled": 5,
+    "disabled": 1,
     "seq": 54
   },
   {
@@ -655,8 +655,8 @@
     "title": "8.19. DejaGNU-1.6.3",
     "context": "chroot",
     "tarball": "dejagnu-1.6.3.tar.gz",
-    "enabled": 2,
-    "disabled": 2,
+    "enabled": 3,
+    "disabled": 1,
     "seq": 55
   },
   {
@@ -679,8 +679,8 @@
     "title": "8.21. Binutils-2.46.0",
     "context": "chroot",
     "tarball": "binutils-2.46.0.tar.xz",
-    "enabled": 5,
-    "disabled": 2,
+    "enabled": 7,
+    "disabled": 0,
     "seq": 57
   },
   {
@@ -739,8 +739,8 @@
     "title": "8.26. Acl-2.3.2",
     "context": "chroot",
     "tarball": "acl-2.3.2.tar.xz",
-    "enabled": 2,
-    "disabled": 2,
+    "enabled": 3,
+    "disabled": 1,
     "seq": 62
   },
   {
@@ -775,8 +775,8 @@
     "title": "8.29. Shadow-4.19.3",
     "context": "chroot",
     "tarball": "shadow-4.19.3.tar.xz",
-    "enabled": 9,
-    "disabled": 1,
+    "enabled": 10,
+    "disabled": 0,
     "seq": 65
   },
   {
@@ -787,8 +787,8 @@
     "title": "8.30. GCC-15.2.0",
     "context": "chroot",
     "tarball": "gcc-15.2.0.tar.xz",
-    "enabled": 19,
-    "disabled": 3,
+    "enabled": 22,
+    "disabled": 0,
     "seq": 66
   },
   {
@@ -883,8 +883,8 @@
     "title": "8.38. Libtool-2.5.4",
     "context": "chroot",
     "tarball": "libtool-2.5.4.tar.xz",
-    "enabled": 3,
-    "disabled": 2,
+    "enabled": 4,
+    "disabled": 1,
     "seq": 74
   },
   {
@@ -955,8 +955,8 @@
     "title": "8.44. Perl-5.42.0",
     "context": "chroot",
     "tarball": "perl-5.42.0.tar.xz",
-    "enabled": 4,
-    "disabled": 1,
+    "enabled": 5,
+    "disabled": 0,
     "seq": 80
   },
   {
@@ -1015,8 +1015,8 @@
     "title": "8.49. OpenSSL-3.6.1",
     "context": "chroot",
     "tarball": "openssl-3.6.1.tar.gz",
-    "enabled": 4,
-    "disabled": 2,
+    "enabled": 5,
+    "disabled": 1,
     "seq": 85
   },
   {
@@ -1027,8 +1027,8 @@
     "title": "8.50. Libelf from Elfutils-0.194",
     "context": "chroot",
     "tarball": "elfutils-0.194.tar.bz2",
-    "enabled": 2,
-    "disabled": 1,
+    "enabled": 3,
+    "disabled": 0,
     "seq": 86
   },
   {
@@ -1051,8 +1051,8 @@
     "title": "8.52. Sqlite-3510200",
     "context": "chroot",
     "tarball": "sqlite-autoconf-3510200.tar.gz",
-    "enabled": 4,
-    "disabled": 1,
+    "enabled": 5,
+    "disabled": 0,
     "seq": 88
   },
   {
@@ -1063,8 +1063,8 @@
     "title": "8.53. Python-3.14.3",
     "context": "chroot",
     "tarball": "Python-3.14.3.tar.xz",
-    "enabled": 3,
-    "disabled": 3,
+    "enabled": 5,
+    "disabled": 1,
     "seq": 89
   },
   {
@@ -1135,8 +1135,8 @@
     "title": "8.59. Meson-1.10.1",
     "context": "chroot",
     "tarball": "meson-1.10.1.tar.gz",
-    "enabled": 1,
-    "disabled": 1,
+    "enabled": 2,
+    "disabled": 0,
     "seq": 95
   },
   {
@@ -1147,8 +1147,8 @@
     "title": "8.60. Kmod-34.2",
     "context": "chroot",
     "tarball": "kmod-34.2.tar.xz",
-    "enabled": 2,
-    "disabled": 1,
+    "enabled": 3,
+    "disabled": 0,
     "seq": 96
   },
   {
@@ -1219,8 +1219,8 @@
     "title": "8.66. GRUB-2.14",
     "context": "chroot",
     "tarball": "grub-2.14.tar.xz",
-    "enabled": 3,
-    "disabled": 2,
+    "enabled": 5,
+    "disabled": 0,
     "seq": 102
   },
   {
@@ -1243,8 +1243,8 @@
     "title": "8.68. IPRoute2-6.18.0",
     "context": "chroot",
     "tarball": "iproute2-6.18.0.tar.xz",
-    "enabled": 3,
-    "disabled": 1,
+    "enabled": 4,
+    "disabled": 0,
     "seq": 104
   },
   {
@@ -1303,8 +1303,8 @@
     "title": "8.73. Tar-1.35",
     "context": "chroot",
     "tarball": "tar-1.35.tar.xz",
-    "enabled": 2,
-    "disabled": 2,
+    "enabled": 3,
+    "disabled": 1,
     "seq": 109
   },
   {
@@ -1315,8 +1315,8 @@
     "title": "8.74. Texinfo-7.2",
     "context": "chroot",
     "tarball": "texinfo-7.2.tar.xz",
-    "enabled": 4,
-    "disabled": 3,
+    "enabled": 6,
+    "disabled": 1,
     "seq": 110
   },
   {
@@ -1327,8 +1327,8 @@
     "title": "8.75. Vim-9.2.0078",
     "context": "chroot",
     "tarball": "vim-9.2.0078.tar.gz",
-    "enabled": 9,
-    "disabled": 1,
+    "enabled": 8,
+    "disabled": 2,
     "seq": 111
   },
   {
@@ -1339,8 +1339,8 @@
     "title": "8.76. MarkupSafe-3.0.3",
     "context": "chroot",
     "tarball": "markupsafe-3.0.3.tar.gz",
-    "enabled": 1,
-    "disabled": 1,
+    "enabled": 2,
+    "disabled": 0,
     "seq": 112
   },
   {
@@ -1363,8 +1363,8 @@
     "title": "8.78. Systemd-259.1",
     "context": "chroot",
     "tarball": "systemd-259.1.tar.gz",
-    "enabled": 6,
-    "disabled": 2,
+    "enabled": 8,
+    "disabled": 0,
     "seq": 114
   },
   {
@@ -1375,8 +1375,8 @@
     "title": "8.79. D-Bus-1.16.2",
     "context": "chroot",
     "tarball": "dbus-1.16.2.tar.xz",
-    "enabled": 3,
-    "disabled": 2,
+    "enabled": 4,
+    "disabled": 1,
     "seq": 115
   },
   {
@@ -1387,8 +1387,8 @@
     "title": "8.80. Man-DB-2.13.1",
     "context": "chroot",
     "tarball": "man-db-2.13.1.tar.xz",
-    "enabled": 2,
-    "disabled": 2,
+    "enabled": 3,
+    "disabled": 1,
     "seq": 116
   },
   {
@@ -1399,8 +1399,8 @@
     "title": "8.81. Procps-ng-4.0.6",
     "context": "chroot",
     "tarball": "procps-ng-4.0.6.tar.xz",
-    "enabled": 2,
-    "disabled": 2,
+    "enabled": 3,
+    "disabled": 1,
     "seq": 117
   },
   {
@@ -1423,8 +1423,8 @@
     "title": "8.83. E2fsprogs-1.47.3",
     "context": "chroot",
     "tarball": "e2fsprogs-1.47.3.tar.gz",
-    "enabled": 7,
-    "disabled": 2,
+    "enabled": 8,
+    "disabled": 1,
     "seq": 119
   },
   {
@@ -1459,8 +1459,8 @@
     "title": "9.2. General Network Configuration",
     "context": "chroot",
     "tarball": "",
-    "enabled": 7,
-    "disabled": 2,
+    "enabled": 4,
+    "disabled": 5,
     "seq": 122
   },
   {
@@ -1471,8 +1471,8 @@
     "title": "9.4. Managing Devices",
     "context": "chroot",
     "tarball": "",
-    "enabled": 2,
-    "disabled": 0,
+    "enabled": 0,
+    "disabled": 2,
     "seq": 123
   },
   {
@@ -1483,8 +1483,8 @@
     "title": "9.5. Configuring the System Clock",
     "context": "chroot",
     "tarball": "",
-    "enabled": 5,
-    "disabled": 1,
+    "enabled": 0,
+    "disabled": 6,
     "seq": 124
   },
   {
@@ -1495,8 +1495,8 @@
     "title": "9.6. Configuring the Linux Console",
     "context": "chroot",
     "tarball": "",
-    "enabled": 4,
-    "disabled": 0,
+    "enabled": 2,
+    "disabled": 2,
     "seq": 125
   },
   {
@@ -1507,8 +1507,8 @@
     "title": "9.7. Configuring the System Locale",
     "context": "chroot",
     "tarball": "",
-    "enabled": 6,
-    "disabled": 1,
+    "enabled": 3,
+    "disabled": 4,
     "seq": 126
   },
   {
@@ -1531,8 +1531,8 @@
     "title": "9.10. Systemd Usage and Configuration",
     "context": "chroot",
     "tarball": "",
-    "enabled": 5,
-    "disabled": 0,
+    "enabled": 1,
+    "disabled": 4,
     "seq": 128
   },
   {
@@ -1591,8 +1591,8 @@
     "title": "11.3. Rebooting the System",
     "context": "chroot",
     "tarball": "",
-    "enabled": 3,
-    "disabled": 1,
+    "enabled": 4,
+    "disabled": 0,
     "seq": 133
   }
 ]

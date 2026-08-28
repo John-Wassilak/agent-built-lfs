@@ -11,18 +11,14 @@ set -e
 #   ctx: mounted by default, in which order, and which must be checked (for integrity errors)
 #   ctx: prior to mounting. Create a new file systems table like this:
 cat > /etc/fstab << "EOF"
-# file system   mount-point    type      options             dump  fsck
-#                                                                  order
+# Begin /etc/fstab
 
-LABEL=LFSROOT   /              ext4      defaults            1     1
-LABEL=LFSSWAP   swap           swap      pri=1               0     0
+# file system  mount-point  type     options             dump  fsck
+#                                                              order
 
-proc            /proc          proc      nosuid,noexec,nodev 0     0
-sysfs           /sys           sysfs     nosuid,noexec,nodev 0     0
-devpts          /dev/pts       devpts    gid=5,mode=620      0     0
-tmpfs           /run           tmpfs     defaults            0     0
-devtmpfs        /dev           devtmpfs  mode=0755,nosuid    0     0
-tmpfs           /dev/shm       tmpfs     nosuid,nodev        0     0
-cgroup2         /sys/fs/cgroup cgroup2   nosuid,noexec,nodev 0     0
+/dev/<xxx>     /            <fff>    defaults            1     1
+/dev/<yyy>     swap         swap     pri=1               0     0
+
+# End /etc/fstab
 EOF
 

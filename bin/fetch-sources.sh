@@ -1,10 +1,18 @@
 #!/bin/bash
 # Download the 92 sources the LFS 13.0-systemd book needs and verify every md5.
-# Staged in $DEST; moved to /mnt/lfs/sources once root is available (same filesystem).
+# Staged in $DEST; moved to the target tree's sources dir once root is available (keep
+# it on the same filesystem so the move is a rename, not a copy).
+#
+# The book and the wget list are the same for every machine, so this script is shared
+# and takes no --host: the destination is just a download cache. On a second machine
+# the faster route is usually rsync from one that already has them -- see
+# hosts/<host>/BOOTSTRAP.md.
 set -uo pipefail
 
-BOOK=/home/john/lfs/book
-DEST=${1:-/home/john/lfs/sources-staging}
+HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+ROOT=$(dirname "$HERE")
+BOOK=$ROOT/book
+DEST=${1:-$ROOT/sources-staging}
 JOBS=${JOBS:-5}
 
 mkdir -p "$DEST"

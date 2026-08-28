@@ -52,20 +52,20 @@ make modules_install
 #   ctx: can be changed to suit your taste, but the stem of the filename should be vmlinuz to be
 #   ctx: compatible with the automatic setup of the boot process described in the next section.
 #   ctx: The following command assumes an x86 architecture:
-cp -iv arch/x86/boot/bzImage /boot/vmlinuz-6.18.10-lfs-13.0-systemd
+cp -v arch/x86/boot/bzImage /boot/vmlinuz-6.18.10-lfs-13.0-systemd
 
 # --- block 6 --------------------------------------------------
 #   ctx: System.map is a symbol file for the kernel. It maps the function entry points of every
 #   ctx: function in the kernel API, as well as the addresses of the kernel data structures for
 #   ctx: the running kernel. It is used as a resource when investigating kernel problems. Issue
 #   ctx: the following command to install the map file:
-cp -iv System.map /boot/System.map-6.18.10
+cp -v System.map /boot/System.map-6.18.10
 
 # --- block 7 --------------------------------------------------
 #   ctx: The kernel configuration file .config produced by the make menuconfig step above
 #   ctx: contains all the configuration selections for the kernel that was just compiled. It is a
 #   ctx: good idea to keep this file for future reference:
-cp -iv .config /boot/config-6.18.10
+cp -v .config /boot/config-6.18.10
 
 # --- block 8 --------------------------------------------------
 #   ctx: Install the documentation for the Linux kernel:

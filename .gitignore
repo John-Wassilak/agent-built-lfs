@@ -1,7 +1,20 @@
-logs/
-snapshots/
+# Per-host build logs: large, machine-specific, and reproducible by re-running a step.
+hosts/*/logs/
+hosts/*/state/*.tmp
+
+# The books are upstream content, fetched not authored. Same release for every host.
 book/
+
+# Downloaded source tarballs are a cache, not repo content. The blfs-systemd-units
+# tarball is the exception -- it is tracked because its extracted tree is too.
 sources-staging/
-state/*.tmp
+snapshots/
+blfs-staging/*.tar.gz
+blfs-staging/*.tar.xz
+blfs-staging/*.tar.bz2
+blfs-staging/*.tgz
+!blfs-staging/blfs-systemd-units-*.tar.xz
 *.tar.gz
 *.tar.zst
+
+__pycache__/
