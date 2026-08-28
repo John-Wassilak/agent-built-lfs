@@ -103,6 +103,25 @@ It re-derives every recipe from the book plus the decisions and flags any that d
 recipe cannot quietly stop matching its own rationale -- the failure that would make the
 whole record worthless. It has happened once.
 
+## How to really use it
+
+The commands above are the mechanical interface. The real one is opening Claude Code in
+this repo and saying what you want:
+
+    build LFS on this machine and walk me through the deployment steps
+    openssl has an advisory -- upgrade it and tell me what else needs rebuilding
+    audio stopped working after the kernel rebuild, find out why
+    set up the laptop, starting with the hardware audit
+
+`CLAUDE.md` is what makes that work rather than a gamble: it tells a session how to resolve
+a host, where a decision belongs, and never to edit a generated file in place. The state it
+needs is all readable -- the plan, the completed list, per-package manifests, every
+decision with its reason -- so a session can pick up work it did not start, and `--check`
+tells it whether the tree still matches the record.
+
+Expect to stay in the loop: it asks before anything privileged, and the hardware calls are
+still yours.
+
 ## What is in here
 
     bin/          the harness: extractors, plan builder, driver, package database
