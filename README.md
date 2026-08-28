@@ -106,6 +106,23 @@ a review decision, or to make the step a `hand()` entry the extractor does not o
 `PRACTICES.md` collects what the first machine's build taught, separately from the
 machine it taught it on.
 
+## Licensing
+
+GitHub reports this repository as MIT, from `LICENSE`. That is accurate for the harness
+and the documentation, and **it does not cover the whole tree** -- read `NOTICE` before
+redistributing or building anything commercial on it.
+
+The short version. Both books permit extracting their commands under the MIT License, so
+the command blocks in `recipes/` are MIT. The books themselves are CC BY-NC-SA 2.0, and
+each generated recipe quotes book prose verbatim in its `# title :` and `#   ctx:` lines
+-- about 2,800 lines of it, present because a command extracted from a book without the
+prose that qualified it cannot be reviewed, and reviewing it is the whole point of the
+override mechanism. That content keeps the books' terms, including **NonCommercial**,
+which therefore binds the repository as a whole.
+
+`NOTICE` says which files fall where, credits Gerard Beekmans and the BLFS Development
+Team, and documents how to produce an MIT-only tree if you need one.
+
 ## How this was built
 
 Claude Code did the work: extracting recipes from the book HTML, deciding every disabled
