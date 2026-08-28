@@ -8,6 +8,25 @@ itself `claude-managed` in `/etc/os-release`, hence the name.
 `server` is live: i5-2500K, GTX 770 on NVIDIA 470.xx, X11 and awesome, 133 LFS steps, 218
 BLFS packages, self-hosting. `laptop` is scaffolded.
 
+## Things to know
+
+- Like ALFS or any automated LFS build, your real chance of success is having done a
+  manual LFS build before. When something breaks, you need to know how to fix it -- or in
+  the agentic case, what to tell your agent to do and what questions to ask it.
+- Getting from a built system to an installed OS is up to you. I build in a local
+  directory, copy it to a USB, make the USB bootable (fstab and all), boot from it, and
+  keep a tarball of the built OS handy to copy onto the destination disk. What else goes on
+  the USB besides LFS is your call -- at minimum get sshd running on it.
+- Once booted, have your agent walk BLFS's recommended post-build configuration: a user
+  with sudo access, groups, a firewall, sudo itself, SSL, and the rest.
+- Along the way, have your agent scan the system and its logs for errors, cleanup that
+  needs doing, misconfigurations, hardware that isn't loading, security issues. Agents like
+  Claude Code are good at finding these once asked, but you have to ask.
+- Point your agent at specific things to check. Video hardware acceleration matters to me,
+  so I had Claude squeeze every drop out of my GPU and verify mpv was configured correctly.
+  It is strong at fixing a known problem, weaker at surfacing problems on its own -- direct
+  it.
+
 ## Why
 
 I ran LFS as a daily driver for years, then had kids and lost the weekends it takes to
@@ -43,20 +62,27 @@ month on. The rest are in `hosts/server/BUILD-REPORT.md`.
 
 ## How to use it
 
-Every command resolves one machine -- `--host`, else `$LFS_HOST`, else the hostname -- so
-no flag is needed on the box you are on.
+~~Every command resolves one machine -- `--host`, else `$LFS_HOST`, else the hostname --
+so no flag is needed on the box you are on. `bin/lfsbuild --status` / `--resume` / `--only
+<step>` drive the build; `bin/lfsmaint owns` / `report` track what installed a file and
+what has drifted; `bin/lfs-archive --live` backs up the running system.~~
 
-```sh
-bin/lfsbuild --status              # what is done, what is next
-bin/lfsbuild --blfs --status       # same, for the BLFS plan
-bin/lfsbuild --resume              # build everything not yet done
-bin/lfsbuild --only ch08-gcc       # one step, with its own log
-bin/lfsbuild --dry-run --only X    # print the generated script, run nothing
+The commands above are the mechanical interface. The real one is opening Claude Code in
+this repo and saying what you want:
 
-bin/lfsmaint owns /usr/bin/gcc     # which package installed a file
-bin/lfsmaint report                # packages, advisories, version drift
-bin/lfs-archive --live backup.tar.zst
-```
+    build LFS on this machine and walk me through the deployment steps
+    openssl has an advisory -- upgrade it and tell me what else needs rebuilding
+    audio stopped working after the kernel rebuild, find out why
+    set up the laptop, starting with the hardware audit
+
+`CLAUDE.md` is what makes that work rather than a gamble: it tells a session how to resolve
+a host, where a decision belongs, and never to edit a generated file in place. The state it
+needs is all readable -- the plan, the completed list, per-package manifests, every
+decision with its reason -- so a session can pick up work it did not start, and `--check`
+tells it whether the tree still matches the record.
+
+Expect to stay in the loop: it asks before anything privileged, and the hardware calls are
+still yours.
 
 ### Getting the books
 
@@ -102,25 +128,6 @@ bin/extract-blfs.py --check
 It re-derives every recipe from the book plus the decisions and flags any that differ, so a
 recipe cannot quietly stop matching its own rationale -- the failure that would make the
 whole record worthless. It has happened once.
-
-## How to really use it
-
-The commands above are the mechanical interface. The real one is opening Claude Code in
-this repo and saying what you want:
-
-    build LFS on this machine and walk me through the deployment steps
-    openssl has an advisory -- upgrade it and tell me what else needs rebuilding
-    audio stopped working after the kernel rebuild, find out why
-    set up the laptop, starting with the hardware audit
-
-`CLAUDE.md` is what makes that work rather than a gamble: it tells a session how to resolve
-a host, where a decision belongs, and never to edit a generated file in place. The state it
-needs is all readable -- the plan, the completed list, per-package manifests, every
-decision with its reason -- so a session can pick up work it did not start, and `--check`
-tells it whether the tree still matches the record.
-
-Expect to stay in the loop: it asks before anything privileged, and the hardware calls are
-still yours.
 
 ## What is in here
 
