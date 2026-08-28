@@ -30,6 +30,23 @@ So far so good. Check back after my first real rebuild, because that is the test
 matters: not whether an agent can follow a book once, but whether the record it kept is
 good enough to upgrade a package a year from now without breaking the machine.
 
+## The part I didn't expect
+
+It is very good at hardware -- not the big decisions, but the small tweaks that are hard
+to find, that a general-purpose distro has no way to ship, and that nobody would chase
+down by hand for one machine. The kernel's own `defconfig` pins every core at 1600 MHz
+forever on this i5-2500K, because it defaults to a governor that waits for a process that
+does not exist: a measured 2.1x loss on sustained work, presenting as nothing but "the
+machine feels slow". Or the BIOS that misreports its audio codec slots, leaving the box
+with no sound card at all until a boot parameter force-probes them.
+
+It is equally good at the limitations. This GPU is a Kepler card on NVIDIA's legacy 470.xx
+branch, so Wayland is a dead end here -- established by reading the supported-chips list
+and hitting the wall, not by guessing.
+
+Each one is written down with the measurement that justified it, which is the only reason
+I still trust them a month later. `hosts/server/BUILD-REPORT.md` has the rest.
+
 ## How to use it
 
 Every command resolves one machine -- `--host`, else `$LFS_HOST`, else the hostname -- so
