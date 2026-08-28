@@ -62,12 +62,11 @@ new steps take the next unused one. Keep the list sorted by `seq`.
 
 ## Licensing, when you add a file
 
-Original work here is GPL-3.0-or-later. A new program file in `bin/`, `packages/` or a
-host directory gets the standard notice and `SPDX-License-Identifier: GPL-3.0-or-later`
-at the top -- copy the block from `bin/lfshost.py`. Do not add a dependency under a
-GPL-incompatible license, and do not paste book prose into a hand-authored file: the
-generated recipes already carry CC BY-NC-SA content and `NOTICE` explains why that is
-the one exception rather than a precedent.
+Original work here is MIT. A new program file in `bin/`, `packages/` or a host directory
+gets the three-line header from the top of `bin/lfshost.py`: SPDX identifier, what the
+file is, copyright. Do not paste book prose into a hand-authored recipe -- the generated
+recipes carry CC BY-NC-SA content because they must, and `NOTICE` explains why that is the
+one exception rather than a precedent.
 
 ## Tooling constraints
 

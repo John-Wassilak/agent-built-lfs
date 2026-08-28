@@ -64,18 +64,34 @@ bin/lfsmaint report                # packages, advisories, version drift
 bin/lfs-archive --live backup.tar.zst
 ```
 
-Recipes are generated, so before regenerating them, ask whether that would throw anything
-away:
+### Generating the recipes
+
+This is the core of it. Every recipe is produced from the book plus a set of recorded
+decisions -- nothing is hand-copied, so a new book release is a re-run rather than a
+transcription job:
+
+```sh
+bin/extract-recipes.py             # LFS book HTML  -> recipes/
+bin/extract-blfs.py                # BLFS book HTML -> recipes/, + the build plan
+bin/build-plan.py                  # -> hosts/<host>/state/plan.json
+```
+
+Recipes are therefore generated files, and the decisions live outside them, in
+`recipes/*-overrides.json` -- 178 of them, each with a `reason` citing the book. That
+separation is what lets the book be re-read from scratch without losing a single judgment
+call.
+
+`--check` is what keeps it honest:
 
 ```sh
 bin/extract-recipes.py --check     # zero drift is the expected state
 bin/extract-blfs.py --check
 ```
 
-That check is the load-bearing part of the design. It re-derives every recipe from the
-book plus the recorded decisions and reports any that differ, so a recipe cannot quietly
-stop matching its own written rationale. That is the failure mode that would make the
-whole record worthless, and it has already happened once.
+It re-derives every recipe from the book plus the recorded decisions and reports any that
+differ, so a recipe cannot quietly stop matching its own written rationale. That is the
+failure mode that would make the whole record worthless, and it has already happened
+once.
 
 ## What is in here
 
@@ -100,12 +116,11 @@ whole record worthless, and it has already happened once.
 
 ## Licensing
 
-**GPL-3.0-or-later** for everything original here; `COPYING` has the text.
+**MIT** for everything original here; `LICENSE` has the text.
 
-One caveat. The generated recipes quote the LFS and BLFS books verbatim in their context
-comments. The books permit extracting their *commands* under MIT, which is GPL-compatible
-and causes no trouble, but the prose is CC BY-NC-SA 2.0, whose NonCommercial clause is
-neither GPL-compatible nor free. Nothing in `bin/` incorporates it, so nothing in `bin/`
-is encumbered, but the repository as distributed cannot be used commercially as a whole.
-`NOTICE` explains which files fall where, credits the LFS and BLFS authors, and documents
-the clean fix.
+The generated recipes also carry the LFS and BLFS books' terms, because they quote book
+prose verbatim in their context comments. The books permit extracting their *commands*
+under MIT; the prose is CC BY-NC-SA 2.0, so redistributing the recipe tree means honoring
+attribution, ShareAlike and NonCommercial. `NOTICE` sets out which files fall where,
+credits the LFS and BLFS authors, and explains why the recipes are tracked rather than
+generated on clone.

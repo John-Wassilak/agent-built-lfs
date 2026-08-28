@@ -1,8 +1,14 @@
 # Licensing
 
-**Original work in this repository is GPL-3.0-or-later.** See `COPYING` for the license
-text. Every program file carries the notice; `SPDX-License-Identifier: GPL-3.0-or-later`
-is machine-readable at the top of each.
+**Original work in this repository is MIT.** See `LICENSE` for the text. Every program
+file carries `SPDX-License-Identifier: MIT` at the top.
+
+MIT rather than GPL, deliberately, and the reason is the recipe tree below. The generated
+recipes quote book prose that is CC BY-NC-SA 2.0, and the GPL forbids imposing
+restrictions beyond its own terms -- so a GPL project shipping NonCommercial content is
+in tension with its own license, however that tension is resolved. MIT imposes no such
+constraint and does not fight with what else sits in the tree. MIT is also
+GPL-compatible, so anyone who wants to build GPL work on this harness still can.
 
     bin/                    the harness: extractors, plan builder, driver, host
                             resolution, maintenance tooling
@@ -71,21 +77,20 @@ What remains true regardless of that reading:
     commercially as a whole. That is a real limitation, and it is exactly what the FSF
     advises against shipping.
 
-### Removing it entirely
+### Why the recipes are tracked anyway
 
-The generated recipes are reproducible artifacts, not source. Everything needed to
-recreate them is here and is GPL: the package lists in `packages/` and
-`hosts/*/packages.py`, and every review decision in the `*-overrides.json` files. The
-books themselves are fetched, not vendored.
+They could be removed. The generated recipes are reproducible artifacts, not source:
+everything needed to recreate them is here and is MIT -- the package lists in
+`packages/` and `hosts/*/packages.py`, and every review decision in the
+`*-overrides.json` files. `bin/extract-recipes.py && bin/extract-blfs.py` regenerates the
+lot, and `--check` proves the regeneration is faithful by re-deriving each recipe and
+reporting any that differ.
 
-Stop tracking `recipes/*.sh` for CANDIDATE steps, and this repository becomes
-GPL-3.0-or-later throughout with no non-free content in it. A clone then runs
-
-    bin/extract-recipes.py && bin/extract-blfs.py
-
-to produce them locally, which `--check` already proves is faithful: it re-derives every
-recipe from the book plus the recorded decisions and reports any that differ. Nothing is
-lost except the ability to read a recipe without fetching the book first.
+They are tracked because generating them is the point of this project, and a generator
+whose output you cannot read is hard to evaluate or trust. Someone should be able to open
+`recipes/blfs-mesa.sh` and see what the book said, what was disabled, and why, without
+first fetching a book and running a tool. The NonCommercial restriction on the quoted
+prose is a real cost, and it is accepted for that reason rather than overlooked.
 
 ## Other third-party content
 
