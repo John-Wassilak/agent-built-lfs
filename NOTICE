@@ -1,86 +1,103 @@
 # Licensing
 
-Three different terms apply to different parts of this repository. The short
-version: the harness is MIT, the recipe commands are MIT, and the book prose
-quoted inside the recipes is CC BY-NC-SA 2.0 -- so the repository as a whole
-cannot be used commercially.
+**Original work in this repository is GPL-3.0-or-later.** See `COPYING` for the license
+text. Every program file carries the notice; `SPDX-License-Identifier: GPL-3.0-or-later`
+is machine-readable at the top of each.
 
-## Original work -- MIT (see LICENSE)
-
-Copyright (c) 2026 John Wassilak.
-
-    bin/                    the harness: extractors, plan builder, driver,
-                            maintenance tooling, host resolution
+    bin/                    the harness: extractors, plan builder, driver, host
+                            resolution, maintenance tooling
     packages/               package selection and its rationale
     overlay/                configuration files
     hosts/<name>/           host.toml, packages.py, kernel-config.sh, overlay/,
                             state/, manifests/, and the per-host documentation
+    hosts/*/recipes/*.sh and recipes/*.sh whose header says HAND-AUTHORED
     README.md CLAUDE.md PRACTICES.md
     hosts/*/BUILD-REPORT.md hosts/*/BOOTSTRAP.md hosts/*/*-PLAN.md
 
-The `reason` fields in recipes/*-overrides.json and hosts/*/*-overrides.json are
-original text. They cite the books and occasionally quote a short phrase to
-identify what is being decided.
+The `reason` fields in `recipes/*-overrides.json` and `hosts/*/*-overrides.json` are
+original text under the same terms. They cite the books and occasionally quote a short
+phrase to identify what is being decided.
 
-## Recipe commands -- MIT, extracted from the books
+## Two things in the recipe tree are not ours
 
-    recipes/*.sh            command blocks
-    hosts/*/recipes/*.sh    command blocks
-
-Both books permit this explicitly. From each book's legal notice: "Computer
-instructions may be extracted from the book under the MIT License."
+Generated recipes -- `recipes/*.sh` whose header says CANDIDATE -- are derived from the
+Linux From Scratch and Beyond Linux From Scratch books, which are not one license but
+two.
 
     Linux From Scratch, version 13.0-systemd
-    Copyright (c) 1999-2026 Gerard Beekmans
+    Copyright (C) 1999-2026 Gerard Beekmans
     https://www.linuxfromscratch.org/lfs/
 
     Beyond Linux From Scratch (systemd edition), version 13.0
-    Copyright (c) 1999-2026 The BLFS Development Team
+    Copyright (C) 1999-2026 The BLFS Development Team
     https://www.linuxfromscratch.org/blfs/
 
-Recipes whose header says HAND-AUTHORED are original work under LICENSE; they
-cover packages the books do not carry, or builds tuned past what a book page
-plus a review decision can express.
+**The command blocks are MIT, and that is fine.** Each book's legal notice says
+"computer instructions may be extracted from the book under the MIT License." MIT is a
+GPL-compatible license, so extracted commands can be combined with GPL work and
+redistributed under the GPL without difficulty. Keep the attribution: every generated
+recipe names its source page in its own header.
 
-## Book prose quoted in the recipes -- CC BY-NC-SA 2.0
-
-Both books are licensed Creative Commons Attribution-NonCommercial-ShareAlike
-2.0. Each generated recipe carries book prose verbatim in two places:
+**The quoted book prose is CC BY-NC-SA 2.0, and that is a genuine problem.** Each
+generated recipe carries book text verbatim in two places:
 
     # title  : <the book page's own section title>
     #   ctx:  <the paragraph surrounding each command block>
 
-Roughly 2,800 such lines across the recipe tree. They exist because a command
-extracted from a book without the prose that qualified it is not reviewable --
-the whole point of the override mechanism is deciding, against the book's own
-words, whether a block belongs in an unattended build.
+Around 2,800 such lines. They exist because a command extracted from a book without the
+prose that qualified it cannot be reviewed, and reviewing it against the book's own words
+is the entire point of the override mechanism.
 
-That content is not covered by the MIT extraction permission, and its terms
-bind anyone redistributing this repository:
+That content is outside the MIT extraction permission, and its NonCommercial clause is
+**not GPL-compatible and not a free software license**. The FSF is explicit that
+NonCommercial licenses fail the freedoms, and the GPL forbids imposing restrictions beyond
+its own terms, so CC BY-NC-SA content cannot form part of a combined GPL work.
 
-  - **Attribution** -- credit the LFS project and Gerard Beekmans / the BLFS
-    Development Team. Each recipe already names its source page in its header.
-  - **NonCommercial** -- no commercial use of that content.
-  - **ShareAlike** -- derivative works of that content carry the same license.
+### Why the repository is still coherent, and where the line is
 
+The GPL programs in `bin/` do not incorporate that prose. They read the books from
+`book/` -- which is not distributed here at all -- and emit it at runtime. Program output
+is not covered by the GPL, and a distribution medium carrying separate independent works
+alongside a GPL work is an aggregate, not a combined work (GPLv3 section 5). On that
+reading the GPL is satisfied: nothing in `bin/` is encumbered, and no GPL term is
+violated by the recipes sitting next to it.
+
+What remains true regardless of that reading:
+
+  - The generated recipe files carry the books' terms, not ours. Redistributing them
+    means honoring **Attribution**, **NonCommercial** and **ShareAlike**.
     https://creativecommons.org/licenses/by-nc-sa/2.0/
+  - So the repository **as distributed** contains non-free content, and cannot be used
+    commercially as a whole. That is a real limitation, and it is exactly what the FSF
+    advises against shipping.
 
-To produce a tree free of it, regenerate the recipes without the context lines
-(they come from `render()` in bin/extract-recipes.py and bin/extract-blfs.py)
-and drop `book/`. The result is MIT throughout, and much harder to review.
+### Removing it entirely
 
-## What is not in this repository
+The generated recipes are reproducible artifacts, not source. Everything needed to
+recreate them is here and is GPL: the package lists in `packages/` and
+`hosts/*/packages.py`, and every review decision in the `*-overrides.json` files. The
+books themselves are fetched, not vendored.
 
-The books themselves (`book/`) and all upstream source tarballs are fetched, not
-vendored, and are gitignored. `blfs-staging/urls.txt` and `blfs-staging/blfs-md5`
-record what to fetch and what it must hash to. Two small upstream patches are
-tracked because they are build inputs the BLFS mirrors do not version:
+Stop tracking `recipes/*.sh` for CANDIDATE steps, and this repository becomes
+GPL-3.0-or-later throughout with no non-free content in it. A clone then runs
+
+    bin/extract-recipes.py && bin/extract-blfs.py
+
+to produce them locally, which `--check` already proves is faithful: it re-derives every
+recipe from the book plus the recorded decisions and reports any that differ. Nothing is
+lost except the ability to read a recipe without fetching the book first.
+
+## Other third-party content
+
+Two upstream patches are tracked because they are build inputs the BLFS mirrors do not
+version, and they carry their own upstream terms:
 
     blfs-staging/ffmpeg-8.0.1-chromium_method-1.patch
     blfs-staging/node-v22.22.0-python_build_fix-1.patch
 
-Both come from the BLFS patches mirror and carry their own upstream terms.
+`recipes/blfs-firefox.sh` contains a Google API key. It is BLFS's own published key,
+reproduced verbatim from that book page, not a credential of this project. See the
+comment above it in the recipe.
 
-`recipes/blfs-firefox.sh` contains a Google API key. It is BLFS's own published
-key, reproduced verbatim from that book page, not a credential of this project.
-See the comment above it in the recipe.
+Upstream source tarballs and the books are not vendored. `blfs-staging/urls.txt` and
+`blfs-staging/blfs-md5` record what to fetch and what it must hash to.

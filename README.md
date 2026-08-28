@@ -108,20 +108,24 @@ machine it taught it on.
 
 ## Licensing
 
-GitHub reports this repository as MIT, from `LICENSE`. That is accurate for the harness
-and the documentation, and **it does not cover the whole tree** -- read `NOTICE` before
-redistributing or building anything commercial on it.
+**GPL-3.0-or-later** for everything original here -- the harness, the package selection,
+the hand-authored recipes, and the documentation. `COPYING` has the text; every program
+file carries the notice and an SPDX identifier.
 
-The short version. Both books permit extracting their commands under the MIT License, so
-the command blocks in `recipes/` are MIT. The books themselves are CC BY-NC-SA 2.0, and
-each generated recipe quotes book prose verbatim in its `# title :` and `#   ctx:` lines
--- about 2,800 lines of it, present because a command extracted from a book without the
-prose that qualified it cannot be reviewed, and reviewing it is the whole point of the
-override mechanism. That content keeps the books' terms, including **NonCommercial**,
-which therefore binds the repository as a whole.
+One caveat, and it is a real one. The generated recipes in `recipes/` quote the LFS and
+BLFS books verbatim in their `# title :` and `#   ctx:` lines, about 2,800 lines of it.
+The books permit extracting their *commands* under the MIT License, which is
+GPL-compatible and causes no trouble -- but the prose is CC BY-NC-SA 2.0, whose
+NonCommercial clause is neither GPL-compatible nor a free software license. The GPL
+programs in `bin/` do not incorporate it (they read the books, which are not distributed
+here, and emit it at runtime), so nothing in `bin/` is encumbered and no GPL term is
+violated. But the repository as distributed does carry non-free content, and cannot be
+used commercially as a whole.
 
-`NOTICE` says which files fall where, credits Gerard Beekmans and the BLFS Development
-Team, and documents how to produce an MIT-only tree if you need one.
+`NOTICE` sets out which files fall where, credits Gerard Beekmans and the BLFS
+Development Team, and documents the clean fix: the generated recipes are reproducible
+artifacts, not source, so untracking them makes this repository GPL throughout with
+nothing non-free in it. `--check` already proves the regeneration is faithful.
 
 ## How this was built
 

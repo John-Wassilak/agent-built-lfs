@@ -1,4 +1,21 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# agent-built-lfs -- download and verify the book's sources
+# Copyright (C) 2026 John Wassilak
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program.  If not, see <https://www.gnu.org/licenses/>.
+
 # Download the 92 sources the LFS 13.0-systemd book needs and verify every md5.
 # Staged in $DEST; moved to the target tree's sources dir once root is available (keep
 # it on the same filesystem so the move is a rename, not a copy).

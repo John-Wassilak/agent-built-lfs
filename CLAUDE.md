@@ -60,6 +60,15 @@ new steps take the next unused one. Keep the list sorted by `seq`.
 - Why a hand-authored recipe does what it does: a comment block in the recipe itself.
 - Something the first machine's build taught that applies to any machine: `PRACTICES.md`.
 
+## Licensing, when you add a file
+
+Original work here is GPL-3.0-or-later. A new program file in `bin/`, `packages/` or a
+host directory gets the standard notice and `SPDX-License-Identifier: GPL-3.0-or-later`
+at the top -- copy the block from `bin/lfshost.py`. Do not add a dependency under a
+GPL-incompatible license, and do not paste book prose into a hand-authored file: the
+generated recipes already carry CC BY-NC-SA content and `NOTICE` explains why that is
+the one exception rather than a precedent.
+
 ## Tooling constraints
 
 Python 3 standard library only, no pip, no third-party modules -- `bin/` has to run on
