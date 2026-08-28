@@ -443,6 +443,9 @@ def run_step(step, dry=False):
         os.unlink(staged)
 
     argv = exec_argv(step, path)
+    # Created here, not assumed: hosts/<host>/logs/ is gitignored, so it does not
+    # exist in a fresh clone and the first step of the first build would fail.
+    os.makedirs(LOGS, exist_ok=True)
     log = f"{LOGS}/{name}.log"
     print(f"  RUN   {step['seq']:3} {name:28} [{ctx_label(step)}] "
           f"src={srcdir or '-'}", flush=True)

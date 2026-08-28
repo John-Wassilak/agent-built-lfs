@@ -122,7 +122,13 @@ def main():
     if not os.path.exists(index_path):
         sys.exit(f"build-plan: no recipe index at {os.path.relpath(index_path, lfshost.ROOT)}"
                  f" -- run extract-recipes.py --host {host.name} first")
+    if not os.path.exists(MD5):
+        sys.exit(f"no {os.path.relpath(MD5, lfshost.ROOT)} -- the book is not tracked in "
+                 f"this repository. See README.md, 'Getting the books'.")
     idx = json.load(open(index_path))
+    if not idx:
+        sys.exit(f"{os.path.relpath(index_path, lfshost.ROOT)} is empty -- re-run "
+                 f"extract-recipes.py --host {host.name} first.")
     tarballs = load_tarballs()
 
     rows = []

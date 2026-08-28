@@ -20,3 +20,7 @@ blfs-staging/certdata.txt
 *.tar.zst
 
 __pycache__/
+
+# Per-user Claude Code settings. Ignored globally on the machine this was built on,
+# which does not travel with a clone.
+.claude/settings.local.json

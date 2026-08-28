@@ -64,6 +64,26 @@ bin/lfsmaint report                # packages, advisories, version drift
 bin/lfs-archive --live backup.tar.zst
 ```
 
+### Getting the books
+
+`book/` is not tracked here -- it is upstream content, fetched not authored, and the same
+release for every machine. Nothing that reads the book works until it is in place, and the
+extractors now say so rather than quietly doing nothing.
+
+This repo is built against **LFS 13.0-systemd** and **BLFS 13.0-systemd** (recorded as
+`book` in each `host.toml`). Fetch the chunked HTML for both from the LFS and BLFS
+download areas on linuxfromscratch.org -- for BLFS that is
+`linuxfromscratch.org/blfs/downloads/13.0-systemd/`, the same path the book's own
+wget-list uses -- and unpack them so the layout is:
+
+    book/13.0/           chunked LFS book: chapter04/ ... chapter11/, prologue/
+    book/blfs-13.0/      chunked BLFS book: general/, postlfs/, x/, basicnet/, ...
+    book/md5sums         the LFS source checksums
+    book/wget-list-systemd
+
+The extractors read only the chunked HTML; `md5sums` and `wget-list-systemd` are what
+`build-plan.py` and `fetch-sources.sh` use.
+
 ### Generating the recipes
 
 This is the core of it. Every recipe is produced from the book plus a set of recorded

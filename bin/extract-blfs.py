@@ -133,6 +133,12 @@ def main():
     args = ap.parse_args()
     host = lfshost.resolve(args.host)
 
+    # The book is gitignored, so a fresh clone does not have it. Without this every
+    # book step reports "no book page" and the run would write an empty plan.
+    if not os.path.isdir(BOOK):
+        sys.exit(f"no BLFS book at {os.path.relpath(BOOK, lfshost.ROOT)} -- it is not "
+                 f"tracked in this repository. See README.md, 'Getting the books'.")
+
     packages = lfshost.packages(host)
     shared_dec = lfshost.overrides(host, OVERRIDES_FILE, layer="shared")
     merged_dec = lfshost.overrides(host, OVERRIDES_FILE, layer="merged")
@@ -205,6 +211,12 @@ def main():
         print(f"\n{len(problems)} problem(s):", file=sys.stderr)
         for p in problems:
             print(f"  {p}", file=sys.stderr)
+
+    if problems and not args.check:
+        sys.exit(f"\n{len(problems)} step(s) could not be planned (above). Refusing to "
+                 f"write a partial plan over "
+                 f"{os.path.relpath(host.blfs_plan, lfshost.ROOT)} -- fix them, or remove "
+                 f"them from {os.path.relpath(host.packages, lfshost.ROOT)}, and re-run.")
 
     if args.check:
         print(f"\n--check: {len(plan)} steps would be planned, nothing written")

@@ -226,6 +226,14 @@ def render(name, chap, base, parsed, decisions, queue):
     return "\n".join(lines) + "\n", n_on
 
 
+def require_book():
+    """The book is gitignored, so a fresh clone does not have it. Without this guard the
+    extraction is a silent no-op that overwrites the recipe index with an empty list."""
+    if not os.path.isdir(BOOK):
+        sys.exit(f"no LFS book at {os.path.relpath(BOOK, lfshost.ROOT)} -- it is not "
+                 f"tracked in this repository. See README.md, 'Getting the books'.")
+
+
 def book_pages():
     """Chapter 4-11 package pages, in filesystem order (the plan does the ordering)."""
     pages = sorted(
@@ -248,6 +256,7 @@ def main():
                     help="report drift between recipes and the book; write nothing")
     args = ap.parse_args()
     host = lfshost.resolve(args.host)
+    require_book()
 
     shared_dec = lfshost.overrides(host, OVERRIDES_FILE, layer="shared")
     merged_dec = lfshost.overrides(host, OVERRIDES_FILE, layer="merged")
@@ -295,6 +304,11 @@ def main():
             "disabled": len(parsed.blocks) - n_on,
             "reviewed": len(merged_dec.get(name, {})),
         })
+
+    if not index:
+        sys.exit(f"{os.path.relpath(BOOK, lfshost.ROOT)} yielded no package pages -- "
+                 f"the book looks incomplete. Refusing to write an empty index over a "
+                 f"good one.")
 
     tot = sum(i["blocks"] for i in index)
     dis = sum(i["disabled"] for i in index)
