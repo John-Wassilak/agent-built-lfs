@@ -112,6 +112,7 @@ bin/extract-recipes.py   book HTML -> candidate recipes, applies review-override
 bin/build-plan.py        ordered plan (book order), context + tarball per step
 bin/lfsbuild             driver: logs, timing, resume, Ch.8 manifests, mount guards
 bin/kernel-config.sh     scripted replacement for `make menuconfig`, with a boot-path gate
+                         [moved: now bin/kernel-config-base.sh + hosts/<host>/kernel-config.sh]
 bin/lfs-archive          tree snapshot/deliverable, or a live-system backup (--live)
 bin/lfs-umount           unmount virtual kernel filesystems, deepest first
 bin/fetch-sources.sh     download + md5-verify all 92 sources
@@ -120,6 +121,13 @@ bin/fetch-sources.sh     download + md5-verify all 92 sources
 `./bin/lfsbuild --status` shows state; `--list`, `--only`, `--from`, `--resume`,
 `--dry-run` all work. Review decisions live in `recipes/review-overrides.json` so
 re-extraction never loses them.
+
+This listing is the layout as of the original build. The multi-host restructure added
+`bin/lfshost.py` and moved per-machine files under `hosts/<host>/`; `README.md` has the
+current map.
+
+The `--status` figures above (and throughout this report) count the LFS plan; the BLFS
+plan is `lfsbuild --blfs --status`, which used to be `--plan state/blfs-plan.json`.
 
 Snapshots: `after-ch06` (1.3 G), `after-ch07` (741 M), `after-ch08` (403 M).
 

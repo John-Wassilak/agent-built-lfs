@@ -23,6 +23,12 @@ urllib over the system trust store built by make-ca.
   lfsmaint report             one-page health summary
 
 Use --root to operate on a tree other than /, e.g. --root /mnt/lfs from the build host.
+
+`db` reads the harness's plans and manifests, which belong to one machine. With no --plan
+it resolves the host the same way the rest of bin/ does (--host, else $LFS_HOST, else the
+hostname) and uses that machine's files. That needs the repo beside this script; the copy
+installed at /usr/sbin has no repo, so pass --plan/--manifests/--timings explicitly there.
+Every other subcommand reads only the target tree and needs none of it.
 """
 
 import argparse
@@ -145,17 +151,47 @@ def connect(root, create=False):
     return con
 
 
+def host_defaults(a):
+    """Fill in --plan/--manifests/--timings from the resolved host when not given.
+
+    Imported here, not at module scope: this script is also installed to /usr/sbin with
+    no repo beside it, and every subcommand except `db` must keep working there.
+    """
+    if a.plan:
+        return a
+    here = os.path.dirname(os.path.abspath(__file__))
+    if here not in sys.path:
+        sys.path.insert(0, here)
+    try:
+        import lfshost
+    except ImportError:
+        sys.exit("no --plan given, and bin/lfshost.py is not beside this script (an "
+                 "installed copy has no repo). Pass the plans explicitly:\n"
+                 "  lfsmaint db --plan <repo>/hosts/<host>/state/plan.json \\\n"
+                 "              --plan <repo>/hosts/<host>/state/blfs-plan.json \\\n"
+                 "              --manifests <repo>/hosts/<host>/manifests")
+    host = lfshost.resolve(getattr(a, "host", None))
+    a.plan = [p for p in (host.plan, host.blfs_plan) if os.path.exists(p)]
+    if not a.plan:
+        sys.exit(f"host {host.name} has no plan yet at "
+                 f"{os.path.relpath(host.state, lfshost.ROOT)} -- run extract-recipes.py "
+                 f"and build-plan.py --host {host.name} first")
+    a.manifests = a.manifests or host.manifests
+    a.timings = a.timings or host.timings
+    print(f"host {host.name}: {', '.join(os.path.basename(p) for p in a.plan)}")
+    return a
+
+
 def cmd_db(a):
     """Build the database from the harness plans and manifests."""
+    a = host_defaults(a)
     con = connect(a.root, create=True)
     con.execute("DELETE FROM packages")
     con.execute("DELETE FROM files")
 
     plans = []
-    for p in a.plan or []:
+    for p in a.plan:
         plans.extend(json.load(open(p)))
-    if not plans:
-        sys.exit("no plan files given; pass --plan state/plan.json --plan state/blfs-plan.json")
 
     timings = {}
     if a.timings and os.path.exists(a.timings):
@@ -567,7 +603,10 @@ def main():
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     p = sub.add_parser("db", help="build the package database")
-    p.add_argument("--plan", action="append", help="plan json (repeatable)")
+    p.add_argument("--host", help="machine whose plans and manifests to read "
+                                  "(default: $LFS_HOST, else hostname)")
+    p.add_argument("--plan", action="append",
+                   help="plan json (repeatable); overrides the host defaults")
     p.add_argument("--manifests", help="manifest directory")
     p.add_argument("--timings", help="timings.tsv")
     p.set_defaults(fn=cmd_db)
