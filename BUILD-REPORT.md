@@ -2892,3 +2892,188 @@ behaviour it exposed was the script's, and two guards came out of it:
 
 The threshold I originally picked would have passed a target that could
 hold barely a fifth of the archive.
+
+## A 0.5x video encode traced to the kernel's default cpufreq governor (2026-08-27)
+
+An x264 transcode was running at 0.5x realtime on a box that had
+previously managed 1x or better. The suspicion was stale codec libraries.
+The codecs were fine. Every core had been pinned at 1600 MHz since boot.
+
+```
+CONFIG_CPU_FREQ_DEFAULT_GOV_USERSPACE=y     /boot/config-6.18.10
+governor=userspace  scaling_setspeed=1600000  all four cores at 1601 MHz
+scaling_max_freq=3700000   no_turbo=0   x86_pkg_temp=40C idle, 53C loaded
+```
+
+The userspace governor only changes frequency when a process writes
+`scaling_setspeed`. Nothing on this system does, so the cores sat at
+`scaling_min_freq` forever. Not thermal, not a codec, not turbo being
+disabled -- turbo was available the whole time and never requested.
+
+`bin/kernel-config.sh` never touched the governor, so this came in with
+`make defconfig` and had been costing 2.1x on every CPU-bound job since
+the system was first built. LFS builds included: the ffmpeg rebuild later
+in this same session took 7.8 minutes at full clock.
+
+### Measured, not assumed
+
+Governor flipped to `schedutil` mid-flight while the transcode was still
+running:
+
+| | speed |
+| --- | --- |
+| the live transcode, 3h09m average at 1601 MHz | 0.51x |
+| the same process, measured after the clock was released | 0.84x |
+| synthetic x264 1080p medium, 1601 MHz -> 3403 MHz | 0.32x -> 0.70x |
+
+3403 MHz is this i5-2500K's all-core turbo, so the clock is being fully
+taken. The live figure came from sampling the encoder's read offset on its
+input fd (`/proc/<pid>/fdinfo/3`) against the source bitrate -- output file
+size was useless as a progress proxy because the mp4 muxer writes in
+200 KiB steps.
+
+`schedutil` rather than `performance`, on measurement: it reaches the same
+3403 MHz under sustained encode load (0.719x vs 0.735x on the same
+benchmark) without holding max clock at idle.
+
+### Two fixes, because one of them needs a reboot to matter
+
+- `units/cpufreq-governor.service` sets the governor at boot. Verified by
+  forcing the broken state back (`userspace`, setspeed 1600000) and
+  restarting the unit -- all four cores returned to `schedutil`. A unit
+  that exits 0 without doing anything looks identical to one that works.
+- `bin/kernel-config.sh` now sets `CPU_FREQ_DEFAULT_GOV_SCHEDUTIL`
+  explicitly, plus a gate that fails the build if a future `defconfig`
+  reintroduces `userspace`. A silent 2x regression that presents as "the
+  machine feels slow" is exactly what a gate is for.
+
+### Encoder settings mattered less than the clock
+
+Preset sweep on 90s of real film content, 1280x720, at full clock:
+
+| preset | speed |
+| --- | --- |
+| veryfast | 5.45x |
+| fast | 2.67x |
+| medium | 2.20x |
+| slow | 1.61x |
+| slower | 0.90x |
+
+The transcode was using `-preset slow`. Dropping to `medium` buys 1.37x --
+real, but a sixth of what the governor was taking.
+
+Two other findings on the job itself. Its filter chain was
+`scale=...:force_original_aspect_ratio=decrease,pad=1280:720`, and the
+source was 1920x960 (2.00:1), so `pad` baked 40px black bars into every
+frame permanently. Removing it measured 2.16x vs 2.12x -- the filter chain
+is ~2% of the cost, so this is a quality argument, not a speed one. And
+the output landed at 1.557 GB / 2.08 Mbps from a 1.977 GB / 2.64 Mbps
+source: half the pixel count for a 21% size reduction, which says CRF 23
+is lower than the goal wanted.
+
+### NVENC on the GTX 770: probed before building, not after
+
+The question was whether to move H.264 encode onto the GPU. Rather than
+build ffmpeg with `--enable-nvenc` and find out, the driver was asked
+directly -- `dlopen` on `libnvidia-encode.so.1`, then a real
+`nvEncOpenEncodeSessionEx()` against the card:
+
+```
+NvEncodeAPIGetMaxSupportedVersion -> 11.1        driver 470.256.02
+NVENC SESSION OPENED OK      codecs supported (1): H264
+  max B-frames = 4    B-frame as ref = 3    max 4096x4096   1 engine
+  lookahead = 0       temporal AQ = 0       10-bit = 0      YUV444 = 0
+NVDEC: H264 4096x4096, MPEG2 4080x4080, VC1 2032x2032; no HEVC/VP9/AV1
+```
+
+This is why `recipes/blfs-nv-codec-headers.sh` is pinned to 11.1.5.3 and
+must stay pinned. Kepler's last driver branch is 470.x and will never
+advance. Newer headers declare an API the driver cannot serve, and the
+failure mode is a clean build that dies at first session open. FFmpeg 8.0
+anticipates this and accepts five header generations (`configure:6912-6916`);
+11.1.5.3 is the newest tag inside the 11.1 window. `lfsmaint drift` will
+flag it as stale and it has to stay stale.
+
+The `temporal AQ = 0` line was confirmed the hard way after the rebuild:
+`-temporal-aq 1` fails with "No capable devices found", exactly as the
+probe predicted.
+
+### The rebuild, and what it actually bought
+
+ffmpeg 8.0.1 rebuilt in 7.8 min with `--enable-ffnvcodec --enable-nvenc
+--enable-nvdec --enable-cuvid --enable-cuda`. Soname unchanged
+(`libavcodec.so.62.11.100`), so no consumer needed rebuilding -- mpv,
+ffplay and ffprobe all still resolve. A sweep of `/usr/lib/lib*.so` and
+`/usr/bin/*` found 28 binaries with unresolved deps, all of them
+`libwayland-client.so.0` and all pre-existing; none missing a `libav*`.
+
+`--enable-cuda-nvcc` and `--enable-libnpp` were left off deliberately.
+They pull the full CUDA toolkit in to compile `scale_cuda`/`scale_npp`
+kernels, and swscale was already measured at ~2% of transcode cost. There
+is nothing there to reclaim.
+
+The preset range matters more than expected. `p7`/`hq` is a cliff on this
+chip, not a gradient:
+
+| nvenc preset | speed | | nvenc preset | speed |
+| --- | --- | --- | --- | --- |
+| p1 / fast / hp | 19.4x | | p5 | 5.58x |
+| p2 | 17.3x | | p6 | 5.33x |
+| p3 | 9.59x | | **p7 / hq** | **1.28x** |
+| p4 / medium | 6.91x | | | |
+
+Quality, measured with SSIM against the source at a matched ~2 Mbps
+(720p, same clip, wall-clock for the 90s encode):
+
+| encode | size | SSIM | time |
+| --- | --- | --- | --- |
+| x264 slow | 23.46 MB | 0.98531 | 58.6s |
+| x264 medium | 23.41 MB | 0.98448 | 41.5s |
+| x264 fast | 23.33 MB | 0.98412 | 34.4s |
+| x264 veryfast | 23.15 MB | 0.98255 | 16.9s |
+| nvenc p6 tuned | 24.23 MB | 0.98353 | 22.3s |
+| nvenc p6 | 22.23 MB | 0.97834 | 16.9s |
+| nvenc p1 | 22.54 MB | 0.95315 | 4.7s |
+
+"tuned" is `-bf 3 -b_ref_mode 2 -spatial-aq 1`, with the bitrate target
+raised 5.6% because plain p6 undershot and that undershoot flatters it.
+Even tuned and even given 3.5% more bytes than x264 medium, it lands
+between x264 `veryfast` and `fast` on quality per bit -- while taking
+longer than `veryfast` did. On this card NVENC does not win on wall clock
+at comparable quality.
+
+What it does win is the CPU. Same 1920x960 -> 1280x640 transcode:
+
+| | avg CPU |
+| --- | --- |
+| libx264 medium | 333% of 400% |
+| libx264 slow | 314% of 400% |
+| h264_nvenc p6, software decode | 153% of 400% |
+| h264_nvenc p6 + NVDEC | 136% of 400% |
+
+So the honest conclusion is narrower than the request implied. NVENC is
+worth having for bulk work where 7-19x realtime beats quality, and for
+encoding without giving up the machine. It is not an upgrade over x264
+`medium` for archival transcodes on Kepler. The 2.1x was never in the
+codecs.
+
+### A latent lfsbuild defect this surfaced
+
+The first `blfs-nv-codec-headers` run died before it started:
+
+```
+PermissionError: [Errno 13] Permission denied: '/tmp/_lfsstep.sh'
+```
+
+`run_step()` staged its generated script at that fixed path. `/tmp` is
+sticky and world-writable and `fs.protected_regular=1` is set, so root
+cannot open a file there that root does not own. One earlier
+`lfsbuild --dry-run` without sudo left a `john`-owned `/tmp/_lfsstep.sh`,
+and from that moment every later sudo run was dead until someone deleted
+it by hand -- a permanent failure from a read-only operation, with an
+error message pointing nowhere near the cause. Now `tempfile.mkstemp()`
+with an unlink in a `finally`.
+
+The three other fixed `/tmp` paths in the driver (`/tmp/.lfsbuild-stamp`,
+`/tmp/manifest.<name>.txt`) are written from inside the build script as
+root, so root owns them and the same trap does not apply.

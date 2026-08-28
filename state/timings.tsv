@@ -162,3 +162,5 @@ ch07-kernfs	root-host	0.0	0
 blfs-lfsmaint	chroot	0.6	0
 blfs-lfsmaint	chroot	0.3	0
 blfs-rsync	chroot	54.2	0
+blfs-nv-codec-headers	native	1.6	0
+blfs-ffmpeg	native	468.2	0

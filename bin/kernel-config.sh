@@ -29,6 +29,25 @@ $K --disable EXPERT
 $K --enable  RELOCATABLE
 $K --enable  RANDOMIZE_BASE
 
+# --- not in the book: default cpufreq governor -----------------------------
+# defconfig leaves this as CONFIG_CPU_FREQ_DEFAULT_GOV_USERSPACE=y, which is a
+# trap on a machine with no cpufreq daemon: the userspace governor only changes
+# frequency when a process writes scaling_setspeed, so with nothing writing it
+# every core sits at scaling_min_freq forever. On this i5-2500K that meant
+# 1600 MHz instead of the 3400 MHz all-core turbo -- a measured 2.1x loss on
+# sustained CPU work, found on 2026-08-27 while diagnosing an x264 encode that
+# ran at 0.51x realtime (0.84x after releasing the clock; synthetic x264 1080p
+# medium bench: 0.32x -> 0.70x).
+#
+# schedutil rather than performance: it was measured to hold the same 3403 MHz
+# under sustained encode load (0.719x vs 0.735x on performance) without pinning
+# max clock at idle. Also keep ONDEMAND available as a fallback governor.
+$K --disable CPU_FREQ_DEFAULT_GOV_USERSPACE
+$K --enable  CPU_FREQ_DEFAULT_GOV_SCHEDUTIL
+$K --enable  CPU_FREQ_GOV_SCHEDUTIL
+$K --enable  CPU_FREQ_GOV_PERFORMANCE
+$K --enable  CPU_FREQ_GOV_ONDEMAND
+
 # --- book: General architecture-dependent options ---
 $K --enable  STACKPROTECTOR
 $K --enable  STACKPROTECTOR_STRONG
@@ -180,3 +199,16 @@ if [ "$fail" -ne 0 ]; then
     exit 1
 fi
 echo "### kernel config gate passed: boot path built in, no initramfs needed"
+
+# --- gate: default cpufreq governor ---------------------------------------
+# A silent regression here costs ~2x on every CPU-bound workload and shows up
+# as nothing but "the machine feels slow", so assert it rather than trust
+# olddefconfig to have kept the --enable above.
+gov=$(grep -E '^CONFIG_CPU_FREQ_DEFAULT_GOV_[A-Z]+=y' .config || true)
+if [ "$gov" = "CONFIG_CPU_FREQ_DEFAULT_GOV_SCHEDUTIL=y" ]; then
+    echo "  ok   default cpufreq governor is schedutil"
+else
+    echo "  FAIL default cpufreq governor is '${gov:-unset}' -- want SCHEDUTIL"
+    echo "### kernel config gate FAILED: userspace/unset governor pins all cores at min freq"
+    exit 1
+fi

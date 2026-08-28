@@ -2142,6 +2142,20 @@
     "disabled": 0
   },
   {
+    "seq": 179.5,
+    "order": "blfs.179.5",
+    "name": "blfs-nv-codec-headers",
+    "chapter": "blfs",
+    "page": "nv-codec-headers",
+    "title": "nv-codec-headers-11.1.5.3 (hand-authored, version-pinned to the 470.x driver)",
+    "context": "chroot",
+    "tarball": "nv-codec-headers-11.1.5.3.tar.gz",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
+  },
+  {
     "seq": 180,
     "order": "blfs.180",
     "name": "blfs-ffmpeg",

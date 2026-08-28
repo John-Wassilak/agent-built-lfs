@@ -358,3 +358,5 @@ blfs-openbao
 blfs-opentofu
 blfs-rsync
 blfs-rsync
+blfs-nv-codec-headers
+blfs-ffmpeg
