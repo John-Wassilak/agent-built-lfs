@@ -2,55 +2,49 @@
 
 A [Linux From Scratch](https://www.linuxfromscratch.org/lfs/) system built and maintained
 by an agent. Claude Code reads the book, turns each page into a recipe, records a reasoned
-decision for every command it disables or rewrites, and drives the build. Two machines run
-off this one repo. The system calls itself `claude-managed` in `/etc/os-release`, which is
-where the name comes from.
+decision for every command it disables or rewrites, and drives the build. The system calls
+itself `claude-managed` in `/etc/os-release`, hence the name.
 
-Right now that means `server`: an i5-2500K with a GTX 770 on the NVIDIA 470.xx driver,
-running X11 and awesome, 133 LFS steps and 218 BLFS packages, self-hosting. `laptop` is
-scaffolded and not built yet.
+`server` is live: i5-2500K, GTX 770 on NVIDIA 470.xx, X11 and awesome, 133 LFS steps, 218
+BLFS packages, self-hosting. `laptop` is scaffolded.
 
 ## Why
 
-I ran LFS as a daily driver for years. Then I had kids, and I no longer have weekends to
-spend babysitting a build or days to spend fixing a package that broke on upgrade. That is
-the only reason I stopped, and it was always the only reason.
+I ran LFS as a daily driver for years, then had kids and lost the weekends it takes to
+babysit a build or fix a package that broke on upgrade. That was the only reason I stopped.
 
-What changed is that Claude turned out to be genuinely good at reading a book carefully,
-which is most of what LFS actually demands. Not clever -- careful, at length, without
-getting bored on page 300. So I pointed it at the book and had it build the thing, with
-every judgment call written down somewhere I can audit it.
+Claude turned out to be good at reading a book carefully -- not clever, careful, at length,
+without getting bored on page 300. That is most of what LFS demands. So I pointed it at the
+book, with every judgment call written down where I can audit it.
 
-The division of labour is not subtle: the agent does the reading, the extraction, the
-decisions about individual commands, and the tooling. I make the calls that need someone
-who knows the hardware and has to live with the machine -- which is why `server` runs X11
-rather than Wayland, a call recorded as mine after the NVIDIA 470.xx dead end.
+The agent reads, extracts, decides individual commands, writes the tooling. I make the
+calls that need someone who knows the hardware and lives with the machine: `server` runs
+X11 rather than Wayland after the NVIDIA 470.xx dead end.
 
-So far so good. Check back after my first real rebuild, because that is the test that
-matters: not whether an agent can follow a book once, but whether the record it kept is
-good enough to upgrade a package a year from now without breaking the machine.
+So far so good. Check back after my first real rebuild -- the test is not whether an agent
+can follow a book once, but whether its record is good enough to upgrade a package a year
+later without breaking the machine.
 
 ## The part I didn't expect
 
-It is very good at hardware -- not the big decisions, but the small tweaks that are hard
-to find, that a general-purpose distro has no way to ship, and that nobody would chase
-down by hand for one machine. The kernel's own `defconfig` pins every core at 1600 MHz
-forever on this i5-2500K, because it defaults to a governor that waits for a process that
-does not exist: a measured 2.1x loss on sustained work, presenting as nothing but "the
-machine feels slow". Or the BIOS that misreports its audio codec slots, leaving the box
-with no sound card at all until a boot parameter force-probes them.
+It is very good at hardware. Not the big calls, but the small tweaks that are hard to find,
+that a general-purpose distro cannot ship, and that nobody would chase down by hand for one
+machine.
 
-It is equally good at the limitations. This GPU is a Kepler card on NVIDIA's legacy 470.xx
-branch, so Wayland is a dead end here -- established by reading the supported-chips list
-and hitting the wall, not by guessing.
+`defconfig` pinned every core of this i5-2500K at 1600 MHz, defaulting to a governor that
+waits for a process that does not exist: a measured 2.1x loss presenting as nothing but
+"the machine feels slow". The BIOS misreported its audio codec slots, leaving no sound card
+until a boot parameter force-probed them. Limitations too -- this Kepler card is stuck on
+NVIDIA's legacy 470.xx branch, so Wayland is a dead end, established by reading the
+supported-chips list rather than guessing.
 
-Each one is written down with the measurement that justified it, which is the only reason
-I still trust them a month later. `hosts/server/BUILD-REPORT.md` has the rest.
+Each is recorded with the measurement that justified it, which is why I still trust them a
+month on. The rest are in `hosts/server/BUILD-REPORT.md`.
 
 ## How to use it
 
 Every command resolves one machine -- `--host`, else `$LFS_HOST`, else the hostname -- so
-on the box you are working on, no flag is needed.
+no flag is needed on the box you are on.
 
 ```sh
 bin/lfsbuild --status              # what is done, what is next
@@ -66,29 +60,27 @@ bin/lfs-archive --live backup.tar.zst
 
 ### Getting the books
 
-`book/` is not tracked here -- it is upstream content, fetched not authored, and the same
-release for every machine. Nothing that reads the book works until it is in place, and the
-extractors now say so rather than quietly doing nothing.
+`book/` is not tracked: upstream content, same release for every machine. Nothing that
+reads it works until it is in place, and the extractors say so rather than failing
+silently.
 
-This repo is built against **LFS 13.0-systemd** and **BLFS 13.0-systemd** (recorded as
-`book` in each `host.toml`). Fetch the chunked HTML for both from the LFS and BLFS
-download areas on linuxfromscratch.org -- for BLFS that is
-`linuxfromscratch.org/blfs/downloads/13.0-systemd/`, the same path the book's own
-wget-list uses -- and unpack them so the layout is:
+Built against **LFS 13.0-systemd** and **BLFS 13.0-systemd** (recorded as `book` in each
+`host.toml`). Fetch the chunked HTML for both from linuxfromscratch.org -- for BLFS,
+`linuxfromscratch.org/blfs/downloads/13.0-systemd/`, the path its own wget-list uses --
+and unpack to:
 
     book/13.0/           chunked LFS book: chapter04/ ... chapter11/, prologue/
     book/blfs-13.0/      chunked BLFS book: general/, postlfs/, x/, basicnet/, ...
     book/md5sums         the LFS source checksums
     book/wget-list-systemd
 
-The extractors read only the chunked HTML; `md5sums` and `wget-list-systemd` are what
-`build-plan.py` and `fetch-sources.sh` use.
+The extractors read only the HTML; `md5sums` and `wget-list-systemd` are for
+`build-plan.py` and `fetch-sources.sh`.
 
 ### Generating the recipes
 
-This is the core of it. Every recipe is produced from the book plus a set of recorded
-decisions -- nothing is hand-copied, so a new book release is a re-run rather than a
-transcription job:
+The core of it. Every recipe comes from the book plus recorded decisions -- nothing is
+hand-copied, so a new book release is a re-run rather than a transcription job:
 
 ```sh
 bin/extract-recipes.py             # LFS book HTML  -> recipes/
@@ -96,22 +88,20 @@ bin/extract-blfs.py                # BLFS book HTML -> recipes/, + the build pla
 bin/build-plan.py                  # -> hosts/<host>/state/plan.json
 ```
 
-Recipes are therefore generated files, and the decisions live outside them, in
-`recipes/*-overrides.json` -- 178 of them, each with a `reason` citing the book. That
-separation is what lets the book be re-read from scratch without losing a single judgment
-call.
+The decisions live outside the generated recipes, in `recipes/*-overrides.json` -- 178 of
+them, each with a `reason` citing the book. That separation lets the book be re-read from
+scratch without losing a judgment call.
 
-`--check` is what keeps it honest:
+`--check` keeps it honest:
 
 ```sh
 bin/extract-recipes.py --check     # zero drift is the expected state
 bin/extract-blfs.py --check
 ```
 
-It re-derives every recipe from the book plus the recorded decisions and reports any that
-differ, so a recipe cannot quietly stop matching its own written rationale. That is the
-failure mode that would make the whole record worthless, and it has already happened
-once.
+It re-derives every recipe from the book plus the decisions and flags any that differ, so a
+recipe cannot quietly stop matching its own rationale -- the failure that would make the
+whole record worthless. It has happened once.
 
 ## What is in here
 
@@ -124,23 +114,21 @@ once.
 
 ## Worth reading
 
-- **`PRACTICES.md`** -- what turning a book written for a human at a prompt into an
-  unattended build actually costs. `exec` in a recipe silently truncating everything after
-  it. A classifier keying off prose, which dropped 27 mandatory `make install` lines.
-  Placeholders like `/dev/<xxx>` written verbatim into real config. Also where the agent
-  got it wrong, which is the more useful half.
-- **`hosts/server/BUILD-REPORT.md`** -- the build as it happened, dated, including the
-  Wayland dead end and the detours.
-- **`CLAUDE.md`** -- the rules a session has to follow here. Mostly: do not edit a
-  generated file in place, and record the reason where it will be found.
+- **`PRACTICES.md`** -- what an unattended build costs when the book was written for a
+  human at a prompt. `exec` silently truncating a recipe. A classifier keying off prose,
+  dropping 27 mandatory `make install` lines. `/dev/<xxx>` written verbatim into real
+  config. Also where the agent got it wrong, the more useful half.
+- **`hosts/server/BUILD-REPORT.md`** -- the build as it happened, dated, Wayland dead end
+  and detours included.
+- **`CLAUDE.md`** -- the rules a session follows here. Mostly: never edit a generated file
+  in place; record the reason where it will be found.
 
 ## Licensing
 
-**MIT** for everything original here; `LICENSE` has the text.
+**MIT** for everything original; `LICENSE` has the text.
 
-The generated recipes also carry the LFS and BLFS books' terms, because they quote book
-prose verbatim in their context comments. The books permit extracting their *commands*
-under MIT; the prose is CC BY-NC-SA 2.0, so redistributing the recipe tree means honoring
-attribution, ShareAlike and NonCommercial. `NOTICE` sets out which files fall where,
-credits the LFS and BLFS authors, and explains why the recipes are tracked rather than
-generated on clone.
+The generated recipes also carry the books' terms: the books permit extracting their
+*commands* under MIT, but the prose quoted in the context comments is CC BY-NC-SA 2.0, so
+redistributing the recipe tree means honoring attribution, ShareAlike and NonCommercial.
+`NOTICE` says which files fall where, credits the LFS and BLFS authors, and explains why
+the recipes are tracked rather than generated on clone.
