@@ -1,176 +1,94 @@
 # agent-built-lfs
 
-Linux From Scratch, built and maintained by an agent -- Claude Code -- across more than
-one machine. The system identifies itself as `claude-managed` in `/etc/os-release`, which
-is where the name comes from.
+A [Linux From Scratch](https://www.linuxfromscratch.org/lfs/) system built and maintained
+by an agent. Claude Code reads the book, turns each page into a recipe, records a reasoned
+decision for every command it disables or rewrites, and drives the build. Two machines run
+off this one repo. The system calls itself `claude-managed` in `/etc/os-release`, which is
+where the name comes from.
 
-A build harness for LFS 13.0-systemd and the BLFS packages on top of it, driving several
-machines from one repo. The book is the same everywhere; the hardware is not. Everything
-that is the same is shared, everything that is not belongs to a host.
+Right now that means `server`: an i5-2500K with a GTX 770 on the NVIDIA 470.xx driver,
+running X11 and awesome, 133 LFS steps and 218 BLFS packages, self-hosting. `laptop` is
+scaffolded and not built yet.
 
-`PRACTICES.md` is the part worth reading if you only read one file: what turning a book
-written for a human at a prompt into an unattended build actually costs. "How this was
-built" at the bottom covers the agent side, including where it went wrong.
+## Why
 
-## Layout
+I ran LFS as a daily driver for years. Then I had kids, and I no longer have weekends to
+spend babysitting a build or days to spend fixing a package that broke on upgrade. That is
+the only reason I stopped, and it was always the only reason.
 
-```
-bin/                shared tooling: extractors, plan builder, driver, maintenance
-packages/base.py    the BLFS core every machine needs, in build order
-recipes/            book-derived recipes, machine-neutral. One copy for all hosts
-overlay/            portable config: sshd, systemd units, dotfiles for a portable desktop
-book/              the LFS and BLFS books (gitignored -- fetched, not authored)
-hosts/<name>/
-  host.toml         what the tooling reads, plus [hardware] as reference
-  packages.py       BASE + this machine's own stack, in build order
-  kernel-config.sh  bin/kernel-config-base.sh plus this machine's hardware
-  recipes/          recipes bound to this hardware; shadow the shared copy by name
-  overlay/          config only this machine wants: xorg.conf, grub.cfg, mpv hwdec
-  review-overrides.json   review decisions that name a device, label or /boot path
-  state/            plan.json, blfs-plan.json, completed, timings.tsv, index, queues
-  manifests/        which files each package installed on this machine
-  logs/             per-step build logs (gitignored)
-  BUILD-REPORT.md   the narrative: what was built, what broke, what was decided
-```
+What changed is that Claude turned out to be genuinely good at reading a book carefully,
+which is most of what LFS actually demands. Not clever -- careful, at length, without
+getting bored on page 300. So I pointed it at the book and had it build the thing, with
+every judgment call written down somewhere I can audit it.
 
-Machines currently in the repo:
+The division of labour is not subtle: the agent does the reading, the extraction, the
+decisions about individual commands, and the tooling. I make the calls that need someone
+who knows the hardware and has to live with the machine -- which is why `server` runs X11
+rather than Wayland, a call recorded as mine after the NVIDIA 470.xx dead end.
 
-| host     | what it is | status |
-|----------|------------|--------|
-| `server` | i5-2500K, GTX 770 on NVIDIA 470.xx, X11 + awesome, self-hosting | built, 218 BLFS steps |
-| `laptop` | not audited yet | scaffold only, see `hosts/laptop/BOOTSTRAP.md` |
+So far so good. Check back after my first real rebuild, because that is the test that
+matters: not whether an agent can follow a book once, but whether the record it kept is
+good enough to upgrade a package a year from now without breaking the machine.
 
-## Resolving the host
+## How to use it
 
-Every tool resolves one machine before it touches anything: `--host <name>`, else
-`$LFS_HOST`, else the short hostname. On the machine being built, no flag is needed:
+Every command resolves one machine -- `--host`, else `$LFS_HOST`, else the hostname -- so
+on the box you are working on, no flag is needed.
 
-```
-bin/lfsbuild --status                 # this machine
-bin/lfsbuild --host laptop --status   # another machine's plan, from here
-bin/lfshost.py                        # show every path the resolution produced
+```sh
+bin/lfsbuild --status              # what is done, what is next
+bin/lfsbuild --blfs --status       # same, for the BLFS plan
+bin/lfsbuild --resume              # build everything not yet done
+bin/lfsbuild --only ch08-gcc       # one step, with its own log
+bin/lfsbuild --dry-run --only X    # print the generated script, run nothing
+
+bin/lfsmaint owns /usr/bin/gcc     # which package installed a file
+bin/lfsmaint report                # packages, advisories, version drift
+bin/lfs-archive --live backup.tar.zst
 ```
 
-An unknown name is fatal rather than defaulted, because guessing would write one
-machine's state into another's directory.
+Recipes are generated, so before regenerating them, ask whether that would throw anything
+away:
 
-## The two sharing mechanisms
-
-**Recipe shadowing.** `hosts/<h>/recipes/<step>.sh` wins over `recipes/<step>.sh`. This is
-for steps whose content is bound to real hardware and cannot be derived from the book: a
-proprietary driver, a CPU's microcode blob, ffmpeg's NVENC flags. `bin/lfshost.py` prints
-which copy each step resolves to.
-
-**Override merging.** For a step that *is* a book page but whose right answer is
-machine-specific, the decision goes in `hosts/<h>/review-overrides.json` and is merged
-over `recipes/review-overrides.json` block by block. `ch10-kernel` is the example: the
-shared file keeps "menuconfig is not scriptable, run kernel-config.sh instead" and the
-host supplies only the `/boot` paths. The extractor then writes the neutral candidate to
-`recipes/` and the merged version to `hosts/<h>/recipes/`.
-
-## Normal flow
-
-```
-bin/fetch-sources.sh                     # download + md5-verify the book's 92 sources
-bin/extract-recipes.py --check           # would re-extraction change any recipe?
-bin/extract-recipes.py                   # book HTML -> recipes/ (+ host copies)
-bin/build-plan.py                        # -> hosts/<h>/state/plan.json
-bin/extract-blfs.py --check              # same question for the BLFS side
-bin/extract-blfs.py                      # -> hosts/<h>/state/blfs-plan.json
-bin/lfsbuild --status                    # what is done, what is next
-bin/lfsbuild --resume                    # LFS plan
-bin/lfsbuild --blfs --resume             # BLFS plan
-bin/lfsmaint db                          # rebuild the package database from this host's
-                                         #   plans + manifests (needs root)
-bin/lfsmaint report                      # installed packages, advisories, version drift
-bin/lfs-archive --live backup.tar.zst    # restorable backup of a running system
+```sh
+bin/extract-recipes.py --check     # zero drift is the expected state
+bin/extract-blfs.py --check
 ```
 
-Run `--check` before either extractor. It reports **drift**: a recipe on disk that is not
-what the book plus the recorded decisions produce, which means someone edited it and the
-edit is captured nowhere. Regenerating would discard it. The fix is to record the edit as
-a review decision, or to make the step a `hand()` entry the extractor does not own.
+That check is the load-bearing part of the design. It re-derives every recipe from the
+book plus the recorded decisions and reports any that differ, so a recipe cannot quietly
+stop matching its own written rationale. That is the failure mode that would make the
+whole record worthless, and it has already happened once.
 
-## Adding a machine
+## What is in here
 
-1. `mkdir -p hosts/<name>` and write `host.toml`. Leave `arch` out unless building it
-   from a machine of a different architecture.
-2. Audit the hardware first and fill in `[hardware]`. Those answers decide the kernel
-   config and half the package selection; guessing them costs a rebuild.
-3. `packages.py`: start at `PACKAGES = list(BASE)`. Add steps with the next unused `seq`.
-4. `kernel-config.sh`: source `bin/kernel-config-base.sh`, add only this machine's
-   hardware, and put anything on its boot path in `EXTRA_GATE_BUILTIN`.
-5. Write a `BOOTSTRAP.md` for the machine and work through it. `state/` and
-   `manifests/` are created by the tools on first run -- nothing to seed.
+    bin/          the harness: extractors, plan builder, driver, package database
+    recipes/      one recipe per book page, machine-neutral
+    packages/     the package set every machine needs, in build order
+    hosts/<name>/ one machine: its plan, state, manifests, hardware config, build log
 
-`PRACTICES.md` collects what the first machine's build taught, separately from the
-machine it taught it on.
+`HACKING.md` has the full layout and how to add a machine.
+
+## Worth reading
+
+- **`PRACTICES.md`** -- what turning a book written for a human at a prompt into an
+  unattended build actually costs. `exec` in a recipe silently truncating everything after
+  it. A classifier keying off prose, which dropped 27 mandatory `make install` lines.
+  Placeholders like `/dev/<xxx>` written verbatim into real config. Also where the agent
+  got it wrong, which is the more useful half.
+- **`hosts/server/BUILD-REPORT.md`** -- the build as it happened, dated, including the
+  Wayland dead end and the detours.
+- **`CLAUDE.md`** -- the rules a session has to follow here. Mostly: do not edit a
+  generated file in place, and record the reason where it will be found.
 
 ## Licensing
 
-**GPL-3.0-or-later** for everything original here -- the harness, the package selection,
-the hand-authored recipes, and the documentation. `COPYING` has the text; every program
-file carries the notice and an SPDX identifier.
+**GPL-3.0-or-later** for everything original here; `COPYING` has the text.
 
-One caveat, and it is a real one. The generated recipes in `recipes/` quote the LFS and
-BLFS books verbatim in their `# title :` and `#   ctx:` lines, about 2,800 lines of it.
-The books permit extracting their *commands* under the MIT License, which is
-GPL-compatible and causes no trouble -- but the prose is CC BY-NC-SA 2.0, whose
-NonCommercial clause is neither GPL-compatible nor a free software license. The GPL
-programs in `bin/` do not incorporate it (they read the books, which are not distributed
-here, and emit it at runtime), so nothing in `bin/` is encumbered and no GPL term is
-violated. But the repository as distributed does carry non-free content, and cannot be
-used commercially as a whole.
-
-`NOTICE` sets out which files fall where, credits Gerard Beekmans and the BLFS
-Development Team, and documents the clean fix: the generated recipes are reproducible
-artifacts, not source, so untracking them makes this repository GPL throughout with
-nothing non-free in it. `--check` already proves the regeneration is faithful.
-
-## How this was built
-
-Claude Code did the work: extracting recipes from the book HTML, deciding every disabled
-or rewritten block, building the plan, writing the driver and the maintenance tooling,
-and the multi-host restructure. The commit history is the record -- every commit is
-co-authored, and the messages carry the reasoning.
-
-The operator made the calls an agent should not make alone: hardware, scope, and policy.
-The clearest example is in `hosts/server/`, where Wayland was abandoned for X11 after the
-NVIDIA 470.xx EGLStreams dead end -- recorded as an operator decision, with the
-abandoned plan (`HYPRLAND-PLAN.md`) kept because it explains the gaps in the build order.
-
-What makes the claim checkable rather than a slogan:
-
-- **178 review decisions across 74 recipes**, each with a `reason` citing the book (130
-  drop, 40 replace, 4 enable, 3 test, 1 defer). They live in the `*-overrides.json`
-  files, not in the generated recipes, so re-extraction never loses them.
-- **`--check` on either extractor** re-derives every recipe from the book plus those
-  decisions and reports any that differ. Zero drift is the expected state, so a recipe
-  cannot quietly stop matching its recorded rationale.
-- **The plan is regenerable.** `extract-recipes.py`, `build-plan.py` and
-  `extract-blfs.py` reproduce `hosts/<host>/state/*.json` from `packages.py` plus the
-  book.
-- **329 packages with per-file manifests**, so `lfsmaint owns <path>` answers on a system
-  that has no package manager.
-
-### Where the agent went wrong
-
-Worth stating, because it is the honest failure mode of this kind of work and it is why
-`--check` exists.
-
-The BLFS package list lived inside the extractor, and steps got added straight to the
-generated plan instead. Nobody noticed until the multi-host split forced the list out
-into `packages.py`: the extractor was **66 steps behind** the plan it supposedly
-produced, carried **25 phantom entries** for an abandoned Wayland tier that were never
-built, and had diverged in ordering. Running it would have deleted two thirds of the
-desktop and resurrected the dead tier.
-
-Worse, **33 recipes had been hand-tuned past what their recorded decision said** --
-including one whose override was missing two of the three Mesa flags the installed build
-actually used. A regeneration would have silently discarded all of it. The reconstruction
-had to treat the plan and the recipe files as the source of truth, not the code that
-claimed to generate them.
-
-Both are the same failure: generated artifacts edited in place, with the edit recorded
-nowhere. `--check` detects exactly that condition, and `CLAUDE.md` makes "do not edit
-generated recipes in place" a rule with three sanctioned alternatives.
+One caveat. The generated recipes quote the LFS and BLFS books verbatim in their context
+comments. The books permit extracting their *commands* under MIT, which is GPL-compatible
+and causes no trouble, but the prose is CC BY-NC-SA 2.0, whose NonCommercial clause is
+neither GPL-compatible nor free. Nothing in `bin/` incorporates it, so nothing in `bin/`
+is encumbered, but the repository as distributed cannot be used commercially as a whole.
+`NOTICE` explains which files fall where, credits the LFS and BLFS authors, and documents
+the clean fix.

@@ -92,6 +92,28 @@ Two reporting lessons:
   start at Chapter 8: everything from chapters 4-7 is unowned by construction, along with
   anything created at runtime.
 
+## When the agent got it wrong
+
+Worth stating, because it is the honest failure mode of this kind of work and it is why
+`--check` exists.
+
+The BLFS package list lived inside the extractor, and steps got added straight to the
+generated plan instead. Nobody noticed until the multi-host split forced the list out
+into `packages.py`: the extractor was **66 steps behind** the plan it supposedly
+produced, carried **25 phantom entries** for an abandoned Wayland tier that were never
+built, and had diverged in ordering. Running it would have deleted two thirds of the
+desktop and resurrected the dead tier.
+
+Worse, **33 recipes had been hand-tuned past what their recorded decision said** --
+including one whose override was missing two of the three Mesa flags the installed build
+actually used. A regeneration would have silently discarded all of it. The reconstruction
+had to treat the plan and the recipe files as the source of truth, not the code that
+claimed to generate them.
+
+Both are the same failure: generated artifacts edited in place, with the edit recorded
+nowhere. `--check` detects exactly that condition, and `CLAUDE.md` makes "do not edit
+generated recipes in place" a rule with three sanctioned alternatives.
+
 ## Standing policies
 
 - **BLFS Recommended dependencies get installed, not just Required** -- but checked
