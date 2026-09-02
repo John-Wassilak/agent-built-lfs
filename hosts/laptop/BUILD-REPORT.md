@@ -1030,3 +1030,16 @@ Deploy to the internal disk (`nvme0n1p1`/`p2`) itself has not happened yet -- th
 entry covers preparation only. `bin/lfs-archive`'s own `--live` mode restore
 instructions, and `BOOTSTRAP.md` section 5-6, are the reference for that step when it
 happens.
+
+## 2026-09-02: Repo clone onto the USB, for using Claude Code from the stick itself
+
+`git clone` (local path, not the raw working tree -- avoids dragging along
+gitignored bulk the USB's own root already *is*, `/lfs/` in particular) into
+`/mnt/usb/home/john/agent-built-lfs`, 20MB, full history. `/home/john` inside the
+extracted tree turned out already owned by uid/gid 1000 -- the same uid this host's
+own `john` runs as -- so the clone needed no extra privilege beyond the existing
+`mount /dev/sda2 /mnt/usb` grant. Booting the stick and running `claude` from
+`~/agent-built-lfs` (Claude Code is already installed at the user level, per the
+2026-09-01 entry above) gives a working session with the same tooling and context
+this build has used throughout, without needing network access to fetch the repo
+first.
