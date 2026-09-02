@@ -1,0 +1,13 @@
+/etc/dbus-1/system.d/wpa_supplicant.conf
+/usr/lib/systemd/system/wpa_supplicant-nl80211@.service
+/usr/lib/systemd/system/wpa_supplicant-wired@.service
+/usr/lib/systemd/system/wpa_supplicant.service
+/usr/lib/systemd/system/wpa_supplicant@.service
+/usr/sbin/wpa_cli
+/usr/sbin/wpa_passphrase
+/usr/sbin/wpa_supplicant
+/usr/share/dbus-1/system-services/fi.w1.wpa_supplicant1.service
+/usr/share/man/man5/wpa_supplicant.conf.5
+/usr/share/man/man8/wpa_cli.8
+/usr/share/man/man8/wpa_passphrase.8
+/usr/share/man/man8/wpa_supplicant.8

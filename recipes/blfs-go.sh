@@ -36,6 +36,20 @@ set -e
 # already have $HOME.
 export HOME="${HOME:-/root}"
 
+# DNS fix added 2026-09-01 (laptop): server never needed this because by
+# the time it built Go, it was already a live native system with its own
+# working systemd-resolved. laptop is still chroot-only at this point, and
+# the two wget calls below need live DNS to reach go.dev -- same fix as
+# every other live-fetch recipe in this build (rust, cargo-c, cbindgen,
+# librsvg, hyprland). Harmless on a host where DNS already works.
+_restore_resolv() {
+    rm -f /etc/resolv.conf
+    ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
+}
+trap _restore_resolv EXIT
+rm -f /etc/resolv.conf
+printf 'nameserver 1.1.1.1\nnameserver 8.8.8.8\n' > /etc/resolv.conf
+
 WORK=/root/build-go
 mkdir -p "$WORK"
 cd "$WORK"

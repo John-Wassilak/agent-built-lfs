@@ -1,0 +1,7 @@
+/usr/bin/notify-send
+/usr/include/libnotify/notify-enum-types.h
+/usr/include/libnotify/notify-features.h
+/usr/lib/libnotify.so
+/usr/lib/libnotify.so.4
+/usr/lib/libnotify.so.4.0.0
+/usr/lib/pkgconfig/libnotify.pc

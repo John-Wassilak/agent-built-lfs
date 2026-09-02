@@ -1,0 +1,11 @@
+/etc/group
+/etc/group-
+/etc/gshadow
+/etc/gshadow-
+/etc/systemd/system/multi-user.target.wants/seatd.service
+/usr/bin/seatd
+/usr/bin/seatd-launch
+/usr/lib/libseat.so
+/usr/lib/libseat.so.1
+/usr/lib/pkgconfig/libseat.pc
+/usr/lib/systemd/system/seatd.service

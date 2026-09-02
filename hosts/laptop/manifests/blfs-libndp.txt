@@ -1,0 +1,8 @@
+/usr/bin/ndptool
+/usr/include/ndp.h
+/usr/lib/libndp.la
+/usr/lib/libndp.so
+/usr/lib/libndp.so.0
+/usr/lib/libndp.so.0.3.0
+/usr/lib/pkgconfig/libndp.pc
+/usr/share/man/man8/ndptool.8

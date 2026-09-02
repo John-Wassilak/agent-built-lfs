@@ -27,6 +27,14 @@ Ask whether the thing is true of *any* machine running this book.
 If unsure, put it in the host. A shared file that is secretly machine-specific breaks the
 next machine silently; a host file that turns out to be portable is a two-line move.
 
+Same test applies to `overlay/`, the deploy-time file tree (not yet wired into any
+`bin/` tool -- applied by hand at deploy time per each host's `BOOTSTRAP.md`): generic
+units and config templates live in the shared `overlay/`, anything naming a desktop
+environment, a display manager, or other host-specific content goes in
+`hosts/<h>/overlay/` (already the convention for `server`'s `grub.cfg`/`xorg.conf`/
+`mpv.conf` -- five X11/awesome dotfiles were found misfiled in the shared tree during
+`laptop`'s `/lfs-audit` on 2026-09-01 and moved to `hosts/server/overlay/` to match).
+
 ## Do not edit generated recipes in place
 
 `recipes/*.sh` are generated from the book. An edit there is lost the next time the
@@ -76,3 +84,11 @@ the LFS system itself, where there is no package index. `tomllib` is fine (stdli
 
 The system has no package manager. `lfsmaint` is the package database, and it is only as
 good as the manifests, so a step that installs files must capture one.
+
+## Auditing a live host
+
+`/lfs-audit` (`.claude/skills/lfs-audit/`) codifies the full ad-hoc health/security/
+hardware-utilization sweep run by hand during `server`'s first build: cleanup
+candidates, service/log errors, suspicious processes, security posture, unbound
+hardware, packages not exploiting hardware features, and strip/compress hygiene. Use it
+instead of re-deriving the same checks from scratch on a live (native-mode) host.

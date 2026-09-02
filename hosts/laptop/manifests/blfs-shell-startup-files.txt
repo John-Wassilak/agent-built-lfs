@@ -1,0 +1,11 @@
+/etc/bashrc
+/etc/dircolors
+/etc/profile
+/etc/profile.d/extrapaths.sh
+/etc/profile.d/i18n.sh
+/etc/profile.d/readline.sh
+/etc/profile.d/umask.sh
+/etc/skel/.bash_logout
+/etc/skel/.bash_profile
+/etc/skel/.bashrc
+/etc/skel/.profile

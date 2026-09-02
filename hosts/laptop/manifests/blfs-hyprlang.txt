@@ -1,0 +1,5 @@
+/usr/include/hyprlang.hpp
+/usr/lib/libhyprlang.so
+/usr/lib/libhyprlang.so.0.6.8
+/usr/lib/libhyprlang.so.2
+/usr/lib/pkgconfig/hyprlang.pc

@@ -346,6 +346,17 @@ def cmd_verify(a):
         total += 1
         if os.path.lexists(os.path.join(a.root, path.lstrip("/"))):
             continue
+        # A manifest records the path a package installed, at install time -- a
+        # later hygiene pass (gzip -9 on man/info pages) can rename that exact
+        # file without the manifest ever being told. Found 2026-09-01, laptop:
+        # thousands of false "missing" hits, every one of them a real file still
+        # present as path+".gz". Checked here rather than at capture time because
+        # the rename can happen at any point after install, long after this
+        # package's own manifest was written.
+        if os.path.lexists(os.path.join(a.root, (path + ".gz").lstrip("/"))):
+            explained.setdefault("compressed after install (path+'.gz' exists)",
+                                  []).append(path)
+            continue
         why = explain_gone(path)
         if why:
             explained.setdefault(why, []).append(path)

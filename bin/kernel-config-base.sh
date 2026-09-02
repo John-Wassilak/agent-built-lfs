@@ -106,6 +106,15 @@ kernel_config_shared() {
     # Linux 5.6 but not enabled by defconfig on this kernel either.
     $K --module  WIREGUARD
 
+    # --- added 2026-09-01: sshfs needs FUSE (Filesystem in Userspace) support --
+    # generic kernel feature, true of any machine, not per-host. CUSE (Character
+    # device in Userspace) is fuse's own book page's second Kernel Configuration
+    # block, needed only to run fuse's own test suite (not run here, matching this
+    # project's test-suite policy) -- enabled anyway since it's a small, harmless
+    # module and a future host may want it without a second kernel rebuild.
+    $K --module  FUSE_FS
+    $K --module  CUSE
+
     # --- book: Device Drivers, udev/systemd requirements ---
     $K --disable UEVENT_HELPER
     $K --enable  DEVTMPFS

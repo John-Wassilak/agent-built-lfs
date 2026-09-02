@@ -1,0 +1,6 @@
+/usr/lib/cmake/tomlplusplus/tomlplusplusConfig.cmake
+/usr/lib/cmake/tomlplusplus/tomlplusplusConfigVersion.cmake
+/usr/lib/libtomlplusplus.so
+/usr/lib/libtomlplusplus.so.3
+/usr/lib/libtomlplusplus.so.3.4.0
+/usr/lib/pkgconfig/tomlplusplus.pc

@@ -1,19 +1,15 @@
 #!/bin/bash
-# HAND-AUTHORED recipe -- no BLFS book page covers this step.
-# rationale: Installs Claude Code from npm, per-user under john's own home
-# directory rather than npm's system-wide default prefix (/usr, baked in at
-# Node's own ./configure time, matching every other package's install
-# location on this system). A root-owned /usr/lib/node_modules install
-# (the original approach here, changed 2026-08-26) means Claude Code's own
-# self-updater can't write to its own install directory -- it needs to run
-# as the user who'll actually use it and own every file under its prefix.
-# Needs working DNS inside the chroot, which the LFS resolv.conf symlink
-# cannot provide here.
+# HAND-AUTHORED recipe -- no BLFS book page for Claude Code.
+# rationale: operator-requested, installed at the user level (not system-wide) for
+# john via npm, matching how it's actually used day to day rather than as a root-
+# owned system tool. npm's own global prefix defaults to a root-owned system path;
+# reconfigured to a directory under john's own $HOME instead, so `npm install -g`
+# needs no elevated privilege and every installed file is owned by john.
 set -e
 
-# The chroot inherits host networking, but /etc/resolv.conf is a symlink to
-# systemd-resolved's stub, which does not exist without a running resolved. Supply
-# DNS for the duration of the install and restore the symlink no matter what.
+# DNS fix: npm needs live internet to reach registry.npmjs.org. Same fix as every
+# other live-fetch recipe in this build (go, tailscale, rust, cargo-c, cbindgen,
+# librsvg, hyprland) -- this chroot has no working /etc/resolv.conf by default.
 _restore_resolv() {
     rm -f /etc/resolv.conf
     ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
@@ -22,20 +18,22 @@ trap _restore_resolv EXIT
 rm -f /etc/resolv.conf
 printf 'nameserver 1.1.1.1\nnameserver 8.8.8.8\n' > /etc/resolv.conf
 
-# Runs as the john user, not root -- npm's global prefix must be writable
-# without sudo for both this install and every future self-update.
-sudo -u john bash -c '
-  set -e
-  mkdir -p "$HOME/.npm-global"
-  npm config set prefix "$HOME/.npm-global"
-  npm install -g @anthropic-ai/claude-code
+su - john -c '
+set -e
+npm config set prefix "$HOME/.npm-global"
+npm install -g @anthropic-ai/claude-code
 '
 
-# ~/.npm-global/bin ahead of /usr/bin in john'\''s PATH -- see ~/.bash_profile
-# (pathprepend "$HOME/.npm-global/bin", added ahead of the $HOME/bin block).
+# Make the user-level install directory's bin reachable for john specifically --
+# not a system-wide /etc/profile.d addition, since this is deliberately a
+# per-user, not system, install.
+if ! grep -q "npm-global/bin" /home/john/.bashrc; then
+    cat >> /home/john/.bashrc << "EOF"
 
-echo "### versions"
-node --version
-npm --version
-sudo -u john bash -lc 'claude --version'
+# Added for Claude Code (user-level npm install)
+export PATH="$HOME/.npm-global/bin:$PATH"
+EOF
+fi
 
+echo "### version"
+su - john -c 'export PATH="$HOME/.npm-global/bin:$PATH"; claude --version' 2>&1 || true

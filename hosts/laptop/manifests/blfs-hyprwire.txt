@@ -1,0 +1,17 @@
+/usr/bin/hyprwire-scanner
+/usr/include/hyprwire/core/ClientSocket.hpp
+/usr/include/hyprwire/core/ServerSocket.hpp
+/usr/include/hyprwire/core/implementation/ClientImpl.hpp
+/usr/include/hyprwire/core/implementation/Object.hpp
+/usr/include/hyprwire/core/implementation/ServerImpl.hpp
+/usr/include/hyprwire/core/implementation/Spec.hpp
+/usr/include/hyprwire/core/implementation/Types.hpp
+/usr/include/hyprwire/core/types/MessageMagic.hpp
+/usr/include/hyprwire/hyprwire.hpp
+/usr/lib/cmake/hyprwire-scanner/hyprwire-scanner-config-version.cmake
+/usr/lib/cmake/hyprwire-scanner/hyprwire-scanner-config.cmake
+/usr/lib/libhyprwire.so
+/usr/lib/libhyprwire.so.0.3.1
+/usr/lib/libhyprwire.so.3
+/usr/lib/pkgconfig/hyprwire-scanner.pc
+/usr/lib/pkgconfig/hyprwire.pc

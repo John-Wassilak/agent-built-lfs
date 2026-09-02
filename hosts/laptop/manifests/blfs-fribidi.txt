@@ -1,0 +1,7 @@
+/usr/bin/fribidi
+/usr/include/fribidi/fribidi-config.h
+/usr/include/fribidi/fribidi-unicode-version.h
+/usr/lib/libfribidi.so
+/usr/lib/libfribidi.so.0
+/usr/lib/libfribidi.so.0.4.0
+/usr/lib/pkgconfig/fribidi.pc

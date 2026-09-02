@@ -1,5 +1,4 @@
-# `laptop` -- not built yet. See BOOTSTRAP.md for the build path and the hardware audit
-# whose answers fill in the TODOs below.
+# `laptop` -- hardware audited 2026-08-28 (see BUILD-REPORT.md). Not built yet.
 #
 # `arch` is deliberately absent: it defaults to the machine lfsbuild is running on, which
 # is right for the build-it-on-the-laptop path. Set it explicitly only if this host is
@@ -8,21 +7,34 @@
 book = "13.0"
 
 [build]
-# 0 = this machine's core count. Consider a literal cap here rather than on `server`:
-# a laptop that thermally throttles finishes a long build faster at -j(cores-1).
-jobs = 0
-chroot_tree = "/mnt/lfs"
+# Capped at 2, not 0 (auto -> 4 threads): this is the daily driver, and the operator
+# wants two threads left free for everything else running on it during a build. Unlike
+# server's "0 = auto is right, thermal throttling argues for -1 not a hard cap" note,
+# here the cap is about the machine staying usable while the build runs, not thermals.
+jobs = 2
+
+# Deliberately NOT /mnt/lfs: this machine has no free disk (see BUILD-REPORT.md's audit
+# -- the 238.5G NVMe is fully partitioned already, 6-7G free on the two volumes that
+# exist). Operator decision 2026-08-28: build the chroot tree inside this repo checkout
+# instead of on a dedicated partition, get as much of LFS+BLFS built as fits, tar it with
+# bin/lfs-archive --tree --final, and deploy that tarball to the real root partition from
+# USB rescue media later -- the same restore path bin/lfs-archive already documents for
+# --live backups, used here for a --tree image instead. Gitignored; see .gitignore.
+chroot_tree = "/mnt/crypt/john/projects/agent-built-lfs/lfs"
 sources = "/sources"
 
 [hardware]
-# Fill these from the audit in BOOTSTRAP.md before touching kernel-config.sh. Every
-# TODO here is a decision the kernel config or a BLFS package selection depends on.
-cpu       = "TODO: lscpu -- model, cores/threads, and whether it needs a microcode blob"
-microcode = "TODO: /proc/cpuinfo 'bugs:' line -- old_microcode means an early-load initrd"
-gpu       = "TODO: lspci -k -- vendor decides mesa's gallium-drivers and the DRM driver"
-graphics  = "TODO: X11 + awesome to match server, unless the GPU makes Wayland viable"
-audio     = "TODO: lspci -k audio + /proc/asound/cards once booted"
-root      = "TODO: lsblk -f -- partition, fs, and the LABEL= to use in fstab"
-boot      = "TODO: is the firmware UEFI or BIOS? decides the GRUB install in ch10"
-battery   = "TODO: laptop-only concerns server has none of -- suspend, lid, backlight"
-wifi      = "TODO: lspci -k / lsusb -- almost certainly needs firmware LFS does not ship"
+model     = "Lenovo ThinkPad X1 Carbon 4th Gen (20FRS17200), BIOS N1FET68W (1.42)"
+cpu       = "Intel Core i7-6600U, Skylake, 2 cores / 4 threads, 2.6 GHz (3.4 GHz turbo)"
+microcode = "0xc6 loaded, but 'Vulnerability Old microcode: Vulnerable' -- update via an early-load initrd, same pattern as server's blfs-intel-microcode"
+gpu       = "Intel HD Graphics 520 (Skylake GT2, in-SoC) -- i915 kernel driver, mesa gallium-drivers=iris. No proprietary-driver dead end here: this is the box server's Kepler card could not be"
+graphics  = "Hyprland / Wayland / pipewire (operator decision, 2026-08-28) -- unlike server, whose NVIDIA 470.xx branch made Wayland a dead end, this GPU is fully open-driver and current"
+audio     = "Conexant CX20753/4 codec (snd_hda_codec_conexant) + Intel Skylake HDMI codec (snd_hda_codec_hdmi), both on snd_hda_intel/PCH -- probes cleanly under the live host kernel already, no force-probe quirk needed unlike server. Also 3 USB audio devices (dock, headset passthrough, C920 webcam mic) via snd_usb_audio"
+wifi      = "Intel Wireless 8260 (iwlwifi, PCI 8086:24f3) -- needs iwlwifi-8260 firmware blobs from linux-firmware, a BLFS step not a kernel option"
+ethernet  = "Intel I219-LM (e1000e) -- not on the boot path (no NIC driver is), but the shared base config has no NIC driver at all; this host adds e1000e as a module"
+storage   = "Samsung SM951/PM951 NVMe SSD (nvme0n1, 238.5G) -- boots via NVMe not SATA; BLK_DEV_NVME is in the shared base config but NOT in its EXTRA_GATE_BUILTIN gate list, so this host adds NVME_CORE/BLK_DEV_NVME there explicitly"
+disk_layout = "nvme0n1p1 50G ext4 (current Gentoo root, 6.3G free) / nvme0n1p2 16G swap / nvme0n1p3 172.5G LUKS (cryptroot, ext4 inside, 6.9G free, mounted /mnt/crypt -- this repo lives here). No unpartitioned space. Deploy target is nvme0n1p1, reformatted, reusing the existing partition table -- see BOOTSTRAP.md's deploy section"
+boot      = "Legacy BIOS/MBR (operator decision, 2026-08-28) -- currently boots BIOS despite UEFI-capable hardware (no /sys/firmware/efi under the live Gentoo host); new install matches rather than switching to UEFI/GPT"
+battery   = "AC + BAT0 present under /sys/class/power_supply (98% at audit time). ACPI battery/AC/button, backlight, and thinkpad_acpi (brightness/mute/Fn hotkeys, already bound under the host kernel) all need kernel config not in the shared base"
+touchpad  = "SynPS/2 Synaptics TouchPad + TPPS/2 IBM TrackPoint, both via the i8042/serio PS/2 bus (MOUSE_PS2_SYNAPTICS), not a separate USB/I2C device -- libinput handles it at the Wayland/BLFS layer once the kernel exposes the PS/2 protocol"
+cardreader = "Realtek RTS525A PCIe SD card reader (rtsx_pci) -- optional, not on the boot path, deferred unless wanted"

@@ -1,0 +1,9 @@
+/usr/include/duk_config.h
+/usr/include/duktape.h
+/usr/lib/libduktape.so
+/usr/lib/libduktape.so.207
+/usr/lib/libduktape.so.207.20700
+/usr/lib/libduktaped.so
+/usr/lib/libduktaped.so.207
+/usr/lib/libduktaped.so.207.20700
+/usr/lib/pkgconfig/duktape.pc

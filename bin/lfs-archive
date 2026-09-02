@@ -5,12 +5,16 @@
 
 # Archive an LFS system, in one of two modes:
 #
-#   tree   an offline tree at /mnt/lfs -- the build-host arrangement. Used for the
-#          checkpoint snapshots and the Phase 6 deliverable tarball.
+#   tree   an offline tree at the resolved host's chroot_tree (host.toml) -- the
+#          build-host arrangement. Used for the checkpoint snapshots and the Phase 6
+#          deliverable tarball. Resolved the same way every other bin/ tool resolves a
+#          host (--host, else $LFS_HOST, else the hostname) rather than assuming
+#          /mnt/lfs -- a host built in-repo (chroot_tree pointing inside a checkout, not
+#          /mnt/lfs) was silently unrecognized here.
 #   live   this running system, for a restorable backup of a self-hosting box.
 #
-# Detected automatically (a populated tree at /mnt/lfs means build host, otherwise
-# ID=lfs in /etc/os-release means the tree is us); --tree / --live force it.
+# Detected automatically (a populated tree at the resolved chroot_tree means build host,
+# otherwise ID=lfs in /etc/os-release means the tree is us); --tree / --live force it.
 #
 # The tar flags are not incidental:
 #   -p               permissions verbatim, not masked by the caller's umask. This one is
@@ -38,13 +42,14 @@
 
 set -uo pipefail
 
-CHROOT_TREE=/mnt/lfs
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 MODE=""
 OUT=""
 FINAL=""
 FORCE=""
 DRY=""
+HOST=""
 USER_EX=()
 
 usage() {
@@ -52,7 +57,8 @@ usage() {
 usage: lfs-archive <output.tar.zst|.tar.gz|.tar.xz> [options]
 
   --live       archive this running system
-  --tree       archive the offline tree at /mnt/lfs
+  --tree       archive the offline tree at the resolved host's chroot_tree
+  --host NAME  machine to resolve the tree for (default: $LFS_HOST, else hostname)
   --final      tree mode: label the run as the deliverable rather than a snapshot
   --dry-run    show what would be archived, and its size, without writing anything
   --force      proceed even if the destination looks too small
@@ -65,6 +71,9 @@ while [ $# -gt 0 ]; do
     case "$1" in
         --live)    MODE=live ;;
         --tree)    MODE=tree ;;
+        --host)    shift; [ $# -gt 0 ] || { echo "--host needs a name" >&2; exit 2; }
+                   HOST=$1 ;;
+        --host=*)  HOST=${1#--host=} ;;
         --final)   FINAL=1 ;;
         --force)   FORCE=1 ;;
         --dry-run) DRY=1 ;;
@@ -81,6 +90,14 @@ done
 
 [ -n "$OUT" ] || { usage; exit 2; }
 
+CHROOT_TREE=$(LFS_ARCHIVE_HOST="$HOST" python3 -c "
+import os, sys
+sys.path.insert(0, '$SCRIPT_DIR')
+import lfshost
+h = lfshost.resolve(os.environ.get('LFS_ARCHIVE_HOST') or None)
+print(h.chroot_tree)
+") || exit 1
+
 # --- mode ----------------------------------------------------------------------
 if [ -z "$MODE" ]; then
     if [ -d "$CHROOT_TREE/usr/bin" ]; then
@@ -89,7 +106,8 @@ if [ -z "$MODE" ]; then
         MODE=live
     else
         echo "cannot tell which mode to run in: no populated tree at $CHROOT_TREE, and" >&2
-        echo "this is not an LFS system. Pass --tree or --live explicitly." >&2
+        echo "this is not an LFS system. Pass --tree or --live explicitly, or --host to" >&2
+        echo "pick a different machine." >&2
         exit 2
     fi
 fi
@@ -168,9 +186,25 @@ case "$OUT_ABS" in
 esac
 
 # --- space ----------------------------------------------------------------------
+# Actual content size, not the filesystem's total usage: df reports usage for whatever
+# filesystem $SRC lives on, which is only equal to the tree's size when the tree has a
+# dedicated partition (server's /mnt/lfs). A tree built in-repo (laptop's chroot_tree,
+# alongside the rest of a shared volume) made df wildly overreport -- 151GB of the whole
+# LUKS volume against an ~8GB tree. du, respecting the same exclusions tar will apply,
+# measures the tree itself instead.
+# The tar patterns are archive-relative (./home/*) because tar runs with -C "$SRC". du
+# walks absolute paths, so ./x has to become $SRC/x or every exclusion silently matches
+# nothing and the estimate reports the whole filesystem.
+du_ex=()
+for e in "${EX[@]}"; do
+    pat=${e#--exclude=}
+    case "$pat" in ./*) pat="${SRCPFX}/${pat#./}" ;; esac
+    du_ex+=("--exclude=$pat")
+done
+
 src_fs=$(df --output=target "$SRC" | tail -1)
 out_fs=$(df --output=target "$OUT_DIR" | tail -1)
-used=$(df --output=used --block-size=1 "$SRC" | tail -1)
+used=$(sudo du -sx --block-size=1 "${du_ex[@]}" "$SRC" 2>/dev/null | awk '{print $1}')
 avail=$(df --output=avail --block-size=1 "$OUT_DIR" | tail -1)
 hum() { numfmt --to=iec --suffix=B "$1" 2>/dev/null || echo "$1"; }
 
@@ -218,17 +252,7 @@ if [ -n "$DRY" ]; then
     printf '    %s \\\n' "${EX[@]}"
     echo "    -C $SRC ."
     echo
-    echo "measuring content size (du, one filesystem)..."
-    # The tar patterns are archive-relative (./home/*) because tar runs with -C "$SRC".
-    # du walks absolute paths, so ./x has to become $SRC/x or every exclusion silently
-    # matches nothing and the estimate reports the whole filesystem.
-    du_ex=()
-    for e in "${EX[@]}"; do
-        pat=${e#--exclude=}
-        case "$pat" in ./*) pat="${SRCPFX}/${pat#./}" ;; esac
-        du_ex+=("--exclude=$pat")
-    done
-    sudo du -sxh "${du_ex[@]}" "$SRC" 2>/dev/null | sed 's/^/content: /'
+    echo "content: $(hum "$used") (already measured above, same exclusions)"
     exit 0
 fi
 

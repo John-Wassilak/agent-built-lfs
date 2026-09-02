@@ -1,0 +1,5 @@
+/usr/bin/dav1d
+/usr/lib/libdav1d.so
+/usr/lib/libdav1d.so.7
+/usr/lib/libdav1d.so.7.0.0
+/usr/lib/pkgconfig/dav1d.pc

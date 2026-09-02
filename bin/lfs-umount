@@ -5,8 +5,29 @@
 
 # Unmount the virtual kernel filesystems from the LFS tree, deepest first.
 # Run before archiving, and before doing anything destructive to $LFS.
+#
+# Resolves the tree the same way every other bin/ tool does (--host, else $LFS_HOST,
+# else the hostname) rather than assuming /mnt/lfs -- a host built in-repo (laptop's
+# chroot_tree points inside this checkout, not /mnt/lfs) was silently a no-op here.
 set -u
-LFS=/mnt/lfs
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
+HOST=""
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --host) HOST=$2; shift 2 ;;
+        --host=*) HOST=${1#--host=}; shift ;;
+        *) echo "usage: lfs-umount [--host NAME]" >&2; exit 2 ;;
+    esac
+done
+
+LFS=$(LFS_UMOUNT_HOST="$HOST" python3 -c "
+import os, sys
+sys.path.insert(0, '$SCRIPT_DIR')
+import lfshost
+h = lfshost.resolve(os.environ.get('LFS_UMOUNT_HOST') or None)
+print(h.chroot_tree)
+") || exit 1
 
 for m in /dev/shm /dev/pts /dev /proc /sys /run; do
     tgt="$LFS$m"

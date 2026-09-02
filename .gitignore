@@ -21,6 +21,15 @@ blfs-staging/certdata.txt
 
 __pycache__/
 
+# laptop's chroot tree (host.toml build.chroot_tree): this machine has no spare
+# partition, so the LFS build lives in a plain directory here instead of /mnt/lfs.
+# Tens of GB of build/install output, none of it reproducible-by-git -- rebuilt by
+# re-running the plan, same as any other host's tree.
+/lfs/
+
 # Per-user Claude Code settings. Ignored globally on the machine this was built on,
 # which does not travel with a clone.
 .claude/settings.local.json
+
+# Session-local scheduler lock (pid/session id/timestamp) -- not project content.
+.claude/scheduled_tasks.lock

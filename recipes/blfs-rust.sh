@@ -68,6 +68,14 @@ EOF
 
 # --- block 2 --------------------------------------------------
 #   ctx: Compile Rust by running the following commands:
+_restore_resolv() {
+    rm -f /etc/resolv.conf
+    ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
+}
+trap _restore_resolv EXIT
+rm -f /etc/resolv.conf
+printf 'nameserver 1.1.1.1\nnameserver 8.8.8.8\n' > /etc/resolv.conf
+
 export LIBSSH2_SYS_USE_PKG_CONFIG=1
 ./x.py build
 

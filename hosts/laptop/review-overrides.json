@@ -1,3 +1,86 @@
 {
-  "_comment": "Host-specific review decisions for `laptop`. Merged on top of the shared recipes/review-overrides.json by bin/extract-recipes.py, page by page and block by block. Two entries are needed before Chapter 10 runs: ch10-fstab block 0 with this machine's filesystem LABELs, and ch10-kernel blocks naming its /boot paths. Copy the shape from hosts/server/review-overrides.json. See BOOTSTRAP.md step 3."
+  "_comment": "Host-specific review decisions for `laptop`. Merged on top of the shared recipes/review-overrides.json by bin/extract-recipes.py, page by page and block by block.",
+  "ch04-settingenvironment": {
+    "1": {
+      "action": "replace",
+      "cmd": "cat > ~/.bashrc << \"EOF\"\nset +h\numask 022\nLFS=/mnt/crypt/john/projects/agent-built-lfs/lfs\nLC_ALL=POSIX\nLFS_TGT=$(uname -m)-lfs-linux-gnu\nPATH=/usr/bin\nif [ ! -L /bin ]; then PATH=/bin:$PATH; fi\nPATH=$LFS/tools/bin:$PATH\nCONFIG_SITE=$LFS/usr/share/config.site\nexport LFS LC_ALL LFS_TGT PATH CONFIG_SITE\nEOF",
+      "reason": "Book hardcodes LFS=/mnt/lfs, which is only correct because it's also lfshost.py's DEFAULT_CHROOT_TREE -- server never needed this override because it built there. laptop's host.toml sets chroot_tree to a directory inside this repo instead (no spare partition, see BUILD-REPORT.md), so the lfs user's own $LFS -- which chapters 5-6 write $LFS/tools into directly, outside any chroot -- has to point at that same path or the temporary toolchain lands in a real /mnt/lfs that doesn't exist. Caught 2026-08-28 when ch05-binutils-pass1 failed on 'mkdir: cannot create directory /mnt/lfs: Permission denied'. Everything else in this block is unchanged from the book."
+    },
+    "5": {
+      "action": "replace",
+      "cmd": "cat >> ~/.bashrc << \"EOF\"\nexport MAKEFLAGS=-j2\nEOF",
+      "reason": "Book appends -j$(nproc) (4 threads on this CPU). host.toml caps build.jobs at 2 deliberately -- this is the daily driver, and the operator wants headroom to keep using it during a build (see host.toml's own comment). The chroot/root-host contexts already get -j2 from lfsbuild's own exec_argv reading HOST.jobs; this is the one context (the real lfs-user shell that builds the temporary toolchain in chapters 5-6) where the book's own dotfile is the only source of MAKEFLAGS, so it has to carry the same cap explicitly."
+    }
+  },
+  "ch08-perl": {
+    "3": {
+      "action": "drop",
+      "reason": "TEST_JOBS=$(nproc) make test_harness hung indefinitely, not just slowly -- confirmed 2026-08-30 at ~17.5 hours stuck, ps showing three of Perl's own network tests still running (t/nntp_ipv6.t, t/pop3_ipv6.t, t/smtp_ipv6.t) plus a <defunct> zombie child never reaped. These open real IPv6 sockets; at this point in the book the chroot has no configured network stack at all (that's a BLFS-era concern), so connect() calls that would fail fast on a normal system instead sit forever with no local timeout. Not in the shared file because it's unconfirmed whether server's chroot hit the same thing or just got lucky on timing/environment -- if a second host reproduces this, promote it to recipes/review-overrides.json instead. Dropping the whole test_harness run rather than excluding just the three files: Perl's own test harness has no book-documented flag for excluding individual .t files short of deleting them from the source tree by hand, and this project already treats most Chapter 8 test suites as optional (see the 46-entry testsuite review queue) rather than a correctness gate."
+    }
+  },
+  "ch08-shadow": {
+    "9": {
+      "action": "replace",
+      "cmd": "passwd -l root\necho \"### root password locked -- no valid password, root reachable only via sudo\"",
+      "reason": "Requested 2026-09-01: no password for root. Book's own default sets a real, working password (even the project's usual 'lfs-changeme' bootstrap placeholder is a working password); this host has john with full wheel/sudo access from the very start (blfs-adduser-john, seq 14.5), so there is no bootstrap period where a root password is the only way in, unlike server's original single-account situation. passwd -l locks the account by prefixing the hash with '!' -- login/su/ssh password auth all fail, sudo still works since it doesn't check root's own password."
+    }
+  },
+  "ch10-kernel": {
+    "5": {
+      "action": "replace",
+      "cmd": "cp -v arch/x86/boot/bzImage /boot/vmlinuz-6.18.10-lfs-13.0-systemd",
+      "reason": "Same fix as server's ch10-kernel block 5: book uses `cp -iv`, which prompts on overwrite and hangs the driver on any re-run once /boot is populated. Version is the book's own default for LFS 13.0-systemd (linux-6.18.10, already staged and confirmed at ch10-kernel), not copied from server -- coincidentally the same number."
+    },
+    "6": {
+      "action": "replace",
+      "cmd": "cp -v System.map /boot/System.map-6.18.10",
+      "reason": "Interactive -i flag removed, same reason as block 5."
+    },
+    "7": {
+      "action": "replace",
+      "cmd": "cp -v .config /boot/config-6.18.10",
+      "reason": "Interactive -i flag removed, same reason as block 5."
+    }
+  },
+  "ch09-network": {
+    "0": {
+      "action": "enable",
+      "reason": "Reversed 2026-09-01 from the original 'drop' decision. Book's own text names this exact scenario: 'if you want to use another utility like NetworkManager for network configuration, disable a service to prevent an error message during boot: systemctl disable systemd-networkd-wait-online'. NetworkManager was added to this build 2026-09-01 (blfs-networkmanager) -- this machine now has one, so the original reasoning ('We want normal systemd-networkd behaviour') no longer applies."
+    },
+    "4": {
+      "action": "drop",
+      "reason": "Added 2026-09-01, same reason block 0 flipped: this DHCP config hands en*/eth* interfaces to systemd-networkd, which would fight NetworkManager for ownership of the same interfaces -- the book's own NetworkManager page warns explicitly about this ('Make sure that you disable the systemd-networkd service or configure it not to manage the interfaces you want to manage with NetworkManager'). NetworkManager has its own internal DHCP client and does not need this file. DNS is unaffected: NetworkManager is configured with dns=none (blfs-networkmanager block 7) specifically so it does not fight systemd-resolved either, which still owns /etc/resolv.conf via block 6 below."
+    },
+    "7": {
+      "action": "replace",
+      "cmd": "echo \"laptop\" > /etc/hostname",
+      "reason": "Requested 2026-09-01: carry over the machine's currently-used identity from the live host's own /etc/hostname ('laptop', confirmed by direct read, not assumed) instead of the book's literal 'lfs' placeholder."
+    },
+    "8": {
+      "action": "replace",
+      "cmd": "cat > /etc/hosts << \"EOF\"\n127.0.0.1  localhost.localdomain localhost laptop\n::1        localhost ip6-localhost ip6-loopback\nff02::1    ip6-allnodes\nff02::2    ip6-allrouters\n\n# Local\n192.168.0.189   NVR cam\n192.168.0.184   pi-tv\n192.168.0.133   pi-master-tv\n192.168.0.30    pi-router-local\n192.168.0.230   pi-cat\n192.168.0.233   server-local\n\n# wireguard vpn (laptop is 10.0.0.2)\n10.0.0.1        pi-router\n10.0.0.3        android\n10.0.0.4        server\n10.0.0.5        jumpbox\n\n# Remote\n24.254.103.217  pi-router-remote\n185.246.155.65  jumpbox-remote\nEOF",
+      "reason": "Requested 2026-09-01: carry over the live host's currently-used /etc/hosts (direct read, not retyped from memory) instead of the book's placeholder loopback-only file -- this machine's real LAN device map plus its existing WireGuard mesh (10.0.0.0/24), directly relevant now that wireguard-tools is part of this build. Book's own IPv6 loopback lines (::1/ff02::1/ff02::2) kept even though the live file omits them -- standard, harmless, and several tools assume they exist."
+    }
+  },
+  "ch09-locale": {
+    "3": {
+      "action": "replace",
+      "cmd": "cat > /etc/locale.conf << \"EOF\"\nLANG=C.UTF8\nEOF",
+      "reason": "Requested 2026-09-01: matches the live host's own /etc/locale.conf exactly (direct read: 'LANG=C.UTF8', no hyphen) rather than the book's en_US.UTF-8 default -- not a typo carried over blindly, this is the value actually in effect on the running machine today."
+    }
+  },
+  "ch09-console": {
+    "1": {
+      "action": "replace",
+      "cmd": "cat > /etc/vconsole.conf << \"EOF\"\nKEYMAP=en\nEOF",
+      "reason": "Requested 2026-09-01: matches the live host's own /etc/vconsole.conf (KEYMAP=en, confirmed active via localectl on the running machine) rather than the book's 'de-latin1' German-keyboard example. No FONT= line, matching the live file exactly -- it doesn't set one either."
+    }
+  },
+  "ch10-fstab": {
+    "0": {
+      "action": "replace",
+      "cmd": "cat > /etc/fstab << \"EOF\"\n# file system   mount-point    type      options             dump  fsck\n#                                                                  order\n\nLABEL=LFSROOT   /              ext4      defaults            1     1\nLABEL=LFSSWAP   swap           swap      pri=1               0     0\n\nproc            /proc          proc      nosuid,noexec,nodev 0     0\nsysfs           /sys           sysfs     nosuid,noexec,nodev 0     0\ndevpts          /dev/pts       devpts    gid=5,mode=620      0     0\ntmpfs           /run           tmpfs     defaults            0     0\ndevtmpfs        /dev           devtmpfs  mode=0755,nosuid    0     0\ntmpfs           /dev/shm       tmpfs     nosuid,nodev        0     0\ncgroup2         /sys/fs/cgroup cgroup2   nosuid,noexec,nodev 0     0\nEOF",
+      "reason": "Same shape as server's ch10-fstab (book's template uses /dev/<xxx>/<yyy> placeholders, replaced with LABEL= so the tree is not bound to a device node that will not exist until deploy time). Deploy target is the existing nvme0n1p1/nvme0n1p2 pair, reformatted at deploy time with these exact labels -- see BOOTSTRAP.md and bin/lfs-archive's own --live restore instructions, reused here for a --tree image. No new swap partition needed: nvme0n1p2 is already a bare swap partition, just needs `mkswap -L LFSSWAP` re-run at deploy time."
+    }
+  }
 }

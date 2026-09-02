@@ -3,12 +3,14 @@
 # source : book/blfs-13.0/general/spirv-llvm-translator.html
 # title  : SPIRV-LLVM-Translator-21.1.4
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
-#
-# Built 2026-08-26 -- not needed until now (only required as a libclc
-# dependency, which in turn is only required for Mesa's NVK Vulkan
-# driver, enabled this session -- see blfs-mesa.sh, blfs-libclc.sh).
 set -e
 
+# --- block 0 --------------------------------------------------
+#   ctx: 4/SPIRV-LLVM-Translator-21.1.4.tar.gz Download MD5 sum: fac27ad16b5923bc4cdb66659f8d8dcc
+#   ctx: Download size: 1.8 MB Estimated disk space required: 40 MB Estimated build time: 0.5 SBU
+#   ctx: (with parallelism=4) SPIRV-LLVM-Translator Dependencies Required libxml2-2.15.1,
+#   ctx: LLVM-21.1.8, and SPIRV-Tools-1.4.341.0 Installation of SPIRV-LLVM-Translator Install
+#   ctx: SPIRV-LLVM-Translator by running the following commands:
 mkdir build &&
 cd    build &&
 
@@ -20,4 +22,7 @@ cmake -D CMAKE_INSTALL_PREFIX=/usr                   \
       -G Ninja ..                                    &&
 ninja
 
+# --- block 1 --------------------------------------------------
+#   ctx: This package does not come with a test suite. Now, as the root user:
 ninja install
+

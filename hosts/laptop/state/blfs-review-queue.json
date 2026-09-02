@@ -1,0 +1,20 @@
+[
+  {
+    "recipe": "blfs-mpv",
+    "block": 2,
+    "tags": [
+      "admon:note"
+    ],
+    "cmd": "gtk-update-icon-cache -qtf /usr/share/icons/hicolor &&\nupdate-desktop-database -q",
+    "context": "r hierarchy and desktop files into the /usr/share/applications hierarchy. You can improve system performance and memory usage by updating /usr/share/icons/hicolor/index.theme and /usr/share/applications/mimeinfo.cache. To perform the update you must have GTK-3.24.51 installed (for the icon cache) and desktop-file-utils-0.28 (for the desktop cache) and issue the following commands as the root user:"
+  },
+  {
+    "recipe": "blfs-emacs",
+    "block": 2,
+    "tags": [
+      "admon:note"
+    ],
+    "cmd": "gtk-update-icon-cache -qtf /usr/share/icons/hicolor",
+    "context": "Note This package installs icon files into the /usr/share/icons/hicolor hierarchy and you can improve system performance and memory usage by updating /usr/share/icons/hicolor/index.theme. To perform the update you must have GTK-3.24.51 installed and issue the following command as the root user:"
+  }
+]

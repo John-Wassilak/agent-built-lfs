@@ -1,0 +1,9 @@
+/usr/bin/hyprcursor-util
+/usr/include/hyprcursor.hpp
+/usr/include/hyprcursor/hyprcursor.h
+/usr/include/hyprcursor/hyprcursor.hpp
+/usr/include/hyprcursor/shared.h
+/usr/lib/libhyprcursor.so
+/usr/lib/libhyprcursor.so.0
+/usr/lib/libhyprcursor.so.0.1.13
+/usr/lib/pkgconfig/hyprcursor.pc

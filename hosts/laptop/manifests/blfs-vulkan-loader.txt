@@ -1,0 +1,7 @@
+/usr/lib/cmake/VulkanLoader/VulkanLoaderConfig.cmake
+/usr/lib/cmake/VulkanLoader/VulkanLoaderConfig-release.cmake
+/usr/lib/cmake/VulkanLoader/VulkanLoaderConfigVersion.cmake
+/usr/lib/libvulkan.so
+/usr/lib/libvulkan.so.1
+/usr/lib/libvulkan.so.1.4.341
+/usr/lib/pkgconfig/vulkan.pc

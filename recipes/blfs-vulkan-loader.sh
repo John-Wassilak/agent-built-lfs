@@ -23,11 +23,12 @@ ninja
 # --- block 1 --------------------------------------------------
 #   ctx: To run the test suite, issue (note that the command will use git-2.53.0 to download a
 #   ctx: copy of GoogleTest for building the test suite):
-sed "s/'git', 'clone'/&, '--depth=1', '-b', self.commit/" \
-    -i ../scripts/update_deps.py &&
-cmake -D BUILD_TESTS=ON -D UPDATE_DEPS=ON .. &&
-ninja &&
-ninja test
+#   REVIEWED [drop]: The optional test-suite block, not auto-flagged by the testsuite classifier (it's a cmake reconfigure + 'ninja test', not the usual 'make check'/'make test' shape). Unlike a flaky/environment-dependent hang, this one is unconditionally network-dependent on any offline build: 'cmake -D UPDATE_DEPS=ON' makes the loader's own CMakeLists shell out to scripts/update_deps.py, which git-clones a private copy of Vulkan-Headers from GitHub regardless of the system copy already installed (this book's own dependency list lists Vulkan-Headers as Required and expects it built first). Confirmed failing 2026-08-30 (laptop): 'Failed to run ["git", "clone", ...] ... Could not run update_deps.py'. True of any host building this page in an offline chroot, not laptop-specific -- shared rather than a host override.
+# sed "s/'git', 'clone'/&, '--depth=1', '-b', self.commit/" \
+#     -i ../scripts/update_deps.py &&
+# cmake -D BUILD_TESTS=ON -D UPDATE_DEPS=ON .. &&
+# ninja &&
+# ninja test
 
 # --- block 2 --------------------------------------------------
 #   ctx: Now, as the root user:

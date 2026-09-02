@@ -1,0 +1,1332 @@
+[
+  {
+    "name": "ch04-addinguser",
+    "chapter": "04",
+    "page": "addinguser",
+    "title": "4.3. Adding the LFS User",
+    "blocks": 4,
+    "enabled": 2,
+    "disabled": 2,
+    "reviewed": 2
+  },
+  {
+    "name": "ch04-creatingminlayout",
+    "chapter": "04",
+    "page": "creatingminlayout",
+    "title": "4.2. Creating a Limited Directory Layout in the LFS Filesystem",
+    "blocks": 2,
+    "enabled": 2,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch04-settingenvironment",
+    "chapter": "04",
+    "page": "settingenvironment",
+    "title": "4.4. Setting Up the Environment",
+    "blocks": 7,
+    "enabled": 4,
+    "disabled": 3,
+    "reviewed": 5
+  },
+  {
+    "name": "ch05-binutils-pass1",
+    "chapter": "05",
+    "page": "binutils-pass1",
+    "title": "5.2. Binutils-2.46.0 - Pass 1",
+    "blocks": 4,
+    "enabled": 4,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch05-gcc-libstdc++",
+    "chapter": "05",
+    "page": "gcc-libstdc++",
+    "title": "5.6. Libstdc++ from GCC-15.2.0",
+    "blocks": 5,
+    "enabled": 5,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch05-gcc-pass1",
+    "chapter": "05",
+    "page": "gcc-pass1",
+    "title": "5.3. GCC-15.2.0 - Pass 1",
+    "blocks": 7,
+    "enabled": 7,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch05-glibc",
+    "chapter": "05",
+    "page": "glibc",
+    "title": "5.5. Glibc-2.43",
+    "blocks": 15,
+    "enabled": 15,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch05-linux-headers",
+    "chapter": "05",
+    "page": "linux-headers",
+    "title": "5.4. Linux-6.18.10 API Headers",
+    "blocks": 2,
+    "enabled": 2,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch06-bash",
+    "chapter": "06",
+    "page": "bash",
+    "title": "6.4. Bash-5.3",
+    "blocks": 4,
+    "enabled": 4,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch06-binutils-pass2",
+    "chapter": "06",
+    "page": "binutils-pass2",
+    "title": "6.17. Binutils-2.46.0 - Pass 2",
+    "blocks": 6,
+    "enabled": 6,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch06-coreutils",
+    "chapter": "06",
+    "page": "coreutils",
+    "title": "6.5. Coreutils-9.10",
+    "blocks": 4,
+    "enabled": 4,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch06-diffutils",
+    "chapter": "06",
+    "page": "diffutils",
+    "title": "6.6. Diffutils-3.12",
+    "blocks": 3,
+    "enabled": 3,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch06-file",
+    "chapter": "06",
+    "page": "file",
+    "title": "6.7. File-5.46",
+    "blocks": 5,
+    "enabled": 5,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch06-findutils",
+    "chapter": "06",
+    "page": "findutils",
+    "title": "6.8. Findutils-4.10.0",
+    "blocks": 3,
+    "enabled": 3,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch06-gawk",
+    "chapter": "06",
+    "page": "gawk",
+    "title": "6.9. Gawk-5.3.2",
+    "blocks": 4,
+    "enabled": 4,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch06-gcc-pass2",
+    "chapter": "06",
+    "page": "gcc-pass2",
+    "title": "6.18. GCC-15.2.0 - Pass 2",
+    "blocks": 8,
+    "enabled": 8,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch06-grep",
+    "chapter": "06",
+    "page": "grep",
+    "title": "6.10. Grep-3.12",
+    "blocks": 3,
+    "enabled": 3,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch06-gzip",
+    "chapter": "06",
+    "page": "gzip",
+    "title": "6.11. Gzip-1.14",
+    "blocks": 3,
+    "enabled": 3,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch06-m4",
+    "chapter": "06",
+    "page": "m4",
+    "title": "6.2. M4-1.4.21",
+    "blocks": 3,
+    "enabled": 3,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch06-make",
+    "chapter": "06",
+    "page": "make",
+    "title": "6.12. Make-4.4.1",
+    "blocks": 3,
+    "enabled": 3,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch06-ncurses",
+    "chapter": "06",
+    "page": "ncurses",
+    "title": "6.3. Ncurses-6.6",
+    "blocks": 4,
+    "enabled": 4,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch06-patch",
+    "chapter": "06",
+    "page": "patch",
+    "title": "6.13. Patch-2.8",
+    "blocks": 3,
+    "enabled": 3,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch06-sed",
+    "chapter": "06",
+    "page": "sed",
+    "title": "6.14. Sed-4.9",
+    "blocks": 3,
+    "enabled": 3,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch06-tar",
+    "chapter": "06",
+    "page": "tar",
+    "title": "6.15. Tar-1.35",
+    "blocks": 3,
+    "enabled": 3,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch06-xz",
+    "chapter": "06",
+    "page": "xz",
+    "title": "6.16. Xz-5.8.2",
+    "blocks": 4,
+    "enabled": 4,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch07-Python",
+    "chapter": "07",
+    "page": "Python",
+    "title": "7.10. Python-3.14.3",
+    "blocks": 3,
+    "enabled": 3,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch07-bison",
+    "chapter": "07",
+    "page": "bison",
+    "title": "7.8. Bison-3.8.2",
+    "blocks": 3,
+    "enabled": 3,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch07-changingowner",
+    "chapter": "07",
+    "page": "changingowner",
+    "title": "7.2. Changing Ownership",
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch07-chroot",
+    "chapter": "07",
+    "page": "chroot",
+    "title": "7.4. Entering the Chroot Environment",
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch07-cleanup",
+    "chapter": "07",
+    "page": "cleanup",
+    "title": "7.13. Cleaning up and Saving the Temporary System",
+    "blocks": 6,
+    "enabled": 3,
+    "disabled": 3,
+    "reviewed": 3
+  },
+  {
+    "name": "ch07-createfiles",
+    "chapter": "07",
+    "page": "createfiles",
+    "title": "7.6. Creating Essential Files and Symlinks",
+    "blocks": 7,
+    "enabled": 6,
+    "disabled": 1,
+    "reviewed": 1
+  },
+  {
+    "name": "ch07-creatingdirs",
+    "chapter": "07",
+    "page": "creatingdirs",
+    "title": "7.5. Creating Directories",
+    "blocks": 2,
+    "enabled": 2,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch07-gettext",
+    "chapter": "07",
+    "page": "gettext",
+    "title": "7.7. Gettext-1.0",
+    "blocks": 3,
+    "enabled": 3,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch07-kernfs",
+    "chapter": "07",
+    "page": "kernfs",
+    "title": "7.3. Preparing Virtual Kernel File Systems",
+    "blocks": 4,
+    "enabled": 4,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch07-perl",
+    "chapter": "07",
+    "page": "perl",
+    "title": "7.9. Perl-5.42.0",
+    "blocks": 3,
+    "enabled": 3,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch07-texinfo",
+    "chapter": "07",
+    "page": "texinfo",
+    "title": "7.11. Texinfo-7.2",
+    "blocks": 3,
+    "enabled": 3,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch07-util-linux",
+    "chapter": "07",
+    "page": "util-linux",
+    "title": "7.12. Util-linux-2.41.3",
+    "blocks": 4,
+    "enabled": 4,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-Python",
+    "chapter": "08",
+    "page": "Python",
+    "title": "8.53. Python-3.14.3",
+    "blocks": 6,
+    "enabled": 5,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-acl",
+    "chapter": "08",
+    "page": "acl",
+    "title": "8.26. Acl-2.3.2",
+    "blocks": 4,
+    "enabled": 3,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-attr",
+    "chapter": "08",
+    "page": "attr",
+    "title": "8.25. Attr-2.5.2",
+    "blocks": 4,
+    "enabled": 3,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-autoconf",
+    "chapter": "08",
+    "page": "autoconf",
+    "title": "8.47. Autoconf-2.72",
+    "blocks": 4,
+    "enabled": 3,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-automake",
+    "chapter": "08",
+    "page": "automake",
+    "title": "8.48. Automake-1.18.1",
+    "blocks": 4,
+    "enabled": 3,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-bash",
+    "chapter": "08",
+    "page": "bash",
+    "title": "8.37. Bash-5.3",
+    "blocks": 6,
+    "enabled": 3,
+    "disabled": 3,
+    "reviewed": 3
+  },
+  {
+    "name": "ch08-bc",
+    "chapter": "08",
+    "page": "bc",
+    "title": "8.15. Bc-7.0.3",
+    "blocks": 4,
+    "enabled": 3,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-binutils",
+    "chapter": "08",
+    "page": "binutils",
+    "title": "8.21. Binutils-2.46.0",
+    "blocks": 7,
+    "enabled": 7,
+    "disabled": 0,
+    "reviewed": 2
+  },
+  {
+    "name": "ch08-bison",
+    "chapter": "08",
+    "page": "bison",
+    "title": "8.35. Bison-3.8.2",
+    "blocks": 4,
+    "enabled": 3,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-bzip2",
+    "chapter": "08",
+    "page": "bzip2",
+    "title": "8.7. Bzip2-1.0.8",
+    "blocks": 10,
+    "enabled": 10,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-cleanup",
+    "chapter": "08",
+    "page": "cleanup",
+    "title": "8.86. Cleaning Up",
+    "blocks": 4,
+    "enabled": 4,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-coreutils",
+    "chapter": "08",
+    "page": "coreutils",
+    "title": "8.61. Coreutils-9.10",
+    "blocks": 10,
+    "enabled": 8,
+    "disabled": 2,
+    "reviewed": 1
+  },
+  {
+    "name": "ch08-dbus",
+    "chapter": "08",
+    "page": "dbus",
+    "title": "8.79. D-Bus-1.16.2",
+    "blocks": 5,
+    "enabled": 4,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-dejagnu",
+    "chapter": "08",
+    "page": "dejagnu",
+    "title": "8.19. DejaGNU-1.6.3",
+    "blocks": 4,
+    "enabled": 3,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-diffutils",
+    "chapter": "08",
+    "page": "diffutils",
+    "title": "8.62. Diffutils-3.12",
+    "blocks": 4,
+    "enabled": 3,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-e2fsprogs",
+    "chapter": "08",
+    "page": "e2fsprogs",
+    "title": "8.83. E2fsprogs-1.47.3",
+    "blocks": 9,
+    "enabled": 8,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-expat",
+    "chapter": "08",
+    "page": "expat",
+    "title": "8.41. Expat-2.7.4",
+    "blocks": 5,
+    "enabled": 4,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-expect",
+    "chapter": "08",
+    "page": "expect",
+    "title": "8.18. Expect-5.45.4",
+    "blocks": 6,
+    "enabled": 5,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-file",
+    "chapter": "08",
+    "page": "file",
+    "title": "8.11. File-5.46",
+    "blocks": 4,
+    "enabled": 3,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-findutils",
+    "chapter": "08",
+    "page": "findutils",
+    "title": "8.64. Findutils-4.10.0",
+    "blocks": 4,
+    "enabled": 3,
+    "disabled": 1,
+    "reviewed": 1
+  },
+  {
+    "name": "ch08-flex",
+    "chapter": "08",
+    "page": "flex",
+    "title": "8.16. Flex-2.6.4",
+    "blocks": 5,
+    "enabled": 4,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-flit-core",
+    "chapter": "08",
+    "page": "flit-core",
+    "title": "8.54. Flit-Core-3.12.0",
+    "blocks": 2,
+    "enabled": 2,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-gawk",
+    "chapter": "08",
+    "page": "gawk",
+    "title": "8.63. Gawk-5.3.2",
+    "blocks": 7,
+    "enabled": 6,
+    "disabled": 1,
+    "reviewed": 1
+  },
+  {
+    "name": "ch08-gcc",
+    "chapter": "08",
+    "page": "gcc",
+    "title": "8.30. GCC-15.2.0",
+    "blocks": 22,
+    "enabled": 22,
+    "disabled": 0,
+    "reviewed": 1
+  },
+  {
+    "name": "ch08-gdbm",
+    "chapter": "08",
+    "page": "gdbm",
+    "title": "8.39. GDBM-1.26",
+    "blocks": 4,
+    "enabled": 3,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-gettext",
+    "chapter": "08",
+    "page": "gettext",
+    "title": "8.34. Gettext-1.0",
+    "blocks": 4,
+    "enabled": 3,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-glibc",
+    "chapter": "08",
+    "page": "glibc",
+    "title": "8.5. Glibc-2.43",
+    "blocks": 23,
+    "enabled": 17,
+    "disabled": 6,
+    "reviewed": 8
+  },
+  {
+    "name": "ch08-gmp",
+    "chapter": "08",
+    "page": "gmp",
+    "title": "8.22. GMP-6.3.0",
+    "blocks": 7,
+    "enabled": 4,
+    "disabled": 3,
+    "reviewed": 2
+  },
+  {
+    "name": "ch08-gperf",
+    "chapter": "08",
+    "page": "gperf",
+    "title": "8.40. Gperf-3.3",
+    "blocks": 4,
+    "enabled": 3,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-grep",
+    "chapter": "08",
+    "page": "grep",
+    "title": "8.36. Grep-3.12",
+    "blocks": 5,
+    "enabled": 4,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-groff",
+    "chapter": "08",
+    "page": "groff",
+    "title": "8.65. Groff-1.23.0",
+    "blocks": 4,
+    "enabled": 3,
+    "disabled": 1,
+    "reviewed": 1
+  },
+  {
+    "name": "ch08-grub",
+    "chapter": "08",
+    "page": "grub",
+    "title": "8.66. GRUB-2.14",
+    "blocks": 5,
+    "enabled": 5,
+    "disabled": 0,
+    "reviewed": 1
+  },
+  {
+    "name": "ch08-gzip",
+    "chapter": "08",
+    "page": "gzip",
+    "title": "8.67. Gzip-1.14",
+    "blocks": 4,
+    "enabled": 3,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-iana-etc",
+    "chapter": "08",
+    "page": "iana-etc",
+    "title": "8.4. Iana-Etc-20260202",
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-inetutils",
+    "chapter": "08",
+    "page": "inetutils",
+    "title": "8.42. Inetutils-2.7",
+    "blocks": 6,
+    "enabled": 5,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-intltool",
+    "chapter": "08",
+    "page": "intltool",
+    "title": "8.46. Intltool-0.51.0",
+    "blocks": 5,
+    "enabled": 4,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-iproute2",
+    "chapter": "08",
+    "page": "iproute2",
+    "title": "8.68. IPRoute2-6.18.0",
+    "blocks": 4,
+    "enabled": 4,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-jinja2",
+    "chapter": "08",
+    "page": "jinja2",
+    "title": "8.77. Jinja2-3.1.6",
+    "blocks": 2,
+    "enabled": 2,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-kbd",
+    "chapter": "08",
+    "page": "kbd",
+    "title": "8.69. Kbd-2.9.0",
+    "blocks": 7,
+    "enabled": 6,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-kmod",
+    "chapter": "08",
+    "page": "kmod",
+    "title": "8.60. Kmod-34.2",
+    "blocks": 3,
+    "enabled": 3,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-less",
+    "chapter": "08",
+    "page": "less",
+    "title": "8.43. Less-692",
+    "blocks": 4,
+    "enabled": 3,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-libcap",
+    "chapter": "08",
+    "page": "libcap",
+    "title": "8.27. Libcap-2.77",
+    "blocks": 4,
+    "enabled": 3,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-libelf",
+    "chapter": "08",
+    "page": "libelf",
+    "title": "8.50. Libelf from Elfutils-0.194",
+    "blocks": 3,
+    "enabled": 3,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-libffi",
+    "chapter": "08",
+    "page": "libffi",
+    "title": "8.51. Libffi-3.5.2",
+    "blocks": 4,
+    "enabled": 3,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-libpipeline",
+    "chapter": "08",
+    "page": "libpipeline",
+    "title": "8.70. Libpipeline-1.5.8",
+    "blocks": 3,
+    "enabled": 3,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-libtool",
+    "chapter": "08",
+    "page": "libtool",
+    "title": "8.38. Libtool-2.5.4",
+    "blocks": 5,
+    "enabled": 4,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-libxcrypt",
+    "chapter": "08",
+    "page": "libxcrypt",
+    "title": "8.28. Libxcrypt-4.5.2",
+    "blocks": 6,
+    "enabled": 4,
+    "disabled": 2,
+    "reviewed": 1
+  },
+  {
+    "name": "ch08-lz4",
+    "chapter": "08",
+    "page": "lz4",
+    "title": "8.9. Lz4-1.10.0",
+    "blocks": 3,
+    "enabled": 2,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-m4",
+    "chapter": "08",
+    "page": "m4",
+    "title": "8.14. M4-1.4.21",
+    "blocks": 4,
+    "enabled": 3,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-make",
+    "chapter": "08",
+    "page": "make",
+    "title": "8.71. Make-4.4.1",
+    "blocks": 4,
+    "enabled": 3,
+    "disabled": 1,
+    "reviewed": 1
+  },
+  {
+    "name": "ch08-man-db",
+    "chapter": "08",
+    "page": "man-db",
+    "title": "8.80. Man-DB-2.13.1",
+    "blocks": 4,
+    "enabled": 3,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-man-pages",
+    "chapter": "08",
+    "page": "man-pages",
+    "title": "8.3. Man-pages-6.17",
+    "blocks": 2,
+    "enabled": 2,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-markupsafe",
+    "chapter": "08",
+    "page": "markupsafe",
+    "title": "8.76. MarkupSafe-3.0.3",
+    "blocks": 2,
+    "enabled": 2,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-meson",
+    "chapter": "08",
+    "page": "meson",
+    "title": "8.59. Meson-1.10.1",
+    "blocks": 2,
+    "enabled": 2,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-mpc",
+    "chapter": "08",
+    "page": "mpc",
+    "title": "8.24. MPC-1.3.1",
+    "blocks": 4,
+    "enabled": 3,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-mpfr",
+    "chapter": "08",
+    "page": "mpfr",
+    "title": "8.23. MPFR-4.2.2",
+    "blocks": 4,
+    "enabled": 3,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-ncurses",
+    "chapter": "08",
+    "page": "ncurses",
+    "title": "8.31. Ncurses-6.6",
+    "blocks": 7,
+    "enabled": 6,
+    "disabled": 1,
+    "reviewed": 1
+  },
+  {
+    "name": "ch08-ninja",
+    "chapter": "08",
+    "page": "ninja",
+    "title": "8.58. Ninja-1.13.2",
+    "blocks": 3,
+    "enabled": 3,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-openssl",
+    "chapter": "08",
+    "page": "openssl",
+    "title": "8.49. OpenSSL-3.6.1",
+    "blocks": 6,
+    "enabled": 5,
+    "disabled": 1,
+    "reviewed": 1
+  },
+  {
+    "name": "ch08-packaging",
+    "chapter": "08",
+    "page": "packaging",
+    "title": "8.55. Packaging-26.0",
+    "blocks": 2,
+    "enabled": 2,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-patch",
+    "chapter": "08",
+    "page": "patch",
+    "title": "8.72. Patch-2.8",
+    "blocks": 4,
+    "enabled": 3,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-pcre2",
+    "chapter": "08",
+    "page": "pcre2",
+    "title": "8.13. Pcre2-10.47",
+    "blocks": 4,
+    "enabled": 3,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-perl",
+    "chapter": "08",
+    "page": "perl",
+    "title": "8.44. Perl-5.42.0",
+    "blocks": 5,
+    "enabled": 4,
+    "disabled": 1,
+    "reviewed": 1
+  },
+  {
+    "name": "ch08-pkgconf",
+    "chapter": "08",
+    "page": "pkgconf",
+    "title": "8.20. Pkgconf-2.5.1",
+    "blocks": 4,
+    "enabled": 4,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-pkgmgt",
+    "chapter": "08",
+    "page": "pkgmgt",
+    "title": "8.2. Package Management",
+    "blocks": 3,
+    "enabled": 3,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-procps-ng",
+    "chapter": "08",
+    "page": "procps-ng",
+    "title": "8.81. Procps-ng-4.0.6",
+    "blocks": 4,
+    "enabled": 3,
+    "disabled": 1,
+    "reviewed": 1
+  },
+  {
+    "name": "ch08-psmisc",
+    "chapter": "08",
+    "page": "psmisc",
+    "title": "8.33. Psmisc-23.7",
+    "blocks": 4,
+    "enabled": 3,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-readline",
+    "chapter": "08",
+    "page": "readline",
+    "title": "8.12. Readline-8.3",
+    "blocks": 7,
+    "enabled": 7,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-sed",
+    "chapter": "08",
+    "page": "sed",
+    "title": "8.32. Sed-4.9",
+    "blocks": 4,
+    "enabled": 3,
+    "disabled": 1,
+    "reviewed": 1
+  },
+  {
+    "name": "ch08-setuptools",
+    "chapter": "08",
+    "page": "setuptools",
+    "title": "8.57. Setuptools-82.0.0",
+    "blocks": 2,
+    "enabled": 2,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-shadow",
+    "chapter": "08",
+    "page": "shadow",
+    "title": "8.29. Shadow-4.19.3",
+    "blocks": 10,
+    "enabled": 10,
+    "disabled": 0,
+    "reviewed": 1
+  },
+  {
+    "name": "ch08-sqlite",
+    "chapter": "08",
+    "page": "sqlite",
+    "title": "8.52. Sqlite-3510200",
+    "blocks": 5,
+    "enabled": 5,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-stripping",
+    "chapter": "08",
+    "page": "stripping",
+    "title": "8.85. Stripping",
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0,
+    "reviewed": 1
+  },
+  {
+    "name": "ch08-systemd",
+    "chapter": "08",
+    "page": "systemd",
+    "title": "8.78. Systemd-259.1",
+    "blocks": 8,
+    "enabled": 8,
+    "disabled": 0,
+    "reviewed": 1
+  },
+  {
+    "name": "ch08-tar",
+    "chapter": "08",
+    "page": "tar",
+    "title": "8.73. Tar-1.35",
+    "blocks": 4,
+    "enabled": 3,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-tcl",
+    "chapter": "08",
+    "page": "tcl",
+    "title": "8.17. Tcl-8.6.17",
+    "blocks": 9,
+    "enabled": 8,
+    "disabled": 1,
+    "reviewed": 1
+  },
+  {
+    "name": "ch08-texinfo",
+    "chapter": "08",
+    "page": "texinfo",
+    "title": "8.74. Texinfo-7.2",
+    "blocks": 7,
+    "enabled": 6,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-util-linux",
+    "chapter": "08",
+    "page": "util-linux",
+    "title": "8.82. Util-linux-2.41.3",
+    "blocks": 5,
+    "enabled": 4,
+    "disabled": 1,
+    "reviewed": 2
+  },
+  {
+    "name": "ch08-vim",
+    "chapter": "08",
+    "page": "vim",
+    "title": "8.75. Vim-9.2.0078",
+    "blocks": 10,
+    "enabled": 8,
+    "disabled": 2,
+    "reviewed": 2
+  },
+  {
+    "name": "ch08-wheel",
+    "chapter": "08",
+    "page": "wheel",
+    "title": "8.56. Wheel-0.46.3",
+    "blocks": 2,
+    "enabled": 2,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-xml-parser",
+    "chapter": "08",
+    "page": "xml-parser",
+    "title": "8.45. XML::Parser-2.47",
+    "blocks": 4,
+    "enabled": 3,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-xz",
+    "chapter": "08",
+    "page": "xz",
+    "title": "8.8. Xz-5.8.2",
+    "blocks": 4,
+    "enabled": 3,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-zlib",
+    "chapter": "08",
+    "page": "zlib",
+    "title": "8.6. Zlib-1.3.2",
+    "blocks": 5,
+    "enabled": 4,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch08-zstd",
+    "chapter": "08",
+    "page": "zstd",
+    "title": "8.10. Zstd-1.5.7",
+    "blocks": 4,
+    "enabled": 3,
+    "disabled": 1,
+    "reviewed": 0
+  },
+  {
+    "name": "ch09-clock",
+    "chapter": "09",
+    "page": "clock",
+    "title": "9.5. Configuring the System Clock",
+    "blocks": 6,
+    "enabled": 0,
+    "disabled": 6,
+    "reviewed": 6
+  },
+  {
+    "name": "ch09-console",
+    "chapter": "09",
+    "page": "console",
+    "title": "9.6. Configuring the Linux Console",
+    "blocks": 4,
+    "enabled": 2,
+    "disabled": 2,
+    "reviewed": 3
+  },
+  {
+    "name": "ch09-inputrc",
+    "chapter": "09",
+    "page": "inputrc",
+    "title": "9.8. Creating the /etc/inputrc File",
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch09-locale",
+    "chapter": "09",
+    "page": "locale",
+    "title": "9.7. Configuring the System Locale",
+    "blocks": 7,
+    "enabled": 3,
+    "disabled": 4,
+    "reviewed": 5
+  },
+  {
+    "name": "ch09-network",
+    "chapter": "09",
+    "page": "network",
+    "title": "9.2. General Network Configuration",
+    "blocks": 9,
+    "enabled": 4,
+    "disabled": 5,
+    "reviewed": 9
+  },
+  {
+    "name": "ch09-symlinks",
+    "chapter": "09",
+    "page": "symlinks",
+    "title": "9.4. Managing Devices",
+    "blocks": 2,
+    "enabled": 0,
+    "disabled": 2,
+    "reviewed": 2
+  },
+  {
+    "name": "ch09-systemd-custom",
+    "chapter": "09",
+    "page": "systemd-custom",
+    "title": "9.10. Systemd Usage and Configuration",
+    "blocks": 5,
+    "enabled": 1,
+    "disabled": 4,
+    "reviewed": 4
+  },
+  {
+    "name": "ch10-fstab",
+    "chapter": "10",
+    "page": "fstab",
+    "title": "10.2. Creating the /etc/fstab File",
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0,
+    "reviewed": 1
+  },
+  {
+    "name": "ch10-grub",
+    "chapter": "10",
+    "page": "grub",
+    "title": "10.4. Using GRUB to Set Up the Boot Process",
+    "blocks": 3,
+    "enabled": 3,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch10-kernel",
+    "chapter": "10",
+    "page": "kernel",
+    "title": "10.3. Linux-6.18.10",
+    "blocks": 10,
+    "enabled": 9,
+    "disabled": 1,
+    "reviewed": 4
+  },
+  {
+    "name": "ch11-reboot",
+    "chapter": "11",
+    "page": "reboot",
+    "title": "11.3. Rebooting the System",
+    "blocks": 4,
+    "enabled": 4,
+    "disabled": 0,
+    "reviewed": 0
+  },
+  {
+    "name": "ch11-theend",
+    "chapter": "11",
+    "page": "theend",
+    "title": "11.1. The End",
+    "blocks": 3,
+    "enabled": 3,
+    "disabled": 0,
+    "reviewed": 2
+  }
+]

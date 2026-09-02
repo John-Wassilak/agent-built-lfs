@@ -1,0 +1,5 @@
+/usr/bin/hyprland-dialog
+/usr/bin/hyprland-donate-screen
+/usr/bin/hyprland-run
+/usr/bin/hyprland-update-screen
+/usr/bin/hyprland-welcome

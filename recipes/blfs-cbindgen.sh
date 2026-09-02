@@ -11,6 +11,14 @@ set -e
 #   ctx: connection is needed for building this package. The system certificate store may need to
 #   ctx: be set up with make-ca-1.16.1 before building this package. Installation of cbindgen
 #   ctx: Install cbindgen by running the following commands:
+_restore_resolv() {
+    rm -f /etc/resolv.conf
+    ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
+}
+trap _restore_resolv EXIT
+rm -f /etc/resolv.conf
+printf 'nameserver 1.1.1.1\nnameserver 8.8.8.8\n' > /etc/resolv.conf
+
 cargo build --release
 
 # --- block 1 --------------------------------------------------

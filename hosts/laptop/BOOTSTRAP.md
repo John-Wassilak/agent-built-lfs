@@ -1,31 +1,32 @@
 # Bootstrapping `laptop`
 
-Build path: **on the laptop itself, from a live host distro.** Chapters 4-11 run in a
-chroot against a tree at `/mnt/lfs`, then the machine boots into LFS and everything after
-that runs natively. This is the path `server` was built on and the one `lfsbuild`'s chroot
-mode already supports; nothing new is needed to drive it.
+Build path, revised 2026-08-28 after the hardware audit and disk-space reality (see
+`BUILD-REPORT.md`): **chroot build in a directory inside this repo checkout, not a
+dedicated partition, because there is no unpartitioned space on this disk.** Chapters
+4-11 run in that chroot, then the finished tree is archived with `bin/lfs-archive
+--tree --final` and deployed to the real root partition (`nvme0n1p1`, reformatted) from
+USB rescue media -- the same restore procedure `bin/lfs-archive` prints for a `--live`
+backup, reused here for a `--tree` image. Only after that reboot does anything run
+natively. `lfsbuild`'s chroot mode needs no changes to support any of this -- the chroot
+tree is just a directory, not necessarily its own mounted filesystem.
 
-## 0. Audit the hardware first
+Target desktop from the start: **Hyprland / Wayland / pipewire**, not X11 -- decided
+2026-08-28, unlike `server` where Wayland was a dead end on Kepler-generation NVIDIA.
+This machine's Intel HD 520 has a fully open, current driver, so nothing here fights the
+hardware the way it would have on `server`.
 
-Nothing below is worth starting until `host.toml`'s `[hardware]` is filled in. Every TODO
-there is an input to the kernel config or the package selection.
+## 0. Hardware audit -- done, 2026-08-28
 
-```
-lscpu                          # model, cores/threads -> [hardware].cpu and build.jobs
-grep -m1 bugs: /proc/cpuinfo   # old_microcode means an early-load microcode initrd
-lspci -k                       # GPU, audio, storage controller, wireless + their drivers
-lsblk -f                       # disks, filesystems, existing labels
-lsusb                          # wireless/bluetooth that is on USB, not PCI
-ls /sys/class/power_supply/    # battery and AC presence
-[ -d /sys/firmware/efi ] && echo UEFI || echo BIOS
-```
+See `BUILD-REPORT.md`'s "baseline hardware audit" section for the full output and
+`host.toml`'s `[hardware]` table for the resolved facts. `kernel-config.sh` is filled in
+from it and no longer a stub.
 
-Two of these decide work that `server` never had to do: wireless almost certainly needs
-firmware LFS does not ship (a BLFS step, not a kernel option), and UEFI changes the
-Chapter 10 GRUB install.
-
-Record the answers in `host.toml`, then start `BUILD-REPORT.md` with the audit output.
-`server`'s report has the format.
+The one thing the audit could not resolve, because it depends on decisions rather than
+hardware: **disk space.** The 238.5G NVMe is fully partitioned (50G root, 16G swap,
+172.5G LUKS `/mnt/crypt`, this repo's own location) with only 6-7G free on the two
+volumes that have any room at all, and no unpartitioned space. Operator decision:
+build in-repo, watch free space by hand while building, get as much of LFS+BLFS as fits,
+archive, deploy from USB. Not: repartition, or add external storage.
 
 ## 1. Prepare the host distro
 
@@ -35,20 +36,15 @@ The live distro must satisfy the book's own prerequisites:
 bash book/13.0/prologue/version-check.sh    # every line must pass
 ```
 
-Then, as root on the host:
+No partitioning or mounting needed for the chroot tree itself -- `host.toml`'s
+`chroot_tree` points inside this repo checkout, and `lfsbuild --chroot` treats it as a
+plain directory:
 
 ```
-# partition and label -- the labels go in this host's ch10-fstab override, so pick them
-# now and write them down
-mkfs.ext4 -L LFSROOT /dev/<root-partition>
-mkswap -L LFSSWAP /dev/<swap-partition>
-
-export LFS=/mnt/lfs
-mkdir -pv $LFS
-mount -v -t ext4 /dev/<root-partition> $LFS
-/sbin/swapon -v /dev/<swap-partition>
-
-mkdir -v $LFS/sources && chmod -v a+wt $LFS/sources
+mkdir -pv /mnt/crypt/john/projects/agent-built-lfs/lfs
+mkdir -v  /mnt/crypt/john/projects/agent-built-lfs/lfs/sources
+chmod -v a+wt /mnt/crypt/john/projects/agent-built-lfs/lfs/sources
+df -h /mnt/crypt   # check free space before every session, not just the first
 ```
 
 The `lfs` user and its environment come from `ch04-addinguser` and
@@ -74,17 +70,18 @@ rsync -a --info=progress2 server:/sources/ $LFS/sources/
 BLFS tarballs are fetched per package later; `blfs-staging/blfs-md5` on `server` records
 what it used.
 
-## 3. Host-specific config, before the build reaches it
+## 3. Host-specific config -- mostly done
 
-Three files must exist before the steps that consume them:
-
-- **`review-overrides.json`** in this directory, with a `ch10-fstab` block 0 carrying the
-  labels chosen in step 1, and a `ch10-kernel` block naming this machine's `/boot` paths.
-  Copy the shape from `hosts/server/review-overrides.json`. Then
-  `bin/extract-recipes.py --host laptop` writes `hosts/laptop/recipes/ch10-*.sh`.
-- **`kernel-config.sh`** -- work through its four TODOs from the audit. It exits 1 until
-  then, on purpose.
-- **`overlay/boot/grub.cfg`** for after first boot. Hand-written, like `server`'s.
+- **`review-overrides.json`** -- `ch10-fstab` block 0 is filled in (`LABEL=LFSROOT` /
+  `LABEL=LFSSWAP`, matching the deploy target's existing partitions). `ch10-kernel`'s
+  `/boot` version-string blocks are still open: fill them in with the actual kernel
+  version once Chapter 10 is reached, then run `bin/extract-recipes.py --host laptop` to
+  write `hosts/laptop/recipes/ch10-*.sh`.
+- **`kernel-config.sh`** -- done, see `BUILD-REPORT.md`'s audit section for what each
+  addition is for.
+- **`overlay/boot/grub.cfg`** -- still needed, hand-written like `server`'s, but only
+  relevant at deploy time (step 5) since this box boots BIOS/MBR onto the existing
+  partition table, not a fresh install.
 
 ## 4. Build chapters 4-11
 
@@ -99,34 +96,50 @@ bin/lfsbuild --host laptop --chroot --resume
 `--resume` runs everything not yet completed and stops on the first failure, with the log
 in `hosts/laptop/logs/<step>.log`. Chapter 10 needs `kernel-config.sh` and
 `kernel-config-base.sh` staged into `$LFS/sources` together -- the host script sources the
-base by relative path.
+base by relative path. `build.jobs` is capped at 2 in `host.toml` (not the machine's full
+4 threads) -- this is the daily driver, and the operator wants headroom to keep using it
+while a build runs.
 
-Before rebooting: set a root password inside the chroot, and check `/etc/fstab` matches
-the labels actually on disk. A wrong label here is an unbootable system with no rescue
-path except the live distro.
+Set a root password inside the chroot before archiving.
 
-## 5. First boot, then everything else natively
+## 5. Get as much BLFS built as fits, then archive and deploy
+
+Continue into BLFS the same way (`bin/extract-blfs.py --host laptop`, `bin/lfsbuild
+--host laptop --blfs --chroot --resume`), watching `df -h` on `/mnt/crypt` between
+packages -- there is no slack here to run out of space mid-build and recover cleanly.
+`packages.py` starts at `BASE` (16 steps: CA store, ssh, git, sudo, curl/wget, a
+firewall, Node.js for Claude Code) and grows from there with the Hyprland/Wayland/
+pipewire tiers, researched just-in-time against `book/blfs-13.0/` the same way `server`'s
+`HYPRLAND-PLAN.md` was -- not written speculatively ahead of the real book text. Expect
+the same shape server found: most of the Wayland/GPU/input stack has real BLFS pages,
+the Hyprland ecosystem itself does not and gets built from Arch's `extra` PKGBUILDs as
+the sourcing reference, same policy as server.
+
+When there's nothing more that comfortably fits:
+
+```
+bin/lfs-archive --tree --final /mnt/crypt/john/projects/agent-built-lfs/laptop-lfs.tar.zst
+```
+
+Then, from USB rescue media, booted on the laptop itself:
+
+```
+mkfs.ext4 -L LFSROOT /dev/nvme0n1p1      # the CURRENT Gentoo root -- confirm before running
+mkswap    -L LFSSWAP /dev/nvme0n1p2
+mount /dev/nvme0n1p1 /mnt/target
+tar --extract --file laptop-lfs.tar.zst -p --numeric-owner --xattrs --acls \
+    --same-owner -C /mnt/target
+```
+
+Then reinstall GRUB into `/dev/nvme0n1` (BIOS/MBR, matching the operator's decision to
+keep legacy boot rather than switch to UEFI/GPT) from within the restored tree, chrooted
+from the rescue media. `nvme0n1p3` (the LUKS `/mnt/crypt` volume, this repo's own home)
+is untouched by any of this -- only p1 and p2 are reformatted.
+
+## 6. First native boot, then everything else natively
 
 After the reboot, `lfsbuild` detects `native` mode by itself (`ID=lfs` in
-`/etc/os-release`, no populated tree at `/mnt/lfs`) and refuses chapters 04-07, which is
-correct -- they would overwrite the running toolchain.
-
-```
-bin/extract-blfs.py --host laptop --check
-bin/extract-blfs.py --host laptop
-bin/lfsbuild --host laptop --blfs --resume
-```
-
-`packages.py` is `BASE` alone at this point: 16 steps to a machine with a CA store, ssh,
-git, sudo, a firewall, and Node.js for Claude Code. Get there and confirm it before
-planning a desktop.
-
-## 6. Then the desktop, deliberately
-
-`server`'s 202 additional steps are not a template. Take the portable ones from the shared
-`recipes/` tree and write this machine's own for anything GPU-bound -- at minimum
-`blfs-mesa.sh` with the right `gallium-drivers`, and ffmpeg/mpv with VAAPI rather than
-VDPAU. `packages.py`'s header lists what transfers and what does not.
-
-Add laptop-only work `server` has no equivalent of: battery and lid handling, backlight
-keys, suspend/resume, touchpad configuration, and the wireless firmware from step 0.
+`/etc/os-release`, no populated tree at the chroot path) and refuses chapters 04-07,
+which is correct -- they would overwrite the running toolchain. Resume BLFS from here
+with `bin/lfsbuild --host laptop --blfs --resume` (no `--chroot`), continuing whatever
+tiers didn't fit before the archive step.

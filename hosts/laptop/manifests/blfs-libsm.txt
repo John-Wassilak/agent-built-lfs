@@ -1,0 +1,10 @@
+/usr/include/X11/SM/SM.h
+/usr/include/X11/SM/SMlib.h
+/usr/include/X11/SM/SMproto.h
+/usr/lib/libSM.la
+/usr/lib/libSM.so
+/usr/lib/libSM.so.6
+/usr/lib/libSM.so.6.0.1
+/usr/lib/pkgconfig/sm.pc
+/usr/share/doc/libSM/SMlib.xml
+/usr/share/doc/libSM/xsmp.xml

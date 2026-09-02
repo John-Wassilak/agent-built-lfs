@@ -1,0 +1,4 @@
+/usr/include/libplacebo/config.h
+/usr/lib/libplacebo.so
+/usr/lib/libplacebo.so.360
+/usr/lib/pkgconfig/libplacebo.pc

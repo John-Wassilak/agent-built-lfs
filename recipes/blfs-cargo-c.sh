@@ -11,6 +11,14 @@ set -e
 #   ctx: that cargo uses the dependency versions specified by the upstream developers when this
 #   ctx: cargo-c version (0.10.20) was released. Without this, the latest versions of the
 #   ctx: dependencies would be used and they might cause breakages:
+_restore_resolv() {
+    rm -f /etc/resolv.conf
+    ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
+}
+trap _restore_resolv EXIT
+rm -f /etc/resolv.conf
+printf 'nameserver 1.1.1.1\nnameserver 8.8.8.8\n' > /etc/resolv.conf
+
 curl -fLO https://github.com/lu-zero/cargo-c/releases/download/v0.10.20/Cargo.lock
 
 # --- block 1 --------------------------------------------------

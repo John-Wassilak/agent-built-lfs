@@ -23,6 +23,19 @@ export HOME="${HOME:-/root}"
 export PATH="/opt/go/bin:$PATH"
 export CGO_ENABLED=0
 
+# DNS fix added 2026-09-01 (laptop): this tarball ships no vendor/ directory
+# (confirmed by inspection), so `go build` fetches every module dependency
+# live from the network -- server never needed this because it was already
+# a live native system with working DNS by the time it built tailscale.
+# Same fix as blfs-go.sh and every other live-fetch recipe in this build.
+_restore_resolv() {
+    rm -f /etc/resolv.conf
+    ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
+}
+trap _restore_resolv EXIT
+rm -f /etc/resolv.conf
+printf 'nameserver 1.1.1.1\nnameserver 8.8.8.8\n' > /etc/resolv.conf
+
 go build -o tailscale   ./cmd/tailscale
 go build -o tailscaled  ./cmd/tailscaled
 
@@ -37,3 +50,14 @@ install -v -m644 cmd/tailscaled/tailscaled.service /usr/lib/systemd/system/tails
 
 echo "### version"
 /usr/bin/tailscale --version 2>&1 | head -1 || true
+
+# Cache cleanup added 2026-09-01 (laptop): this tarball ships no vendor/
+# directory, so `go build` downloads every module dependency into
+# $HOME/go/pkg/mod and $HOME/.cache/go-build (~1.7G combined, confirmed by
+# du). Left in place, these get swept into the manifest by the driver's own
+# -cnewer capture (they're freshly written during this step) as if they
+# were files this package installed, and they eat real disk space for no
+# reason once the two binaries above are already built and copied out --
+# build-time cache, not an installed artifact, same category as blfs-go.sh's
+# own /root/build-go cleanup.
+rm -rf "$HOME/go" "$HOME/.cache/go-build"

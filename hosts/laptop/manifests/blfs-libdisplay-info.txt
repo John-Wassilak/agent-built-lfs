@@ -1,0 +1,5 @@
+/usr/bin/di-edid-decode
+/usr/lib/libdisplay-info.so
+/usr/lib/libdisplay-info.so.0.3.0
+/usr/lib/libdisplay-info.so.3
+/usr/lib/pkgconfig/libdisplay-info.pc

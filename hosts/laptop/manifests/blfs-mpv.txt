@@ -1,0 +1,6 @@
+/usr/bin/mpv
+/usr/lib/libmpv.so
+/usr/lib/libmpv.so.2
+/usr/lib/libmpv.so.2.5.0
+/usr/lib/pkgconfig/mpv.pc
+/usr/share/applications/mpv.desktop

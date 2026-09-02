@@ -210,7 +210,13 @@ def srcdir_of(tarball):
     ).stdout
     for line in out.splitlines():
         top = line.split("/")[0]
-        if top:
+        # Skip the archive-root marker some tarballs list explicitly (seen on
+        # Firefox's own tarball: the first entry is a literal "./" before any
+        # real path) -- taking it at face value produced srcdir="." and the
+        # driver's own cleanup step then ran `rm -rf "."`, which GNU rm refuses
+        # ("refusing to remove '.' or '..' directory") and aborted the build
+        # before the recipe ever ran.
+        if top and top != ".":
             return top
     raise RuntimeError(f"cannot determine source dir for {tarball}")
 
@@ -262,7 +268,38 @@ def build_script(step, srcdir):
             "",
         ]
 
-    L += ["# --- recipe ---", recipe, ""]
+    # The recipe runs as a genuine child bash process, not spliced inline, and its
+    # exit status is captured with `|| RECIPE_RC=$?` rather than examined directly.
+    # Why (found 2026-08-31, laptop, blfs-libnotify and blfs-firefox): bash's `set -e`
+    # does not abort on the failure of a command that is not the last in an `&&` list
+    # -- POSIX explicitly exempts it, and the book's own recipes are almost entirely
+    # `configure && build` / `build && install` chains, so a failure in the first half
+    # routinely got silently skipped over. Splicing the recipe inline and capturing
+    # `$?` right after it (an earlier version of this fix) caught that case but missed
+    # a second one: when a *non-exempted* statement fails and `-e` aborts naturally,
+    # the abort kills the whole script immediately, skipping the driver's own cleanup
+    # that was written to run *after* the recipe text -- observed when Firefox's
+    # `./mach build` failed and its 4.1G extracted source tree was left behind because
+    # cleanup never ran. Running the recipe as a child process invoked via `||` fixes
+    # both at once: bash's exemption for a non-last `&&` member behaves identically
+    # inside the child (it is still that child's own `set -e` in effect), but the
+    # child's *own* exit status -- whatever it is -- never reaches this script's `-e`,
+    # because the call site is the non-last member of a `||` list. Cleanup and the
+    # failure gate below always run. Verified against both cases (a mid-chain
+    # exemption that must still short-circuit silently, and a real top-level failure
+    # that must abort the child and report nonzero) before trusting it. See
+    # BUILD-REPORT.md and PRACTICES.md for the full incident.
+    recipe_marker = f"LFSBUILD_RECIPE_{name.upper().replace('-', '_')}_EOF"
+    L += [
+        "# --- recipe (run as a child process; see comment above) ---",
+        f"cat > /tmp/.lfsbuild-recipe.{name}.sh << '{recipe_marker}'",
+        recipe,
+        recipe_marker,
+        "RECIPE_RC=0",
+        f'bash "/tmp/.lfsbuild-recipe.{name}.sh" || RECIPE_RC=$?',
+        f'rm -f "/tmp/.lfsbuild-recipe.{name}.sh"',
+        "",
+    ]
 
     if step["tarball"]:
         L += [
@@ -272,10 +309,30 @@ def build_script(step, srcdir):
             "",
         ]
 
+    L += [
+        "# --- recipe failure gate ---",
+        'if [ "$RECIPE_RC" -ne 0 ]; then',
+        '  echo "### recipe failed (rc=$RECIPE_RC) -- see the log above for the real'
+        ' failing command." >&2',
+        '  exit "$RECIPE_RC"',
+        "fi",
+        "",
+    ]
+
     if want_manifest:
         L += [
             "# --- manifest capture ---",
-            f"find {MANIFEST_ROOTS} -xdev -newer /tmp/.lfsbuild-stamp "
+            # -cnewer (ctime), not -newer (mtime). Found 2026-09-01, laptop, blfs-glaze:
+            # its header-only install preserved the source tree's original file mtimes
+            # (2026-08-17, from the tarball) instead of refreshing them at install time,
+            # so every one of its 298 installed files was *older* than the build's own
+            # start-of-step stamp and the manifest recorded 0 files despite a genuinely
+            # correct install. ctime has no such failure mode: the kernel sets it to the
+            # real time of the last inode change (creation, write, chmod, rename) and it
+            # cannot be inherited from a source tarball or preserved by a copy -- a file
+            # that lands on this filesystem during this step always has a fresh ctime,
+            # regardless of what mtime the installing tool chose to write.
+            f"find {MANIFEST_ROOTS} -xdev -cnewer /tmp/.lfsbuild-stamp "
             f"! -type d 2>/dev/null | grep -vE '{MANIFEST_NOISE}' "
             f"| sort > /tmp/manifest.{name}.txt || true",
             f'echo "manifest: $(wc -l < /tmp/manifest.{name}.txt) files"',

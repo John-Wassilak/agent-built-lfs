@@ -1,0 +1,6 @@
+/usr/include/xcb/xcb_keysyms.h
+/usr/lib/libxcb-keysyms.la
+/usr/lib/libxcb-keysyms.so
+/usr/lib/libxcb-keysyms.so.1
+/usr/lib/libxcb-keysyms.so.1.0.0
+/usr/lib/pkgconfig/xcb-keysyms.pc

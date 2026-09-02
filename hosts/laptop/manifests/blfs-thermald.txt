@@ -1,0 +1,8 @@
+/usr/etc/thermald/thermal-cpu-cdev-order.xml
+/usr/etc/thermald/thermald-features.xml
+/usr/lib/systemd/system/thermald.service
+/usr/sbin/thermald
+/usr/share/dbus-1/system-services/org.freedesktop.thermald.service
+/usr/share/dbus-1/system.d/org.freedesktop.thermald.conf
+/usr/share/man/man5/thermal-conf.xml.5
+/usr/share/man/man8/thermald.8

@@ -1,0 +1,6 @@
+/usr/bin/cvt
+/usr/lib/libxcvt.so
+/usr/lib/libxcvt.so.0
+/usr/lib/libxcvt.so.0.1.3
+/usr/lib/pkgconfig/libxcvt.pc
+/usr/share/man/man1/cvt.1
