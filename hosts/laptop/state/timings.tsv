@@ -381,3 +381,9 @@ blfs-adduser-john	chroot	1.2	0
 blfs-lfsmaint	chroot	0.8	0
 ch08-binutils	chroot	836.5	0
 blfs-claude-code	chroot	11.2	0
+ch07-kernfs	root-host	0.1	0
+blfs-linux-firmware-iwlwifi-8260	chroot	15.1	6
+blfs-linux-firmware-iwlwifi-8260	chroot	1.6	0
+blfs-linux-firmware-i915-dmc	chroot	0.9	0
+blfs-laptop-network-manager-only	chroot	0.5	0
+blfs-usbutils	chroot	5.8	0

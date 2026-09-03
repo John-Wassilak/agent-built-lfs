@@ -461,4 +461,28 @@ PACKAGES = sorted(BASE + [
     # the registry at build time (needs the same DNS fix as every other live-fetch
     # recipe in this build).
     hand(188, "claude-code", "", "claude-code (hand-authored, shared recipe, user-level npm install)"),
+
+    # --- USB boot test, 2026-09-02 (BUILD-REPORT.md): dmesg.out/lspci.out from booting
+    # /mnt/usb showed the Intel Wireless 8260 totally unassociated (15x iwlwifi ucode
+    # load failures, "no suitable firmware found!") and i915 disabling runtime power
+    # management for the same reason -- host.toml's own [hardware] wifi note already
+    # flagged the need for these blobs, but no step for them ever existed. Both fetch a
+    # single blob from the LFS Project's own mirror (BLFS's postlfs/firmware.html),
+    # same narrow-fetch policy as server's hand(172, "linux-firmware-rtl-nic", ...).
+    hand(189, "linux-firmware-iwlwifi-8260", "", "linux-firmware-iwlwifi-8260 (hand-authored, host-specific)"),
+    hand(190, "linux-firmware-i915-dmc", "", "linux-firmware-i915-dmc (hand-authored, host-specific)"),
+
+    # Same USB boot test: the wired NIC (e1000e/enp0s31f6) itself probed clean in
+    # dmesg, but nmcli reported it unreachable -- traced to systemd-networkd
+    # (LFS 13.0-systemd's default) still being enabled alongside NetworkManager (seq
+    # 176, added 2026-09-01), leaving two managers eligible to own the same links.
+    # Host-specific: server deliberately keeps plain systemd-networkd with no
+    # NetworkManager, so this is not a shared decision. Must run after networkmanager
+    # (176) so NetworkManager's own enable step has already happened.
+    hand(191, "laptop-network-manager-only", "", "laptop-network-manager-only (hand-authored, host-specific)"),
+
+    # Same USB boot test: operator requested usbutils/lsusb for further hardware
+    # diagnosis. Real book page (general/usbutils.html); deps libusb/hwdata already
+    # built (Tier 8-12, see the NetworkManager block above).
+    book(192, "usbutils", "general/usbutils.html", "usbutils-019.tar.xz"),
 ], key=lambda p: p["seq"])

@@ -123,8 +123,16 @@ bin/lfs-archive --tree --final /mnt/crypt/john/projects/agent-built-lfs/laptop-l
 
 Then, from USB rescue media, booted on the laptop itself:
 
+The `-O` exclusions matter: this host's `mke2fs.conf` enables `metadata_csum`,
+`metadata_csum_seed`, and `orphan_file` by default for `ext4`, but `grub-2.14`'s
+`fs/ext2.c` (checked directly against `lfs/sources/grub-2.14.tar.xz`) never references
+any of the three -- no rejection, no support. Left on, GRUB misreads the extent tree of
+any file too large to stay inline in the inode and reports it "truncated" partway
+through loading -- hit on the USB stick's own deploy, see `BUILD-REPORT.md`'s
+2026-09-02 entry.
+
 ```
-mkfs.ext4 -L LFSROOT /dev/nvme0n1p1      # the CURRENT Gentoo root -- confirm before running
+mkfs.ext4 -L LFSROOT -O ^metadata_csum,^metadata_csum_seed,^orphan_file /dev/nvme0n1p1  # the CURRENT Gentoo root -- confirm before running
 mkswap    -L LFSSWAP /dev/nvme0n1p2
 mount /dev/nvme0n1p1 /mnt/target
 tar --extract --file laptop-lfs.tar.zst -p --numeric-owner --xattrs --acls \

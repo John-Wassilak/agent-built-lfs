@@ -1043,3 +1043,237 @@ own `john` runs as -- so the clone needed no extra privilege beyond the existing
 2026-09-01 entry above) gives a working session with the same tooling and context
 this build has used throughout, without needing network access to fetch the repo
 first.
+
+## 2026-09-02: USB boot test -- wifi firmware never added, two network managers enabled
+
+Booted `/mnt/usb` and found ethernet reported unreachable in `nmcli`, with `dmesg`
+flagged as full of firmware/driver errors. Captured `dmesg.out` (940 lines) and
+`lspci.out` at `/mnt/usb/home/john/` and read both in full rather than acting on the
+symptom description alone -- they turned out to describe two unrelated problems.
+
+**Wifi, not ethernet, is what the firmware errors are for.** Every one of the 15
+`Direct firmware load ... failed` lines in `dmesg.out` is for `iwlwifi 0000:04:00.0`
+(Intel Wireless 8260, trying `iwlwifi-8000C-36.ucode` down through `-22.ucode` before
+giving up with "no suitable firmware found!"), plus one for `cfg80211`
+(`regulatory.db`) and one for `i915` (`skl_dmc_ver1_27.bin`, DMC/runtime-power-management
+firmware only -- display itself still works without it). `host.toml`'s own
+`[hardware]` `wifi` line already said the 8260 "needs iwlwifi-8260 firmware blobs from
+linux-firmware, a BLFS step" -- that step was simply never added to `packages.py`. The
+wired NIC (Intel I219-LM, `e1000e`) is clean in the same dump: driver loads, MAC
+`54:ee:75:9b:1d:af` assigned, renamed `eth0` -> `enp0s31f6` at t=20.6s, no firmware
+requested or missing.
+
+**The wired-unreachable symptom traced to `systemd-networkd` and `NetworkManager`
+both being enabled at once.** `systemctl --root=/mnt/usb` showed
+`NetworkManager.service`, `systemd-networkd.service`, and
+`systemd-network-generator.service` all enabled under `multi-user.target.wants/`.
+LFS 13.0-systemd ships `systemd-networkd` enabled by default -- it's what `server`
+deliberately runs, with no NetworkManager at all. `laptop`'s own 2026-09-01 entry above
+added NetworkManager to carry over the live host's real WiFi/connection state, but
+never disabled the base image's `systemd-networkd` units, leaving two managers
+eligible to own the same links. No `.network` file currently matches plain ethernet
+explicitly (only the shipped `89-ethernet.network.example` does, and it's inactive),
+so this wasn't a hard deadlock, but it's exactly the kind of unreviewed dual-ownership
+that produces flapping/unreachable `nmcli` status.
+
+Also requested during the diagnosis: `usbutils` (`lsusb`) for further hardware checks
+-- wasn't installed on `/mnt/usb` at all, despite a BLFS-extracted recipe for it
+already sitting at `recipes/blfs-usbutils.sh` from an earlier, unused extraction pass.
+
+Fixed in `packages.py`, `seq` 189-192, next build:
+
+- `linux-firmware-iwlwifi-8260` (189) and `linux-firmware-i915-dmc` (190) -- hand
+  recipes, each fetching the one blob its device needs from
+  `anduin.linuxfromscratch.org/BLFS/linux-firmware/` (confirmed present on the mirror
+  before writing the URLs down), same narrow-fetch policy as `server`'s
+  `linux-firmware-rtl-nic` (seq 172).
+- `laptop-network-manager-only` (191) -- hand recipe, `systemctl disable
+  systemd-networkd.service systemd-networkd.socket systemd-network-generator.service`,
+  scoped to `laptop` only since `server` needs the opposite.
+- `usbutils` (192) -- wired the existing extracted recipe in.
+
+Not fixed: `regulatory.db` -- no `wireless-regdb` page exists in this BLFS book
+mirror, and it only restricts the wifi channel/tx-power set rather than blocking
+association, so it's deferred rather than sourced ad hoc.
+
+**Run the same day.** `/mnt/crypt` had no headroom for `lfsbuild`'s 8GB build-step gate
+(5.9GB free, 97% used) -- cleared by deleting `blfs-staging/*.tar.*` (861M of already-
+gitignored, re-fetchable BLFS source downloads, not tracked or precious). All four
+steps then ran cleanly against the chroot tree (`ch07-kernfs` needed a `--force` remount
+of the virtual kernel filesystems first, since the tree had been unmounted since the
+last session). The two firmware recipes needed the same `/etc/resolv.conf` swap the
+`rust`/`go`/`tailscale`/`claude-code` recipes already use -- added directly to both
+(they're `hand()` entries, safe to edit in place, no extractor drift). `usbutils-019
+.tar.xz` wasn't staged in `lfs/sources` (BLFS sources aren't fetched by
+`bin/fetch-sources.sh`, which only covers the 92 LFS-book sources) -- fetched directly
+from the URL in `book/blfs-13.0/general/usbutils.html` and placed via the existing
+`sudo chroot .../lfs *` grant (`cp` from world-writable `lfs/tmp/`, no new sudoers
+needed). Rebuilt the tarball with `bin/lfs-archive --tree --final` (1.6G, leak check and
+setuid/hardlink preservation both clean) and extracted it onto the still-mounted
+`/mnt/usb`.
+
+**Real gotcha, worth remembering:** `tar --extract` is not a mirror -- it only adds or
+overwrites entries present in the archive, it never deletes a destination file that the
+new archive no longer contains. The `laptop-network-manager-only` step deletes six
+symlinks in the source tree, so the new tarball simply has no entries for them, and the
+extract left the previous deploy's stale enabled-symlinks sitting on `/mnt/usb`
+untouched (firmware and `usbutils`, being additions, extracted correctly). Caught by
+re-checking `systemctl --root=/mnt/usb is-enabled` after the extract and finding
+`systemd-networkd` still enabled; fixed by re-running the same `systemctl disable`
+directly against `/mnt/usb` via `chroot`. Any future BLFS step that *removes* something
+(a disabled service, a deleted file) needs this same manual double-check after a tree
+redeploy, or `--exclude`/an explicit rmdir step baked into the deploy procedure -- tar
+alone won't catch it.
+
+Verified on `/mnt/usb` after the fix: `iwlwifi-8000C-36.ucode` and
+`i915/skl_dmc_ver1_27.bin` present under `/usr/lib/firmware`, `/usr/bin/lsusb` present,
+`systemd-networkd.service`/`.socket`/`systemd-network-generator.service` all
+`disabled`, `NetworkManager.service` `enabled`. Not yet re-tested: an actual boot of
+the stick to confirm `iwlwifi` associates and `enp0s31f6` shows connected in `nmcli`.
+
+## 2026-09-03: USB boot test -- GRUB reported the kernel truncated, root cause was ext4 metadata_csum
+
+Booting the stick from the 2026-09-02 redeploy above stopped at GRUB with `error: file
+'/boot/vmlinuz-6.18.10-lfs-13.0-systemd' is truncated.` -- the menu and `grub.cfg` itself
+loaded fine, only the (12MB) kernel load failed. Mounted `/dev/sda2` back on `/mnt/usb` to
+investigate rather than guessing: `e2fsck -f -n` came back clean and the kernel's sha256
+matched the chroot tree's own copy byte for byte, so the file wasn't actually corrupt on
+disk at that point -- GRUB was misreading it at boot.
+
+Root cause, found by pulling `grub-core/fs/ext2.c` out of `lfs/sources/grub-2.14.tar.xz`
+directly rather than assuming: this host's `/etc/mke2fs.conf` `[fs_types] ext4` profile
+enables `metadata_csum`, `metadata_csum_seed`, and `orphan_file` by default (confirmed --
+`e2fsck` had flagged `orphan_present` as active on the previous format), but `ext2.c`'s
+`EXT2_DRIVER_SUPPORTED_INCOMPAT`/`EXT2_DRIVER_IGNORED_INCOMPAT` bitmasks never reference
+any of the three. GRUB neither rejects nor accounts for them, so it misreads the extent
+tree of any file too large to stay inline in the inode -- small files like `grub.cfg`
+never touch that code path, only the kernel did. The `mkfs.ext4 -F -L LFSROOT /dev/sda2`
+command in the 2026-09-02 entry above took the host's defaults and never excluded them.
+
+Fixed: operator reformatted `/dev/sda2` with
+`mkfs.ext4 -F -L LFSROOT -O ^metadata_csum,^metadata_csum_seed,^orphan_file /dev/sda2`
+(this exact flag combination isn't covered by the existing `/etc/sudoers.d/lfs-laptop-deploy`
+NOPASSWD pin, which is scoped to the plain no-`-O` invocation -- ran directly by the
+operator rather than adding a new sudoers rule). Then, same sequence as before: re-extract
+`laptop-lfs-13.0-systemd.tar.zst` (unchanged, still the 2026-09-02 build with the firmware/
+NetworkManager fixes -- verified all three survived the fresh extract: `NetworkManager`
+enabled, both `systemd-networkd` units and the generator disabled, both firmware blobs and
+`/usr/bin/lsusb` present), re-bind-mount and chroot, `grub-install --target=i386-pc
+--recheck /dev/sda` (clean, "Installation finished. No error reported."), hand-rewrite
+`/boot/grub/grub.cfg` with the new fs-UUID (`751ce7a1-...`, changed by the reformat; the
+`root=PARTUUID=219159d2-02` line is untouched since the partition table itself wasn't
+touched). Verified: `grub-script-check` clean, post-`umount -R` `e2fsck -f -n` clean with
+no `orphan_present` flag this time, kernel sha256 still matches the chroot tree.
+
+Extraction took much longer than the 2026-09-02 redeploy's ~40 minutes -- roughly 45
+minutes for the tar itself plus another ~10 minutes of `grub-install` blocked in
+uninterruptible sleep behind the kernel's own write-back queue (`/proc/meminfo`'s `Dirty`
+was still ~588MB right after the extract returned, and any process touching the device,
+including `grub-install`, serializes behind that same write-back). Nothing to fix here --
+this is expected on slow USB flash with a large extraction; anyone repeating this deploy
+should expect the *whole* redeploy sequence, not just the `tar` step, to run long, and
+should check `/proc/meminfo`'s `Dirty` line before assuming a hang.
+
+Updated `BOOTSTRAP.md` step 5's `mkfs.ext4` command for the eventual internal-disk deploy
+(`nvme0n1p1`) to carry the same `-O` exclusions -- that target boots through the identical
+`grub-2.14` build and would hit the identical failure on first boot otherwise. Also pushed
+the current tarball (sha256 `6fd8240a...`, 1,672,728,688 bytes -- a newer build than the
+`00:50` copy `server` already had, from the 2026-09-02 firmware/NetworkManager fix) to
+`server:~/laptop_backup/laptop-lfs-13.0-systemd.tar.zst`, replacing the stale one.
+
+Not yet re-tested: an actual boot of the stick with this reformatted filesystem. The
+`iwlwifi`/`enp0s31f6` network test from the 2026-09-02 entry above is also still
+outstanding -- neither has been confirmed on real hardware since the truncation was found.
+
+## 2026-09-03: staged operator config onto the stick for a working `claude` session on boot
+
+Confirmed `grub-install`'s own report ("Installation finished. No error reported."),
+`grub-script-check`, and `e2fsck -f -n` all clean after the reformat above -- the raw MBR/
+embedding gap itself couldn't be read directly to double-check (`/dev/sda` isn't covered
+by the narrow sudoers grant, only specific mount/mkfs/tar/e2fsck/chroot invocations are),
+so this is as much verification as is possible short of an actual reboot.
+
+Copied `~/.claude` (448M: settings, credentials, projects, memory) and `~/.ssh` (keys,
+`config`, `known_hosts` -- diffed identical to the operator's real `~/.ssh` file list
+afterward) onto `/mnt/usb/home/john/`, both writable directly as `john` since that's the
+UID the extracted tree already runs as. `claude` itself was already installed at the
+user-level npm prefix (`~/.npm-global`, from the 2026-09-01 entry), just not on `PATH` in
+a bare non-login shell -- confirmed working via `chroot ... su - john -c 'claude
+--version'` (2.1.258).
+
+The `~/agent-built-lfs` repo clone from the 2026-09-02 entry was gone -- it had been
+written directly onto that session's `/mnt/usb` mount rather than into the chroot tree
+itself, so this reformat's fresh tarball extract didn't carry it. Re-cloned the same way
+(local-path clone, not the raw working tree, to skip gitignored bulk) -- 20M, same as
+before. Note: a local clone only carries committed history, so this copy does not include
+this session's still-uncommitted doc changes (this entry included).
+
+**Found, not fixed:** `server` resolves through a WireGuard tunnel (`10.0.0.4`, per
+`/etc/hosts`; `wg0` is up on the real host right now, confirmed via `ip link`), but the
+built tree only has `wireguard-tools` (seq 168) installed -- `/etc/wireguard/` is empty
+(no `wg0.conf`), `wg-quick@wg0.service` is disabled, and no overlay file supplies one
+either. SSH keys alone don't get the stick to `server` on boot unless it's on the same
+LAN as `server-local` (`192.168.0.233`) instead. Deferred rather than fixed outright,
+since it needs the operator's own WireGuard private key copied onto removable media --
+a bigger step than copying `.ssh`, not something to do without asking first.
+
+## 2026-09-03: Deploy to `nvme0n1p1`/`p2`, and the OneLink+ dock Ethernet fix
+
+**Deploy to the internal disk**, from the USB-booted rescue environment, per
+`BOOTSTRAP.md` section 5: `umount /mnt/root` (the old Gentoo root), `mkfs.ext4 -F -L
+LFSROOT -O ^metadata_csum,^metadata_csum_seed,^orphan_file /dev/nvme0n1p1` (the
+feature exclusions this file already documents -- GRUB 2.14 can't read them),
+`mkswap -L LFSSWAP /dev/nvme0n1p2`, extracted `laptop-lfs-13.0-systemd.tar.zst`
+(5.3G, exit 0). Bind-mounted `/dev`, `/dev/pts`, `/proc`, `/sys`, `/run`, chrooted in,
+`grub-install --target=i386-pc --recheck /dev/nvme0n1` (clean), hand-wrote
+`/boot/grub/grub.cfg` (`search --set=root --fs-uuid`, `root=PARTUUID=f1183155-01
+rootwait`, no initrd -- same shape as the USB stick's own, still not checked into
+`overlay/` anywhere). `grub-script-check` passed. `e2fsck -f -n` clean both before and
+after all subsequent work (130406 then 130419 files, 0 errors).
+
+Root turned out **locked** (`passwd -S root` => `L`) despite this file's own step 4
+calling for a password before archiving -- never actually done. Left it locked rather
+than set one unasked; `john` has a working password and `%wheel ALL=(ALL) ALL` is live
+in `/etc/sudoers.d/00-sudo`, so `john` + `sudo` is the path in, same as everywhere else
+in this build.
+
+**Reapplied the four post-archive fixes** (`linux-firmware-iwlwifi-8260`,
+`linux-firmware-i915-dmc`, `laptop-network-manager-only`, `usbutils`, plus
+`ch07-kernfs`) directly into the deployed tree via chroot. These were applied live to
+the *USB stick's own* running system on 2026-09-02 (see the entry above) and recorded
+in `state/completed`, but that file is shared across the chroot/USB/internal-disk
+runs -- the archived tar predates them, so the freshly extracted `nvme0n1p1` tree
+didn't have them and `bin/lfsbuild --resume` would have silently skipped them
+(`state/completed` already claims them done). Fetched both firmware blobs fresh
+(iwlwifi-8000C-36.ucode, skl_dmc_ver1_27.bin -- byte counts matched the earlier USB
+run), re-ran the `systemctl disable systemd-networkd.*` fix, rebuilt `usbutils` from
+the cached, MD5-verified tarball in `lfs/sources`. Reran `bin/lfsmaint db --host
+laptop --root /mnt/target` afterward (311 packages, 101600 files, clean).
+
+**OneLink+ dock Ethernet didn't work post-deploy -- diagnosed and fixed.** The dock's
+Ethernet is `lsusb` `17ef:3054 "Lenovo OneLink+ Giga"`, a *separate* USB device from
+the onboard Intel I219-LM (`enp0s31f6`) that `kernel-config.sh`'s `E1000E` line
+already covers. Its USB interface 0 is class/subclass `02/06` -- standard CDC-ECM, not
+a vendor chip, so no `r8152` needed. Nothing bound to it because
+`CONFIG_USB_USBNET` (the framework every USB Ethernet class driver depends on) was
+never turned on anywhere in this build. Added `USB_USBNET` and `USB_NET_CDCETHER` as
+modules to `kernel-config.sh`. The original chroot build directory was already
+cleaned up post-archive, so this was a full `make mrproper && make -j2` rebuild (not
+incremental), done inside a chroot of the freshly deployed `/mnt/target` tree (42G
+free there vs. 9.9G on `/mnt/crypt`) rather than the tight `lfs/` build tree. Config
+gate passed clean; `make -j2` respected `host.toml`'s job cap.
+
+Verified live, not just built: both new kernel version strings report identically as
+`6.18.10`, so `usbnet.ko`/`cdc_ether.ko` were copied straight into the *currently
+running* USB-booted system's own `/lib/modules/6.18.10` and `modprobe cdc_ether`
+loaded clean (no vermagic mismatch). `cdc_ether` bound the dock immediately
+(`eth0`, `00:50:b6:cd:0a:5b`), NetworkManager brought it up, and it pulled a real DHCP
+lease (`192.168.0.210/24`, gateway `192.168.0.1`, working DNS) -- full connectivity
+confirmed before ever rebooting onto the internal disk. Removed the 2.7G kernel build
+scratch (`/sources/linux-6.18.10`, tarball, logs) from `/mnt/target` afterward; it was
+never part of the archived tree's own layout.
+
+Not yet done: the physical reboot onto `nvme0n1p1` itself (operator's own step, per
+`BOOTSTRAP.md`), and a permanent `hosts/laptop/overlay/boot/grub.cfg` -- the hand-
+written one above still lives only on the deployed disk, same gap `BOOTSTRAP.md` has
+flagged since 2026-08-28.

@@ -65,4 +65,16 @@ $K --module  MOUSE_PS2_SYNAPTICS
 # MFD_RTSX_PCI + MMC_REALTEK_PCI here if it turns out to be wanted -- exact Kconfig
 # symbol names not yet verified against this kernel's Kconfig, unlike everything above.
 
+# --- wired ethernet, dock: Lenovo OneLink+ Giga (USB CDC-ECM, 17ef:3054) -----------
+# Confirmed live (2026-09-03): lsusb shows idVendor=17ef idProduct=3054 "Lenovo
+# OneLink+ Giga" on the OneLink+ dock's internal USB3 hub; sysfs bInterfaceClass/
+# SubClass on interface 0 is 02/06 (CDC-ECM), not a vendor-specific chip -- no
+# r8152 needed. Nothing claimed it because USB_USBNET (the framework every USB
+# Ethernet class driver, cdc_ether included, depends on) was never turned on --
+# E1000E above only covers the onboard Intel I219-LM, a different device. Modules,
+# not built-in: not on the boot path (root is the internal NVMe), so no initramfs
+# implication.
+$K --module USB_USBNET
+$K --module USB_NET_CDCETHER
+
 kernel_config_finish

@@ -344,3 +344,8 @@ blfs-adduser-john
 blfs-lfsmaint
 ch08-binutils
 blfs-claude-code
+ch07-kernfs
+blfs-linux-firmware-iwlwifi-8260
+blfs-linux-firmware-i915-dmc
+blfs-laptop-network-manager-only
+blfs-usbutils

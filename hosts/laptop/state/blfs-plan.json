@@ -2784,5 +2784,61 @@
     "blocks": 1,
     "enabled": 1,
     "disabled": 0
+  },
+  {
+    "seq": 189,
+    "order": "blfs.189",
+    "name": "blfs-linux-firmware-iwlwifi-8260",
+    "chapter": "blfs",
+    "page": "linux-firmware-iwlwifi-8260",
+    "title": "linux-firmware-iwlwifi-8260 (hand-authored, host-specific)",
+    "context": "chroot",
+    "tarball": "",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
+  },
+  {
+    "seq": 190,
+    "order": "blfs.190",
+    "name": "blfs-linux-firmware-i915-dmc",
+    "chapter": "blfs",
+    "page": "linux-firmware-i915-dmc",
+    "title": "linux-firmware-i915-dmc (hand-authored, host-specific)",
+    "context": "chroot",
+    "tarball": "",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
+  },
+  {
+    "seq": 191,
+    "order": "blfs.191",
+    "name": "blfs-laptop-network-manager-only",
+    "chapter": "blfs",
+    "page": "laptop-network-manager-only",
+    "title": "laptop-network-manager-only (hand-authored, host-specific)",
+    "context": "chroot",
+    "tarball": "",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
+  },
+  {
+    "seq": 192,
+    "order": "blfs.192",
+    "name": "blfs-usbutils",
+    "chapter": "blfs",
+    "page": "usbutils",
+    "title": "usbutils-019",
+    "context": "chroot",
+    "tarball": "usbutils-019.tar.xz",
+    "manifest": true,
+    "blocks": 2,
+    "enabled": 2,
+    "disabled": 0
   }
 ]
