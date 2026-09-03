@@ -485,4 +485,14 @@ PACKAGES = sorted(BASE + [
     # diagnosis. Real book page (general/usbutils.html); deps libusb/hwdata already
     # built (Tier 8-12, see the NetworkManager block above).
     book(192, "usbutils", "general/usbutils.html", "usbutils-019.tar.xz"),
+
+    # Found live, testing the new start-hyprland.sh launcher (2026-09-03):
+    # XWayland's embedded X server fails to init its virtual keyboard --
+    # "sh: /usr/bin/xkbcomp: No such file or directory", "XKB: Failed to
+    # compile keymap", "Fatal server error: Failed to activate virtual core
+    # keyboard". Not in BLFS; server already hit and fixed this exact gap
+    # (hand(197, ...) there) but it was never carried over here. Shared
+    # recipe (recipes/blfs-xkbcomp.sh) reused verbatim -- deps (libxkbfile,
+    # xorgproto) already built (Tier 9).
+    hand(193, "xkbcomp", "xkbcomp-xkbcomp-1.5.0.tar.gz", "xkbcomp-1.5.0 (hand-authored)"),
 ], key=lambda p: p["seq"])

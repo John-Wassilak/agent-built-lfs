@@ -1277,3 +1277,69 @@ Not yet done: the physical reboot onto `nvme0n1p1` itself (operator's own step, 
 `BOOTSTRAP.md`), and a permanent `hosts/laptop/overlay/boot/grub.cfg` -- the hand-
 written one above still lives only on the deployed disk, same gap `BOOTSTRAP.md` has
 flagged since 2026-08-28.
+
+## 2026-09-03: `start-hyprland.sh` launcher, and two real defects it exposed
+
+Requested: a `~/start-hyprland.sh` for `laptop`, the Hyprland equivalent of server's
+`overlay/home/john/start-awesome.sh`. Written to
+`hosts/laptop/overlay/home/john/start-hyprland.sh` and deployed to the live host.
+Unlike server's abandoned nouveau-era attempt, no `__GLX_VENDOR_LIBRARY_NAME` override
+is needed -- this host's mesa was built with `glvnd=disabled` (single-vendor iris, no
+libglvnd dispatch to force). `seatd` (standalone server, enabled) and `john`'s
+`seat`/`video`/`input` group membership were already correct from the original build.
+
+**Real defect found testing it, unrelated to the script itself: `/` on the live host
+was owned by `john:john`, not `root:root`.** `systemctl status
+systemd-tmpfiles-setup.service` showed it exiting status 73, logging "Detected unsafe
+path transition / (owned by john) -> /var (owned by root)" for every rule it tried to
+apply -- meaning no tmpfiles rule had actually run since boot, `/run/user` included
+(and, more broadly, whatever persistent-journal/`/tmp` setup those rules were supposed
+to do). Root cause not fully traced (deploy-time extraction likely never wrote an
+explicit ownership entry for the tree's own top-level directory), but the fix is safe
+and narrow: `chown root:root /` (the directory entry only, no `-R` -- nothing under it
+was touched). Confirmed fixed: `stat` now shows `root:root`, and `systemd-tmpfiles
+--create` (the setup service itself refuses manual re-invocation, `RefuseManualStart`)
+ran clean afterward, creating `/run/user` (`0755 root root`, systemd's own
+`/usr/lib/tmpfiles.d/systemd.conf` rule).
+
+That still leaves the per-uid subdirectory missing -- `/run/user/1000` is normally
+created by `pam_systemd` at login, and this box has no PAM either, the identical gap
+server hit building its own `start-hyprland.sh` (see the 2026-08-xx entry above: fixed
+there with a static tmpfiles rule rather than the temporary-sudo route). Same fix
+applied here: `/etc/tmpfiles.d/xdg-runtime-john.conf` (`d /run/user/1000 0700 john
+john -`), applied immediately, persists across reboots on its own.
+
+**Second real defect, found running the launcher for real**: Hyprland itself started
+cleanly (event loop, config manager -- picks up `~/.config/hypr/hyprland.lua`,
+symlinked to the operator's separate `~/Config` dotfiles repo, not part of this
+project), but XWayland's embedded X server failed outright on keyboard init: `sh:
+/usr/bin/xkbcomp: No such file or directory`, `XKB: Failed to compile keymap`, `Fatal
+server error: Failed to activate virtual core keyboard`. `xkbcomp` is the exact
+hand-authored, no-BLFS-page package server already hit and fixed building its own
+Hyprland stack (`hosts/server/packages.py` seq 197, "hand-authored from xorg's own
+gitlab, matching Arch's xorg-xkbcomp 1.5.0") -- it was simply never carried over to
+laptop's own `packages.py`. Added as `hand(193, "xkbcomp", ...)` (laptop's own next
+free seq, independent numbering from server's), reusing the existing shared
+`recipes/blfs-xkbcomp.sh` verbatim -- deps (`libxkbfile`, `xorgproto`) already built in
+Tier 9. `bin/extract-blfs.py --host laptop --check` confirmed zero drift before and
+after regenerating the plan.
+
+Built for real, natively, on the live host (`bin/lfsbuild --host laptop --blfs --only
+blfs-xkbcomp --native`, matching how `server` maintains itself post-deploy): 0.1 min, 3
+files (`/usr/bin/xkbcomp`, its `.pc`, its man page). Required root; delivering a sudo
+password through a piped `ssh -tt` session proved unreliable (the first attempt hung
+indefinitely on the build's very first internal `sudo install -d` call and had to be
+killed -- confirmed no orphaned processes left behind). Operator enabled the existing
+`%wheel ALL=(ALL) NOPASSWD: ALL` grant in `/etc/sudoers.d/00-sudo` (already
+server's own standing policy, not a new hack) rather than have this session add a
+temporary one; **left enabled at the operator's explicit request, more work planned
+before it gets reverted -- do not revert without asking.**
+
+Re-ran the launcher after the fix: XWayland now compiles the keymap (two non-fatal
+`xkbcomp` warnings -- unsupported max keycode 708 clipped, a duplicate virtual
+modifier definition -- both explicitly noted as non-fatal by `xkbcomp` itself) and gets
+well past the point of the original crash; the 5-second test run was torn down by the
+test harness itself (`(EE) failed to read Wayland events: Broken pipe`), not a new
+failure. Full interactive verification (a real session on the physical console, an
+actual monitor/keyboard/mouse) is still outside what this SSH-driven process can
+exercise, the same limitation both hosts have hit at this stage of their builds.
