@@ -21,7 +21,24 @@ RemainAfterExit=yes
 # schedutil, not performance: measured to reach the same 3403 MHz under sustained
 # encode load (x264 1080p medium: 0.719x vs 0.735x on performance), without
 # holding max clock while the machine is idle.
-ExecStart=/bin/sh -c 'for p in /sys/devices/system/cpu/cpufreq/policy*/scaling_governor; do [ -w "$p" ] && echo schedutil > "$p"; done; exit 0'
+#
+# Not every host exposes schedutil: intel_pstate in active mode (laptop's
+# i7-6600U) only lists 'performance'/'powersave' in scaling_available_governors
+# -- writing 'schedutil' there fails with EINVAL. Found on laptop's first post-
+# deploy boot audit (2026-09-03): the old unconditional `exit 0` masked that
+# failure as success while every core sat on 'powersave'. Prefer schedutil when
+# it exists; otherwise leave the driver's own default alone rather than forcing
+# 'performance' -- intel_pstate active-mode 'powersave' is HWP-driven and already
+# scales under load, unlike a plain cpufreq 'powersave' pin, so there is nothing
+# to fix on those hosts. Never silently succeed: log what happened either way.
+ExecStart=/bin/sh -c '\
+  for p in /sys/devices/system/cpu/cpufreq/policy*/scaling_governor; do \
+    avail="$(cat "$(dirname "$p")/scaling_available_governors" 2>/dev/null)"; \
+    case " $avail " in \
+      *" schedutil "*) [ -w "$p" ] && echo schedutil > "$p" && echo "$p: set schedutil" || echo "$p: schedutil available but not writable"; ;; \
+      *) echo "$p: no schedutil available (driver exposes: $avail); leaving default ($(cat "$p" 2>/dev/null))"; ;; \
+    esac; \
+  done'
 
 [Install]
 WantedBy=multi-user.target
