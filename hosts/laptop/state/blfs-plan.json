@@ -2854,5 +2854,61 @@
     "blocks": 1,
     "enabled": 1,
     "disabled": 0
+  },
+  {
+    "seq": 194,
+    "order": "blfs.194",
+    "name": "blfs-dejavu-fonts",
+    "chapter": "blfs",
+    "page": "TTF-and-OTF-fonts",
+    "title": "DejaVu fonts 2.37 (hand-authored)",
+    "context": "chroot",
+    "tarball": "dejavu-fonts-ttf-2.37.tar.bz2",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
+  },
+  {
+    "seq": 195,
+    "order": "blfs.195",
+    "name": "blfs-jetbrains-mono-fonts",
+    "chapter": "blfs",
+    "page": "TTF-and-OTF-fonts",
+    "title": "JetBrains Mono 2.304 (hand-authored)",
+    "context": "chroot",
+    "tarball": "JetBrainsMono-2.304.tar.gz",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
+  },
+  {
+    "seq": 196,
+    "order": "blfs.196",
+    "name": "blfs-alacritty",
+    "chapter": "blfs",
+    "page": "alacritty",
+    "title": "alacritty-0.17.0 (hand-authored)",
+    "context": "chroot",
+    "tarball": "alacritty-0.17.0.tar.gz",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
+  },
+  {
+    "seq": 197,
+    "order": "blfs.197",
+    "name": "blfs-wofi",
+    "chapter": "blfs",
+    "page": "wofi",
+    "title": "wofi-1.5.3 (hand-authored)",
+    "context": "chroot",
+    "tarball": "wofi-v1.5.3.tar.gz",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
   }
 ]

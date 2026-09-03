@@ -495,4 +495,41 @@ PACKAGES = sorted(BASE + [
     # recipe (recipes/blfs-xkbcomp.sh) reused verbatim -- deps (libxkbfile,
     # xorgproto) already built (Tier 9).
     hand(193, "xkbcomp", "xkbcomp-xkbcomp-1.5.0.tar.gz", "xkbcomp-1.5.0 (hand-authored)"),
+
+    # Found live, testing the real start-hyprland.sh session (2026-09-03, operator
+    # watching the actual screen): `fc-list` returned zero fonts anywhere on this
+    # system -- every glyph rendered as a tofu box ("squares"). Same exact gap and
+    # fix server already has (hand(206-207, ...) there, both shared recipes reused
+    # verbatim) -- just never carried over. dejavu-fonts is the general Latin/
+    # Greek/Cyrillic fallback; jetbrains-mono-fonts because the operator's mirrored
+    # alacritty.toml explicitly configures "JetBrains Mono" as the terminal font.
+    hand(194, "dejavu-fonts", "dejavu-fonts-ttf-2.37.tar.bz2", "DejaVu fonts 2.37 (hand-authored)", page="TTF-and-OTF-fonts"),
+
+    # JetBrains' own release asset is a .zip; bin/lfsbuild's generic unpack step
+    # is `tar -xf` unconditionally, no zip support (confirmed: GNU tar 1.35 here
+    # refuses it outright, "This does not look like a tar archive"). Server's own
+    # "completed" build of this exact step must predate this gap or worked around
+    # it outside the driver -- not visible in the current recipe either way.
+    # Re-packed the same official release contents into
+    # JetBrainsMono-2.304.tar.gz (unzip then tar -cz, same top-level dir name) so
+    # this flows through the normal pipeline; recipe itself (fonts/ttf/*.ttf) is
+    # unchanged and still applies to the re-tarred layout.
+    hand(195, "jetbrains-mono-fonts", "JetBrainsMono-2.304.tar.gz", "JetBrains Mono 2.304 (hand-authored)", page="TTF-and-OTF-fonts"),
+
+    # Same live session: operator's SUPER+Return (alacritty) and SUPER+D (wofi)
+    # keybindings, both mirrored from the real dotfiles into hyprland.lua, did
+    # nothing -- neither binary was ever built here. Rust/Cargo project, tier 6's
+    # toolchain already present; shared recipe (recipes/blfs-alacritty.sh) reused
+    # verbatim from server.
+    hand(196, "alacritty", "alacritty-0.17.0.tar.gz", "alacritty-0.17.0 (hand-authored)"),
+
+    # wofi: never built anywhere in this project successfully -- server's own
+    # attempt was part of the Hyprland/Wayland branch abandoned for X11/awesome
+    # (recipe recovered from git history, commit 7efd90e^:recipes/blfs-wofi.sh,
+    # never actually run to completion there). First real build of this recipe.
+    # Bundles its own wlr-layer-shell protocol code -- no gtk-layer-shell
+    # dependency (confirmed in the recipe's own rationale by reading meson.build).
+    # Real deps: gtk+-3.0, wayland-client, gio-unix-2.0 -- all already present
+    # (gtk+-3.0 came in as a Firefox dependency, not deliberately built for this).
+    hand(197, "wofi", "wofi-v1.5.3.tar.gz", "wofi-1.5.3 (hand-authored)"),
 ], key=lambda p: p["seq"])

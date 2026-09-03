@@ -1283,9 +1283,14 @@ flagged since 2026-08-28.
 Requested: a `~/start-hyprland.sh` for `laptop`, the Hyprland equivalent of server's
 `overlay/home/john/start-awesome.sh`. Written to
 `hosts/laptop/overlay/home/john/start-hyprland.sh` and deployed to the live host.
-Unlike server's abandoned nouveau-era attempt, no `__GLX_VENDOR_LIBRARY_NAME` override
-is needed -- this host's mesa was built with `glvnd=disabled` (single-vendor iris, no
-libglvnd dispatch to force). `seatd` (standalone server, enabled) and `john`'s
+Initially documented here as not needing `__GLX_VENDOR_LIBRARY_NAME` (assumed
+`glvnd=disabled` from the tier plan) -- **wrong, corrected same day**: this host's
+`blfs-mesa` override actually reversed to `glvnd=enabled` on 2026-08-31 (aquamarine's
+CMakeLists hard-requires the GLVND-specific `OpenGL::OpenGL` CMake target), so libglvnd
+is real and active here (`libGLX.so`, `/usr/share/glvnd/egl_vendor.d/50_mesa.json`
+confirmed present live). The script now sets `__GLX_VENDOR_LIBRARY_NAME=mesa`, same as
+server's own launcher and for the same reason (XWayland doesn't implement
+`GLX_EXT_libglvnd`). `seatd` (standalone server, enabled) and `john`'s
 `seat`/`video`/`input` group membership were already correct from the original build.
 
 **Real defect found testing it, unrelated to the script itself: `/` on the live host
@@ -1343,3 +1348,100 @@ test harness itself (`(EE) failed to read Wayland events: Broken pipe`), not a n
 failure. Full interactive verification (a real session on the physical console, an
 actual monitor/keyboard/mouse) is still outside what this SSH-driven process can
 exercise, the same limitation both hosts have hit at this stage of their builds.
+
+## 2026-09-03 (continued): real interactive session -- tofu boxes, dead keybindings,
+## a corrected glvnd claim, and a GTK3 rebuild for wofi
+
+Operator started the launcher for real (not a timed SSH test) and watched the actual
+screen -- the laptop is currently docked, external displays live (`DP-3` "Sony SONY
+TV", `DP-5` "Acer V193W" via the OneLink+ dock; the internal `eDP-1` panel enumerates
+as `connected` in DRM but Hyprland reports it `disabled: true`, consistent with a
+docked/lid-closed session rather than a driver gap -- not investigated further, not
+reported as a problem). `hyprctl monitors`/`instances` confirmed a real running
+compositor instance the whole time, not a synthetic/headless one.
+
+**Correction to the entry above**: it claimed no `__GLX_VENDOR_LIBRARY_NAME` override
+was needed because "mesa was built with `glvnd=disabled`" -- wrong. Re-checking
+`hosts/laptop/blfs-overrides.json` directly: `blfs-mesa`'s override reversed to
+`glvnd=enabled` on 2026-08-31 (aquamarine's CMakeLists hard-requires the GLVND-specific
+`OpenGL::OpenGL` CMake target), and libglvnd is confirmed live (`libGLX.so`,
+`/usr/share/glvnd/egl_vendor.d/50_mesa.json`). `start-hyprland.sh` now sets
+`__GLX_VENDOR_LIBRARY_NAME=mesa`, matching server's own launcher, for the same
+XWayland/`GLX_EXT_libglvnd` reason.
+
+**Two real, operator-visible defects, both fixed:**
+
+1. **Every glyph rendered as a tofu box ("squares")** -- `fc-list` returned zero fonts
+   system-wide. Exact same gap and fix server already has (`hand(206-207, ...)` there)
+   but never carried to laptop. Added `dejavu-fonts-2.37` (SourceForge,
+   `dejavu-fonts-ttf-2.37.tar.bz2`, matches Arch's `ttf-dejavu`) and
+   `jetbrains-mono-fonts-2.304` -- the operator's mirrored `alacritty.toml` explicitly
+   names "JetBrains Mono". **JetBrains' own release asset is a `.zip`; `bin/lfsbuild`'s
+   generic unpack step is unconditional `tar -xf`, no zip support** (confirmed: GNU tar
+   1.35 refuses it outright, "This does not look like a tar archive"). Server's own
+   completed build of this step must predate this gap or worked around it outside the
+   driver -- not visible in the current recipe. Worked around by re-packing the same
+   official contents into `JetBrainsMono-2.304.tar.gz` (`unzip` then `tar -cz`, same
+   top-level dir name) so the step flows through the normal pipeline unmodified; the
+   recipe itself (`fonts/ttf/*.ttf`) needed no change. Both built live: 28 + 32 files.
+   `fc-list` now reports 54 fonts.
+
+2. **SUPER+Return (alacritty) and SUPER+D (wofi) did nothing** -- neither binary was
+   ever built here. `alacritty` (seq 196): shared recipe reused verbatim from server,
+   Rust/cargo release build, 3.7 min, 5 files. `wofi` (seq 197): **never actually
+   completed anywhere in this project** -- server's own attempt was part of the
+   Hyprland/Wayland branch abandoned for X11/awesome; recipe recovered from git history
+   (`7efd90e^:recipes/blfs-wofi.sh`) and restored to the shared tree, this is its first
+   real build. Source: `hg.sr.ht/~scoopta/wofi` (Arch's own upstream for
+   `xorg-xkbcomp`-style sourcing), tag `v1.5.3`.
+
+   First `wofi` attempt failed for a real reason: `fatal error: gdk/gdkwayland.h: No
+   such file or directory`. GTK3 here was built from **the book's own literal default**
+   (`x/gtk3.html` block 0: `-D wayland_backend=false`) -- correct for server (X11/
+   awesome only), wrong for laptop, this project's actual Wayland host. Operator asked
+   to additionally sweep for any other package with a similar Wayland-support gap;
+   grepped every recipe laptop actually uses for wayland-related build flags. Only
+   three other packages have a `wayland` toggle at all (`dunst`, `rofi`, both explicitly
+   server's own abandoned-Hyprland-era X11 replacements, not part of laptop's plan) --
+   `sdl2-compat`/SDL3 (built here) uses runtime `dlopen` for its Wayland backend, not a
+   build-time flag, and already has it (confirmed: `libwayland-client.so.0`/
+   `libwayland-egl.so.1` referenced in `libSDL3.so.0`'s strings). GTK3 was the only real
+   gap.
+
+   Added a `hosts/laptop/blfs-overrides.json` entry flipping `wayland_backend` to
+   `true` (x11/broadway stay on too -- both backends coexist in the same `libgtk-3.so`,
+   selected at runtime via `GDK_BACKEND`, so this is additive, not a replacement).
+   Generates `hosts/laptop/recipes/blfs-gtk3.sh` per CLAUDE.md's host-override
+   mechanism. Rebuilt live (`--force`, source tarball re-fetched from
+   `download.gnome.org` since the original was already cleaned up): 763 files.
+   Confirmed both `gdk-wayland-3.0` and `gdk-x11-3.0` pkg-config modules present
+   afterward -- Firefox's existing GTK3/X11 usage untouched. `wofi` then built clean:
+   18 files.
+
+**Verified live, in the operator's already-running session, not just built**:
+`hyprctl dispatch` needed the config's own Lua call form
+(`hl.dsp.exec_cmd("alacritty")`), not the classic `.conf`-style `exec alacritty` --
+this Hyprland build evaluates raw dispatch strings as Lua when a `.lua` config is
+active, confirmed by the error text literally showing the wrapped Lua source
+(`[string "return hl.dispatch(exec alacritty)"]`). `alacritty` opened as a real client
+(`hyprctl clients`: `class: Alacritty`); `wofi` opened as a real layer-shell surface
+(`hyprctl layers`: `namespace: wofi`, correct geometry on `DP-3`). `fc-list` confirms
+both new font families registered. Noticed in the log around this same window: a
+`Session got deactivated!` / `[libseat] Disabling seat` sequence with every input
+device reported removed, then reinitialized, plus one `ERR: BUG THIS: key not found in
+m_dPressedKeys` -- consistent with a VT switch or physical seat handoff during the
+operator's own interaction, not something introduced by tonight's changes; not
+investigated further since both apps launched successfully right after.
+
+Not attempted, out of scope for tonight: `chromium` (SUPER+B in the operator's real
+config) and `dolphin` (SUPER+E) have no build path in this project (no Chromium/KDE
+Frameworks recipes exist anywhere) -- both keybindings will keep doing nothing, a
+pre-existing condition of the operator's shared dotfiles, not a new finding.
+`XCursor couldn't find shape left_ptr, using default cursor instead` (seen in the
+original log, cosmetic -- Hyprland falls back to a default cursor) is a real, never-
+resolved gap on **both** hosts (server's own `packages.py` explicitly defers "a cursor
+theme is a later, separate concern") -- not fixed here, flagged for whenever that's
+wanted. Screenshot/clipboard utilities from server's old Hyprland-era wishlist
+(`grim`, `slurp`, `wl-clipboard`, `wlsunset`, `hyprshot`, `cliphist`) are not in
+laptop's `packages.py` at all -- a real gap if the operator wants them, not raised
+unprompted here.

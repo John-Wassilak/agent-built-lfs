@@ -350,3 +350,8 @@ blfs-linux-firmware-i915-dmc
 blfs-laptop-network-manager-only
 blfs-usbutils
 blfs-xkbcomp
+blfs-dejavu-fonts
+blfs-jetbrains-mono-fonts
+blfs-alacritty
+blfs-gtk3
+blfs-wofi

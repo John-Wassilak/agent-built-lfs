@@ -31,5 +31,12 @@
       "cmd": "groupadd -fg 86 netdev &&\n/usr/sbin/usermod -a -G netdev john\n\ncat > /usr/share/polkit-1/rules.d/org.freedesktop.NetworkManager.rules << \"EOF\"\npolkit.addRule(function(action, subject) {\n    if (action.id.indexOf(\"org.freedesktop.NetworkManager.\") == 0 && subject.isInGroup(\"netdev\")) {\n        return polkit.Result.YES;\n    }\n});\nEOF",
       "reason": "Book's <username> placeholder replaced with this machine's real, already-existing user (john -- same account ch07/BASE already created, already in the wheel group for sudo)."
     }
+  },
+  "blfs-gtk3": {
+    "0": {
+      "action": "replace",
+      "cmd": "mkdir build &&\ncd    build &&\n\nmeson setup ..            \\\n      --prefix=/usr       \\\n      --buildtype=release \\\n      -D man=false         \\\n      -D broadway_backend=true \\\n      -D x11_backend=true \\\n      -D wayland_backend=true &&\nninja",
+      "reason": "Book's own literal default (x/gtk3.html block 0) sets -D wayland_backend=false -- correct for server (X11/awesome only) but wrong for laptop, this project's actual Wayland/Hyprland host. Found 2026-09-03 building wofi: its meson.build hard-requires gdk/gdkwayland.h (gdk-wayland-3.0), which GTK3 only installs with this backend enabled. x11_backend stays on too -- XWayland and any GDK-X11 app (Firefox included) still need it; both backends coexist in the same libgtk-3.so, selected at runtime via GDK_BACKEND, so this is additive, not a replacement."
+    }
   }
 }

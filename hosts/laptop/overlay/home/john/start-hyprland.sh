@@ -17,11 +17,19 @@ export XDG_RUNTIME_DIR="/run/user/$(id -u)"
 export XDG_SESSION_TYPE=wayland
 export XDG_CURRENT_DESKTOP=Hyprland
 
-# No __GLX_VENDOR_LIBRARY_NAME override needed here, unlike server's
-# abandoned Hyprland attempt on nouveau/NVIDIA: this host's mesa was built
-# with glvnd=disabled (hosts/laptop/blfs-overrides.json) -- iris is the
-# only GPU vendor present, so there is nothing for libglvnd to dispatch
-# between and no GLX_EXT_libglvnd query to fail under XWayland.
+# Correction 2026-09-03: this host's mesa actually has glvnd=enabled
+# (hosts/laptop/blfs-overrides.json's blfs-mesa override -- reversed
+# 2026-08-31 from an earlier glvnd=disabled call, once aquamarine's
+# CMakeLists turned out to hard-require the GLVND-specific OpenGL::OpenGL
+# CMake target). A start-hyprland.sh comment written earlier the same day
+# claimed glvnd=disabled here -- wrong, fixed. Since libglvnd is real and
+# active, the same GLX vendor gap server's own start-hyprland.sh documents
+# applies here too, for any GLX-based (not GLES/EGL) app run through
+# XWayland: XWayland doesn't implement the GLX_EXT_libglvnd server
+# extension libGLX.so normally uses to pick a vendor per X screen, so
+# without this it fails closed. "mesa" is the vendor name Mesa registers
+# itself under (libGLX_mesa.so.0).
+export __GLX_VENDOR_LIBRARY_NAME=mesa
 
 LOG="$HOME/hyprland.log"
 [ -f "$LOG" ] && mv -f "$LOG" "$LOG.old"
