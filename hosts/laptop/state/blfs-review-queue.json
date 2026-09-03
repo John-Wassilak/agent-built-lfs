@@ -16,5 +16,23 @@
     ],
     "cmd": "gtk-update-icon-cache -qtf /usr/share/icons/hicolor",
     "context": "Note This package installs icon files into the /usr/share/icons/hicolor hierarchy and you can improve system performance and memory usage by updating /usr/share/icons/hicolor/index.theme. To perform the update you must have GTK-3.24.51 installed and issue the following command as the root user:"
+  },
+  {
+    "recipe": "blfs-qt6",
+    "block": 1,
+    "tags": [
+      "admon:tip"
+    ],
+    "cmd": "mkdir -pv /opt/qt-6.10.2\nln -sfnv qt-6.10.2 /opt/qt6",
+    "context": "Tip Sometimes the installation paths are hardcoded into installed files. This is the reason why /opt/qt6 is used as installation prefix instead of /opt/qt-6.10.2. To create a versioned Qt6 directory, you may rename the directory and create a symlink:"
+  },
+  {
+    "recipe": "blfs-intel-media-driver",
+    "block": 0,
+    "tags": [
+      "admon:note"
+    ],
+    "cmd": "grep -ri 'RegisterDevice(0x9a49'",
+    "context": "built. To determine the model of the Intel GPU, install pciutils-3.14.0 and run lspci -nn | grep -Ei 'VGA|DISPLAY' first. It will output some information about the GPU, including the PCI vendor ID (8086 for Intel) and the PCI device ID. For example, with an Intel Core i5-11300H CPU, the output is 8086:9a49. Now searching for the registration of this device ID in the intel-media-driver source tree:"
   }
 ]

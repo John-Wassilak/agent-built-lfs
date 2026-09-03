@@ -532,4 +532,61 @@ PACKAGES = sorted(BASE + [
     # Real deps: gtk+-3.0, wayland-client, gio-unix-2.0 -- all already present
     # (gtk+-3.0 came in as a Firefox dependency, not deliberately built for this).
     hand(197, "wofi", "wofi-v1.5.3.tar.gz", "wofi-1.5.3 (hand-authored)"),
+
+    # Operator-requested (2026-09-03). Not in BLFS; shared recipe reused verbatim from
+    # server (hand(175, ...) there) -- portable, no GPU/host-specific content. Deps
+    # (libcap, ncursesw) already present.
+    hand(198, "htop", "", "htop (hand-authored)"),
+
+    # Operator-requested (2026-09-03): DankMaterialShell, which needs Quickshell,
+    # which needs Qt6. Real BLFS page. Disk/CPU cost flagged and acknowledged before
+    # starting (book's own estimate: 50GB build space, 12 SBU at parallelism=8; this
+    # host has 2 jobs and ~41GB free) -- proceeding per operator instruction, watching
+    # free space as the build goes, same as this host's own deploy strategy.
+    book(199, "qt6", "x/qt6.html", "qt-everywhere-src-6.10.2.tar.xz"),
+
+    # Operator-requested (2026-09-03): pavucontrol, to configure sound (pipewire-pulse
+    # emulates the PulseAudio server protocol, but nothing here ever built a PulseAudio
+    # *client* library or the GTK4 stack pavucontrol itself needs). Full chain, in
+    # dependency order, all real BLFS pages. gobject-introspection and vulkan-loader
+    # are both already present (confirmed live, not assumed) so gtk4's book-default
+    # `-D introspection=enabled -D vulkan=enabled` needs no override, unlike the
+    # NetworkManager/polkit overrides from 2026-09-01 written before introspection was
+    # ever built here.
+    book(200, "iso-codes", "general/iso-codes.html", "iso-codes-v4.20.1.tar.gz"),
+    book(201, "graphene", "x/graphene.html", "graphene-1.10.8.tar.xz"),
+    book(202, "libsigc++3", "general/libsigc3.html", "libsigc++-3.6.0.tar.xz"),
+    book(203, "glibmm2", "general/glibmm2.html", "glibmm-2.86.0.tar.xz"),
+    book(204, "cairomm", "x/cairomm-1.16.html", "cairomm-1.18.0.tar.xz"),
+    book(205, "pangomm2", "x/pangomm2.html", "pangomm-2.56.1.tar.xz"),
+    book(206, "gtk4", "x/gtk4.html", "gtk-4.20.3.tar.xz"),
+    book(207, "gtkmm4", "x/gtkmm4.html", "gtkmm-4.20.0.tar.xz"),
+    book(208, "json-glib", "general/json-glib.html", "json-glib-1.10.8.tar.xz"),
+
+    # PulseAudio here for its client library (libpulse) only -- pavucontrol links
+    # against it to talk to whatever implements the PulseAudio protocol, which is
+    # already pipewire-pulse, matching this project's standing pipewire-not-
+    # pulseaudio decision. Built via the book's own unmodified recipe (no meson
+    # option to build client-only), but pulseaudio.service is never enabled/started
+    # -- pipewire-pulse keeps being the actual running daemon, this package's
+    # server binary just sits on disk unused, same as any other library package that
+    # happens to also ship a daemon it doesn't get to run.
+    book(209, "pulseaudio", "multimedia/pulseaudio.html", "pulseaudio-17.0.tar.xz"),
+    book(210, "pavucontrol", "multimedia/pavucontrol.html", "pavucontrol-6.2.tar.xz"),
+
+    # Found live, testing mpv --hwdec=vaapi with a real GPU vo (2026-09-03): both
+    # VAAPI backend candidates failed to open --
+    # "libva: Trying to open /usr/lib/dri/iHD_drv_video.so ... va_openDriver()
+    # returns -1", same for i965_drv_video.so -- because neither file exists at
+    # all. Root cause: this project's own seq-146 comment ("VAAPI hardware video
+    # accel through mesa's iris driver") was a misconception -- mesa's iris is the
+    # OpenGL/Vulkan driver; Intel VAAPI decode needs a separate driver package,
+    # not part of mesa. `libva` (the dispatch library) was built, but never the
+    # actual backend. intel-media-driver (iHD) is Intel's current-recommended
+    # backend for Gen8+ (this is Gen9/Skylake), over the older intel-vaapi-driver
+    # (i965). Kernel-side requirement (book's own note) already satisfied:
+    # DRM_I915 is already enabled and working. gmmlib is intel-media-driver's own
+    # Required dependency (Intel's graphics memory management library).
+    book(211, "gmmlib", "general/gmmlib.html", "gmmlib-22.8.2.tar.gz"),
+    book(212, "intel-media-driver", "multimedia/intel-media-driver.html", "intel-media-driver-25.3.4.tar.gz"),
 ], key=lambda p: p["seq"])

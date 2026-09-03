@@ -355,3 +355,6 @@ blfs-jetbrains-mono-fonts
 blfs-alacritty
 blfs-gtk3
 blfs-wofi
+blfs-htop
+blfs-gmmlib
+blfs-intel-media-driver

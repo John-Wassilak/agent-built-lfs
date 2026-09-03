@@ -394,3 +394,7 @@ blfs-alacritty	native	223.4	0
 blfs-wofi	native	3.5	1
 blfs-gtk3	native	264.3	0
 blfs-wofi	native	5.1	0
+blfs-htop	native	24.0	0
+blfs-qt6	native	6639.1	-9
+blfs-gmmlib	native	65.4	0
+blfs-intel-media-driver	native	2351.4	0

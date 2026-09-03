@@ -1445,3 +1445,77 @@ wanted. Screenshot/clipboard utilities from server's old Hyprland-era wishlist
 (`grim`, `slurp`, `wl-clipboard`, `wlsunset`, `hyprshot`, `cliphist`) are not in
 laptop's `packages.py` at all -- a real gap if the operator wants them, not raised
 unprompted here.
+
+## 2026-09-03 (continued): VAAPI was never actually wired up -- found via a real hwdec test
+
+Operator asked for a concrete test: download the same clip in x264/x265/vp9 (`yt-dlp`,
+newly `pip install --user`ed -- `~/.local/bin` was already on `PATH` via
+`bashrc.local`, no fix needed) and confirm hardware decode in `mpv`. YouTube doesn't
+serve HEVC for the requested video at all (only AV1/VP9/H.264) -- transcoded the x264
+download to HEVC locally with `ffmpeg`'s already-built `libx265` encoder to get a real
+x265 test file, rather than skip that codec silently.
+
+**Both `ffmpeg` and `mpv` turned out to already be built** (contradicting this file's
+own 2026-08-31 "deliberately not built" note -- stale since Firefox needed the GTK3
+half of that deferral, and it seems mpv/ffmpeg got swept in as part of the later media
+codec tier without a narrative entry). `mpv --hwdec=vaapi --vo=gpu` on the x264 file
+failed outright: `libva: Trying to open /usr/lib/dri/iHD_drv_video.so ...
+va_openDriver() returns -1`, same for `i965_drv_video.so`. Root cause: **VAAPI was
+never actually wired up on this host.** `libva` (seq 146, the dispatch library) was
+built, but this project's own comment on that line -- "VAAPI hardware video accel
+through mesa's iris driver" -- is a real misconception: mesa's `iris` is the
+OpenGL/Vulkan driver; Intel VAAPI decode needs a separate backend package that mesa
+does not provide. Confirmed by the fact that `/usr/lib/dri/{iHD,i965}_drv_video.so`
+simply didn't exist. Added `gmmlib` (seq 211, intel-media-driver's own Required dep)
+and `intel-media-driver` (seq 212, the modern `iHD` backend Intel recommends for
+Gen8+ -- this is Gen9/Skylake -- over the older `i965_drv_video.so`). Book's own
+kernel-config note for this page (`DRM_I915`) was already satisfied. Both built live,
+zero drift. `intel-media-driver`'s block 0 (an example `grep` command for identifying
+a GPU's generation from its PCI ID) auto-disabled correctly, not a real build step.
+
+**Full VAAPI result, all three codecs, `mpv --hwdec=vaapi --vo=gpu` with
+`WAYLAND_DISPLAY` correctly set** (an earlier test run without it fell through to a
+raw DRM backend and collided with Hyprland's own DRM master -- `Failed to acquire DRM
+master: Permission denied` -- a test-harness mistake, not a real defect, since the
+Wayland path works fine once the env var is actually set):
+- H.264: `Using hardware decoding (vaapi)` -- confirmed.
+- HEVC: `Using hardware decoding (vaapi)` -- confirmed.
+- VP9: `Hardware decoding of this stream is unsupported?` -- **not a bug**. Intel
+  didn't add a VP9 fixed-function decode block until Kaby Lake (Gen9.5); this is
+  Gen9 Skylake. `iHD_drv_video.so` loads and probes formats fine, it just has
+  nothing to offer for VP9 on this silicon -- software decode is permanent here,
+  not a gap this project can close.
+
+**Operator then asked to confirm all three consumers (mpv/ffmpeg/Firefox) are
+actually configured to use it, not just capable of it:**
+- `mpv`: already correctly configured in the operator's own `~/Config` dotfiles
+  (`hwdec=vaapi`, `vo=gpu` in `mpv.conf`) -- nothing to change. That file's
+  `ytdl-format` already excludes vp9/av1 for embedded playback, which lines up
+  exactly with the hardware limitation just confirmed above -- the operator (or
+  whoever wrote that config) had already worked around this before it was
+  formally diagnosed here.
+- `ffmpeg`: no persistent config exists for hwaccel (it's a per-invocation flag,
+  `-hwaccel vaapi`); already proven working via the x265 transcode and the mpv
+  tests above, which both exercise the same `libva`/`iHD_drv_video.so` path.
+- `firefox`: **not configured by default**. `prefs.js` had zero VAAPI-related
+  settings before this -- meaning any video played earlier tonight (before
+  `intel-media-driver` even existed) silently used software decode, no visible
+  symptom either way. Added
+  `~/.mozilla/firefox/ftfaevf4.default-default/user.js` (the profile matching
+  `profiles.ini`'s actual `Install<id>` default, not the older, unused
+  `y77rja4t.default` profile also listed there) setting
+  `media.ffmpeg.vaapi.enabled`, `media.hardware-video-decoding.force-enabled`,
+  and `widget.dmabuf.force-enabled` to `true`. `media.rdd-ffmpeg.enabled` was
+  also written but didn't survive into `prefs.js` -- not a recognized pref name
+  in this Firefox version (140.8.0esr), dropped silently rather than erroring;
+  the three that did apply are the ones that actually matter. Restarted Firefox,
+  opened a local test file, and confirmed live in `/proc/<rdd-pid>/maps`:
+  `iHD_drv_video.so` was not loaded on first launch (nothing had played yet) and
+  *was* loaded once real playback started -- the RDD process genuinely engages
+  the hardware path now, not just linked-but-unused.
+
+Not part of `agent-built-lfs`: the mpv/Firefox config lives in the operator's
+separate `~/Config` dotfiles repo, edited directly on the live host. That repo's
+laptop checkout (like this one) has no working GitHub SSH key from this
+non-interactive session -- commits there are local-only until the operator pushes
+from an interactive shell where their `pass`-based agent bootstrap runs.
