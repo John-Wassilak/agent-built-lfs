@@ -403,6 +403,53 @@
       "reason": "Tests a running slapd server. Not installing slapd."
     }
   },
+  "blfs-libsecret": {
+    "0": {
+      "action": "replace",
+      "cmd": "mkdir bld &&\ncd    bld &&\n\nmeson setup --prefix=/usr       \\\n            --buildtype=release \\\n            -D gtk_doc=false    \\\n            -D vapi=false       \\\n            -D manpage=false    \\\n            ..                  &&\nninja",
+      "reason": "Book's own default (vapi=true) fails: 'ERROR: Program vapigen not found or not executable' -- vapigen ships with Vala, which is Recommended (not Required) per this page's own dependency list and is not built anywhere in this project. Same class as the GTK4 vulkan/glslc trap and the gtk_doc=true block already dropped below: an optional tool the book assumes without a guard.\n\nmanpage=false added after a second real failure past the vapi fix: 'ERROR: Program xsltproc not found or not executable' -- docbook-xml/docbook-xsl-nons/libxslt are this page's own Optional list ('to build manual pages'), and libxslt is not built in this project."
+    },
+    "1": {
+      "action": "drop",
+      "reason": "Optional API-doc generation ('If you have Gi-DocGen ... installed and wish to build the API documentation, issue') -- gi-docgen is not part of this build. Same class as the GTK4/gtkmm4/XWayland doc blocks: true of any host that has not built gi-docgen."
+    }
+  },
+  "blfs-gcr": {
+    "1": {
+      "action": "replace",
+      "cmd": "sed -i 's:\"/desktop:\"/org:' schema/*.xml &&\n\nmkdir build &&\ncd    build &&\n\nmeson setup --prefix=/usr       \\\n            --buildtype=release \\\n            -D gtk_doc=false    \\\n            -D ssh_agent=false  \\\n            -D introspection=false \\\n            ..                  &&\nninja",
+      "reason": "Book's own default fails: 'ERROR: Program vapigen not found or not executable' inside gck/meson.build's generate_vapi call. Unlike gcr4/libsecret, this older gcr-3.41.2 has no separate 'vapi' meson option (checked meson_options.txt directly) -- both GIR and VAPI generation here are gated by the single 'introspection' option (gck/meson.build: 'if get_option(\"introspection\")' wraps generate_gir and the unconditional generate_vapi call right after it), so introspection is what has to go, not a vapi-specific flag. GObject Introspection is Recommended for GLib, not something this project's actual use of gcr-3 (gnome-keyring's SystemPrompter dependency, not a GNOME desktop) needs at runtime -- libgck/libgcr shared libs are all gnome-keyring links against."
+    },
+    "2": {
+      "action": "drop",
+      "reason": "Optional API-doc generation ('If you have Gi-DocGen ... installed and wish to build the API documentation, issue') -- gi-docgen is not part of this build. Same class as the GTK4/gtkmm4/XWayland/libsecret/gcr4 doc blocks."
+    }
+  },
+  "blfs-gcr4": {
+    "0": {
+      "action": "replace",
+      "cmd": "mkdir build &&\ncd    build &&\n\nmeson setup --prefix=/usr       \\\n            --buildtype=release \\\n            -D gtk_doc=false    \\\n            -D vapi=false       \\\n            ..                  &&\nninja",
+      "reason": "Same vapigen gap as blfs-libsecret (built right before this, same fix): 'ERROR: Program vapigen not found or not executable'. Vala is Optional per this page's own dependency list and not built in this project."
+    },
+    "1": {
+      "action": "drop",
+      "reason": "Optional API-doc generation ('If you have Gi-DocGen ... installed and wish to build the API documentation, issue') -- gi-docgen is not part of this build. Same class as the GTK4/gtkmm4/XWayland doc blocks: true of any host that has not built gi-docgen."
+    }
+  },
+  "blfs-gnome-keyring": {
+    "0": {
+      "action": "replace",
+      "cmd": "sed -i 's:\"/desktop:\"/org:' schema/*.xml &&\n\nmkdir build-gkr &&\ncd    build-gkr &&\n\nmeson setup --prefix=/usr --buildtype=release -D pam=false -D manpage=false .. &&\nninja",
+      "reason": "Book's own default fails: 'ERROR: C shared or static library \"pam\" not found' -- meson.build unconditionally probes for libpam whenever -D pam=true (the default), and Linux-PAM is this page's own Recommended (not Required) dependency, not built anywhere in this project (same standing gap as every other PAM-optional package here, e.g. blfs-cairomm's Boost Test). ssh-agent is unaffected: its meson option already defaults to false in this release, and ssh-agent/ssh-add exist anyway.\n\nmanpage=false added after a second real failure past the pam fix: 'ERROR: Program xsltproc not found or not executable' (docs/meson.build, gated behind -D manpage, default true) -- libxslt is not built in this project, same gap already hit on blfs-libsecret."
+    }
+  },
+  "blfs-xdg-utils": {
+    "0": {
+      "action": "replace",
+      "cmd": "./configure --prefix=/usr &&\nfor d in scripts/desc/*.xml; do\n    b=$(basename \"$d\" .xml)\n    echo \"See \\`man $b\\` or https://gitlab.freedesktop.org/xdg/xdg-utils for full usage.\" > \"scripts/$b.txt\"\ndone &&\nmake -C scripts scripts",
+      "reason": "Book's own plain 'make' fails: scripts/Makefile.in's 'all' target is 'html man scripts', all three generated via xmlto ('XMLTO = @XMLTO@', configure.ac's AC_PATH_PROG falls back to a literal /usr/bin/xmlto path that doesn't exist rather than erroring at configure time, so the failure only surfaces at make). xmlto's own book page (pst/xmlto.html) Requires docbook-xml/docbook-xsl-nons/libxslt, none built here -- same standing gap as every other xmlto/xsltproc/docbook consumer in this project, and a 3-package cascade nobody asked for just for `--help` text.\n\nFirst attempt ('make -C scripts scripts' alone) still failed: turns out 'scripts' itself needs xmlto too -- each script's build rule ('%: %.in %.txt') depends on a per-script .txt file generated by 'xmlto txt' from scripts/desc/*.xml, and generate-help-script.awk (checked directly) really does splice that .txt's content into the script's own --help/usage output, not just a doc-build side effect. Placeholder .txt files (one line, pointing at the real xdg-utils docs) are created for each script before 'make -C scripts scripts' runs, dated after their desc/*.xml source so make's timestamp check is satisfied and it never invokes xmlto. Only cost: `xdg-open --help` (etc.) prints a generic pointer instead of the full usage text -- the scripts' actual behavior is unaffected, matching this project's standing practice of trimming doc/help-text extras rather than building a docbook toolchain for them. The install rule already guards man page installation with 'if [ -f $x ]' (scripts/Makefile.in), so plain 'make install' next still works untouched."
+    }
+  },
   "blfs-pango": {
     "1": {
       "action": "drop",

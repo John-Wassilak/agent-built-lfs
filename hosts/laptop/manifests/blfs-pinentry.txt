@@ -1,5 +1,6 @@
 /usr/bin/pinentry
 /usr/bin/pinentry-curses
+/usr/bin/pinentry-gnome3
 /usr/bin/pinentry-tty
 /usr/share/info/dir
 /usr/share/info/pinentry.info

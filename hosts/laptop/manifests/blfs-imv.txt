@@ -1,0 +1,7 @@
+/etc/imv_config
+/usr/bin/imv
+/usr/bin/imv-folder
+/usr/bin/imv-msg
+/usr/share/applications/imv-folder.desktop
+/usr/share/applications/imv.desktop
+/usr/share/licenses/imv/LICENSE

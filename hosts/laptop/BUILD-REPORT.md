@@ -2941,3 +2941,262 @@ hyprpicker` and degrades to a normal capture without it, and nothing else in thi
 project's plan wants it for its own sake -- add it later, as its own step, if `--freeze`
 turns out to be wanted. All five shared recipes; none names hardware. Built clean,
 253/258, `lfsmaint`'s database rebuilt and reverified clean afterward.
+
+### GUI pinentry (real fix), bash-completion (seq 246-248)
+
+Operator asked for a GUI pinentry and noticed `pass`/`pass-otp` tab-completion never
+worked on this build. `book/blfs-13.0/` had been cleaned off this checkout at some
+point (gitignored, upstream content) -- refetched from
+`linuxfromscratch.org/blfs/downloads/13.0-systemd/blfs-book-13.0-systemd-html.tar.xz`
+per `README.md`'s own instructions before anything else here could proceed.
+
+First attempt at pinentry was a dead end, caught before it did anything useful: added
+a host override forcing `--enable-pinentry-gtk2`, on the theory that GTK3 (already
+present, seq 134, built before pinentry's seq 219) would satisfy it. Wrong -- the
+build log (`hosts/laptop/logs/blfs-pinentry.log`) showed `checking for gtk+-2.0 >=
+2.12.0... no`: pinentry's "gtk2" frontend is hardcoded to the real, obsolete GTK+2
+pkg-config module regardless of name, not GTK3/4, and this project has never built
+GTK+2. Override reverted rather than left in place doing nothing.
+
+Real fix: the book's own `--enable-pinentry-gnome3` defaults to yes/auto and just
+needs Gcr + libsecret present (`pinentry.html`: "uses Gcr-4.4.0.1 (or Gcr-3.41.2)").
+Both are real BLFS pages, both lightweight here since their Required/Recommended
+lists -- GLib, libgcrypt, p11-kit, GnuPG, GTK-4.20.3 -- were already built for other
+reasons (BASE, seq 220, seq 206/pavucontrol). `libsecret` (seq 247) hit two real
+`vapigen`-not-found meson failures (`-D vapi=false`, then `-D manpage=false` once
+`xsltproc` was missing too) -- both optional per the book's own Recommended/Optional
+lists, same class of doc/tool trap as the GTK4 chain. `gcr4` (seq 248) hit the same
+`vapigen` gap, same fix. Both overrides recorded shared (`recipes/blfs-overrides.json`),
+true of any host without Vala/libxslt, not laptop-specific. `pinentry` (seq 219)
+re-run with the plain book default afterward -- no override needed once the real
+dependency was there -- and now installs `pinentry-gnome3`, confirmed via the
+build's own config summary (`GNOME 3 Pinentry .: yes`) and a live Assuan handshake
+(`pinentry-gnome3 <<< BYE` answered `OK Pleased to meet you`). `/usr/bin/pinentry`
+now symlinks there; GnuPG has no hardcoded `pinentry-program`, so this took effect
+with no config change.
+
+`bash-completion` (seq 246, hand-authored -- checked the book directly first, grepped
+every page for the string: no dedicated framework page exists in BLFS 13.0, only
+individual packages' own optional install hooks) is why `pass`/`pass-otp` never
+autocompleted: both already install their completions correctly (confirmed in their
+own manifests, `/usr/share/bash-completion/completions/pass` and
+`/etc/bash_completion.d/pass-otp`) but nothing on this system ever sourced them.
+Installed from upstream's 2.18.0 release tarball (github.com/scop/bash-completion --
+no published checksum file, recorded as this session's own sha256, same gap already
+noted for grim/enchant). Appended a source line for its `/etc/profile.d/bash_completion.sh`
+into `/etc/bashrc` from the recipe itself (append, not an edit to the generated
+`blfs-shell-startup-files.sh`) -- this project's `/etc/profile.d` is only sourced for
+login shells, and ordinary interactive terminals need the fallback upstream's own
+README documents for exactly this case. Confirmed live: `pass <TAB>` now loads and
+binds `_pass` via bash-completion's on-demand loader.
+
+Same `bash-completion` step added to `server`'s `packages.py` (seq 253, same shared
+recipe) since the missing-sourcing gap is identical there, but not built from this
+session -- `server` is a separate physical host. Plan regenerated
+(`hosts/server/state/blfs-plan.json`) and verified zero-drift; the actual build is
+for a session running there.
+
+Built clean, 256/261 (was 253/258 before this; qt6 is the one open step, unrelated,
+untouched this session). `lfsmaint`'s database rebuilt and reverified clean -- the
+only "unexplained missing" entries are pre-existing (dbus/pulseaudio/sudo/systemd),
+not touched by this work.
+
+### GUI pinentry, part 2: it built but still showed curses (seq 249-250)
+
+Operator report: still getting the CLI prompt after the above. Two real, separate
+bugs, neither in the packages just built.
+
+**Bug 1 -- a stray `gpg-agent`.** Two `gpg-agent` daemons were running for this user
+(`~/.gnupg-auto` and `~/.gnupg`, the latter is the real default homedir `pass`/`gpg`
+resolve to with no `GNUPGHOME` set). `/proc/<pid>/environ` on the `~/.gnupg` one
+showed `WAYLAND_DISPLAY` present but `DBUS_SESSION_BUS_ADDRESS` completely absent --
+it had been started (14:03:55, mid-session) from a shell that itself lacks that
+variable, almost certainly this session's own tool shell, not a real terminal inside
+Hyprland. `pinentry-gnome3` checks `$DBUS_SESSION_BUS_ADDRESS` itself and silently
+falls back to curses when it's unset; a child inherits its parent's environment, so
+every pinentry that agent ever spawned would carry the same gap until restarted.
+Fix: `GNUPGHOME=/home/john/.gnupg gpgconf --kill gpg-agent`, then let it respawn
+attached to a proper environment -- verified via `/proc/<new pid>/environ` before
+declaring it fixed. `~/.gnupg-auto`'s agent (the automation/`pass-auto` one referenced
+in `hyprland.lua`'s autostart block) was left alone -- out of scope, and headless by
+design.
+
+**Bug 2 -- Gcr had no System Prompter.** Even with the environment fixed, pinentry
+printed `No Gcr System Prompter available, falling back to curses`. `gcr4` (built in
+part 1) only ships that API's *headers* (checked: nothing under `/usr/libexec` names
+a prompter). The real `org.gnome.keyring.SystemPrompter` D-Bus service is `gcr-3`'s
+own `gcr-prompter` binary, activated via a `.service` file that `gnome-keyring`
+installs -- and `gnome-keyring.html`'s own Required list wants Gcr-3.41.2
+specifically, the pre-GTK4 line (book page `gnome/gcr.html`, package name `gcr` here
+to distinguish from `gcr4`), not what was already built. Two more real BLFS pages,
+seq 249-250, laptop only (not added to `server`, nobody asked for one there):
+
+- `gcr` (249): book default fails on `vapigen` like `gcr4`/`libsecret` did, but this
+  older release has no separate `vapi` meson option at all (checked
+  `meson_options.txt` directly) -- GIR and VAPI generation are both gated by the
+  single `introspection` option (`gck/meson.build`), so that's what had to go, not a
+  vapi-specific flag. GObject Introspection is Recommended for GLib, not something
+  this project's actual use of `gcr-3` (a D-Bus prompter binary, not a GNOME desktop)
+  needs at runtime.
+- `gnome-keyring` (250): book default fails on `libpam` (`-D pam=false` -- Linux-PAM
+  is Recommended, not built anywhere in this project, same standing gap as every
+  other PAM-optional package here), then on `xsltproc` for man pages (`-D
+  manpage=false` -- libxslt gap already hit on `libsecret`). `ssh-agent` needed no
+  override: this release's meson option already defaults to false.
+
+Installing `gnome-keyring` is what actually places `/usr/share/dbus-1/services/
+org.gnome.keyring.SystemPrompter.service` (`Exec=/usr/libexec/gcr-prompter`, from the
+just-built `gcr`) -- confirmed live: `pinentry-gnome3 <<< BYE` now returns `OK
+Pleased to meet you` with **no** fallback line, and the prompter needed no daemon
+running ahead of time (D-Bus activates it on demand). `gnome-keyring-daemon`'s other
+two components (`secrets`, the Secret Service API arbitrary apps use; `pkcs11`) are a
+separate, broader concern from the prompter itself -- operator asked for these to
+autostart too, so an `hl.exec_cmd("gnome-keyring-daemon --start
+--components=pkcs11,secrets")` line went into `hyprland.lua`'s existing `hyprland.start`
+autostart block, matching the `--components` this build's own
+`/usr/lib/systemd/user/gnome-keyring-daemon.service` already specifies. **That file is
+in `~/Config`, the operator's own separate dotfiles repo -- not part of
+`agent-built-lfs`, checked clean (`git status`) before editing, and outside this
+project's override/seq machinery entirely.** Takes effect on the next Hyprland
+restart; started manually this session too (`gnome-keyring-daemon --start
+--components=pkcs11,secrets`, confirmed running) so the fix is live without one.
+
+### mu4e (seq 251-256)
+
+Operator-requested. Scanned `~/Config/common/emacs.d/` first rather than assuming a
+blank slate: `email.el` already hardcodes `/usr/share/emacs/site-lisp/mu4e/` and
+`mu4e-get-mail-command "mbsync -a"`; `~/Config/common/isync/mbsyncrc` already
+configures all 5 accounts (gmail-cobus, infocus, and three fatcow addresses) with
+`PassCmd` calling back into `emacsclient` + a `my/lookup-password` helper built on
+`auth-source-search`; `~/.authinfo.gpg` and `~/email/` (real maildirs, 14526 messages
+across all 5 accounts) already existed from a prior system. None of that needed
+touching -- only the packages backing it were missing.
+
+Real deps checked directly against each project's own build files before writing
+anything, same discipline as the pinentry chain: `gpgme` (postlfs/gpgme.html,
+Required libassuan already built) before `gmime3` (general/gmime3.html, Required
+GLib/libgpg-error already built, gpgme Optional and auto-detected via pkg-config --
+confirmed via `ldd libgmime-3.0.so` afterward) before `xapian`
+(general/xapian.html, no hard deps, 3.3 min build -- the slow one). `mu` 1.14.3 is
+hand-authored (no BLFS page; mu4e's elisp has shipped inside mu's own tree since mu
+1.4, no separate tarball exists) -- checked meson.build directly: needs
+glib/gio>=2.80, gmime-3.0>=3.2.13, xapian-core>=1.4.22 (all satisfied), fmt/CLI11
+optional with a vendored fallback (CLI11 happens to already be present from the
+quickshell/DMS chain), guile/scm default to meson feature 'auto' and skip quietly.
+Confirmed `lispdir`'s default (`datadir/emacs/site-lisp/mu4e`) resolves to exactly
+what `email.el` hardcodes, with no override needed. `isync` 1.5.1 (mbsync) is also
+hand-authored (no BLFS page) -- plain autotools, `--with-ssl`/`--with-sasl` both
+auto-detect and this project's mbsyncrc uses plain IMAPS auth, so OpenSSL (already
+built) was enough. Official checksums existed for both hand packages this time (mu
+publishes a real sha256sum file; isync's md5 came from SourceForge's own file API) --
+better provenance than most hand-authored recipes here.
+
+`xdg-utils` (xsoft/xdg-utils.html) was a separate mid-task request, unrelated to
+mu4e. Two real failures, not one: book's plain `make` builds `html man scripts`
+unconditionally via xmlto (Required per the page's own dependency list, not built --
+same standing xmlto/docbook/libxslt gap as everywhere else in this project, and a
+3-package cascade nobody asked for). First fix (`make -C scripts scripts` alone)
+still failed -- turns out the *scripts* themselves depend on xmlto too:
+`generate-help-script.awk` (checked directly) splices each script's own `--help`
+text from a `.txt` file generated by `xmlto txt`. Fixed by writing a one-line
+placeholder `.txt` per script (pointing at the real docs) before the build, dated
+after its `desc/*.xml` source so make's timestamp check never triggers xmlto --
+scripts work identically, only `--help` text is generic. Shared override (any host
+without xmlto hits this the same way).
+
+Real, unrelated bug caught during verification, not a new package: `mbsync --list
+--all` failed outright (`CertificateFile '/etc/ssl/certs/ca-certificates.crt': No
+such file or directory`, exit 1) -- `~/Config/common/isync/mbsyncrc` was written
+against a Debian/Arch-style system where `ca-certificates` installs a bundle at that
+exact path; this project's own CA store (`make-ca`, BASE seq 4) uses the LFS/RedHat
+convention instead, `/etc/pki/tls/certs/ca-bundle.crt` -- confirmed that file
+actually exists and is populated (185 KB, from the original CA store build) before
+touching anything. Fixed by pointing `mbsyncrc`'s 5 `CertificateFile` lines at the
+real path rather than inventing a compatibility symlink -- `~/Config` is the
+operator's own separate dotfiles repo, checked `git status` first (some unrelated
+DMS/cursor files were already modified live by the running shell, left untouched).
+`mbsync --version`/`--list --all` both confirmed clean afterward.
+
+Verified end-to-end: `mu4e.el` loads cleanly under `emacs --batch`
+(`mu4e-mu-version` reads 1.14.3), `mu init --maildir=~/email` + `mu index` indexed
+all 14526 existing messages with zero errors, `mu find ""` confirms all 14526 are
+searchable. Nothing left for the operator except actually opening Emacs and hitting
+`C-c m` -- `mu4e-alert`'s desktop notifications still need a running notification
+daemon (noted in the previous entry: DankMaterialShell isn't up in this session),
+but that's unrelated to mu4e itself working.
+
+## 2026-09-04: imv + Slack (seq 257-258)
+
+Both operator-requested, both hand-authored (neither has a BLFS page -- imv is small
+enough BLFS never carried it, Slack is proprietary and never will be).
+
+`imv` 4.3.0 (github.com/eXeC64/imv, MIT, latest tag): every required dep and every
+enabled image backend (libtiff/libpng/libjpeg-turbo/librsvg, all `feature: auto` in
+its own meson_options.txt) was already built on this host; freeimage/libnsgif/libheif
+stayed disabled rather than adding three packages for backends nothing needs. Built
+`-Dwindows=wayland` (not the meson default `all`) because this host has no libGLU,
+which the x11 backend requires unconditionally, and there is no real X11 session to
+use it from. First build attempt failed at link time: `ubrk_close_78` undefined --
+imv's own console.c calls ICU's break-iterator API (libicuuc) but only declares
+`dependency('icu-io')`, and this host's `icu-io.pc` lists `icu-i18n` under
+`Requires.private` (correctly excluded from a plain `--libs`, per the pkg-config
+spec), so nothing on the link line ever pulled libicuuc in. Fixed with
+`-Dc_link_args=-licuuc` rather than patching imv's meson.build -- the real defect is
+this host's ICU packaging shape, not imv. Second attempt built and installed clean
+(7 files). `imv -v` confirms `4.3.0`; all runtime libs resolve.
+
+Operator caught what the build alone missed: `imv` opened a real screenshot and
+crashed/hung outright (`interface 'xdg_toplevel' has no event 3`, then, after the
+first fix, two further crashes in turn -- `listener function for opcode 4 of
+wl_output is NULL`, then opcode 2 of `wl_surface`). `imv -v`/`--version` never
+touches the Wayland path at all, so the earlier "all runtime libs resolve" check
+never would have caught this -- a real gap in what "verified" meant for a GUI
+package, worth remembering for the next one. All three were the same underlying
+upstream bug, not three separate ones: `wl_window.c`'s `on_global()` binds every
+Wayland global (compositor, xdg_wm_base, seat, output) at whatever version the
+compositor advertises, uncapped against what imv's own hand-written listener
+structs actually implement, and `src/xdg-shell-protocol.c`/
+`-client-protocol.h` are pre-generated files checked into imv's release tarball
+("Generated by wayland-scanner 1.17.0", an ancient xdg-shell v2 snapshot) rather
+than produced from the build host's own wayland-protocols. Hyprland is built
+against a modern, fully-featured protocol stack, so it readily offers everything
+those stale/uncapped bindings request, and imv's client code has no slot for most
+of it. No upstream fix exists (checked eXeC64/imv's issues before writing one).
+Fixed in the recipe, not by patching imv upstream: regenerated both protocol files
+from this host's real wayland-protocols (version 7) with the system's own
+wayland-scanner, then `sed`-capped four `wl_registry_bind()` calls to the highest
+version each corresponding listener (or, for compositor/xdg_wm_base/seat, the
+child object it creates) actually covers -- `wl_compositor` at 4, `xdg_wm_base` at
+3, `wl_seat` at 5, `wl_output` at 3, each verified by reading every listener
+struct in the file, not guessed. Verified end-to-end after: the same screenshot
+opened under the live Hyprland session with no crash, `hyprctl clients` showing a
+real mapped/visible window titled with imv's own post-decode metadata
+(`[674x370] [96%]`) -- the actual pixel dimensions, obtainable only after a
+successful decode, not just a launch.
+
+Slack Desktop 4.52.155: ships Linux builds only as `.deb`/`.rpm`/Snap (checked
+slack.com/downloads/linux directly -- no tarball option), so this unpacks the
+official `.deb` (downloads.slack-edge.com/desktop-releases/linux/x64/4.52.155/, the
+real URL its own download-instructions redirect resolves to) with `ar`+`tar`, tools
+already in the closure, rather than bringing in dpkg. `ldd` against the real binary
+before writing anything found everything else already satisfied by this host's
+existing GTK3/Wayland/XWayland/pipewire/at-spi2 stack except `libcups.so.2` -- a
+genuine direct ELF `NEEDED` (Chromium's print backend links it, doesn't dlopen it),
+and this host has never built CUPS. Operator's call: stub it rather than build the
+real `cups.html` chain for one proprietary app's print dialog -- Slack will always
+report zero printers, nothing else. First stub pass grepped `readelf --dyn-syms` for
+only `cups*`-prefixed symbols (26 of them) and loaded fine but crashed on first real
+launch (`undefined symbol: ppdOpenFd` -- CUPS's surface is bigger than its own name
+prefix: `http*`, `ipp*`, and `ppd*` symbols too). Re-derived the full 68-symbol UND
+list and rewrote the stub against that; each call returns 0/NULL/""(the same shape
+real CUPS returns with no server or printers present) except the `ipp_t`/
+`ipp_attribute_t` constructor calls, which real callers never NULL-check, so those
+return a shared dummy non-NULL pointer instead. `chrome-sandbox` installed
+setuid-root (matches every other distro's packaging of this same upstream binary) so
+Chromium's SUID sandbox actually engages. The .deb's own `etc/cron.daily/slack`
+(apt-based auto-updater) was not installed -- no apt on this system for it to call.
+
+Verified end-to-end, not just linked: launched for real under the live Hyprland
+session (`WAYLAND_DISPLAY=wayland-1`) -- `hyprctl clients` confirmed a mapped,
+visible `slack` window ("Sign in | Slack"), main window shown, network status
+online, no crash. Closed afterward; this was an install verification, not a login.

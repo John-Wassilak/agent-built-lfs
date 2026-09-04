@@ -34,5 +34,14 @@
     ],
     "cmd": "grep -ri 'RegisterDevice(0x9a49'",
     "context": "built. To determine the model of the Intel GPU, install pciutils-3.14.0 and run lspci -nn | grep -Ei 'VGA|DISPLAY' first. It will output some information about the GPU, including the PCI vendor ID (8086 for Intel) and the PCI device ID. For example, with an Intel Core i5-11300H CPU, the output is 8086:9a49. Now searching for the registration of this device ID in the intel-media-driver source tree:"
+  },
+  {
+    "recipe": "blfs-gpgme",
+    "block": 1,
+    "tags": [
+      "testsuite"
+    ],
+    "cmd": "make -k check",
+    "context": "To test the results, you should have GnuPG-2.5.17 installed. If so, run:"
   }
 ]

@@ -850,4 +850,69 @@ PACKAGES = sorted(BASE + [
     hand(244, "wl-clipboard", "wl-clipboard-2.3.0.tar.gz",
          "wl-clipboard-2.3.0 (hand-authored, shared recipe)"),
     hand(245, "hyprshot", "hyprshot-1.3.0.tar.gz", "Hyprshot-1.3.0 (hand-authored, shared recipe)"),
+
+    # Operator-requested (2026-09-04): pass/pass-otp completions install correctly
+    # (confirmed in their own manifests) but nothing sources them -- this framework
+    # package was never built on either host. Not in BLFS (checked the book
+    # directly, see recipes/blfs-bash-completion.sh's own header). Same shared
+    # recipe as server (seq 253) -- portable, no host-specific content.
+    hand(246, "bash-completion", "bash-completion-2.18.0.tar.xz",
+         "bash-completion-2.18.0 (hand-authored, shared recipe)"),
+
+    # Operator-requested (2026-09-04): a real GUI pinentry. Rebuilding pinentry alone
+    # (seq 219) didn't do it -- confirmed by inspection of that rebuild's own log
+    # (hosts/laptop/logs/blfs-pinentry.log): its "gtk2" frontend is hardcoded to the
+    # real gtk+-2.0 pkg-config module, not GTK3/4 despite the name, and this project
+    # never built legacy GTK+2 (obsolete, nothing else here wants it). The book's own
+    # --enable-pinentry-gnome3 defaults to yes/auto and just needs Gcr + libsecret
+    # present (book/blfs-13.0/general/pinentry.html: "uses Gcr-4.4.0.1 (or
+    # Gcr-3.41.2)"). gcr4.html's own Required/Recommended list is satisfied almost
+    # entirely by what this host already built for other reasons -- GLib, libgcrypt,
+    # p11-kit (BASE), GnuPG (seq 220), GTK-4.20.3 (seq 206, pavucontrol) -- so this is
+    # two real BLFS pages, not a new toolkit chain. libsecret before gcr4 (gcr4.html
+    # lists it Recommended). Both real book pages, both shared (portable, no
+    # host-specific content) -- not added to server since nobody asked for one there.
+    book(247, "libsecret", "gnome/libsecret.html", "libsecret-0.21.7.tar.xz"),
+    book(248, "gcr4", "gnome/gcr4.html", "gcr-4.4.0.1.tar.xz"),
+
+    # pinentry-gnome3 (built above) turned out to need more than just Gcr present --
+    # confirmed live: "No Gcr System Prompter available, falling back to curses". gcr4
+    # only ships the system-prompter *headers* (checked: /usr/include/gcr-4/gcr/
+    # gcr-system-prompter.h, no service). The actual org.gnome.keyring.SystemPrompter
+    # D-Bus service is gnome-keyring-daemon's, and gnome-keyring.html's own Required
+    # list wants Gcr-3.41.2 specifically (the pre-GTK4 line, book's own page is
+    # gnome/gcr.html, name "gcr" here vs "gcr4" above) -- not gcr4, which this host
+    # already has. Both real BLFS pages, both lightweight for the same reason as
+    # libsecret/gcr4: GLib/libgcrypt/p11-kit/GnuPG/GTK3/libsecret already present.
+    book(249, "gcr", "gnome/gcr.html", "gcr-3.41.2.tar.xz"),
+    book(250, "gnome-keyring", "gnome/gnome-keyring.html", "gnome-keyring-48.0.tar.xz"),
+
+    # Operator-requested (2026-09-04): mu4e. ~/Config/common/emacs.d/email.el already
+    # hardcodes /usr/share/emacs/site-lisp/mu4e/ and mu4e-get-mail-command "mbsync -a";
+    # ~/Config/common/isync/mbsyncrc is already fully configured for all 5 accounts;
+    # ~/.authinfo.gpg and ~/email/ (real maildirs, all 5 accounts) already exist from a
+    # prior system. gpgme/gmime3/xapian are real BLFS pages, deps checked directly
+    # (postlfs/gpgme.html, general/gmime3.html, general/xapian.html) -- gpgme before
+    # gmime3 since gmime3's configure auto-detects it via pkg-config (Optional, no
+    # explicit flag in book text). mu/isync are hand-authored (no BLFS page for
+    # either); see their own recipes for dependency verification. gpgme also
+    # requested (operator, for inline PGP verify/decrypt in mu4e's message view) even
+    # though gmime3 works without it.
+    book(251, "gpgme", "postlfs/gpgme.html", "gpgme-2.0.1.tar.bz2"),
+    book(252, "gmime3", "general/gmime3.html", "gmime-3.2.15.tar.xz"),
+    book(253, "xapian", "general/xapian.html", "xapian-core-1.4.30.tar.xz"),
+    hand(254, "mu", "mu-1.14.3.tar.xz", "mu-1.14.3 (hand-authored)"),
+    hand(255, "isync", "isync-1.5.1.tar.gz", "isync-1.5.1 (hand-authored)"),
+
+    # Operator-requested (2026-09-04): xdg-utils, mid-mail-chain. Real BLFS page
+    # (xsoft/xdg-utils.html); unrelated to mu4e itself.
+    book(256, "xdg-utils", "xsoft/xdg-utils.html", "xdg-utils-v1.2.1.tar.gz"),
+
+    # Operator-requested (2026-09-04): imv + Slack. Neither has a BLFS page (imv:
+    # small enough BLFS never carried it; Slack: proprietary, never will). See each
+    # recipe for the dependency verification (imv: meson deps against pkg-config,
+    # Wayland-only build; Slack: ldd against the real binary, why libcups.so.2 is
+    # stubbed rather than built from the real cups.html page).
+    hand(257, "imv", "imv-4.3.0.tar.gz", "imv-4.3.0 (hand-authored)"),
+    hand(258, "slack", "", "Slack Desktop 4.52.155 (hand-authored, proprietary .deb)"),
 ], key=lambda p: p["seq"])
