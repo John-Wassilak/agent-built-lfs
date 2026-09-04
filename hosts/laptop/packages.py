@@ -559,6 +559,12 @@ PACKAGES = sorted(BASE + [
     book(203, "glibmm2", "general/glibmm2.html", "glibmm-2.86.0.tar.xz"),
     book(204, "cairomm", "x/cairomm-1.16.html", "cairomm-1.18.0.tar.xz"),
     book(205, "pangomm2", "x/pangomm2.html", "pangomm-2.56.1.tar.xz"),
+
+    # Found live: gtk4's meson.build hard-requires xinerama ("Dependency 'xinerama'
+    # not found"), undocumented in gtk4.html's own dependency list. Not in BLFS;
+    # same hand-authored recipe server already has (hand(229, ...) there, for the
+    # same reason -- dunst's own dependency on server), reused verbatim.
+    hand(205.5, "libxinerama", "libXinerama-1.1.5.tar.xz", "libXinerama-1.1.5 (hand-authored)"),
     book(206, "gtk4", "x/gtk4.html", "gtk-4.20.3.tar.xz"),
     book(207, "gtkmm4", "x/gtkmm4.html", "gtkmm-4.20.0.tar.xz"),
     book(208, "json-glib", "general/json-glib.html", "json-glib-1.10.8.tar.xz"),

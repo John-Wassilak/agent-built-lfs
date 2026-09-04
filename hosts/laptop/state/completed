@@ -358,3 +358,15 @@ blfs-wofi
 blfs-htop
 blfs-gmmlib
 blfs-intel-media-driver
+blfs-iso-codes
+blfs-graphene
+blfs-libsigc++3
+blfs-glibmm2
+blfs-cairomm
+blfs-pangomm2
+blfs-libxinerama
+blfs-gtk4
+blfs-gtkmm4
+blfs-json-glib
+blfs-pulseaudio
+blfs-pavucontrol

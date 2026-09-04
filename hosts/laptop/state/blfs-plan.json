@@ -3024,6 +3024,20 @@
     "disabled": 0
   },
   {
+    "seq": 205.5,
+    "order": "blfs.205.5",
+    "name": "blfs-libxinerama",
+    "chapter": "blfs",
+    "page": "libxinerama",
+    "title": "libXinerama-1.1.5 (hand-authored)",
+    "context": "chroot",
+    "tarball": "libXinerama-1.1.5.tar.xz",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
+  },
+  {
     "seq": 206,
     "order": "blfs.206",
     "name": "blfs-gtk4",
@@ -3034,8 +3048,8 @@
     "tarball": "gtk-4.20.3.tar.xz",
     "manifest": true,
     "blocks": 5,
-    "enabled": 5,
-    "disabled": 0
+    "enabled": 3,
+    "disabled": 2
   },
   {
     "seq": 207,
@@ -3048,8 +3062,8 @@
     "tarball": "gtkmm-4.20.0.tar.xz",
     "manifest": true,
     "blocks": 3,
-    "enabled": 3,
-    "disabled": 0
+    "enabled": 2,
+    "disabled": 1
   },
   {
     "seq": 208,

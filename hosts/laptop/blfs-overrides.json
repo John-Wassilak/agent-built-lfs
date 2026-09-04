@@ -38,5 +38,33 @@
       "cmd": "mkdir build &&\ncd    build &&\n\nmeson setup ..            \\\n      --prefix=/usr       \\\n      --buildtype=release \\\n      -D man=false         \\\n      -D broadway_backend=true \\\n      -D x11_backend=true \\\n      -D wayland_backend=true &&\nninja",
       "reason": "Book's own literal default (x/gtk3.html block 0) sets -D wayland_backend=false -- correct for server (X11/awesome only) but wrong for laptop, this project's actual Wayland/Hyprland host. Found 2026-09-03 building wofi: its meson.build hard-requires gdk/gdkwayland.h (gdk-wayland-3.0), which GTK3 only installs with this backend enabled. x11_backend stays on too -- XWayland and any GDK-X11 app (Firefox included) still need it; both backends coexist in the same libgtk-3.so, selected at runtime via GDK_BACKEND, so this is additive, not a replacement."
     }
+  },
+  "blfs-cairomm": {
+    "0": {
+      "action": "replace",
+      "cmd": "mkdir bld &&\ncd    bld &&\n\nmeson setup ..             \\\n      --prefix=/usr        \\\n      --buildtype=release  \\\n      -D build-tests=false &&\nninja",
+      "reason": "Book's own literal default sets -D build-tests=true, which meson's own configure then refuses: 'Building the test programs requires Boost Test ... Install them or use -Dbuild-tests=false' (Boost is Recommended, for tests only -- not installed, same pattern as every other optional test/doc tool skipped throughout this project). Dropped -D boost-shared=true too since it only matters when tests are built."
+    }
+  },
+  "blfs-gtk4": {
+    "0": {
+      "action": "replace",
+      "cmd": "mkdir build &&\ncd    build &&\n\nmeson setup --prefix=/usr            \\\n            --buildtype=release      \\\n            -D broadway-backend=true \\\n            -D introspection=enabled \\\n            -D vulkan=disabled       \\\n            -D documentation=false   \\\n            .. &&\nninja",
+      "reason": "Book's own default (-D vulkan=enabled) fails: 'Program glslc not found or not executable' -- glslc is Google shaderc's GLSL-to-SPIR-V compiler, not built here (a real new dependency chain on top of the SPIRV-Tools/glslang mesa already needed, not worth it for what this host actually wants GTK4 for -- pavucontrol). Vulkan is an optional alternate GTK4 rendering backend alongside GL, not a functional requirement; disabling it does not affect pavucontrol or any other planned use. -D documentation=false only gates whether the final API-doc HTML actually gets built into the install tree, not whether meson probes for the tools that *could* build it -- three successive failures chasing that probe (gi-docgen -> Python markdown/pygments/typogrify -> docutils/rst2html5), all fixed by installing the missing tools directly via pip rather than more meson flags."
+    },
+    "1": {
+      "action": "drop",
+      "reason": "Optional, book's own text: 'If you have Gi-DocGen ... and wish to build the API documentation'. Redundant with block 0 now anyway (-D documentation=false there), and this block explicitly flips it back to true and reruns ninja -- would silently undo block 0's own fix and rebuild the full doc set nobody asked for."
+    },
+    "2": {
+      "action": "drop",
+      "reason": "Optional GTK4 test suite (book's own text: 'To run the tests, issue:'), same class of block dropped everywhere else in this project. Real failure hit running it: 'Test setup x11 not found from project orc' (a subproject test-harness gap, unrelated to whether GTK4 itself works) -- not worth chasing for a test suite that was never going to be run."
+    }
+  },
+  "blfs-gtkmm4": {
+    "2": {
+      "action": "drop",
+      "reason": "Book's own text is explicitly conditional: 'If you have built the documentation ... it was installed to /usr/share/doc/gtkmm-4.0.' No Doxygen here (Optional dep, not built), so that directory never exists -- real failure confirmed: 'mv: cannot stat /usr/share/doc/gtkmm-4.0: No such file or directory'."
+    }
   }
 }

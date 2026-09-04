@@ -1519,3 +1519,85 @@ separate `~/Config` dotfiles repo, edited directly on the live host. That repo's
 laptop checkout (like this one) has no working GitHub SSH key from this
 non-interactive session -- commits there are local-only until the operator pushes
 from an interactive shell where their `pass`-based agent bootstrap runs.
+
+## 2026-09-03 (continued): GTK4/gtkmm/pavucontrol chain, and a Qt6 disk-space incident
+
+Operator: "move forward with the remaining builds" -- the GTK4/pavucontrol chain
+queued earlier, plus Qt6 (for a future DankMaterialShell/Quickshell build).
+
+**Qt6 attempted first, aborted by design.** Fetched `qt-everywhere-src-6.10.2.tar.xz`
+(1.3G) and ran `bin/lfsbuild --only blfs-qt6 --native`. A disk-space safety monitor
+(a plain shell loop polling `df` every 60s, killing the build under a threshold) was
+running alongside it as instructed. Disk usage climbed past what BLFS's own 50GB
+estimate implied was safe on this host's ~41GB free, and the monitor correctly fired
+at 692MB free -- but it killed the *outer* wrapper script directly rather than
+letting it exit its own cleanup step, so two child processes (the recipe script, a
+`ninja`) survived the kill and kept writing until the filesystem hit **99% full,
+690MB free**, a real risk on a live daily-driver machine. Killed the stragglers by
+PID, removed the leftover `/sources/qt-everywhere-src-6.10.2` tree by hand (reclaimed
+back to 38GB free), confirmed no failed services and no disk-full journal entries.
+`blfs-qt6` correctly never entered `state/completed`. Qt6 itself is still queued,
+not reattempted this session.
+
+**GTK4/pavucontrol chain: 6 real build failures across ~4 hours, each fixed on its
+own merits rather than guessed at speculatively:**
+
+1. `blfs-cairomm`: book's own default (`-D build-tests=true`) fails outright --
+   meson's own error names the fix: `-D build-tests=false` (Boost Test, Recommended
+   and only needed for tests, isn't installed). Host override added.
+2. `blfs-gtk4` block 0: book's own default (`-D vulkan=enabled`) fails --
+   `Program 'glslc' not found`. `glslc` is Google shaderc's GLSL->SPIR-V compiler, a
+   real new dependency chain on top of what mesa already needed (SPIRV-Tools/
+   glslang) for no benefit pavucontrol needs -- Vulkan is an optional alternate GTK4
+   render backend alongside GL, not a functional requirement. `-D vulkan=disabled`.
+3. Still block 0: `-D documentation=false` (added expecting it to gate doc-tool
+   probing) did **not** prevent meson from unconditionally falling back to building
+   the `gi-docgen` subproject, which itself needed Python `markdown`/`pygments`/
+   `typogrify` (none installed) -- `documentation=false` only controls whether the
+   final HTML actually gets installed, not whether meson checks for the tools that
+   *could* build it. Fixed directly rather than chasing more meson flags: `sudo
+   python3 -m pip install markdown pygments typogrify` (this build's `pip` is
+   real and already proven working, from the earlier `yt-dlp --user` install).
+4. Same spot, one tool further: `rst2html5`/`rst2man` (docutils) also missing --
+   same fix, `pip install docutils`.
+5. **The actual bug, once the tool-probing genuinely passed**: `blfs-gtk4` blocks 1
+   (an *optional* "if you have Gi-DocGen and wish to build API docs" doc rebuild --
+   book's own conditional phrasing) and 2 (the *optional* test suite) were still
+   enabled by default, since the host override only touched block 0's meson flags.
+   Block 1 silently re-enabled `documentation=true` and reran `ninja`, undoing fix
+   #3's whole point; block 2 then failed for real (`Test setup 'x11' not found from
+   project 'orc'`, an unrelated subproject test-harness gap). Both dropped via
+   override -- neither was ever going to be used. **With this actually fixed, GTK4
+   built clean: 29.8 minutes, 2248 files.**
+6. `blfs-gtkmm4` block 2: same conditional-doc pattern as fix #3/4, book's own text
+   says "If you have built the documentation... it was installed to
+   /usr/share/doc/gtkmm-4.0" -- no Doxygen here, so the `mv` of that nonexistent
+   directory failed outright. Dropped.
+
+**Real process-management bug found and fixed mid-session, unrelated to the builds
+themselves**: every disk-space safety monitor spawned for these resumed builds used
+`pgrep -f 'lfsbuild --host laptop --blfs --from blfs-XXX'` as its loop-exit
+condition. `pgrep -f` matches a process's *full command line* -- and the monitor's
+own `bash -c "while pgrep -f '<that exact string>' ..."` invocation contains the
+search string as a literal substring of itself, so every single monitor matched
+itself forever and never exited on its own, piling up one per resumed build attempt
+(6 stale monitor shells plus one leftover from the earlier x265-transcode wait,
+found when the operator asked "why do you have 7 shells running"). Killed all seven,
+switched to PID-based liveness checks (`kill -0 $PID`) for every monitor from then
+on -- immune to self-matching since no search string is embedded in the command
+line being checked. One further mistake caught immediately after switching: `pgrep
+-f '...blfs-gtk4' | tail -1` briefly returned the wrong PID during one resume
+(picked up a stale/unrelated match rather than the actual running `lfsbuild`
+process) -- fixed by explicitly verifying the PID against `ps aux` before handing it
+to the next monitor, every time, for the rest of the session.
+
+**Final result, all real BLFS/GNOME pages, zero drift** (`bin/extract-blfs.py
+--host laptop --check` clean before and after each override): `iso-codes`,
+`graphene`, `libsigc++3`, `glibmm2`, `cairomm`, `pangomm2`, `libxinerama` (a real,
+undocumented `gtk4` meson.build hard dependency, same class of gap as `xkbcomp`
+earlier -- found live, not from the book's own dependency list), `gtk4`, `gtkmm4`,
+`json-glib`, `pulseaudio` (client library only, matching the earlier plan --
+service never enabled), `pavucontrol`. Verified live in the operator's actual
+Hyprland session, not just built: `pavucontrol` opens as a real window (`hyprctl
+clients`: `class: org.pulseaudio.pavucontrol`, `title: Volume Control`). 33.2GB free
+on `/` when the chain finished -- comfortably clear of the disk pressure Qt6 hit.
