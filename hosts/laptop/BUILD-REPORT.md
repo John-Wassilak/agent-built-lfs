@@ -2863,6 +2863,81 @@ the matching module tree -- restore it over `/lib/modules/6.18.10` per the note 
 `extract-recipes.py --check` / `extract-blfs.py --check` and a proper `blfs-plan.json`
 regeneration still need a checkout that has the books; native mode has none, so zero
 drift remains unconfirmed. The eleven recipes with a chroot-era `/etc/resolv.conf`
-rewrite still need a native-mode guard. `hosts/laptop/CLAUDE.md` still opens with "Not
-built yet" and "`packages.py` is still `BASE` alone" against 249 entries and ~44.9h.
-Nothing in this session was committed.
+rewrite still need a native-mode guard.
+
+## 2026-09-04 (continued): full health audit, stale pre-deploy tree found and removed, mode pinned
+
+Operator asked for a full check that everything was running well and a cleanup pass
+before continuing -- prompted by suspecting a wrong-repo mixup in a prior session.
+
+**`lfsmaint`'s own package database was stale**, last built 10:27 that morning against
+manifests from before the enchant/hunspell/oath-toolkit/pass-otp/intel-microcode/
+wireless-regdb chain above (11:00-12:30). Rebuilt; `verify` came back clean (13
+unexplained-missing files across 4 packages, every one individually accounted for: a
+book-documented dbus doc-directory rename, two pulseaudio autostart files wireplumber's
+own recipe deliberately removes, one permission-restricted sudoers file, and the
+systemd-networkd units this host does not use since it runs NetworkManager instead).
+One real gap found and fixed: `wireplumber`'s manifest only ever recorded its binaries
+and libs, missing all 69 files under `/usr/share/wireplumber/` (config + Lua scripts) --
+refilled from the live install, diffed against the old manifest first to confirm nothing
+was dropped.
+
+**The chroot tree at `/mnt/crypt/.../lfs` was gone through, moved, then removed.**
+Checking it for staleness surfaced why `verify`/`orphans` against it looked catastrophic
+(~50 packages "missing") before the mistake was caught: it is the pre-deploy staging
+tree, superseded the moment the 2026-09-03 deploy (`17c4112`) succeeded, and every real
+package since has correctly gone to the live root instead. 305 tarballs in its
+`sources/` (2.3G) weren't yet cached in this host's real `/sources` -- copied over,
+verified by checksum, before deleting the rest (~5.3G of stale installed files). Added
+`build.mode` to the host.toml schema (`bin/lfshost.py`, `bin/lfsbuild`) so laptop pins
+`mode = "native"` explicitly rather than depending on `detect_mode()`'s
+populated-tree-wins-over-is_lfs_system() heuristic, which is what let that stale tree
+fool a whole prior session into never needing `--native` explicitly and then, once
+noticed, cost this one real effort to work out why. `server` is untouched, still
+auto-detects as before.
+
+**A second, independent clone of this whole repo was found at
+`/mnt/crypt/john/projects/agent-built-lfs`** -- almost certainly the actual "wrong repo"
+from the operator's prior session. Its committed history (`17c4112` and earlier) is a
+strict ancestor of this checkout's `main`; its uncommitted working-tree edits
+(`BUILD-REPORT.md`, `blfs-overrides.json`, `kernel-config.sh`, `packages.py`,
+`state/completed`, `state/timings.tsv`, and a few unmodified files) checked out
+byte-identical to what is already committed here, or a strict subset of it -- nothing
+unique survived only there. Left for the operator to remove directly, along with the
+1.6G `laptop-lfs-13.0-systemd.tar.zst` deploy archive next to it (the same deploy that
+tarball was for already landed and booted).
+
+`hosts/laptop/CLAUDE.md`'s "Not built yet"/"`packages.py` is still `BASE` alone" opening
+(stale since the very first native package went in) and `host.toml`'s stale "Not built
+yet" header were both corrected in the same pass, along with `BOOTSTRAP.md` (a status
+note marking its chroot/archive/deploy steps historical -- they succeeded and are done,
+not a live procedure -- while step 6, native, is where things actually stand) and
+`packages.py`'s own header docstring. Committed as `5211a83` and pushed.
+
+### hyprshot, to screenshot an unresolved terminal-rendering glitch (seq 240-245)
+
+Operator-requested. Not in BLFS, same Hyprland-ecosystem sourcing policy as wofi/
+Hyprland itself: Arch's own PKGBUILDs as the version/checksum reference where the book
+has nothing. `recipes/blfs-jq.sh` already existed, shared, from `server`'s own seq 198
+("needed by hyprshot" -- hyprshot itself was never actually reached there) -- built
+there against jq's bundled vendored oniguruma, since no system copy existed on that
+host. Revised rather than left alone: checked jq's own `configure.ac` before assuming a
+real system library could replace the bundled one across both hosts, confirmed
+`--with-oniguruma` defaults to probing the system copy and only falls back to the
+vendored one (with a notice, never a hard failure) when it is absent -- so the same,
+now-revised recipe still works unmodified on `server`, whether or not it ever gets its
+own `oniguruma` step. Five real steps in dependency order -- `oniguruma` (240) before
+`jq` (241) so jq links the real system library instead of silently bundling a private
+copy (checked live via `ldd /usr/bin/jq`, not assumed); `grim` (242), `slurp` (243), `wl-clipboard`
+(244) independently of each other and of jq; `hyprshot` (245) last, since it is a plain
+script that only needs the other four (plus already-built `hyprctl` and `libnotify`) at
+runtime, not build time. `oniguruma`/`slurp`/`wl-clipboard` sha256 match Arch's own
+PKGBUILDs byte for byte; `grim` and `jq` are both git-tag sourced in Arch's own
+PKGBUILD too, so there is no comparable packager hash for either -- recorded as this
+session's own sha256 of the upstream release/tag archive, same class of gap enchant's
+provenance note already carries. `hyprpicker` (README's one optional dep, for
+`--freeze`) was not built: the script itself gates every call behind `command -v
+hyprpicker` and degrades to a normal capture without it, and nothing else in this
+project's plan wants it for its own sake -- add it later, as its own step, if `--freeze`
+turns out to be wanted. All five shared recipes; none names hardware. Built clean,
+253/258, `lfsmaint`'s database rebuilt and reverified clean afterward.

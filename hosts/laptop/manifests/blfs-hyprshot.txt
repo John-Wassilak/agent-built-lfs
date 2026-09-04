@@ -1,0 +1,2 @@
+/usr/bin/hyprshot
+/usr/share/licenses/hyprshot/LICENSE

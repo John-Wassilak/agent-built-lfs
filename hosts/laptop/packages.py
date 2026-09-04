@@ -828,4 +828,26 @@ PACKAGES = sorted(BASE + [
     hand(238, "hunspell-en-us", "hunspell-en_US-2020.12.07.tar.gz",
          "hunspell-en_US-2020.12.07 dictionary (hand-authored, shared recipe)"),
     hand(239, "enchant", "enchant-2.8.21.tar.gz", "enchant-2.8.21 (hand-authored, shared recipe)"),
+
+    # Operator-requested (2026-09-04): hyprshot, to actually get a screenshot of a
+    # terminal rendering glitch instead of describing it. Not in BLFS -- same
+    # Hyprland-ecosystem sourcing policy as wofi/hyprland itself (BOOTSTRAP.md: Arch's
+    # own packaging as the reference where the book has nothing). Five steps, in real
+    # dependency order: oniguruma before jq (jq's configure links it directly rather
+    # than bundling a private copy if it is missing), then grim/slurp/wl-clipboard
+    # (independent of each other and of jq), then hyprshot last since it is a plain
+    # script that only needs the other four present at runtime, not build time.
+    # libxkbcommon (slurp's other real dep) and libnotify (hyprshot's own) were already
+    # built, tiers 8 and 154. All five shared: none names hardware. Versions and
+    # checksums for oniguruma/slurp/wl-clipboard match Arch's own PKGBUILDs byte for
+    # byte; grim and jq are both git-tag sourced in Arch's own PKGBUILD, so there is no
+    # comparable packager hash for either -- recorded as this session's own sha256 of
+    # the upstream release/tag archive, same class of gap already noted for enchant.
+    hand(240, "oniguruma", "onig-6.9.10.tar.gz", "oniguruma-6.9.10 (hand-authored, shared recipe)"),
+    hand(241, "jq", "jq-1.8.2.tar.gz", "jq-1.8.2 (hand-authored, shared recipe)"),
+    hand(242, "grim", "grim-1.5.0.tar.gz", "grim-1.5.0 (hand-authored, shared recipe)"),
+    hand(243, "slurp", "slurp-1.5.0.tar.gz", "slurp-1.5.0 (hand-authored, shared recipe)"),
+    hand(244, "wl-clipboard", "wl-clipboard-2.3.0.tar.gz",
+         "wl-clipboard-2.3.0 (hand-authored, shared recipe)"),
+    hand(245, "hyprshot", "hyprshot-1.3.0.tar.gz", "Hyprshot-1.3.0 (hand-authored, shared recipe)"),
 ], key=lambda p: p["seq"])

@@ -457,3 +457,9 @@ blfs-thermald	native	50.5	0
 blfs-hunspell	native	35.9	0
 blfs-hunspell-en-us	native	0.7	0
 blfs-enchant	native	42.7	0
+blfs-oniguruma	native	19.5	0
+blfs-jq	native	48.6	0
+blfs-grim	native	3.5	0
+blfs-slurp	native	3.9	0
+blfs-wl-clipboard	native	4.7	0
+blfs-hyprshot	native	0.7	0

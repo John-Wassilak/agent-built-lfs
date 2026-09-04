@@ -402,3 +402,9 @@ blfs-thermald
 blfs-hunspell
 blfs-hunspell-en-us
 blfs-enchant
+blfs-oniguruma
+blfs-jq
+blfs-grim
+blfs-slurp
+blfs-wl-clipboard
+blfs-hyprshot

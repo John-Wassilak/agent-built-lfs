@@ -1,0 +1,10 @@
+/usr/bin/onig-config
+/usr/include/oniggnu.h
+/usr/include/onigposix.h
+/usr/include/oniguruma.h
+/usr/lib/libonig.a
+/usr/lib/libonig.la
+/usr/lib/libonig.so
+/usr/lib/libonig.so.5
+/usr/lib/libonig.so.5.5.0
+/usr/lib/pkgconfig/oniguruma.pc
