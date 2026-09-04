@@ -17,6 +17,21 @@ export XDG_RUNTIME_DIR="/run/user/$(id -u)"
 export XDG_SESSION_TYPE=wayland
 export XDG_CURRENT_DESKTOP=Hyprland
 
+# No PAM here either (same gap as XDG_RUNTIME_DIR above), so nothing ever
+# runs pam_systemd's normal job of exporting DBUS_SESSION_BUS_ADDRESS for the
+# login. The systemd --user manager (started via `loginctl enable-linger
+# john`, 2026-09-04) still activates a real session bus at
+# $XDG_RUNTIME_DIR/bus -- confirmed live, socket present -- but with no
+# session registered (`loginctl list-sessions` shows none), nothing points a
+# shell at it. pinentry-gnome3 checks this exact variable itself and falls
+# back to curses when it's unset rather than trying dbus's own
+# $XDG_RUNTIME_DIR/bus fallback path, so every gpg-agent/pass invocation
+# under this desktop silently lost its GUI prompt. Found 2026-09-04 chasing a
+# "still shows curses" report that survived killing the stray gpg-agent
+# (BUILD-REPORT.md, "GUI pinentry, part 2") -- that fix only masked the
+# symptom for whichever shell happened to already have this set.
+export DBUS_SESSION_BUS_ADDRESS="unix:path=${XDG_RUNTIME_DIR}/bus"
+
 # Correction 2026-09-03: this host's mesa actually has glvnd=enabled
 # (hosts/laptop/blfs-overrides.json's blfs-mesa override -- reversed
 # 2026-08-31 from an earlier glvnd=disabled call, once aquamarine's

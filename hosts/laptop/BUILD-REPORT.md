@@ -3200,3 +3200,57 @@ Verified end-to-end, not just linked: launched for real under the live Hyprland
 session (`WAYLAND_DISPLAY=wayland-1`) -- `hyprctl clients` confirmed a mapped,
 visible `slack` window ("Sign in | Slack"), main window shown, network status
 online, no crash. Closed afterward; this was an install verification, not a login.
+
+### GUI pinentry, part 3: the real fix, not another workaround (2026-09-04)
+
+Operator report: still curses, from an actual Hyprland terminal this time, and its
+own `$DBUS_SESSION_BUS_ADDRESS` was confirmed empty. Part 2's stray-agent fix
+(killing and letting `gpg-agent` respawn) never addressed the actual gap -- it only
+worked, when it worked, for whichever shell happened to already carry a correct
+value. No shell on this host ever sets one.
+
+Root cause: this box has no PAM (`/etc/pam.d/login` is empty, same standing gap
+`start-hyprland.sh` already documents for `XDG_RUNTIME_DIR`), so nothing runs
+`pam_systemd`'s normal job of exporting `DBUS_SESSION_BUS_ADDRESS` at login.
+`loginctl list-sessions` confirms no session is ever registered. What *is* running
+is a real systemd `--user` manager (`loginctl enable-linger john`, this same day)
+with its own activated session bus live at `$XDG_RUNTIME_DIR/bus` -- confirmed,
+socket present, `dbus.service` active under `user@1000.service`. Nothing pointed a
+shell at it. `pinentry-gnome3` checks `getenv("DBUS_SESSION_BUS_ADDRESS")` itself
+(confirmed by its own fallback message text) rather than trying dbus's
+`$XDG_RUNTIME_DIR/bus` well-known-address fallback, so every pinentry this desktop
+ever spawned lost its GUI regardless of which gpg-agent invoked it.
+
+Fix: `hosts/laptop/overlay/home/john/start-hyprland.sh` now exports
+`DBUS_SESSION_BUS_ADDRESS="unix:path=${XDG_RUNTIME_DIR}/bus"` alongside the
+existing `XDG_RUNTIME_DIR`/`XDG_SESSION_TYPE`/`XDG_CURRENT_DESKTOP` exports, before
+Hyprland (and everything it spawns) starts -- same file both in the repo overlay
+and the live deployed copy at `~/start-hyprland.sh`. Takes effect on the next
+Hyprland restart; not yet verified live (would require restarting the operator's
+own running desktop session, out of scope for this session). Also killed the
+`~/.gnupg` `gpg-agent` again so it doesn't carry a stale empty-variable
+environment forward into the next login.
+
+`server`'s companion `start-awesome.sh` has no equivalent export and was not
+touched -- X11/`startx` sessions there conventionally get their session bus from
+`dbus-launch` wrapping `startx` instead, a different mechanism, and nobody has
+reported this symptom on that host.
+
+### pass-auto pinentry: drop the external-cache option (2026-09-04)
+
+Operator report: with GUI pinentry now working, `pass-auto`/`~/.gnupg-auto`'s prompts
+still offered a "save in password manager" checkbox that `~/.gnupg`'s prompts don't.
+`~/.gnupg/gpg-agent.conf` already carries `no-allow-external-cache` (see
+`overlay/home/john/.gnupg/gpg-agent.conf`, the shared template); `~/.gnupg-auto/
+gpg-agent.conf` never got the same line, so `pinentry-gnome3`/Gcr offered its
+libsecret-backed external cache there and nowhere else.
+
+Fix: added `no-allow-external-cache` to `~/.gnupg-auto/gpg-agent.conf` alongside its
+existing `default-cache-ttl 28800` / `max-cache-ttl 28800`, then `GNUPGHOME=~/.gnupg-auto
+gpgconf --kill gpg-agent` and let it respawn. Confirmed live: `gpgconf --list-options
+gpg-agent` for that homedir now reports `no-allow-external-cache` at value `1`.
+
+Filed as a new host overlay, `hosts/laptop/overlay/home/john/.gnupg-auto/gpg-agent.conf`
+-- `.gnupg-auto` is this host's own pass-auto automation homedir, not shared state, so it
+follows `server`'s `grub.cfg`/`xorg.conf` precedent rather than living in the shared
+`overlay/` tree.
