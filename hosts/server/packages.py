@@ -565,4 +565,12 @@ PACKAGES = BASE + [
     hand(250, "openbao", "openbao-v2.6.2.tar.gz", "openbao-2.6.2 (hand-authored)"),
     hand(251, "opentofu", "opentofu-v1.12.6.tar.gz", "opentofu-1.12.6 (hand-authored)"),
     hand(252, "rsync", "rsync-3.4.1.tar.gz", "rsync-3.4.1"),
+
+    # Operator-requested (2026-09-04): pass/pass-otp completions install correctly
+    # (confirmed in their own manifests) but nothing sources them -- this framework
+    # package was never built on either host. Not in BLFS (checked the book
+    # directly, see recipes/blfs-bash-completion.sh's own header). Same shared
+    # recipe as laptop (seq 246) -- portable, no host-specific content.
+    hand(253, "bash-completion", "bash-completion-2.18.0.tar.xz",
+         "bash-completion-2.18.0 (hand-authored, shared recipe)"),
 ]

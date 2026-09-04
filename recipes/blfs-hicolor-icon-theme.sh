@@ -2,16 +2,22 @@
 # CANDIDATE recipe extracted from the BLFS 13.0-systemd book.
 # source : book/blfs-13.0/x/hicolor-icon-theme.html
 # title  : hicolor-icon-theme-0.18
-# rationale: Base fallback icon theme -- found missing while debugging
-# wofi: "Could not find the icon 'gvim'. The 'hicolor' theme was not
-# found either." Referenced by name in every .desktop-consuming app on
-# this system.
+# The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 set -e
 
-mkdir build
-cd build
+# --- block 0 --------------------------------------------------
+#   ctx: work properly using an LFS 13.0 platform. Package Information Download (HTTP):
+#   ctx: https://icon-theme.freedesktop.org/releases/hicolor-icon-theme-0.18.tar.xz Download MD5
+#   ctx: sum: ef14f3af03bcde9ed134aad626bdbaad Download size: 32 KB Estimated disk space
+#   ctx: required: 644 KB Estimated build time: less than 0.1 SBU Installation of
+#   ctx: hicolor-icon-theme Install hicolor-icon-theme by running the following commands:
+mkdir build &&
+cd    build &&
 
-meson setup --prefix=/usr --buildtype=release ..
+meson setup --prefix=/usr --buildtype=release .. &&
 ninja
 
+# --- block 1 --------------------------------------------------
+#   ctx: This package does not come with a test suite. Now, as the root user:
 ninja install
+

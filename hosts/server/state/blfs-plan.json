@@ -696,8 +696,8 @@
     "tarball": "Vulkan-Loader-vulkan-sdk-1.4.341.0.tar.gz",
     "manifest": true,
     "blocks": 3,
-    "enabled": 3,
-    "disabled": 0
+    "enabled": 2,
+    "disabled": 1
   },
   {
     "seq": 55,
@@ -3046,6 +3046,20 @@
     "title": "rsync-3.4.1",
     "context": "chroot",
     "tarball": "rsync-3.4.1.tar.gz",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
+  },
+  {
+    "seq": 253,
+    "order": "blfs.253",
+    "name": "blfs-bash-completion",
+    "chapter": "blfs",
+    "page": "bash-completion",
+    "title": "bash-completion-2.18.0 (hand-authored, shared recipe)",
+    "context": "chroot",
+    "tarball": "bash-completion-2.18.0.tar.xz",
     "manifest": true,
     "blocks": 1,
     "enabled": 1,
