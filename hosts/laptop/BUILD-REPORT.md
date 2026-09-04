@@ -1601,3 +1601,263 @@ service never enabled), `pavucontrol`. Verified live in the operator's actual
 Hyprland session, not just built: `pavucontrol` opens as a real window (`hyprctl
 clients`: `class: org.pulseaudio.pavucontrol`, `title: Volume Control`). 33.2GB free
 on `/` when the chain finished -- comfortably clear of the disk pressure Qt6 hit.
+## 2026-09-03 (continued): pass (password manager) and Bluetooth (bluez userspace)
+
+Operator-requested: `pass` and Bluetooth. Twelve real BLFS/hand-authored steps, seq
+213-224, all built native, zero disk drama (34GB free throughout, barely moved).
+
+**pass chain (seq 213-222), same dependency tree `server` already solved (its own seq
+75-83, 171) -- versions checked directly against this book snapshot, not assumed from
+server's history, and all matched exactly:** libgpg-error-1.59, libgcrypt-1.12.0,
+libassuan-3.0.2, libksba-1.6.7, npth-1.8, openldap-2.6.12, pinentry-1.3.2, gnupg-2.5.17,
+unix-tree-2.3.1, then the hand-authored `pass` recipe (`recipes/blfs-pass.sh`, shared
+with `server`, `password-store-1.7.4.tar.xz` from `git.zx2c4.com`).
+
+One real failure: `blfs-openldap` block 1's `patch -Np1 -i
+../openldap-2.6.12-consolidated-1.patch` failed outright, `No such file or directory` --
+the book's own "Additional Downloads: Required patch"
+(`openldap-2.6.12-consolidated-1.patch`, linuxfromscratch.org) had never been fetched to
+`/sources`, unlike every tarball which was. Fetched directly, no md5 published for it in
+the book, rebuilt clean: 291 files.
+
+Also hit, unrelated to any single package: `/sources` is owned `root:root 755` --
+plain `wget` as `john` fails `Permission denied` on write. All twelve tarball fetches (and
+the openldap patch) went through `sudo wget` instead once this was found; every step's
+own build already runs via `sudo`/root internally so this only affected the fetch, not
+the build.
+
+Verified live afterward: `gpg --version` reports 2.5.17/libgcrypt 1.12.0 real and
+working; `pass` runs and lists the operator's existing `~/.password-store` tree (predates
+this build, synced in separately -- not something this chain created). `pass`'s own
+runtime deps (bash, gnupg, tree) all present and correct.
+
+**Bluetooth (seq 223-224):** `libical-3.0.20` (real BLFS page, bluez's own Required
+dependency, nothing else in this project needs it) then `bluez-5.86`. Kernel-side
+Bluetooth support (`CONFIG_BT` and everything under it, confirmed unset in the running
+kernel earlier this session) is queued in `hosts/laptop/kernel-config.sh` but not yet
+rebuilt/rebooted into -- out of scope for this pass, handled separately.
+
+One real failure: `blfs-libical` block 0's cmake configure failed --
+`CMake Error: valac, the Vala compiler was not found. Install it or disable Vala
+bindings with -DICAL_GLIB_VAPI=False.` Book's own default (`ICAL_GLIB_VAPI=true`) needs
+Vala-0.56.18, a Recommended dependency "both required for GNOME" per the book's own
+dependency line -- nothing in this project actually consumes libical directly (it exists
+purely as bluez's own dependency, for the plain C library), so there is no GNOME/Vala
+consumer to justify a whole new toolchain for one optional feature. Same class of call as
+`blfs-gtk4`'s `vulkan=disabled`: fixed with the exact flag the tool's own error message
+named (`-D ICAL_GLIB_VAPI=false`), not by building the missing dependency. Host override
+added; rebuilt clean, 116 files. Two doc blocks (1 and 3) were already dropped ahead of
+the actual build via override -- same class of conditional-prose-not-structure classifier
+gap gtk4/gtkmm4 already hit (`make docs`/API-doc install, gated on Doxygen/Graphviz/
+GTK-Doc, none of which are built here).
+
+`bluez` itself built clean on the first try, 130 files. Verified live:
+`bluetoothctl --version` reports 5.86, `/usr/libexec/bluetooth/bluetoothd` exists and
+`/usr/sbin/bluetoothd` symlinks to it correctly (book's own convenience symlink),
+`bluetooth.service` is loaded and enabled (systemd unit installed and enabled per the
+book's own instructions) but correctly `inactive (dead)` right now -- expected, not a
+failure: this project's kernel does not yet have `CONFIG_BT_HCIBTUSB` built, and per the
+book's own note, "Systemd will start the Bluetooth daemon only when a bluetooth device is
+detected on the system." Real end-to-end Bluetooth (adapter visible, `bluetoothctl list`
+non-empty) needs the queued kernel rebuild and a reboot, both separate work.
+
+All 12 steps: manifests non-empty (5-352 files each), all recorded in
+`hosts/laptop/state/completed`. Free space unchanged in any meaningful way (33.1-33.2GB
+throughout) -- none of these packages are large. `bin/extract-blfs.py --host laptop
+--check` clean before and after every override.
+
+## 2026-09-03 (continued): Bluetooth kernel rebuild -- staged, reboot deferred by operator
+
+Kernel side of the Bluetooth work above. `hosts/laptop/kernel-config.sh` got a new
+section (book's own Kernel Configuration block from `bluez.html`, minus the
+Cryptographic API sub-block -- only needed for bluez's own test suite, not run here --
+and minus BT_HCIBTSDIO/BT_HCIUART, since the real hardware confirmed live is USB:
+`BT`, `BT_BREDR`, `BT_RFCOMM`(+TTY), `BT_BNEP`(+MC_FILTER+PROTO_FILTER), `BT_HIDP`,
+`BT_HCIBTUSB`, all modules except the two BREDR/BNEP-filter bools the book lists as
+built-in features of the Bluetooth-classic/BNEP modules themselves.
+
+Same version rebuild (6.18.10, not a version bump), which means `make install` writes
+back to the exact same live filenames already in `/boot` and `/lib/modules/6.18.10` --
+unlike a version bump, there is no natural side-by-side fallback. Given this is the
+operator's daily driver with no documented physical/serial console recovery path in this
+session, backed up before running the rebuild rather than trusting the boot-path gate
+alone (which only asserts the *existing* boot-critical set, SCSI/ATA/NVMe/USB/ext4/tmpfs
+-- true here since nothing in this change touches any of them, but backing up costs
+nothing and removes the only real unbounded-risk scenario, a kernel that fails to boot at
+all with no way back short of physical USB rescue media):
+
+- `/boot/vmlinuz-6.18.10-lfs-13.0-systemd`, `/boot/System.map-6.18.10`,
+  `/boot/config-6.18.10` each copied to a `.preBT` sibling before the rebuild.
+- `/boot/grub/grub.cfg` backed up to `.preBT-backup` and a second menuentry appended
+  ("...pre-Bluetooth fallback (2026-09-03)") pointing at the `.preBT` vmlinuz, same
+  `root=PARTUUID=` line as the primary entry. `default=0`/`timeout=5` untouched --
+  the new kernel stays the boot default, the fallback is there to select manually if
+  needed, not automatic.
+- Staged `hosts/laptop/kernel-config.sh` and `bin/kernel-config-base.sh` to
+  `/sources` by hand first -- `bin/lfsbuild` does not do this itself, and this host's
+  `/sources/kernel-config*.sh` did not exist yet (first kernel rebuild run from this
+  particular checkout's copy of the file). Fetched `linux-6.18.10.tar.xz` fresh too,
+  same reason -- not cached from the original build.
+
+Built with `bin/lfsbuild --host laptop --native --only ch10-kernel --force`
+(MAKEFLAGS=-j2, respecting `host.toml`'s cap). Gate passed clean:
+`### kernel config gate passed: boot path built in, no initramfs needed` /
+`ok   default cpufreq governor is schedutil` -- both asserted, neither this
+session's own change, confirming nothing already-working regressed. New
+`btusb.ko`/`bluetooth.ko`/`rfcomm.ko`/`bnep.ko`/`hidp.ko` all present under
+`/lib/modules/6.18.10/kernel/{drivers/bluetooth,net/bluetooth}`, confirmed by listing
+the tree directly rather than trusting the build log alone.
+
+`bin/lfsbuild`'s own auto-`detect_mode()` picks `chroot` by default on this host --
+worth restating since it bit this exact session -- because a stale, superseded
+pre-deploy chroot tree still sits at `/mnt/crypt/john/projects/agent-built-lfs/lfs`
+with a populated `usr/bin`, and `detect_mode()` checks for that tree before checking
+whether this machine is itself LFS. `--native` is not optional here; every invocation
+in this session used it explicitly.
+
+**Not rebooted.** Asked the operator directly rather than assuming the broader
+Bluetooth/pass authorization covered an actual reboot of their live daily driver --
+correctly, since they said no, they'll reboot it themselves later. New kernel, modules,
+and fallback are all staged and verified; nothing further happens here until that
+reboot, at which point `bluetoothctl list`/`rfkill list` should show a real adapter for
+the first time (currently `bluetooth.service` is loaded+enabled but inactive, per the
+book's own note that systemd only starts `bluetoothd` once the kernel exposes a real
+device -- expected on the still-running pre-Bluetooth kernel, not a failure).
+
+## 2026-09-04: Quickshell/DankMaterialShell -- qt6 build attempted, stopped on a real concurrency collision, not a code bug
+
+Operator-requested (2026-09-04, continuing from 2026-09-03's PAM decision): build the
+trimmed qt6 (seq 199, `-submodules qtdeclarative,qtsvg,qtshadertools,qtwayland,
+qtmultimedia` override already recorded 2026-09-03), then cli11/quickshell/matugen/
+dankmaterialshell (seq 225-228, all queued, all hand-authored recipes already staged).
+None of the four new steps were reached -- qt6 itself never completed.
+
+**Background-process survival bug found and fixed first.** The first qt6 attempt
+(07:14, backgrounded with plain `nohup ... & disown`) died silently around 65 minutes
+in, 4217/8050 ninja targets built, `ninja: build stopped: interrupted by user` --
+not a crash, not OOM (`free -h` showed 5+GB free, no `dmesg` OOM-killer entries).
+Root cause: `systemd-logind`'s `KillUserProcesses` (commented out in
+`/etc/systemd/logind.conf`, meaning it runs on systemd's own compiled-in default,
+which is `yes`) kills every process belonging to a user's login session when that
+user's *last* session ends -- `nohup`/`disown` protect against SIGHUP from a closing
+terminal, not against logind's own session-scope cleanup, a different mechanism
+entirely. `loginctl list-sessions` showed zero sessions at the time this session's own
+SSH connection was the only thing keeping the user "logged in"; closing it (an
+artifact of how one-shot `expect`-wrapped SSH commands work here, not an intentional
+disconnect) triggered the kill. Fixed by switching every long-running remote command
+to `sudo systemd-run --unit=<name> --collect --uid=john --gid=john
+--working-directory=... --setenv=HOME=/home/john -- <command>` -- a real transient
+systemd unit under `system.slice`, independent of any login session, immune to this
+class of kill. Confirmed working: the second qt6 attempt survived multiple SSH
+reconnects cleanly (`systemctl status` showed it still running, correct cgroup,
+correct working directory, throughout). Worth carrying forward as standing practice
+for this host: any build expected to outlive a single SSH command needs
+`systemd-run`, not `nohup`.
+
+**Second and third qt6 attempts both failed with different-looking but related
+errors** (`rm: cannot remove 'qt-everywhere-src-6.10.2': Directory not empty` once,
+`./configure: No such file or directory` twice) despite the driver's own generated
+script (`/sources/.build/blfs-qt6.sh`, read directly off disk, not re-derived) being
+verified byte-correct: `cd /sources; rm -rf srcdir; tar -xf tarball; cd srcdir` in
+that exact order, recipe running as a child process inheriting that cwd, matching
+`bin/lfsbuild`'s own documented design exactly. A manual, isolated reproduction of the
+same extract+cd+ls sequence succeeded cleanly on its own. The two symptoms together
+(sometimes the directory won't empty, sometimes it's empty when something else
+expects content) are the signature of two writers touching the same path
+concurrently, not a script bug -- and a live `ps -eo pid,ppid,tty,stat,etime,cmd`
+check found exactly that: a second, independent Claude Code session (`pts/2`, PID
+1022038, started roughly 3 minutes before this session's second qt6 attempt) running
+directly on this laptop, under the operator's own real local Hyprland session
+(`tty2`, up since the 13:31 reboot on 2026-09-03, i.e. genuinely the operator
+physically at the machine) -- with a live `sudo bash -c 'cd /sources && rm -rf
+qt-everywhere-src-6.10.2 && tar -xf ...'` process still attributable to that other
+session at the moment of inspection. Two agents extracting/removing the same tarball
+into the same path at the same time, uncoordinated, is sufficient on its own to
+produce every symptom seen -- no further diagnosis attempted past this point.
+
+**Stopped here rather than retry against a resource another live session is also
+using.** Nothing was deleted or force-overwritten beyond the tarball's own working
+directory (`/sources/qt-everywhere-src-6.10.2`, always disposable, recreated from the
+tarball on every attempt regardless). `qt6` is not in `state/completed`; the four new
+steps (cli11, quickshell, matugen, dankmaterialshell) were never attempted. Free space
+unaffected either way (33-34GB throughout, no disk risk from this). Whatever the other
+session on `pts/2` is doing with the same qt6 build is unknown from here -- worth
+checking with the operator directly before either session retries, rather than
+guessing at coordination.
+
+**Resolved same day**: confirmed with the operator that `pts/2` was their own real,
+local Claude Code session on this machine, physically at the console. Ended (operator
+killed it); a live check afterward found no `claude` process, no `pts/2`, no
+`who`/`w` sessions at all, and no lfsbuild/qt6/ninja processes left running. The
+collision explanation holds and the machine is otherwise idle.
+
+## 2026-09-04 (continued): USB webcam (UVC), the wireplumber/pipewire config gap, session paused
+
+Two more real gaps found live, both fixed, before pausing this whole line of work at
+the operator's request to let them continue from the laptop's own console instead.
+
+**USB webcam -- Logitech HD Pro Webcam C920.** Operator plugged it in mid-session.
+`lsusb`/`dmesg` both show it enumerating cleanly (`046d:082d`), but no `/dev/video*`
+ever appeared. Checked every `CONFIG_MEDIA_*`/`CONFIG_VIDEO_*`/`CONFIG_USB_VIDEO_CLASS`
+symbol directly against `/boot/config-6.18.10`: all unset -- this kernel's entire
+V4L2/media subsystem was absent, not just the one driver. No BLFS book page for this
+(pure kernel Kconfig, no userspace package required for the driver itself). Added to
+`hosts/laptop/kernel-config.sh`, alongside the already-staged Bluetooth section:
+`MEDIA_SUPPORT`, `MEDIA_USB_SUPPORT`, `MEDIA_CAMERA_SUPPORT` (enabled, menu-gating
+bools), `VIDEO_DEV` and `USB_VIDEO_CLASS` (modules). `MEDIA_CONTROLLER` and the
+`VIDEOBUF2_*` buffer-queue helpers `uvcvideo` needs are left to Kconfig's own
+`select`-driven auto-resolution (`make olddefconfig`), same pattern as `BT`'s
+sub-options -- not yet verified against a real build the way `BT_HCIBTUSB` was
+(`grep`ping the built `/lib/modules` tree for `uvcvideo.ko`), since **the kernel was
+never rebuilt with this addition** -- queued alongside Bluetooth for the next kernel
+rebuild, deliberately not rebuilt tonight to avoid a second CPU-contending build
+while qt6 was (repeatedly) attempting to compile. Pushed to the host; not yet built.
+
+**pipewire/wireplumber were built but never actually wired up.** Operator reported
+pavucontrol (built 2026-09-03, GTK4 chain above) showing no audio devices at all --
+misdescribed initially as "wireguard" instead of "wireplumber" (corrected in
+conversation; WireGuard is the unrelated VPN kernel module, already built for
+Tailscale). Real cause, found by reading `wireplumber.html`'s own "Configuring
+Wireplumber" section directly: this project's hand-authored `blfs-wireplumber.sh`
+recipe (shared, `recipes/blfs-wireplumber.sh`) stopped at `ninja install` and never
+included the book's own next section -- disabling real PulseAudio's autostart
+(`/etc/xdg/autostart/pulseaudio.desktop`, `/etc/xdg/Xwayland-session.d/00-pulseaudio-
+x11`, `autospawn = no` in `/etc/pulse/client.conf`) and enabling the three systemd
+--global user units (`pipewire.socket`, `pipewire-pulse.socket`, `wireplumber`).
+Confirmed live: the unit files existed on disk (`/usr/lib/systemd/user/{pipewire,
+pipewire-pulse}.{service,socket}`, `wireplumber.service`) but `systemctl --global
+list-unit-files` showed all three `disabled`, and all three of PulseAudio's real
+autostart files were still present and would have raced pipewire-pulse for the same
+protocol socket -- exactly the book's documented failure mode ("applications hanging
+or malfunctioning"). Fixed two places: the shared recipe itself (so a future rebuild
+doesn't regress), and directly on the live host (no rebuild needed for a config-only
+fix). Verified: `systemctl --global list-unit-files` now shows `pipewire.socket`/
+`pipewire-pulse.socket`/`wireplumber.service` all `enabled`. Takes effect at next
+login, not instantly -- no session was active for `john` at the time of the fix
+(`loginctl show-user john`: "not logged in or lingering"), confirmed separately from
+the `pts/2` collision above (that was a different check, at a different time).
+
+**Session paused here at the operator's request**, to resume from the laptop's own
+console rather than this remote/automated one. State handed off:
+
+- **Built and live now, no reboot needed**: `pass` + full gnupg chain, `bluez` +
+  `libical`, pipewire/wireplumber's missing systemd-enable step (takes effect next
+  login).
+- **Staged, needs a kernel rebuild + reboot**: Bluetooth (`CONFIG_BT` and friends) and
+  the webcam (`CONFIG_USB_VIDEO_CLASS` and friends), both already in
+  `hosts/laptop/kernel-config.sh` on disk, neither rebuilt yet. One rebuild covers
+  both -- no need for two separate reboots. `/boot/vmlinuz-6.18.10-lfs-13.0-
+  systemd.preBT` and the matching `System.map`/`config` backups plus a grub fallback
+  entry ("pre-Bluetooth fallback (2026-09-03)") are already in place from the
+  Bluetooth-only rebuild earlier tonight, which was itself never booted into.
+- **Written, not yet built**: `cli11`, `quickshell`, `matugen`, `dankmaterialshell`
+  hand recipes (seq 225-228, `packages.py`), plus the corrected qt6 `-skip`-based
+  trim override (`hosts/laptop/blfs-overrides.json`) -- verified via `bin/extract-
+  blfs.py --host laptop --check`, zero drift, but qt6 itself has not completed a
+  clean run yet (three attempts tonight, all invalidated by either a wrong flag or
+  the `pts/2` collision, none by a real defect in the current override).
+- Every file this session touched has been pushed to this host directly (not via
+  git -- this host's non-interactive session has no working GitHub key, per the
+  earlier note about `pass`'s own bootstrap). The parent session's own separate git
+  checkout is being reconciled with this host's real on-disk state and pushed to
+  `origin` from there, since it has working credentials this host doesn't.

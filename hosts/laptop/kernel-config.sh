@@ -65,6 +65,26 @@ $K --module  MOUSE_PS2_SYNAPTICS
 # MFD_RTSX_PCI + MMC_REALTEK_PCI here if it turns out to be wanted -- exact Kconfig
 # symbol names not yet verified against this kernel's Kconfig, unlike everything above.
 
+# --- bluetooth: Intel 8260 combo chip, USB HCI half ---------------------------------
+# Confirmed live (2026-09-03): lsusb shows 8087:0a2b "Intel Corp. Bluetooth wireless
+# interface" on the internal USB bus (the same 8260 chip IWLWIFI/IWLMVM above already
+# cover for WiFi), and dmesg shows thinkpad_acpi's own rfkill switch
+# (tpacpi_bluetooth_sw) already unblocked at boot -- but nothing in the running kernel
+# could bind the HCI device: CONFIG_BT and everything under it were unset. Book's own
+# Kernel Configuration section for BLFS's bluez.html, minus the Cryptographic API block
+# (only needed to run bluez's test suite, which this project doesn't run) and minus
+# BT_HCIBTSDIO/BT_HCIUART (this hardware is USB, not SDIO or UART). Not on the boot
+# path -- modules, RFKILL is already =y from the shared base's defconfig default.
+$K --module  BT
+$K --enable  BT_BREDR
+$K --module  BT_RFCOMM
+$K --enable  BT_RFCOMM_TTY
+$K --module  BT_BNEP
+$K --enable  BT_BNEP_MC_FILTER
+$K --enable  BT_BNEP_PROTO_FILTER
+$K --module  BT_HIDP
+$K --module  BT_HCIBTUSB
+
 # --- wired ethernet, dock: Lenovo OneLink+ Giga (USB CDC-ECM, 17ef:3054) -----------
 # Confirmed live (2026-09-03): lsusb shows idVendor=17ef idProduct=3054 "Lenovo
 # OneLink+ Giga" on the OneLink+ dock's internal USB3 hub; sysfs bInterfaceClass/
@@ -76,5 +96,22 @@ $K --module  MOUSE_PS2_SYNAPTICS
 # implication.
 $K --module USB_USBNET
 $K --module USB_NET_CDCETHER
+
+# --- webcam: Logitech HD Pro Webcam C920 (UVC, USB) ---------------------------------
+# Confirmed live (2026-09-04): lsusb/dmesg both show 046d:082d "HD Pro Webcam C920"
+# enumerating fine at the USB level, but no /dev/video* ever appears -- this kernel's
+# whole media/V4L2 subsystem was absent, not just the one driver (checked every
+# CONFIG_MEDIA_*/CONFIG_VIDEO_*/CONFIG_USB_VIDEO_CLASS symbol against
+# /boot/config-6.18.10 directly: all unset). No BLFS book page for this -- it's
+# purely a kernel Kconfig matter, standard/well-known UVC support, not a userspace
+# package. Not on the boot path -- modules. MEDIA_CONTROLLER and the VIDEOBUF2_*
+# buffer-queue helpers uvcvideo needs are select'd automatically by Kconfig, not
+# set explicitly here -- verify their presence the same way BT_HCIBTUSB was verified
+# (grep the built /lib/modules tree for uvcvideo.ko), not assumed from this list.
+$K --enable  MEDIA_SUPPORT
+$K --enable  MEDIA_USB_SUPPORT
+$K --enable  MEDIA_CAMERA_SUPPORT
+$K --module  VIDEO_DEV
+$K --module  USB_VIDEO_CLASS
 
 kernel_config_finish

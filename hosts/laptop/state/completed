@@ -370,3 +370,16 @@ blfs-gtkmm4
 blfs-json-glib
 blfs-pulseaudio
 blfs-pavucontrol
+blfs-libgpg-error
+blfs-libgcrypt
+blfs-libassuan
+blfs-libksba
+blfs-npth
+blfs-openldap
+blfs-pinentry
+blfs-gnupg
+blfs-tree
+blfs-pass
+blfs-libical
+blfs-bluez
+ch10-kernel

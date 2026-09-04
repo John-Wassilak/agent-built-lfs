@@ -595,4 +595,46 @@ PACKAGES = sorted(BASE + [
     # Required dependency (Intel's graphics memory management library).
     book(211, "gmmlib", "general/gmmlib.html", "gmmlib-22.8.2.tar.gz"),
     book(212, "intel-media-driver", "multimedia/intel-media-driver.html", "intel-media-driver-25.3.4.tar.gz"),
+
+    # Operator-requested (2026-09-03): pass (the standard Unix password manager). Same
+    # chain server already built (its own seq 75-83, 171) -- not in BLFS itself, but its
+    # full dependency tree is, and versions match this book snapshot exactly (checked
+    # against book/blfs-13.0 directly, not assumed from server's history). Confirmed
+    # live: none of gpg/pinentry/tree exist on this host yet.
+    book(213, "libgpg-error", "general/libgpg-error.html", "libgpg-error-1.59.tar.bz2"),
+    book(214, "libgcrypt", "general/libgcrypt.html", "libgcrypt-1.12.0.tar.bz2"),
+    book(215, "libassuan", "general/libassuan.html", "libassuan-3.0.2.tar.bz2"),
+    book(216, "libksba", "general/libksba.html", "libksba-1.6.7.tar.bz2"),
+    book(217, "npth", "general/npth.html", "npth-1.8.tar.bz2"),
+    book(218, "openldap", "server/openldap.html", "openldap-2.6.12.tgz"),
+    book(219, "pinentry", "general/pinentry.html", "pinentry-1.3.2.tar.bz2"),
+    book(220, "gnupg", "postlfs/gnupg.html", "gnupg-2.5.17.tar.bz2"),
+    book(221, "tree", "general/tree.html", "unix-tree-2.3.1.tar.bz2"),
+
+    # Same hand-authored recipe server uses (recipes/blfs-pass.sh) reused verbatim --
+    # portable, no host-specific content, same source (git.zx2c4.com/password-store
+    # snapshot, not BLFS/AUR).
+    hand(222, "pass", "password-store-1.7.4.tar.xz", "pass (hand-authored)"),
+
+    # Operator-requested (2026-09-03): Bluetooth. Kernel side (CONFIG_BT and friends,
+    # confirmed missing live -- see kernel-config.sh) is the other half of this; bluez
+    # is the userspace stack. Its own Required deps: dbus/glib2 already present on this
+    # host, libical is not (real BLFS page, nothing pulled it in before now).
+    book(223, "libical", "general/libical.html", "libical-3.0.20.tar.gz"),
+    book(224, "bluez", "general/bluez.html", "bluez-5.86.tar.xz"),
+
+    # Operator-requested (2026-09-04): Quickshell + DankMaterialShell. Neither is in
+    # BLFS. qt6 (seq 199, already queued 2026-09-03) is trimmed via a host override
+    # (blfs-overrides.json) from the book's own ~30-module default down to the 5
+    # submodules Quickshell/DMS actually import (checked against DMS's real QML
+    # source, not docs) -- the book's default is what ate ~40GB and got killed
+    # 2026-09-03; this should be a small fraction of that. Build order: qt6 first
+    # (already queued below this point in seq but must run before these three),
+    # then cli11 (quickshell's own build dependency), quickshell, then matugen and
+    # dankmaterialshell (both need quickshell on PATH; matugen is standalone Rust,
+    # order between the two doesn't matter, kept together for narrative clarity).
+    hand(225, "cli11", "CLI11-2.7.2-Source.tar.gz", "CLI11-2.7.2 (hand-authored)"),
+    hand(226, "quickshell", "quickshell-0.3.1.tar.gz", "quickshell-0.3.1 (hand-authored)"),
+    hand(227, "matugen", "", "matugen (hand-authored, cargo install)"),
+    hand(228, "dankmaterialshell", "", "DankMaterialShell-1.6.0 (hand-authored, git clone)"),
 ], key=lambda p: p["seq"])
