@@ -2,7 +2,12 @@
 # agent-built-lfs -- BLFS build plan for `laptop`
 # Copyright (c) 2026 John Wassilak
 
-"""BLFS build plan for `laptop` -- nothing beyond the shared core yet.
+"""BLFS build plan for `laptop`.
+
+Built natively against this machine's own live Gentoo root -- not a chroot tree, and
+there is no separate deploy step. See `host.toml`'s `build.mode = "native"` and its
+comment for how that decision was made and why the auto-detected default can't be
+trusted here.
 
 BASE is the closure that makes an LFS system workable: CA store, Node.js for Claude
 Code, ssh, curl/wget/git, sudo, iptables. It is what `server` was verified on, so it is
@@ -275,8 +280,23 @@ PACKAGES = sorted(BASE + [
     # PulseAudio installed, confirmed by reading the book page directly, matching
     # the operator's pipewire-not-pulseaudio instruction with no build-time cost.
     hand(122, "pciutils", "pciutils-3.14.0.tar.gz", "pciutils-3.14.0 (hand-authored, shared recipe)"),
-    hand(123, "pipewire", "pipewire-1.6.0.tar.bz2", "pipewire-1.6.0 (hand-authored, shared recipe)"),
-    hand(124, "wireplumber", "wireplumber-0.5.13.tar.bz2", "Wireplumber-0.5.13 (hand-authored, shared recipe)"),
+
+    # seq 123/124 are gaps on purpose: pipewire and wireplumber used to live here
+    # and moved to 130.5/130.6 below on 2026-09-04. 123 was ahead of alsa-lib (130),
+    # and every meson `feature` option in pipewire defaults to `auto`, so pipewire
+    # probed for an alsa-lib that did not exist yet, silently built with no ALSA SPA
+    # plugin, and installed cleanly with exit 0. Nothing failed and nothing in the
+    # build log said anything -- the symptom was a live host on which pipewire and
+    # wireplumber both ran happily and `wpctl status` showed zero audio devices,
+    # four working sound cards in /proc/asound/cards notwithstanding. Ordering was
+    # the whole bug; recipes/blfs-pipewire.sh now also pins -D alsa=enabled so a
+    # future regression fails at configure time instead of shipping mute.
+    #
+    # Fractional seqs rather than appending after 228: pipewire only needs to land
+    # after alsa-lib, and keeping it inside Tier 11 preserves its position relative
+    # to everything that expects it later (mpv's audio outputs at seq ~159,
+    # pavucontrol's chain at 209/210). Numbers not reused, gaps left as history,
+    # per CLAUDE.md.
 
     # --- Tier 11: GTK3 + audio codec prerequisites. All real BLFS pages. PulseAudio
     # deliberately NOT included here -- confirmed by reading x/gtk3.html directly
@@ -291,6 +311,34 @@ PACKAGES = sorted(BASE + [
     book(128, "libvorbis", "multimedia/libvorbis.html", "libvorbis-1.3.7.tar.xz"),
     book(129, "libsndfile", "multimedia/libsndfile.html", "libsndfile-1.2.2.tar.xz"),
     book(130, "alsa-lib", "multimedia/alsa-lib.html", "alsa-lib-1.2.15.3.tar.bz2"),
+
+    # libical and bluez moved here from seq 223/224 on 2026-09-04, and sbc added, all
+    # so that pipewire below can pin -D bluez5=enabled. pipewire's spa/meson.build
+    # makes bluez, sbc, dbus and glib/gio ALL hard requirements under `enabled`
+    # (bluez_dep uses `required: get_option('bluez5')`, and an explicit foreach
+    # errors out on any missing one) -- so bluez at 224 behind pipewire at 130.5 was
+    # not merely suboptimal, it would fail the build outright. Do not be misled by a
+    # second `required: false` bluez probe in spa/plugins/bluez5/meson.build; that
+    # one only sets HAVE_BLUEZ_5_HCI and is not the dependency gate.
+    #
+    # libical comes along because bluez needs it (BLFS lists it Recommended, for the
+    # PBAP/calendar plugin). Both fit here without dragging anything else: libical
+    # needs only cmake (17), glib2 (29), icu (30) and libxml2 (69), all far earlier;
+    # bluez needs glib2, dbus (101) and libical. 223/224 are left as gaps.
+    book(130.1, "libical", "general/libical.html", "libical-3.0.20.tar.gz"),
+    book(130.2, "bluez", "general/bluez.html", "bluez-5.86.tar.xz"),
+
+    # Not in the BLFS book (no page, no tarball in the book's source set) -- kernel.org's
+    # bluetooth release dir, sha256 recorded in the recipe. The mandatory A2DP codec;
+    # pipewire's bluez5 feature will not configure without it.
+    hand(130.3, "sbc", "sbc-2.1.tar.xz", "sbc-2.1 (hand-authored, shared recipe)"),
+
+    # Moved here from seq 123/124 on 2026-09-04 -- see the note at the old numbers
+    # above. Must come after alsa-lib (130) or pipewire builds with no ALSA support
+    # and says nothing about it; and after bluez/sbc above for -D bluez5=enabled.
+    hand(130.5, "pipewire", "pipewire-1.6.0.tar.bz2", "pipewire-1.6.0 (hand-authored, shared recipe)"),
+    hand(130.6, "wireplumber", "wireplumber-0.5.13.tar.bz2", "Wireplumber-0.5.13 (hand-authored, shared recipe)"),
+
     book(131, "speex", "multimedia/speex.html", "speex-1.2.1.tar.gz"),
     book(132, "gsettings-desktop-schemas", "gnome/gsettings-desktop-schemas.html", "gsettings-desktop-schemas-49.1.tar.xz"),
     book(133, "at-spi2-core", "x/at-spi2-core.html", "at-spi2-core-2.58.3.tar.xz"),
@@ -616,12 +664,15 @@ PACKAGES = sorted(BASE + [
     # snapshot, not BLFS/AUR).
     hand(222, "pass", "password-store-1.7.4.tar.xz", "pass (hand-authored)"),
 
-    # Operator-requested (2026-09-03): Bluetooth. Kernel side (CONFIG_BT and friends,
-    # confirmed missing live -- see kernel-config.sh) is the other half of this; bluez
-    # is the userspace stack. Its own Required deps: dbus/glib2 already present on this
-    # host, libical is not (real BLFS page, nothing pulled it in before now).
-    book(223, "libical", "general/libical.html", "libical-3.0.20.tar.gz"),
-    book(224, "bluez", "general/bluez.html", "bluez-5.86.tar.xz"),
+    # seq 223/224 are gaps on purpose. libical and bluez were added here 2026-09-03
+    # for Bluetooth (kernel side in kernel-config.sh is the other half; bluez is the
+    # userspace stack, and libical is its Recommended dep that nothing else had pulled
+    # in). They moved to 130.1/130.2 on 2026-09-04 once pipewire needed to pin
+    # -D bluez5=enabled, which makes bluez a hard build-time requirement of pipewire
+    # -- see the note there. Numbers not reused, gaps kept as history, per CLAUDE.md.
+    #
+    # Nothing between 130.2 and here depended on bluez being late; the move was checked
+    # against libical's and bluez's own deps, which all land far earlier.
 
     # Operator-requested (2026-09-04): Quickshell + DankMaterialShell. Neither is in
     # BLFS. qt6 (seq 199, already queued 2026-09-03) is trimmed via a host override
@@ -637,4 +688,144 @@ PACKAGES = sorted(BASE + [
     hand(226, "quickshell", "quickshell-0.3.1.tar.gz", "quickshell-0.3.1 (hand-authored)"),
     hand(227, "matugen", "", "matugen (hand-authored, cargo install)"),
     hand(228, "dankmaterialshell", "", "DankMaterialShell-1.6.0 (hand-authored, git clone)"),
+
+    # Operator-requested (2026-09-04): wofi's menu entries had no icons. Cause was two
+    # separate things -- the XDG_DATA_DIRS bug fixed live that day, and simply having no
+    # icon theme installed at all: /usr/share/icons held only `hicolor` with NO
+    # index.theme (just loose files other packages had dropped in) and `locolor`. With no
+    # theme index GtkIconTheme cannot build a lookup or fallback chain, so every icon name
+    # resolves to nothing and GTK logs `gtk_icon_info_load_icon: assertion 'icon_info !=
+    # NULL' failed` per entry. Cosmetic -- nothing crashes -- but it makes a GTK launcher
+    # useless to look at, and it affects every GTK app, not just wofi.
+    #
+    # hicolor first, then Adwaita: hicolor is the spec's fallback theme that every other
+    # theme inherits from and supplies the index; Adwaita is GTK's default and the theme
+    # its own widget code expects real artwork from. Appended at the next unused seqs
+    # rather than inserted: nothing build-depends on them, they are consumed at runtime,
+    # and Adwaita's meson does find_program('gtk4-update-icon-cache',
+    # 'gtk-update-icon-cache') so it cannot precede GTK.
+    #
+    # hicolor is book(), not hand(): recipes/blfs-hicolor-icon-theme.sh already existed --
+    # a book-extracted candidate (its header names book/blfs-13.0/x/hicolor-icon-theme.html)
+    # that server has been building since its own wofi debugging, at server's seq 208.
+    # Declaring it hand() and rewriting that shared file was the first attempt here and was
+    # wrong twice over: it edits a generated recipe in place, which CLAUDE.md forbids
+    # because --check reports it as drift and the next extraction discards it, and it
+    # silently changes a recipe another host depends on. Reverted; the page path above is
+    # read off the recipe's own source line, not guessed. (Note server declares the same
+    # step as hand(208) despite that header -- the same mislabel already corrected for
+    # spirv-llvm-translator/libclc in Tier 4.)
+    #
+    # Adwaita genuinely is new here (no recipe, no manifest, not in server's packages.py)
+    # and stays hand(): BLFS has an x/adwaita-icon-theme.html page, but this host has no
+    # book mirror in native mode so it could not be extracted, and declaring book() would
+    # let the next extraction overwrite the hand-written file -- same reasoning as
+    # hand(79.1, "llvm", ...). Worth re-deriving as book() from a checkout with the books.
+    # Pinned to 49.0, not "newest": this build is GNOME 49 (gsettings-desktop-schemas
+    # 49.1), and 49.0 is the only 49-series release upstream -- 49.1 of the icon theme
+    # 404s on download.gnome.org, checked rather than assumed.
+    book(229, "hicolor-icon-theme", "x/hicolor-icon-theme.html", "hicolor-icon-theme-0.18.tar.xz"),
+    hand(230, "adwaita-icon-theme", "adwaita-icon-theme-49.0.tar.xz", "adwaita-icon-theme-49.0 (hand-authored, shared recipe)"),
+
+    # Operator-requested (2026-09-04). The 2026-09-04 kernel gave this machine a working
+    # Bluetooth driver and no working adapter: btusb binds, hci0 exists and is unblocked,
+    # bluetooth.service is active, and `bluetoothctl list` still returns nothing, because
+    # dmesg reports `Failed to load Intel firmware file intel/ibt-11-5.sfi (-2)` -- ENOENT,
+    # the blob is simply absent. No kernel option substitutes for it. Third narrow fetch
+    # on this host, same policy and same LFS mirror as hand(189)/hand(190): only the blobs
+    # this exact chip generation asks for by name, not the whole linux-firmware tree.
+    # Host-specific recipe -- it names one chip on one machine.
+    hand(231, "linux-firmware-intel-bluetooth", "", "linux-firmware-intel-bluetooth (hand-authored, host-specific)"),
+
+    # Operator-requested (2026-09-04), from the post-reboot sweep. cfg80211 is built in
+    # and asks the firmware loader for the wireless regulatory database 0.35 s into every
+    # boot -- `faux_driver regulatory: Direct firmware load for regulatory.db failed with
+    # error -2` -- and nothing on either host had ever installed one. Not biting yet
+    # (wlp4s0 is DOWN, the machine is on dock ethernet), which is precisely why it went
+    # unnoticed: the cost of the missing file is a world-roaming "00" domain the first
+    # time WiFi is actually used, not an error anyone sees.
+    #
+    # Shared recipe, not host-specific: one database for every radio, naming no device or
+    # vendor. server has no radio, so laptop is the only host that lists it today.
+    #
+    # 2026.09.03 is the newest upstream release (one day old at the time of writing). Not
+    # taken on faith: the tarball's sha256 was checked against kernel.org's own
+    # sha256sums.asc, the detached PKCS#7 signature was verified over regulatory.db, and
+    # the signing certificate's SHA-256 fingerprint was compared byte-for-byte against
+    # linux-6.18.10's net/wireless/certs/wens.hex -- the DER blob this kernel compiles in
+    # and validates against, since it is built CONFIG_CFG80211_REQUIRE_SIGNED_REGDB=y.
+    # The recipe re-runs the last two of those checks itself at build time.
+    hand(232, "wireless-regdb", "wireless-regdb-2026.09.03.tar.xz", "wireless-regdb-2026.09.03 (hand-authored, shared recipe)"),
+
+    # Operator-requested (2026-09-04): TOTP/HOTP codes out of the password store the
+    # gnupg/pass chain at seq 214-222 already built. Two steps, both shared recipes --
+    # neither names hardware.
+    #
+    # oath-toolkit is not optional and not merely "recommended": pass-otp's otp.bash
+    # shells out to `oathtool` to compute every code and names no other program except
+    # `which`. It has to precede pass-otp, hence 233 before 234.
+    #
+    # Both are outside BLFS. Same two-tier check blfs-pass.sh records: oath-toolkit is
+    # in Arch's official `extra`, pass-otp in `extra` as well, so neither needed the AUR
+    # tier. Provenance for each is in its own recipe header -- a good GPG signature from
+    # Simon Josefsson for oath-toolkit, and for pass-otp (which upstream does not sign)
+    # a sha256 that matches Arch's own PKGBUILD byte for byte.
+    hand(233, "oath-toolkit", "oath-toolkit-2.6.14.tar.gz", "oath-toolkit-2.6.14 (hand-authored, shared recipe)"),
+    hand(234, "pass-otp", "pass-otp-1.2.0.tar.gz", "pass-otp-1.2.0 (hand-authored, shared recipe)"),
+
+    # Operator-requested (2026-09-04), closing the one item host.toml's [hardware] table
+    # has carried open since the 2026-08-28 audit. This CPU still runs microcode 0xc6 and
+    # /sys/devices/system/cpu/vulnerabilities/ still says `old_microcode: Vulnerable`,
+    # with six more entries wanting a newer revision. Blob 06-4e-03 (family 6, model 78,
+    # stepping 3), which Intel's microcode-20260812 releasenote lists at revision 0xf0.
+    #
+    # Host-specific recipe, unlike almost everything else added today: it names one CPU's
+    # blob, so hosts/laptop/recipes/ is where it belongs. server's own copy fetches
+    # 06-2a-07 and is otherwise the same shape -- including the same deliberate reversal
+    # of the no-initramfs design, for an initrd that carries exactly one file.
+    hand(235, "intel-microcode", "", "intel-microcode (hand-authored, host-specific)"),
+
+    # Operator-requested (2026-09-04). Third font on this system, after DejaVu (194) and
+    # JetBrains Mono (195), and the first one that is not a text face: Noto Sans Symbols 2
+    # carries the Unicode symbol blocks -- Braille, dingbats, playing cards, chess,
+    # dominoes, mahjong, alchemical, geometric shapes extended -- that neither of the other
+    # two covers, so those codepoints render as tofu until it is installed. Shared recipe;
+    # a font names no hardware. Same page label as the other two, since BLFS's
+    # TTF-and-OTF-fonts.html is the one guide page all three nominally hang off.
+    #
+    # Staged as .tar.gz, not the .zip upstream publishes: lfsbuild's unpack step is a
+    # plain `tar -xf` (bin/lfsbuild, build_script) with no zip path, and srcdir_of() reads
+    # the top-level directory out of the archive -- and this release's zip has no single
+    # top-level directory at all (NotoSansSymbols2/ sits beside AUTHORS.txt, OFL.txt and
+    # two .html files at the root). So it is repacked under a NotoSansSymbols2-v2.008/
+    # prefix, byte-identical contents, exactly the way JetBrainsMono-2.304.zip was already
+    # handled here. Upstream zip sha256
+    # 346c930bbe8eb946701a05c54e9c11a2094dee1d93c387bf1771c0a3e335688f.
+    hand(236, "noto-sans-symbols2-fonts", "NotoSansSymbols2-v2.008.tar.gz",
+         "Noto Sans Symbols 2 v2.008 (hand-authored)", page="TTF-and-OTF-fonts"),
+
+    # Operator-requested (2026-09-04): enchant-2 for jinx in Emacs (seq 182). Three steps,
+    # not one, and the order between them is load-bearing.
+    #
+    # enchant is a dispatch layer with no spelling engine of its own -- every provider it
+    # ships (aspell, hunspell, nuspell, hspell, voikko) is optional and auto-detected at
+    # its configure time. Build enchant before a provider exists and it configures clean,
+    # installs clean, jinx compiles clean, and every word comes back misspelled. So
+    # hunspell has to precede it, and the recipe passes --with-hunspell explicitly so a
+    # future re-seq fails at configure time rather than silently. Same lesson PRACTICES.md
+    # records from pipewire quietly losing ALSA.
+    #
+    # The dictionary is its own step for the same reason: hunspell is an engine with no
+    # words in it, and the missing-dictionary failure is indistinguishable at the Emacs
+    # end from a broken enchant. enchant's own provider searches
+    # <XDG data dir>/hunspell, so /usr/share/hunspell is the right place -- read out of
+    # providers/enchant_hunspell.cpp, not assumed.
+    #
+    # All three shared: none names hardware. Emacs was checked for dynamic-module support
+    # before any of this (emacs-module.h present, module-file-suffix ".so"), since jinx
+    # is useless without it.
+    hand(237, "hunspell", "hunspell-1.7.3.tar.gz", "hunspell-1.7.3 (hand-authored, shared recipe)"),
+    hand(238, "hunspell-en-us", "hunspell-en_US-2020.12.07.tar.gz",
+         "hunspell-en_US-2020.12.07 dictionary (hand-authored, shared recipe)"),
+    hand(239, "enchant", "enchant-2.8.21.tar.gz", "enchant-2.8.21 (hand-authored, shared recipe)"),
 ], key=lambda p: p["seq"])

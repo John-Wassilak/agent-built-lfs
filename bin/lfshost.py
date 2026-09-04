@@ -69,6 +69,14 @@ class Host:
         self.jobs = build.get("jobs") or os.cpu_count() or 4
         self.chroot_tree = build.get("chroot_tree", DEFAULT_CHROOT_TREE)
         self.sources = build.get("sources", DEFAULT_SOURCES)
+        # Explicit override for lfsbuild's mode auto-detection (build.mode = "native" or
+        # "chroot" in host.toml). Absent by default, which keeps detect_mode()'s
+        # populated-tree/is_lfs_system() heuristic for hosts where it is reliable. Exists
+        # for a host that has a leftover populated chroot tree even after deploying and
+        # rebooting into the real thing -- the heuristic checks that tree before checking
+        # whether this machine is itself LFS, so a stale-but-populated tree wins by
+        # mistake. See hosts/laptop/host.toml for the concrete case this fixed.
+        self.mode = build.get("mode")
 
         self.state = f"{self.dir}/state"
         self.plan = f"{self.state}/plan.json"

@@ -40,6 +40,19 @@ kernel_config_shared() {
     $K --disable RT_GROUP_SCHED
     $K --disable EXPERT
 
+    # --- not in the book: user namespaces -------------------------------------
+    # defconfig leaves CONFIG_USER_NS unset, and that breaks systemd's own service
+    # sandboxing rather than only affecting containers. Any unit with
+    # PrivateUsers=yes fails to spawn at all: systemd logs "Failed to set up user
+    # namespacing: Invalid argument" then "Failed at step USER", and the unit dies
+    # with status=217/USER before its ExecStart binary is ever reached. Found on
+    # laptop 2026-09-04 via upower.service, whose upstream unit (shipped by upower
+    # itself, not written here) sets PrivateUsers=yes -- so this is a book-level
+    # fact about running BLFS's own packaged units, not a laptop hardware detail,
+    # and it applies to every machine here. Cheap: one bool, no driver, no boot-path
+    # implication.
+    $K --enable  USER_NS
+
     # --- book: Processor type and features ---
     $K --enable  RELOCATABLE
     $K --enable  RANDOMIZE_BASE

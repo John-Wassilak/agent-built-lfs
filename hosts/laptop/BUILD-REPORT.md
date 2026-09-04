@@ -1861,3 +1861,1008 @@ console rather than this remote/automated one. State handed off:
   earlier note about `pass`'s own bootstrap). The parent session's own separate git
   checkout is being reconciled with this host's real on-disk state and pushed to
   `origin` from there, since it has working credentials this host doesn't.
+
+## 2026-09-04 (first native session, post-reboot): kernel changes verified, and four faults that all traced to two causes
+
+First session running *on* `laptop` itself rather than against it -- the operator
+rebooted into the new kernel and asked for four things: verify the staged kernel work,
+verify pipewire, and diagnose `upower.service` and `wofi`. All four are answered below.
+Two of them turned out to share a single root cause (this system has no PAM), and two
+more were silent build defects that had been shipping for days without any failing
+unit to point at.
+
+**Environment note, for anything that reads this later.** In native mode on this host
+there is no book mirror (`book/13.0`, `book/blfs-13.0` are absent -- they were never
+tracked in the repo, and the Gentoo-side LUKS path `chroot_tree` still names,
+`/mnt/crypt/john/projects/agent-built-lfs`, no longer exists now that the machine boots
+LFS itself). So `bin/extract-recipes.py --check` and `bin/extract-blfs.py --check`
+**cannot be run from here**; both exit with "no LFS book at book/13.0". They were not
+run this session. Nothing this session changed is a generated recipe, so no drift is
+introduced: the edits are `bin/kernel-config-base.sh` (not generated),
+`recipes/blfs-pipewire.sh` (hand-authored), and `hosts/laptop/packages.py` (source).
+The checks still need to run from a checkout that has the books before the next real
+extraction. Also relevant: `/sources` is down to 33 tarballs and holds neither
+`pipewire-1.6.0.tar.bz2` nor `wireplumber-0.5.13.tar.bz2`, so the rebuild below needs
+them re-fetched first.
+
+### 1. Kernel: Bluetooth landed, the webcam did not, and a third gap turned up
+
+The kernel that booted is the 23:53 Bluetooth rebuild (`/boot/vmlinuz-6.18.10-lfs-13.0-
+systemd`, with the 23:18 pre-Bluetooth kernel still in place as
+`.preBT` plus its grub fallback entry).
+
+**Bluetooth: the kernel half worked, the firmware half is missing.** Verified against
+the running kernel, not the source tree: `/boot/config-6.18.10` has `CONFIG_BT=m`,
+`BT_RFCOMM=m`, `BT_BNEP=m`, `BT_HIDP=m`, `BT_LE=y`, `BT_HCIBTUSB=m`;
+`bluetooth.ko`/`btusb.ko` are both in `/lib/modules/6.18.10`; `btusb` is loaded with
+`bluetooth` bound under it; `hci0` exists in `/sys/class/bluetooth` and in `rfkill
+list` (soft- and hard-unblocked, alongside `tpacpi_bluetooth_sw`); and
+`bluetooth.service` is now `active` rather than the loaded-but-inactive state it sat in
+on the pre-Bluetooth kernel. So the Kconfig work in `hosts/laptop/kernel-config.sh` did
+exactly what it was staged to do.
+
+The adapter is still not usable, for a reason one layer up. `dmesg` reads the chip's
+bootloader fine, then:
+
+```
+Bluetooth: hci0: Failed to load Intel Bluetooth firmware file intel/ibt-11-5.sfi (-2)
+Bluetooth: hci0: Reading supported features failed (-56)
+```
+
+`-2` is ENOENT: `/lib/firmware` holds only `i915/` and
+`iwlwifi-8000C-36.ucode`, the two narrow fetches this project has done
+(`blfs-linux-firmware-iwlwifi-8260`, `blfs-linux-firmware-i915-dmc`, both complete).
+`intel/ibt-11-5.sfi` was never fetched, so the driver binds the device and then cannot
+bring it up -- which is why `bluetoothctl list` and `bluetoothctl show` both return
+nothing at all despite `hci0` existing. This is the same narrow-fetch pattern as the
+existing two firmware steps and wants a third one; it is *not* a kernel problem and a
+kernel rebuild will not help it.
+
+**Webcam (UVC): not in this kernel.** `CONFIG_MEDIA_SUPPORT is not set` in
+`/boot/config-6.18.10`, zero `CONFIG_MEDIA_*` lines are set, no `uvcvideo.ko` exists
+under `/lib/modules/6.18.10`, and there is no `/dev/video*`. This matches what the
+previous session recorded rather than contradicting it -- the media/V4L2 section was
+added to `hosts/laptop/kernel-config.sh` *after* the 23:53 build and deliberately not
+built that night. It is still staged and still needs a rebuild. The C920 is plugged in
+and enumerating (`snd_usb_audio` picks up its mic as card 3), so the moment the modules
+exist the device should appear.
+
+**New this session: `CONFIG_USER_NS` is unset, and that is what breaks upower.** See
+item 3. Added to `bin/kernel-config-base.sh` (shared, not the host file) -- reasoning in
+that file's own comment: the failing unit is upower's own upstream unit, so this is a
+fact about running BLFS's packaged units on any machine here, not a laptop hardware
+detail. It costs one bool and touches no driver or boot path.
+
+**One rebuild covers both remaining kernel items** (UVC + `USER_NS`), same as the
+previous session's note that Bluetooth and UVC could share one. Not run this session --
+it is the operator's live daily driver and a rebuild plus reboot is their call.
+
+### 2. pipewire: the systemd wiring was right, but it had no ALSA support and no user manager
+
+Two independent faults, both real, stacked on top of each other. Neither produced a
+failing unit, which is why this looked like "pavucontrol shows no devices" rather than
+anything diagnosable.
+
+**Fault A -- no user systemd instance at all, because there is no PAM.** The previous
+session's fix was correct and is verified still in place: `systemctl --global
+list-unit-files` shows `pipewire.socket`, `pipewire-pulse.socket` and
+`wireplumber.service` all `enabled`. But nothing was running, and `systemctl --user`
+failed outright with "Failed to connect to user scope bus". Cause chain, each step
+checked directly:
+
+- `/etc/pam.d` does not exist; there is no `libpam` and no `/usr/lib/security`. And
+  `systemctl --version` reports **`-PAM`** -- systemd itself was built without it, by
+  the deliberate choice already recorded in `packages.py`'s polkit note.
+- `user@.service` relies on `PAMName=systemd-user` for one thing beyond authentication:
+  `pam_systemd` is what exports `XDG_RUNTIME_DIR` into the user manager. With `-PAM`
+  that directive is inert, so `/usr/lib/systemd/systemd --user` exited 1 with "Trying to
+  run as user instance, but $XDG_RUNTIME_DIR is not set".
+- With no PAM session, `systemd-logind` never opens a session either:
+  `loginctl list-sessions` printed "No sessions" and `loginctl show-user john` said "not
+  logged in or lingering" *while the operator's own Hyprland was running on tty2*
+  (`who` showed them via utmp; `start-hyprland` pid 468 and `Hyprland` pid 474 were
+  live). logind was itself healthy and had seat0. So `user@1000.service` was never even
+  asked to start.
+
+Fixed with the two standard PAM-less pieces, both applied live:
+
+- `/etc/systemd/system/user@.service.d/10-no-pam-runtime-dir.conf`, setting
+  `Environment=XDG_RUNTIME_DIR=/run/user/%i`. Safe because `user-runtime-dir@%i.service`
+  is already `BindsTo=` and ordered before `user@.service`, so the path exists by then.
+  The drop-in carries the full rationale.
+- `loginctl enable-linger john`, which is what actually starts `user@1000.service` at
+  boot when no PAM session will ever open one.
+
+Also added `john` to the `audio` group. Without a logind session there are no device
+ACLs on `/dev/snd/*` (they are plain `root:audio 0660`), so group membership is the only
+path to the hardware; `john` was in `video`, `input`, `netdev`, `wheel` and `seat` but
+not `audio`.
+
+Verified after a `systemctl restart user@1000.service` -- i.e. the boot path, not just a
+one-off: `user@1000.service` active, `pipewire.socket` and `pipewire-pulse.socket`
+listening, `/run/user/1000/{bus,pipewire-0,pipewire-0-manager}` present. `pipewire.service`
+and `wireplumber.service` are correctly *inactive* until a client connects
+(`wireplumber.service` is `WantedBy=pipewire.service`, and `pipewire.service` is
+socket-activated); `pw-cli info 0` triggers the whole chain and both go active.
+PipeWire 1.6.0 answers normally.
+
+**Fault B -- pipewire was built with no ALSA support, silently, and the cause was build
+order.** With the graph finally running, `wpctl status` showed a healthy PipeWire with
+**zero Devices, Sinks and Sources** -- against four working cards in
+`/proc/asound/cards` (Conexant PCH, the OneLink+ dock, a USB audio device, and the C920
+mic). `wireplumber`'s own log is the only place that names it:
+
+```
+wp-device: SPA handle 'api.alsa.enum.udev' could not be loaded; is it installed?
+s-monitors: PipeWire's ALSA SPA plugin is missing or broken. Sound cards will not be supported
+```
+
+`/usr/lib/spa-0.2/` has `audioconvert`, `audiomixer`, `audiotestsrc`, `avb`, `control`,
+`filter-graph`, `support`, `v4l2`, `videoconvert`, `videotestsrc` -- and no `alsa/`
+directory at all. `hosts/laptop/manifests/blfs-pipewire.txt` confirms it was never
+installed, so this is not a later deletion. `alsa-lib` is fine and present
+(`libasound.so.2`, `pkg-config --modversion alsa` = 1.2.15.3, `blfs-alsa-lib` complete).
+
+The cause is ordering: pipewire was **seq 123**, `alsa-lib` is **seq 130**
+(`state/completed` confirms the real order -- pipewire at line 266, alsa-lib at 273).
+Every meson `feature` option in pipewire defaults to `auto`, so it probed for an
+alsa-lib that did not exist yet, disabled the ALSA SPA plugin, and installed with exit 0
+and nothing in the log to read as a failure. The recipe's own header comment lists the
+Recommended deps it *meant* to skip (BlueZ, gstreamer, SBC, v4l-utils); ALSA was never
+one of them. Worth generalizing: this is the same shape as the gdk-pixbuf loader trap
+already recorded in `blfs-overrides.json` -- an `auto` feature whose absence surfaces
+only as missing behavior in an unrelated package, days later.
+
+Fixed in the repo, two halves:
+
+- `recipes/blfs-pipewire.sh` now pins `-D alsa=enabled` rather than leaving it `auto`,
+  so a regression fails at configure time instead of shipping a mute system.
+- `hosts/laptop/packages.py` moves pipewire/wireplumber to **seq 130.5/130.6**, right
+  after alsa-lib. 123/124 are left as gaps with a comment explaining why, per CLAUDE.md
+  -- numbers not reused, gaps kept as history. Fractional seqs rather than appending
+  after 228 so pipewire stays inside Tier 11 and keeps its position relative to
+  everything downstream that expects it (mpv's audio outputs ~159, the pavucontrol chain
+  at 209/210). Verified: 240 entries, still sorted, no duplicate seqs.
+
+`bluez5` is left off deliberately. It needs `sbc`, the mandatory A2DP codec, and no
+`sbc` tarball is in `/sources`; whether BLFS 13.0 has a page for it could not be checked
+from here (no book mirror). So Bluetooth audio is a separate step regardless -- and it
+also waits on the missing `ibt-11-5.sfi` firmware from item 1.
+
+**pipewire is therefore up but still deaf: the rebuild has not been run.** It needs the
+two tarballs re-fetched first.
+
+### 3. upower: `CONFIG_USER_NS` unset, plus the unit was never enabled
+
+`upower.service` was `inactive (dead)` and `disabled`. Starting it by hand fails
+immediately, five times, then gives up:
+
+```
+(upowerd)[926]: upower.service: Failed to set up user namespacing: Invalid argument
+(upowerd)[926]: upower.service: Failed at step USER spawning /usr/libexec/upowerd: Invalid argument
+systemd[1]: upower.service: Main process exited, code=exited, status=217/USER
+```
+
+`/usr/libexec/upowerd` exists and is fine -- it is never reached. upower's own upstream
+unit (shipped by the package, not written here) sets `PrivateUsers=yes` in its sandbox
+block, and `/boot/config-6.18.10` has `# CONFIG_USER_NS is not set`. `defconfig` leaves
+it off and nothing in this project ever turned it on, so *any* unit with
+`PrivateUsers=yes` dies at step USER before exec. Nothing about this is upower-specific.
+
+Fixed by adding `$K --enable USER_NS` to `bin/kernel-config-base.sh` (shared -- see item
+1), and `systemctl enable upower.service` so it comes up with `graphical.target`. **It
+will keep failing until the kernel is rebuilt**; the enable is staged, not a fix on its
+own. A `PrivateUsers=no` drop-in would work around it today at the cost of the unit's
+sandboxing, and was deliberately not applied, since the kernel rebuild is wanted for the
+webcam anyway and `USER_NS` is worth having for its own sake.
+
+### 4. wofi: `XDG_DATA_DIRS` was missing `/usr/share`, which broke every GTK icon
+
+wofi (seq 197, hand-authored, the SUPER+D binding) aborted hard rather than
+misbehaving:
+
+```
+Gtk-WARNING: Could not load a pixbuf from /org/gtk/libgtk/icons/16x16/status/edit-find-symbolic.symbolic.png.
+This may indicate that pixbuf loaders or the mime database could not be found.
+Gtk:ERROR:../gtk/gtkiconhelper.c:495:ensure_surface_for_gicon: assertion failed (error == NULL):
+  Failed to load /org/gtk/libgtk/icons/16x16/status/image-missing.png:
+  Unrecognized image file format (gdk-pixbuf-error-quark, 3)
+Bail out!  (core dumped)
+```
+
+That signature is already in this repo -- it is verbatim the crash
+`recipes/blfs-overrides.json`'s `blfs-gdk-pixbuf` override was written to fix in August,
+when the book's glycin-based defaults left every loader disabled. **That override is
+fine and is not the problem here.** The loaders really are built: `libgdk_pixbuf-2.0.so.0`
+links `libpng16.so.16` and `libjpeg.so.62` and carries the PNG/JPEG loaders' own error
+strings, so png/jpeg are compiled in as built-ins, and `loaders.cache` correctly lists
+the gif and librsvg svg modules.
+
+The tell was that gdk-pixbuf could not load a **GIF** either, so this was not a
+per-format loader gap. `gdk-pixbuf-pixdata` on a known-good PNG failed with "Couldn't
+recognize the image file format", and `gio info` on the same file reported
+`standard::content-type: application/octet-stream` -- GLib could not identify a PNG *by
+magic or even by extension*. The mime database was intact (`/usr/share/mime/mime.cache`,
+`globs2`, `magic` all present and populated). GLib simply was not reading it:
+
+```
+XDG_DATA_DIRS=/usr/local/share      <- /usr/share missing entirely
+XDG_CONFIG_DIRS=                    <- unset
+```
+
+Cause: the live `/etc/profile` is a hand-customized copy (it references `~/Config`'s bash
+files) that dropped BLFS's own "Set some defaults for graphical systems" block --
+`recipes/blfs-shell-startup-files.sh` sets `XDG_DATA_DIRS=${XDG_DATA_DIRS:-/usr/share}`
+there, and the live file has no `XDG_DATA_DIRS` line at all. `/etc/profile.d/extrapaths.sh`
+then does `pathprepend /usr/local/share XDG_DATA_DIRS`, which on an *unset* variable
+yields `/usr/local/share` alone. And a set-but-wrong `XDG_DATA_DIRS` is worse than an
+unset one: `g_get_system_data_dirs()` honors it instead of falling back to its own
+`/usr/local/share:/usr/share` default, so `/usr/share/mime` became unreachable, every
+content-type lookup returned `application/octet-stream`, all gdk-pixbuf image loading
+failed including its built-ins, and any GTK app drawing an icon was one icon away from
+aborting. wofi was simply the first thing to actually hit it -- exactly the point the
+gdk-pixbuf override's own `reason` field already makes ("nothing about that crash was
+specific to the launcher").
+
+Fixed with `/etc/profile.d/00-xdg-defaults.sh`, setting `XDG_DATA_DIRS` and
+`XDG_CONFIG_DIRS` with the same `:-` defaults BLFS uses. A drop-in rather than an edit
+to `/etc/profile`, for two reasons: that file is the operator's own customized copy and
+not this repo's to rewrite, and the `00-` prefix guarantees it is sourced before
+`extrapaths.sh` in the glob, which is what makes the `pathprepend` produce
+`/usr/local/share:/usr/share` instead of clobbering. `XDG_RUNTIME_DIR` is deliberately
+left out -- `start-hyprland.sh` already forces the real `/run/user/$(id -u)`, and BLFS's
+`/tmp/xdg-$USER` fallback would be wrong here.
+
+Verified: a clean login shell now gives `XDG_DATA_DIRS=/usr/local/share:/usr/share` and
+`XDG_CONFIG_DIRS=/etc/xdg`; `gio info` reports `image/png`; `gdk-pixbuf-pixdata` loads
+the same PNG that failed before; and **wofi launches and stays up** against the live
+Wayland display (`--show drun` ran to a 6s timeout, exit 124, instead of dumping core).
+
+**Not fixed, cosmetic, separate gap: no icon theme is installed.** wofi now runs but logs
+`gtk_icon_info_load_icon: assertion 'icon_info != NULL' failed` per entry, because
+`/usr/share/icons` holds only `hicolor` (with **no `index.theme`** -- just files other
+packages dropped in) and `locolor`. With no theme index GTK cannot build a fallback
+chain, so per-application icons resolve to nothing. `hicolor-icon-theme` and
+`adwaita-icon-theme` are both real BLFS pages and neither is in `packages.py`. Two small
+steps whenever icons are wanted; nothing else depends on it.
+
+### 2026-09-04, same session: enabling linger mid-session hid the live Hyprland's sockets
+
+Self-inflicted, found within minutes because the operator said "I can't open wofi or
+alacritty", fixed without losing the session. Recording it in full because the
+presentation is badly misleading and the obvious cleanup command would have destroyed
+the session outright.
+
+**What happened.** `loginctl enable-linger john`, applied above to get a user systemd
+instance on a PAM-less box, pulls in `user-runtime-dir@1000.service`, whose entire job is
+to mount a fresh tmpfs at `/run/user/1000`. That directory was **already populated** --
+the operator's Hyprland had been running on tty2 since 08:52 and had put `wayland-1`,
+`wayland-1.lock`, `hypr/`, `ssh-agent.1000.sock`, `cc-socks/` and
+`Alacritty-wayland-1-567.sock` in it, via the plain directory
+`/etc/tmpfiles.d/xdg-runtime-john.conf` creates. systemd mounted straight over the top.
+
+**Why it looked like nothing was wrong.** Every existing process kept working:
+Hyprland (pid 474) and the already-open alacritty (pid 567) hold open file descriptors,
+which survive the shadowing fine. `Hyprland` was still in `ps`, the screen was still
+live, no unit failed, and nothing was logged anywhere. Only *new* Wayland clients broke,
+because `$WAYLAND_DISPLAY=wayland-1` resolves to a path that now pointed into an empty
+tmpfs. So the symptom was "SUPER+D and SUPER+Return do nothing" on a compositor that
+looked completely healthy -- and it arrived in the same session as a real, separately
+diagnosed wofi bug (the `XDG_DATA_DIRS` crash above), which is a good way to spend a long
+time fixing the wrong thing. The tell is one line: `findmnt /run/user/1000` showing a
+tmpfs, plus `ls /run/user/1000` showing pipewire's sockets and *not* `wayland-1`.
+
+**The trap in the cleanup.** The intuitive fix is `systemctl stop
+user-runtime-dir@1000.service`. Do not. Its `ExecStop` is
+`systemd-user-runtime-dir stop 1000`, and that does not merely unmount -- verified
+empirically before touching the real session, by staging a throwaway UID 9999 (plain
+dir + a marker file, tmpfs mounted over it, then `systemd-user-runtime-dir stop 9999`):
+the mount went away, the directory itself was removed, and the marker file underneath it
+was gone with it. On UID 1000 that would have deleted the live session's sockets and
+hard-killed Hyprland.
+
+**What was actually done**, in this order:
+
+1. `systemctl stop user@1000.service` -- kills pipewire/wireplumber only. Checked first
+   that this cannot cascade: `user@.service` is `BindsTo=user-runtime-dir@%i.service`,
+   which is one-directional, and `user-runtime-dir@1000.service` has
+   `StopWhenUnneeded=no` with empty `RequiredBy=`/`WantedBy=`, so nothing garbage-collects
+   it.
+2. `umount /run/user/1000` **by hand**, never via `systemctl stop`, so only the mount was
+   removed and no `ExecStop` ran.
+3. Confirmed all seven original entries came back with their original 08:52 timestamps,
+   and that `Hyprland` was still pid 474.
+4. Confirmed the actual user-visible fix: `alacritty -e true` exits 0, and `wofi --show
+   drun` runs to its timeout instead of dumping core.
+
+**Two guards left behind.** `user-runtime-dir@1000.service` is now `active` with nothing
+mounted, which is a live hazard for the rest of this boot -- if anything stops it, it
+`rm_rf`s the revealed directory. Note that `loginctl disable-linger john` would also
+stop it, so *that* is not the way to back this change out before a reboot. Guarded with
+`RefuseManualStop=yes` in a drop-in under **`/run/systemd/system/`** rather than `/etc`,
+deliberately: it is a this-boot-only concern and vanishes at reboot, where the
+unqualified ability to stop the unit is wanted back.
+
+The second guard is in `hosts/laptop/overlay/home/john/start-hyprland.sh` (deployed
+live): when `/var/lib/systemd/linger/$USER` exists, wait for `$XDG_RUNTIME_DIR` to
+actually be a mountpoint before creating anything in it, bounded at ~10s and non-fatal
+(warn and continue rather than refuse to start a desktop). This closes the ordering race
+permanently rather than relying on it. In practice systemd wins that race easily -- the
+lingering user manager starts during boot, long before anyone finishes typing a password
+at the getty -- so the loop should exit on its first check.
+
+**Net state.** Linger stays enabled: from the next boot the ordering is right by
+construction (user-runtime-dir mounts the tmpfs during boot, Hyprland starts minutes
+later and uses it), which is the arrangement pipewire needs. `user@1000.service` is left
+**stopped for the remainder of this boot** -- restarting it would risk a remount for no
+gain, since pipewire has nothing to offer until the ALSA rebuild anyway. Nothing was lost:
+same Hyprland, same alacritty, same ssh-agent.
+
+### 2026-09-04, same session: both rebuilds run -- pipewire has audio, kernel has the webcam
+
+Operator: "do both rebuilds". Both completed, both verified. One reboot still outstanding.
+
+**`jobs` raised 2 -> 4** (`hosts/laptop/host.toml`), operator decision, reversing the
+original cap. The old comment reserved two threads to keep the daily driver usable during
+a build; the operator asked for all four. Worth recording the confusion that prompted it:
+`host.toml`'s `[hardware] cpu` string says "2 cores / 4 threads" and `lfshost.py` printed
+`jobs=2`, which this session repeated as "2 cores -- no point contending". Both readings
+are defensible and the live machine confirms both: `lscpu` reports 2 physical Skylake-U
+cores with 2 threads each, and `nproc` is 4. Four schedulable CPUs is the number that
+matters for `-j`. 15GiB RAM makes `-j4` safe here; qt6 remains the one package where the
+lower number may still be wanted.
+
+**Sources.** Neither tarball was in `/sources` (down to 33 files). `bin/fetch-sources.sh`
+was no help -- it drives off `book/wget-list-systemd`, which needs the book (absent
+natively) and covers only LFS's 92 sources, not BLFS. Fetched both from upstream
+gitlab.freedesktop.org instead and verified against this repo's own stored list,
+`blfs-staging/blfs-md5-pipewire`: `pipewire-1.6.0.tar.bz2` and
+`wireplumber-0.5.13.tar.bz2` both `OK`. The md5 match is what makes the provenance
+argument, not the URL.
+
+**pipewire rebuild: 5.3 min, exit 0, manifest 611 files** (was 170 -- the old manifest
+was itself evidence of how much had silently not been built). `-D alsa=enabled` was
+confirmed present in the generated `/sources/.build/blfs-pipewire.sh` before starting,
+and mid-build `ps` caught
+`spa/plugins/alsa/libspa-alsa.so.p/alsa-compress-offload-device.c` compiling with
+`-D HAVE_ALSA_UCM`, i.e. the fix taking effect rather than inferred after the fact. Four
+concurrent `cc1` processes confirmed `-j4` was live. Result on disk:
+`/usr/lib/spa-0.2/alsa/libspa-alsa.so`, linked against `libasound.so.2` and
+`libudev.so.1`, recorded in the manifest.
+
+**wireplumber deliberately NOT rebuilt.** It was queued for a rebuild on the assumption
+it shared pipewire's problem, since it was seq 124 and also ahead of alsa-lib. Checked
+instead of assuming: `ldd /usr/bin/wireplumber` has **zero** `libasound` references.
+Wireplumber never links ALSA -- it consumes pipewire's SPA plugins at runtime, so
+pipewire's rebuild is the whole fix and rebuilding wireplumber would have been busywork.
+Its seq still moved to 130.6 so a fresh build orders correctly.
+
+**Audio verified working**, and the first attempt at verifying it was wrong in a way
+worth writing down. Starting `pipewire`/`wireplumber` by hand still showed zero devices,
+with wireplumber's ALSA complaint now gone (only the harmless libcamera one left). Cause
+was the test, not the build: `usermod -a -G audio john` had run earlier in this session,
+but **this shell's supplementary groups were fixed at its own login, before that** --
+`id -G` showed no gid 11, and `/dev/snd/controlC1` was genuinely unreadable by it. The
+systemd-started instance from earlier had `Groups: 11 ...` and would have been fine. Re-run
+under `sg audio`, and:
+
+- 4 Devices: Built-in Audio (Conexant PCH), ThinkPad OneLink Plus Dock Audio, Audio
+  Adapter (Unitek Y-247A), HD Pro Webcam C920
+- 3 Sinks, 4 Sources, all `[alsa]`
+- with `pipewire-pulse` also started, `pactl info` reports "PulseAudio (on PipeWire
+  1.6.0)", server version 15.0.0 -- which is what pavucontrol talks to, so the original
+  "pavucontrol shows no devices" report is now addressed at the root
+
+Those three daemons are running by hand for the rest of this boot (audio works now); from
+the next boot the systemd user units take over, which is the supported path.
+
+**A stale-staging trap caught before the kernel build, not after.** `/sources/kernel-config.sh`
+and `/sources/kernel-config-base.sh` are *copies*, staged separately from the repo, and
+both were out of date: the base was missing `USER_NS` (added this session, expected) and
+the host file was missing the **entire UVC/media section** -- which the previous session
+had written to the repo and described as "pushed to this host", but which had never been
+re-staged into `/sources`. Building without checking would have produced a kernel with
+neither fix and looked like a successful rebuild. Both re-staged and diffed byte-equal
+against the repo before starting. Standing lesson: `/sources/kernel-config*.sh` are not
+the repo's files, and `diff` against the repo is a required pre-flight step for any kernel
+rebuild.
+
+**Boot-path safety, before touching anything.** All these kernels are version 6.18.10 --
+the string never changes between rebuilds -- so they share one `/lib/modules/6.18.10`,
+and `make modules_install` overwrites it in place. Backed up as `.preUVC`:
+`/boot/vmlinuz-6.18.10-lfs-13.0-systemd.preUVC` (md5-verified identical to the running
+kernel at the time), the matching `System.map`/`config`, and a full copy of the modules
+tree at `/lib/modules/6.18.10.preUVC` (21MB). `/boot/grub/grub.cfg` gained a
+"pre-webcam/USER_NS fallback (2026-09-04)" entry alongside the existing pre-Bluetooth
+one, every referenced vmlinuz confirmed present on disk, and the old file kept as
+`grub.cfg.bak-2026-09-04`. `grub.cfg` was also **untracked** until now -- it is now in
+`hosts/laptop/overlay/boot/grub/grub.cfg`, matching the convention `server` already
+follows, with a comment explaining the shared-modules-tree restore procedure.
+
+**Kernel rebuild: 23.0 min, exit 0.** `cp -iv` was not an issue -- `hosts/laptop/review-overrides.json`
+already replaces blocks 5/6/7 with non-interactive `cp -v`. Verified on disk afterwards:
+
+- `/boot/vmlinuz-6.18.10-lfs-13.0-systemd` rebuilt at 10:08, 12,829,696 bytes, md5
+  distinct from the `.preUVC` backup (so the copy really happened -- worth checking given
+  the `cp -i` history)
+- `/boot/config-6.18.10`: `USER_NS=y`, `MEDIA_SUPPORT=y`, `MEDIA_USB_SUPPORT=y`,
+  `MEDIA_CAMERA_SUPPORT=y`, `MEDIA_CONTROLLER=y`, `USB_VIDEO_CLASS=m`,
+  `VIDEOBUF2_{CORE,V4L2}=m`, `BT=m` still intact
+- `/lib/modules/6.18.10/kernel/drivers/media/usb/uvc/uvcvideo.ko` plus the four
+  `videobuf2-*.ko` helpers, and `btusb.ko`/`bluetooth.ko` still present
+
+One deviation from what was asked for: `VIDEO_DEV` came out `=y`, not `=m`. Kconfig
+promotes it because `MEDIA_SUPPORT=y` plus the enabled sub-menus select it as builtin.
+Harmless -- it is the V4L2 core, not a driver, nothing here is on the boot path -- and now
+recorded in `hosts/laptop/kernel-config.sh`, which had explicitly asked for this to be
+verified rather than assumed. The auto-selected symbols (`MEDIA_CONTROLLER`,
+`VIDEOBUF2_*`) did resolve on their own, as that comment predicted.
+
+Watch for one thing while reading `.config` mid-build: an intermediate read showed
+`USER_NS=y` but `# CONFIG_MEDIA_SUPPORT is not set`, which looks like the host section
+failing. It was just a race -- `kernel_config_shared` (the base, with `USER_NS`) runs
+before the host additions, so the file is legitimately half-written for a while. Re-read
+after the config stage finished and everything was set.
+
+`bin/lfsmaint db` re-run afterwards, per PRACTICES' maintenance cadence: 346 packages,
+109,430 files.
+
+**Still outstanding.**
+
+1. **A reboot** -- the running kernel is still the old one, so the webcam has no
+   `/dev/video*` and `upower.service` still fails at `217/USER`. Both are fixed in the
+   kernel on disk and neither can be tested before rebooting. `modprobe uvcvideo` was not
+   attempted: the new modules were built against a kernel whose `VIDEO_DEV` is builtin and
+   the running kernel has no media subsystem at all, so it would fail on missing symbols
+   for no information gained.
+2. `intel/ibt-11-5.sfi` firmware -- unchanged by either rebuild, still the reason
+   Bluetooth has a bound `hci0` and no usable adapter.
+3. `hosts/laptop/state/blfs-plan.json` still lists pipewire/wireplumber at the old seq
+   123/124. It is generated by `extract-blfs.py`, which needs the book, so it cannot be
+   regenerated on this host -- harmless for the `--only` rebuilds run here (same step
+   name, tarball and recipe), but it must be regenerated from a checkout that has the
+   books before the next real extraction, or a fresh build will use the old order.
+4. `hicolor-icon-theme` + `adwaita-icon-theme` (wofi icons), and `sbc` (Bluetooth audio,
+   also gated on 2).
+
+### 2026-09-04, same session: firmware, sbc + Bluetooth audio, icon themes
+
+Operator: "before I reboot lets get the firmware and sbc built, sure get wofi icons as
+well". All three done, four new steps, all verified. Nothing here needed the reboot to
+build; two of the three need it to take effect.
+
+**Four new steps** (`hosts/laptop/packages.py`):
+
+| seq | step | source | note |
+|-----|------|--------|------|
+| 130.3 | `sbc` | kernel.org bluetooth dir, sha256 in recipe | shared recipe, no BLFS page |
+| 229 | `hicolor-icon-theme` | freedesktop.org, 0.18 | shared; BLFS *has* a page, hand-authored only because no book mirror here |
+| 230 | `adwaita-icon-theme` | download.gnome.org, 49.0 | ditto |
+| 231 | `linux-firmware-intel-bluetooth` | LFS mirror | host-specific -- names one chip |
+
+**The bluez5 ordering problem, and a misread caught by checking.** pipewire's `bluez5`
+feature was initially assumed to need only `sbc`, on the strength of this line in
+`spa/plugins/bluez5/meson.build`:
+
+    cdata.set('HAVE_BLUEZ_5_HCI', dependency('bluez', version: '< 6', required: false).found())
+
+`required: false` -- so bluez looked optional, and the plan was to leave it at seq 224
+behind pipewire's 130.5. That was **wrong**. The actual dependency gate is in
+`spa/meson.build`:
+
+    bluez_dep = dependency('bluez', version : '>= 4.101', required: get_option('bluez5'))
+    sbc_dep   = dependency('sbc', required: get_option('bluez5'))
+    bluez5_deps = [ mathlib, dbus_dep, sbc_dep, bluez_dep, bluez_glib2_dep,
+                    bluez_gio_dep, bluez_gio_unix_dep ]
+    foreach dep: bluez5_deps
+        if get_option('bluez5').enabled() and not dep.found()
+          error('bluez5 enabled, but dependency not found: ' + dep.name())
+
+Under `-D bluez5=enabled` every one of those is required and a miss is a hard configure
+error. The `required: false` probe only sets `HAVE_BLUEZ_5_HCI`; it is not the gate. So
+bluez behind pipewire would not have been a silent downgrade, it would have failed the
+build outright.
+
+Fixed by moving **libical 223 -> 130.1** and **bluez 224 -> 130.2**, ahead of sbc at
+130.3 and pipewire at 130.5. Checked before moving that this drags nothing else along:
+libical needs only cmake (17), glib2 (29), icu (30), libxml2 (69); bluez needs glib2,
+dbus (101) and libical. 223/224 left as documented gaps, numbers not reused. Codecs past
+SBC (LDAC, aptX, LC3, FDK-AAC) stay on their own `auto` options -- that is the case `auto`
+is genuinely for, since their absence costs codec choice on a connected device, not
+Bluetooth audio itself.
+
+**`blfs-plan.json` had to be hand-edited, and that is worth flagging.** `lfsbuild` refused
+every new step with `no such step: blfs-sbc` -- the plan is generated by
+`extract-blfs.py`, which needs the book, which is absent natively. Hand-added the four
+entries (schema copied from the existing `hand()` firmware entries) and re-seq'd
+libical/bluez/pipewire/wireplumber to match `packages.py`, then asserted the result is
+sorted with unique seqs and names, and cross-checked every name/seq against `packages.py`
+(zero mismatches). Backup at `scratchpad/blfs-plan.json.bak`. This is state, not a
+generated recipe, so editing it is legitimate -- but it is still a generated file, and the
+real regeneration from a checkout with the books is still owed.
+
+**Build results**, all exit 0: sbc 0.1 min (9 files), pipewire 4.7 min (517 files),
+hicolor 0.0 min (2 files), adwaita 0.0 min (833 files), firmware 0.0 min (2 files).
+
+`/usr/lib/spa-0.2/bluez5/` now holds `libspa-bluez5.so` plus nine codec plugins -- SBC,
+AAC, Opus, Opus-G, G.722, faststream, HFP CVSD, HFP mSBC -- with
+`libspa-codec-bluez5-sbc.so` linked against `libsbc.so.1`. AAC and Opus came for free
+because fdk-aac and opus were already built. ALSA plugin still in place; `wpctl status`
+still lists all 4 cards, 3 sinks, 4 sources, and wireplumber's log now has no bluez
+complaint at all (only the harmless libcamera one).
+
+**A manifest scare that turned out to be nothing.** pipewire's manifest went 611 -> 517
+files across the two rebuilds, which is the wrong direction when a feature is being added.
+Checked rather than assumed: enumerated every file on disk under
+`/usr/share/pipewire`, `/usr/include/pipewire-0.3`, `/usr/include/spa-0.2`,
+`/usr/lib/spa-0.2` and `/usr/lib/pipewire-0.3` -- 326 files, **0 missing from the
+manifest**. The 611 run had simply also swept up incidental files whose ctime moved for
+unrelated reasons. `lfsmaint db` now reports 350 packages / 110,182 files, and `lfsmaint
+owns` attributes each new file correctly (bluez5 plugin -> pipewire-1.6.0, libsbc ->
+sbc-2.1, both index.theme files -> their own themes, ibt-11-5.sfi ->
+linux-firmware-intel-bluetooth).
+
+**Firmware verified working without waiting for the reboot.** Forced a re-probe of just
+the Bluetooth USB interface (`unbind`/`bind` on `/sys/bus/usb/drivers/btusb`) rather than
+`modprobe` -- deliberately, because the on-disk modules are now the *new* kernel's and the
+running kernel is the old one, so a module reload could hit symbol mismatches for no
+benefit. dmesg is unambiguous:
+
+    Bluetooth: hci0: Found device firmware: intel/ibt-11-5.sfi
+    Bluetooth: hci0: Firmware loaded in 1809275 usecs
+    Bluetooth: hci0: Device booted in 12055 usecs
+    Bluetooth: hci0: Found Intel DDC parameters: intel/ibt-11-5.ddc
+    Bluetooth: hci0: Applying Intel DDC parameters completed
+    Bluetooth: hci0: Firmware revision 0.0 build 14 week 44 2021
+
+`Failed to load ... (-2)` is gone, and **both** blobs were used -- which settles the
+judgement call to fetch the `.ddc` alongside the `.sfi`.
+
+The adapter still does not register with bluetoothd: `bluetoothctl list`/`show` are empty,
+`/sys/class/bluetooth/hci0/` has no `address` attribute, and dmesg ends with `Reading
+supported features failed (-16)` (EBUSY). Read as an artifact of the mid-session rebind,
+not a firmware fault: HCI setup aborts partway, so no adapter index is ever exposed for
+`bluetoothd`'s mgmt interface to pick up. A second clean unbind/bind cycle reported the
+firmware revision directly without re-downloading (Intel parts keep firmware resident
+until a power cycle), i.e. the blob is loaded and the chip simply needs a cold init.
+Symptom is identical to before this step, so nothing regressed; the reboot exercises the
+real path. Stopped there rather than keep cycling USB on a live desktop.
+
+**Icons fixed.** `/usr/share/icons` had only `hicolor` **without an index.theme** (just
+loose files other packages dropped in) plus `locolor`; with no theme index GtkIconTheme
+cannot build a lookup or fallback chain, so every icon name resolved to nothing. Now
+Adwaita 49.0 (801 files, own `icon-theme.cache`) and hicolor 0.18 with a real
+`index.theme`. Both caches regenerated with `gtk-update-icon-cache -f` afterwards, since
+hicolor's existing cache (owned by gtk-4.20.3) predated its new index. Verified: wofi's
+`gtk_icon_info_load_icon: assertion 'icon_info != NULL'` count went from one-per-entry to
+**0**.
+
+Adwaita pinned to 49.0 rather than newest: this build is GNOME 49
+(gsettings-desktop-schemas 49.1), and 49.1 of the icon theme does not exist upstream
+(download.gnome.org 404s; 49.0 is the only 49-series release) -- checked, not assumed.
+
+**A latent hazard found and avoided, worth fixing elsewhere.** This host's two existing
+firmware recipes (`blfs-linux-firmware-iwlwifi-8260.sh`, `-i915-dmc.sh`) and nine shared
+recipes carry a chroot-era `/etc/resolv.conf` fix whose exit trap ends with
+`ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf`. On this machine
+`/etc/resolv.conf` is a **regular file** (`nameserver 1.1.1.1` / `8.8.8.8`), so running any
+of them natively would silently replace it with a symlink -- an unrequested change to the
+live host's network config as a side effect of a build step. Not fatal here
+(systemd-resolved is active with those same upstreams configured, so DNS would still
+resolve), but wrong. The new firmware recipe omits the block entirely and says why in a
+comment. The other eleven recipes still have it and should get a native-mode guard before
+any of them is re-run on a live host.
+
+**wofi "stopped opening" mid-session -- not a regression.** Reported right after the icon
+work. Reproduced both ways: in a clean login shell wofi runs to its timeout (exit 124,
+stays up); in the *running* Hyprland session's environment it still dies with the original
+`Gtk:ERROR ensure_surface_for_gicon` / "Unrecognized image file format" core dump. The
+session started 08:52, the `XDG_DATA_DIRS` drop-in was written 09:07, and a login shell's
+environment is fixed at login -- so that session has carried the broken
+`XDG_DATA_DIRS=/usr/local/share` the whole time and always would. Nothing in the icon or
+cache work caused it, and no live fix is possible for an already-running session. The
+reboot resolves it by giving Hyprland a fresh login shell that sources
+`/etc/profile.d/00-xdg-defaults.sh`.
+
+**Reboot readiness, checked immediately before handing back.** grub `default=0` points at
+the freshly built kernel (10:08, 12,829,696 bytes) with all three referenced vmlinuz files
+present; `root=PARTUUID=f1183155-01` matches `lsblk`'s actual PARTUUID for nvme0n1p1;
+`/boot/config-6.18.10` carries all three target options; the live modules tree has 90
+modules including `uvcvideo.ko` with the 84-module `.preUVC` backup intact; no build in
+flight; 27G free.
+
+**Mistake made and corrected: a shared generated recipe was clobbered.**
+`recipes/blfs-hicolor-icon-theme.sh` was written from scratch here as a "HAND-AUTHORED"
+file -- but it already existed, as a **book-extracted candidate** (its header names
+`book/blfs-13.0/x/hicolor-icon-theme.html`) that `server` has been building since its own
+wofi debugging, at server's seq 208, with a manifest to prove it. Overwriting it was wrong
+on both counts CLAUDE.md warns about: it edits a generated recipe in place, so `--check`
+would report drift and the next extraction would discard the edit, and it silently changes
+a recipe a *different host* depends on. Caught only because `git diff --stat` showed the
+file as modified rather than new -- the Write tool reporting "updated" rather than
+"created" was the signal, and it was missed at the time.
+
+Reverted with `git checkout --`, verified byte-identical to HEAD. The laptop entry is now
+`book(229, "hicolor-icon-theme", "x/hicolor-icon-theme.html", ...)`, with the page path
+read off the recipe's own source line. No functional difference to what got installed:
+both versions run the same `meson setup --prefix=/usr --buildtype=release` and
+`ninja install` against the same 0.18 tarball, and `lfsmaint owns` confirms
+`/usr/share/icons/hicolor/index.theme` is attributed to hicolor-icon-theme-0.18.
+Adwaita was checked the same way and is genuinely new (no recipe, no manifest, absent from
+server's packages.py), so it stays `hand()`.
+
+Two smaller corrections from the same review: `blfs-plan.json` was first rewritten with
+`json.dump(indent=1)`, which re-diffed all 6776 lines of a generated file for no reason --
+`bin/extract-blfs.py` uses `indent=2`, so it was rewritten to match and the diff dropped to
+the 112/56 lines actually changed. And the `blocks`/`enabled`/`disabled` metadata on the
+four hand-added plan entries is approximate (1/1/0); it is derived from the book by the
+extractor and will be corrected whenever the plan is properly regenerated.
+
+### Live state at the end of this session (pre-reboot)
+
+Everything the operator asked for across this session is built and on disk. The machine
+has **not** been rebooted; three of the fixes cannot take effect until it is.
+
+Working right now, no reboot needed:
+
+- **Audio.** pipewire 1.6.0 with the ALSA SPA plugin and the bluez5 plugin (nine codecs).
+  `wpctl status`: 4 devices, 3 sinks, 4 sources. `pactl info` reports "PulseAudio (on
+  PipeWire 1.6.0)", so pavucontrol works. Running as three hand-started daemons for this
+  boot only (`pipewire`, `wireplumber`, `pipewire-pulse`, launched under `sg audio`);
+  systemd's user units take over at next boot.
+- **Icon themes.** hicolor 0.18 + Adwaita 49.0 installed, both caches regenerated.
+- **Bluetooth firmware.** `intel/ibt-11-5.sfi` + `.ddc` installed and proven to load
+  (dmesg: "Firmware loaded in 1809275 usecs", "Applying Intel DDC parameters completed").
+- **wofi** launches and stays up in a *clean login shell*. It still dies in the currently
+  running Hyprland session, which has carried the broken `XDG_DATA_DIRS` since 08:52 --
+  see the note above; only a fresh login fixes that, so the reboot is the fix.
+
+Needs the reboot to take effect:
+
+1. **Webcam** -- `uvcvideo.ko` is installed but the running kernel has no media subsystem,
+   so there is still no `/dev/video*`.
+2. **`upower.service`** -- enabled, and still failing `217/USER` until the running kernel
+   has `USER_NS`.
+3. **Bluetooth adapter** -- firmware loads, but HCI setup aborts after a mid-session USB
+   rebind (`Reading supported features failed (-16)`, no `address` in
+   `/sys/class/bluetooth/hci0/`), so no adapter reaches bluetoothd. Needs a cold init.
+4. **wofi in the operator's own session**, per above.
+5. **pipewire under systemd** -- linger + the `user@.service` drop-in are in place; at next
+   boot `user-runtime-dir@1000.service` mounts `/run/user/1000` during boot, before
+   Hyprland starts, which is the ordering the linger incident above was caused by not
+   having.
+
+Live-only changes (not in the repo, would need reapplying on a rebuild):
+`/etc/profile.d/00-xdg-defaults.sh`, `/etc/systemd/system/user@.service.d/10-no-pam-runtime-dir.conf`,
+`loginctl enable-linger john`, `john` added to group `audio`, `systemctl enable upower.service`.
+`/boot/grub/grub.cfg` is now tracked at `hosts/laptop/overlay/boot/grub/grub.cfg`.
+`/etc/profile` itself was left untouched.
+
+**Until the reboot**: do not stop `user-runtime-dir@1000.service` and do not run
+`loginctl disable-linger john` -- either would `rm_rf` the live session's
+`/run/user/1000`. Guarded with `RefuseManualStop=yes` in `/run/systemd/system/` (which
+evaporates at reboot, as intended).
+
+### Verify after the reboot
+
+    ls /dev/video*                       # webcam -- expect video0/video1
+    systemctl status upower.service      # expect active, not 217/USER
+    bluetoothctl list                    # expect a real controller at last
+    wpctl status                         # audio, now via systemd user units
+    systemctl --user status pipewire.socket wireplumber.service
+    loginctl list-sessions               # still "No sessions" -- expected, no PAM
+    findmnt /run/user/1000               # SHOULD be a tmpfs now, and that is correct
+    echo $XDG_DATA_DIRS                  # expect /usr/local/share:/usr/share
+    # then SUPER+D for wofi, with icons
+
+### Still owed
+
+- **`hosts/laptop/state/blfs-plan.json` was hand-edited** (four new steps added, four
+  re-seq'd) because `extract-blfs.py` needs the book, which is absent in native mode.
+  Regenerate it, plus run `extract-recipes.py --check` / `extract-blfs.py --check`, from a
+  checkout that has the books. Zero drift is the expected state and was never confirmed
+  this session.
+- **Eleven recipes carry a chroot-era `/etc/resolv.conf` rewrite** that would clobber a
+  live host's regular-file `resolv.conf` with a symlink. Needs a native-mode guard.
+- **`hosts/laptop/CLAUDE.md` is stale** beyond the `jobs` line corrected here: it still
+  opens with "Not built yet" and "`packages.py` is still `BASE` alone", against 244
+  entries and ~44h of build time.
+- Nothing in this session was committed. `git fetch` confirmed `HEAD == origin/main`
+  (0 ahead, 0 behind) before any of the work started.
+
+## 2026-09-04 -- post-reboot verification
+
+Booted `vmlinuz-6.18.10-lfs-13.0-systemd` (GRUB entry 0) at 10:50 CDT. All five items
+from the previous session's "Verify after the reboot" list pass.
+
+- **Webcam.** `/dev/video0`, `/dev/video1`, `/dev/media0`. `uvcvideo` bound to the Chicony
+  `Integrated Camera` (04f2:b531) as a UVC 1.00 device. The config delta against
+  `config-6.18.10.preUVC` is exactly the media subsystem plus `CONFIG_USER_NS=y` -- 23
+  symbols, nothing incidental.
+- **upower.** `active (running)` since 10:50:56, PID 329. The `217/USER` failure is gone,
+  as predicted, once `USER_NS` was in the running kernel.
+- **Bluetooth adapter.** Cold init works. `intel/ibt-11-5.sfi` loads in 1.73 s,
+  `ibt-11-5.ddc` applies, firmware revision 0.0 build 14 week 44 2021. Controller
+  `44:85:00:11:35:9F` reaches bluetoothd, powers on, takes the name `laptop`, and
+  registers GAP/GATT/DIP/AVRCP/AVRCP-Target/DIS UUIDs on `/org/bluez/hci0`. Settings read
+  back `Secure Simple Pairing, BR/EDR, Low Energy, Secure Connections, Wideband Speech`.
+  Two dmesg lines survive and are both benign: `Reading supported features failed (-16)`
+  is `btintel_read_debug_features` on a production-locked part (Debug lock disabled, API
+  lock enabled), and `HCI LE Coded PHY feature bit is set, but its usage is not supported`
+  is an informational kernel notice. Neither blocks setup -- verified by `btmon` capture of
+  a full `systemctl restart bluetooth` cycle.
+  Note for future sessions: `bluetoothctl show` / `bluetoothctl list` print **nothing** when
+  stdin is not a tty (bluez 5.86 single-shot mode), which reads as "no controller" and is
+  not. Use `printf 'show\nquit\n' | bluetoothctl`, or `busctl --system introspect org.bluez
+  /org/bluez/hci0 org.bluez.Adapter1`, which is unambiguous.
+- **Audio under systemd.** `pipewire.socket` and `pipewire-pulse.socket` enabled and
+  listening; `wireplumber.service` enabled. `wpctl status`: 3 ALSA devices (Built-in
+  CX20753/4, ThinkPad OneLink Plus Dock, Unitek Y-247A), 3 sinks, 3 sources, plus the
+  Integrated Camera as a V4L2 source. pavucontrol was already running in the operator's
+  session with live streams on all three. All nine `libspa-codec-bluez5-*.so` present.
+  One trap worth writing down: `wpctl status` run at the instant it socket-activates
+  pipewire returns an empty graph, because the first call *is* what starts the daemon and
+  wireplumber has not enumerated yet. It is a race in the measurement, not a fault. Give
+  it a second, or start the units explicitly first.
+- **Session plumbing.** `loginctl list-sessions` -> "No sessions" (expected, no PAM);
+  `loginctl list-users` shows john `lingering`; `/run/user/1000` is a tmpfs mounted at
+  boot; `XDG_DATA_DIRS=/usr/local/share:/usr/share` in both a login shell and PID 523's
+  (Hyprland's) environ. `wofi --show drun` stays up. Its earlier "dies immediately" was
+  reproduced and explained: it exits 1 with no message when `WAYLAND_DISPLAY` is unset,
+  which is what a bare non-session shell looks like.
+
+Rest of the machine: `systemctl is-system-running` -> `running`, zero failed units system
+and user. Hyprland 0.56.2 on i915 with `skl_dmc_ver1_27.bin` loaded; eDP-1 connected but
+disabled (lid), DP-3 and DP-5 active on the dock. eth0 DHCP 192.168.0.210, wg0 up, DNS
+resolves. Swap active on nvme0n1p2, `/` 43% used.
+
+### Two gaps this reboot exposed
+
+1. **thermald is running but blind.** It logs `NO RAPL sysfs present`, `Thermal DTS: No
+   coretemp sysfs found`, and `Thermal DTS or hwmon: No Zones present Need to configure
+   manually`, then falls back to polling mode 4 with nothing to act on. The kernel has
+   `CONFIG_THERMAL`, `CONFIG_ACPI_THERMAL`, `THERMAL_HWMON` and `X86_PKG_TEMP_THERMAL=m`
+   (loaded, giving `thermal_zone1`), but is missing `CONFIG_SENSORS_CORETEMP` (per-core
+   DTS, thermald's primary sensor), `CONFIG_POWERCAP` + `CONFIG_INTEL_RAPL` (no
+   `/sys/class/powercap` at all, so thermald's primary control knob does not exist), and
+   `CONFIG_INTEL_POWERCLAMP` (idle-injection cooling device). The machine is not at risk --
+   the package's own hardware throttling is unconditional, and acpitz trip points drive the
+   four `Processor` cooling devices through the step_wise governor -- but thermald as
+   installed cannot do its job. Fix belongs in `hosts/laptop/kernel-config.sh`, not the
+   shared base: it names a CPU vendor.
+2. **`regulatory.db` is absent.** `faux_driver regulatory: Direct firmware load for
+   regulatory.db failed with error -2` at 0.35 s. wireless-regdb is in neither
+   `packages.py` nor `blfs-plan.json`. Not biting yet -- wlp4s0 is DOWN and the box is on
+   dock ethernet -- but iwlwifi will fall back to the world-roaming domain the first time
+   WiFi is actually used, losing channels and tx power the local domain allows.
+
+Unchanged known items: microcode still 0xc6 with `old_microcode: Vulnerable` (plus
+`mds`/`taa`/`mmio_stale_data`/`srbds`/`gds`/`vmscape` wanting a newer revision) -- the
+early-load initrd is still owed, per `host.toml`. The Synaptics touchpad still runs the
+PS/2 protocol; the kernel's suggestion of `MOUSE_PS2_SYNAPTICS_SMBUS` + `RMI4_SMB` is
+untested here.
+
+## 2026-09-04 -- thermald sensors, wireless-regdb, microcode initrd, pass-otp, Noto Symbols 2
+
+Six operator-requested items, all built. Three of them do nothing until the machine is
+rebooted into the kernel this session produced; the other three are live now.
+
+### thermald: two separate faults, both fixed
+
+**The kernel had none of thermald's sensors or knobs.** Added to
+`hosts/laptop/kernel-config.sh`, each symbol read out of this kernel's own Kconfig
+(extracted from `linux-6.18.10.tar.xz`) rather than assumed:
+
+- `SENSORS_CORETEMP=m` -- per-core DTS, thermald's primary input, and literally the
+  `Thermal DTS: No coretemp sysfs found` line.
+- `POWERCAP=y` -- the menuconfig gate `INTEL_RAPL` lives inside, and what creates
+  `/sys/class/powercap`, which did not exist at all.
+- `INTEL_RAPL=m` -- Running Average Power Limit via MSR, thermald's primary control knob
+  and the `NO RAPL sysfs present` line. It pulled in `INTEL_RAPL_CORE=m`.
+- `INTEL_POWERCLAMP=m` -- idle-injection cooling device. It pulled in `IDLE_INJECT=y`.
+- `INTEL_TCC_COOLING=m` -- checked before including rather than added hopefully:
+  `drivers/thermal/intel/intel_tcc_cooling.c` matches on an explicit CPU list and
+  `X86_MATCH_VFM(INTEL_SKYLAKE_L)` is in it, which is what this 0x6:4e:3 part is.
+
+Post-build `/boot/config-6.18.10` differs from its `.preTHERMAL` backup by exactly those
+seven symbols and nothing else, and `/lib/modules/6.18.10` gained `coretemp.ko`,
+`intel_rapl_common.ko`, `intel_rapl_msr.ko`, `intel_powerclamp.ko` and
+`intel_tcc_cooling.ko`.
+
+**thermald was also installed into `/usr/etc`.** `recipes/blfs-thermald.sh` configured
+with `--prefix=/usr` and no `--sysconfdir`, so autoconf's `${prefix}/etc` default put
+`thermal-cpu-cdev-order.xml` and `thermald-features.xml` in `/usr/etc/thermald/` and
+compiled that path in as `TDCONFDIR`. Self-consistent, so nothing was broken -- but
+`/usr/etc` was a directory no other package on this system creates, and an
+operator-written `thermal-conf.xml` dropped in `/etc/thermald` would have been silently
+ignored. Recipe now passes `--sysconfdir=/etc`; rebuilt, `strings` on the new binary
+resolves only `/etc/thermald`, the two data files are byte-identical to the ones they
+replace, and the stale `/usr/etc` tree is gone. Shared recipe, but `server` does not
+build thermald, so laptop is the only consumer.
+
+### wireless-regdb 2026.09.03 (new, shared, seq 232)
+
+`faux_driver regulatory: Direct firmware load for regulatory.db failed with error -2` at
+0.35 s of every boot, on both hosts, since forever. Installed
+`/usr/lib/firmware/regulatory.db{,.p7s}` plus both man pages.
+
+Not `make install`: the Makefile's `regulatory.bin` rule lists `$(REGDB_PRIVKEY)` as a
+prerequisite whose own rule is `openssl genrsa`, so make will quietly mint a throwaway
+key and re-sign the database with it -- which is exactly what a kernel built
+`CONFIG_CFG80211_REQUIRE_SIGNED_REGDB=y` refuses. It would also have created a
+`/usr/lib/crda` for a userspace helper this system does not have. The recipe installs the
+prebuilt upstream-signed pair directly and verifies them the way the kernel will:
+`regulatory.db.p7s` validates over `regulatory.db`, and the signing certificate's
+SHA-256 fingerprint is compared against the two the kernel compiles in
+(`net/wireless/certs/sforshee.hex` and `wens.hex`). It came back `wens`,
+`EE:B0:49:...:0B:CF`, matching byte for byte. Tarball sha256 checked against kernel.org's
+`sha256sums.asc` first.
+
+Still unverified end-to-end: nothing has re-triggered a regdb load, because `wlp4s0` is
+down and `iw` is not installed. The signature chain check above is the same test the
+kernel runs, so the remaining unknown is only whether the file is found -- confirm from
+`dmesg` after the reboot.
+
+### intel-microcode (new, host-specific, seq 235)
+
+Closes the item `host.toml` has carried since 2026-08-28. Blob `06-4e-03` from Intel's
+`microcode-20260812`, whose own releasenote lists it as `SKL-U/Y D0 06-4e-03/c0` at
+revision `0xf0` -- this part is running `0xc6`. `CONFIG_MICROCODE=y` was already on from
+defconfig, checked *before* the thermal rebuild rather than discovered after, so no
+second kernel build was needed. `/boot/microcode.img` is a 105 KB cpio carrying one file.
+
+Two deliberate departures from `server`'s copy of this recipe:
+
+- The grub wiring is per-menuentry and idempotent per entry, in python rather than
+  `sed`. This `grub.cfg` has four entries (current kernel plus three fallbacks) and all
+  four want the microcode; `server`'s single `grep -q` guard is all-or-nothing and would
+  skip every entry once any one of them had the line. The inserted line also copies the
+  indentation of the `linux` line above it, so it matches this file's 4-space style.
+- It works in a `mktemp -d` with a cleanup trap. This step's plan entry has `tarball=""`,
+  so the driver has nothing to unpack, no source directory to `cd` into, and the recipe
+  runs in whatever directory `lfsbuild` was invoked from. The first run left an 18 MB
+  `microcode-src/` and an `initrd/` untracked in the repo checkout. `server`'s copy has
+  the same exposure and has simply never been run from a checkout.
+
+### oath-toolkit 2.6.14 + pass-otp 1.2.0 (new, shared, seq 233-234)
+
+TOTP/HOTP out of the existing `pass` store. oath-toolkit is a hard dependency, not a
+recommendation -- `otp.bash` shells out to `oathtool` for every code and names no other
+program except `which`. Built `--disable-pam` (this system has no Linux-PAM at all) and
+`--disable-pskc` (an XML key-provisioning format with no consumer here, and the only
+thing that would have pulled libxml2 into the link). The recipe asserts RFC 4226
+appendix D's own vector -- counter 0 over the standard seed must be `755224` -- so a
+miscompile fails the build instead of producing wrong codes silently.
+
+One write-up correction worth recording: `PASSWORD_STORE_ENABLE_EXTENSIONS=true` is
+**not** needed for a system-wide extension, contrary to most pass-otp instructions. The
+installed `/usr/bin/pass` sets `system_extension` from `SYSTEM_EXTENSION_DIR`
+unconditionally and gates only `user_extension` (the per-store `.extensions` copy) behind
+that variable. A `/etc/profile.d` drop-in was written on that assumption and removed once
+the source was actually read. `pass otp` works with no environment change.
+
+Provenance: oath-toolkit's detached signature is a good signature from
+`Simon Josefsson <simon@josefsson.org>`. pass-otp publishes no signature, so the check is
+its sha256 against Arch's own PKGBUILD, which matches.
+
+### Noto Sans Symbols 2 v2.008 (new, shared, seq 236)
+
+Third font here, and the first non-text face. What it adds was measured, not asserted --
+differencing `fc-query` charsets across every installed font: 2953 codepoints in the
+face, 1327 already covered, **1626 new**. The obvious pitch for this font is wrong and
+the recipe says so: DejaVu Sans already has Braille, playing cards and the basic chess
+pieces. The real gaps are legacy computing (block sextants/octants, `U+1FB00-1FBCA`, the
+largest single block at 202), extended and fairy chess, non-emoji pictographs,
+astronomical symbols, Mahjong tiles, clock faces, Greek acrophonic numerals and the
+Phaistos Disc.
+
+`full/ttf` of the four variants shipped: `hinted` and `unhinted` are byte-identical to
+each other and 314 codepoints short, which would have quietly reintroduced the tofu the
+font is meant to remove.
+
+Two things the first attempt got wrong, both fixed: the verification used `fc-match`,
+which always answers with *some* family because it falls back, and duly reported
+`DejaVu Sans` for a codepoint DejaVu does not have. `fc-list ':charset=X'` lists only
+fonts that really contain it, and now reports `Noto Sans Symbols 2` as the sole provider
+of `U+1FB00`, `U+1FA00` and `U+1F000`. Staged as `.tar.gz` because `lfsbuild`'s unpack is
+a plain `tar -xf` with no zip path, and this release's zip has no single top-level
+directory for `srcdir_of()` to find -- same repack `JetBrainsMono-2.304.zip` already got.
+
+### Two process failures from this session
+
+**The 22 minutes that built nothing.** `ch10-kernel` runs `bash /sources/kernel-config.sh`,
+and nothing in `bin/` stages that file -- it is copied there by hand. The first thermal
+rebuild ran against a copy three days stale and produced a `/boot/config-6.18.10`
+byte-identical to the one it replaced, reporting `OK` throughout. Written up in
+`PRACTICES.md` with the cheap detection: grep the *build tree's* `.config` a minute in,
+not `/boot/config-*` afterwards. The real fix -- `lfsbuild` staging the pair itself and
+refusing to run on a `/sources` copy that differs from the repo -- is not done.
+
+**`git checkout` on `blfs-plan.json` discarded last session's uncommitted edits.** Run
+while adding the wireless-regdb entry, to undo a sort that had reordered the file. The
+file had been hand-edited last session and never committed, so there was no blob to
+recover from and no backup anywhere on disk. Reconstructed from `packages.py`, which
+determines every field: the four re-seq'd steps (`libical` 130.1, `bluez` 130.2,
+`pipewire` 130.5, `wireplumber` 130.6) keep their existing entries with only `seq` and
+`order` changed, and the four added steps plus the new ones are rebuilt from their
+`hand()`/`book()` declarations. Verified against the three entries dumped verbatim
+earlier in the same session (229/230/231) and against the `libical` block visible in the
+pre-revert diff -- all identical. `sbc`'s 1/1/0 block metadata is the approximate value
+last session already documented. **The lesson is narrower than "don't use git checkout":
+this repo carries live state as uncommitted working-tree files for days at a time, so
+any destructive git operation here needs the same care as `rm`.**
+
+### enchant 2.8.21 + hunspell 1.7.3 + en_US dictionary (new, shared, seq 237-239)
+
+Operator-requested (2026-09-04), for jinx in Emacs (seq 182). Three steps rather than
+one, and the order between them matters.
+
+enchant is a dispatch layer with no spelling engine of its own -- every provider it ships
+(aspell, hunspell, nuspell, hspell, voikko) is optional and auto-detected at configure
+time. Built before any provider exists it configures clean, installs clean, jinx compiles
+clean, and every word comes back misspelled. So the recipe passes `--with-hunspell`
+explicitly: a future re-seq that puts enchant first now fails at configure time instead of
+silently. That is the same trap PRACTICES.md already records from pipewire quietly losing
+ALSA to an `auto` meson feature.
+
+The dictionary is its own numbered step for the same reason -- hunspell is an engine with
+no words in it, and at the Emacs end a missing dictionary is indistinguishable from a
+broken enchant. `/usr/share/hunspell` is not folklore: `s_buildDictionaryDirs()` in
+`providers/enchant_hunspell.cpp` walks `g_get_system_data_dirs()` (this system's
+`/usr/local/share:/usr/share`) and appends the provider name, and only accepts a
+dictionary when the `.dic` and its matching `.aff` are both present. Read out of the
+source, not assumed.
+
+hunspell rather than nuspell or aspell: it is the format distributions actually ship
+dictionaries in, it is plain autotools with no dependency past the toolchain, and BLFS
+carries it. All three steps are shared recipes -- none names hardware.
+
+Verified end to end rather than by "it installed":
+
+- `/usr/lib/enchant-2/` contains exactly one provider, `enchant_hunspell.so`.
+- `enchant-lsmod-2 -list-dicts` -> `en_US (hunspell)`. The recipe greps for that and
+  fails the build if it is empty, which is the check that would have caught a
+  provider-less enchant.
+- `enchant-2 -d en_US -a` returns `*` for "correct" and
+  `& speling 5 0: spieling, spelling, spewing, peeling, splinting".
+- jinx itself: `jinx-20260813.954` was already in `~/.emacs.d/elpa` with its module
+  unbuilt. Emacs was checked for dynamic-module support before any of this
+  (`/usr/include/emacs-module.h` present, `module-file-suffix` = ".so"), then jinx's own
+  `jinx--load-module` was invoked in batch -- its code path, its compile flags, not a
+  hand-written cc line. "jinx-mod.so compiled successfully"; `jinx--mod-dict "en_US"`
+  returns a dictionary, "correct" passes, "speling" fails and suggests. This wrote
+  `jinx-mod.so` into the operator's elpa directory, which is what jinx does on its own at
+  first startup anyway; delete it to undo.
+
+Provenance is not uniform across the three and the recipes say so individually. hunspell
+1.7.3's sha256 matches Arch's PKGBUILD byte for byte. enchant 2.8.21 has no second
+packager's hash to check against -- Arch builds it from a git tag clone plus two gnulib
+submodules, so its b2sum is over a source tree, not a release tarball -- and upstream
+publishes no signature, so the record is the release asset's own sha256. The SCOWL
+dictionary is thinnest: no signature, and no cross-check found. It is a word list parsed
+as data rather than code, which is why that was judged acceptable rather than blocking.
+
+### Verify after the reboot
+
+    grep microcode /proc/cpuinfo            # expect 0xf0, not 0xc6
+    cat /sys/devices/system/cpu/vulnerabilities/old_microcode   # expect "Not affected"
+    ls /sys/class/powercap/                 # expect intel-rapl*
+    grep -l coretemp /sys/class/hwmon/*/name
+    journalctl -b -u thermald               # expect no "No Zones present"
+    dmesg | grep -i regulatory              # expect no ENOENT for regulatory.db
+    lsmod | grep -E 'coretemp|rapl|powerclamp|tcc'
+
+Fallback if the new kernel misbehaves: GRUB entry
+`pre-thermald-sensors fallback (2026-09-04)` boots
+`vmlinuz-6.18.10-lfs-13.0-systemd.preTHERMAL`, and `/lib/modules/6.18.10.preTHERMAL` is
+the matching module tree -- restore it over `/lib/modules/6.18.10` per the note in
+`grub.cfg` if a fallback misbehaves.
+
+### Still owed, unchanged from the earlier entry
+
+`extract-recipes.py --check` / `extract-blfs.py --check` and a proper `blfs-plan.json`
+regeneration still need a checkout that has the books; native mode has none, so zero
+drift remains unconfirmed. The eleven recipes with a chroot-era `/etc/resolv.conf`
+rewrite still need a native-mode guard. `hosts/laptop/CLAUDE.md` still opens with "Not
+built yet" and "`packages.py` is still `BASE` alone" against 249 entries and ~44.9h.
+Nothing in this session was committed.

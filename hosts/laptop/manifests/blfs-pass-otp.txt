@@ -1,0 +1,3 @@
+/etc/bash_completion.d/pass-otp
+/usr/lib/password-store/extensions/otp.bash
+/usr/share/man/man1/pass-otp.1

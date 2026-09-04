@@ -389,6 +389,117 @@ for both the space guard and the dry-run's content estimate rather than computin
 twice. Any `bin/` tool that names a fixed path instead of resolving it is worth
 grepping for before trusting it against a second host with a non-default layout.
 
+## An `auto` meson feature turns a build-order mistake into a silent missing feature
+
+`seq` decides build order, and for a package whose optional dependencies are meson
+`feature` options that default to `auto`, `seq` also decides *what gets built at all*.
+Get the order wrong and meson does not complain: it probes for a library that has not
+been built yet, disables that half of the package, and installs cleanly with exit 0.
+
+Found on `laptop` (2026-09-04), and the shape is worth remembering because none of the
+usual signals fire. `pipewire` sat at seq 123 and `alsa-lib` at seq 130, so pipewire
+built with no ALSA SPA plugin -- `/usr/lib/spa-0.2/` had no `alsa/` directory, and the
+step's own manifest confirmed it had never installed one. Everything downstream then
+behaved *plausibly* for days: `pipewire` and `wireplumber` both started and stayed
+running, `systemctl --user` showed every unit active, `pw-cli info 0` answered normally,
+and `wpctl status` printed a healthy graph -- with zero Devices, Sinks and Sources
+against four working cards in `/proc/asound/cards`. No failing unit, no error in any
+build log, nothing for `--check` to catch. The only text on the machine that named the
+real cause was one line in wireplumber's journal ("PipeWire's ALSA SPA plugin is missing
+or broken"), two packages away from the mistake.
+
+This is the same failure shape as the `blfs-gdk-pixbuf` loader trap already recorded in
+`recipes/blfs-overrides.json`, where the book's own defaults left every image loader
+disabled and the symptom was an unrelated launcher aborting on an icon. Both were
+absence, not breakage, surfacing far from the cause.
+
+Three things follow, all cheap:
+
+- **Pin the features you are relying on**, rather than leaving them `auto`. `-D
+  alsa=enabled` fails at configure time if alsa-lib is missing; `auto` ships a mute
+  system. `auto` is only appropriate for a dependency the recipe genuinely does not care
+  about -- and if a recipe's header comment lists which optional deps it *meant* to skip
+  (pipewire's did), anything not on that list should be pinned on.
+- **When placing a package in `seq`, check its optional deps, not just its required
+  ones.** Required deps fail loudly and get caught immediately. Optional ones are the
+  ordering bugs that survive to a live system.
+- **After building anything that enumerates hardware, verify against the hardware.** Not
+  "the daemon is running" -- `wpctl status`, `/dev/video*`, `bluetoothctl list`, an actual
+  device count compared against `/proc` or `/sys`. A running daemon with an empty device
+  list is the expected presentation of this whole class of defect.
+
+Correcting one of these after the fact does not mean renumbering: `seq` numbers are
+permanent, so pipewire/wireplumber moved to the unused fractional seqs 130.5/130.6 (just
+after alsa-lib, keeping their position relative to everything downstream) and 123/124
+were left as documented gaps.
+
+## `/run/user/$UID` has two owners on a PAM-less box, and the loser's sockets vanish
+
+Both machines here run systemd built `-PAM` (`systemctl --version` confirms it), which
+means no `pam_systemd`, so `systemd-logind` never opens a session for a console login.
+`loginctl list-sessions` prints "No sessions" while a user is visibly logged in on a tty
+and running a desktop. Two consequences worth knowing before touching either one:
+
+**`user@$UID.service` cannot start on its own.** It relies on `PAMName=systemd-user` for
+more than authentication -- `pam_systemd` is what exports `XDG_RUNTIME_DIR` into the user
+manager -- so with `-PAM` it exits 1 with "Trying to run as user instance, but
+$XDG_RUNTIME_DIR is not set". Anything that needs a user systemd instance is dead with no
+failing unit to point at, notably the pipewire/wireplumber units BLFS tells you to enable
+`--global`. The fix is two pieces: a drop-in setting
+`Environment=XDG_RUNTIME_DIR=/run/user/%i`, and `loginctl enable-linger <user>` so
+something actually starts the manager at boot.
+
+**But `enable-linger` must not be run while a desktop is already up.** It pulls in
+`user-runtime-dir@$UID.service`, which mounts a fresh tmpfs at `/run/user/$UID`. If a
+compositor started first -- using the plain directory a `tmpfiles.d` rule created, which
+is how both hosts bootstrap `XDG_RUNTIME_DIR` without PAM -- systemd mounts straight over
+its `wayland-N` socket, `hypr/`, and `ssh-agent`. Nothing crashes and nothing logs:
+existing processes hold open fds and keep working, so the compositor looks perfectly
+healthy while *new* clients silently cannot connect. It presents as "the launcher and
+terminal hotkeys stopped working". `findmnt /run/user/$UID` is the one-command check.
+
+**The intuitive cleanup destroys the session.** `systemctl stop
+user-runtime-dir@$UID.service` runs `systemd-user-runtime-dir stop $UID`, which unmounts
+*and removes the directory and everything revealed underneath it* -- verified on a
+throwaway UID rather than guessed. Recover by stopping only `user@$UID.service` (safe:
+`BindsTo=` is one-directional, and the runtime-dir unit has `StopWhenUnneeded=no` and no
+`RequiredBy`/`WantedBy`, so nothing garbage-collects it) and then `umount
+/run/user/$UID` **by hand**, so no `ExecStop` ever runs. Note that `loginctl
+disable-linger` is also not a safe way to back the change out mid-session, for the same
+reason.
+
+Order it correctly instead and none of this comes up: enable linger, then reboot, so the
+tmpfs is mounted during boot and the compositor starts into it. `laptop`'s
+`start-hyprland.sh` now waits for `$XDG_RUNTIME_DIR` to be a mountpoint when linger is
+enabled, which closes the race rather than relying on winning it.
+
+## The kernel recipe reads a *staged copy* of the config script, not the repo's
+
+`ch10-kernel` runs `bash /sources/kernel-config.sh`, and nothing in `bin/` puts that file
+there. `hosts/<h>/kernel-config.sh` and `bin/kernel-config-base.sh` are copied into
+`/sources` by hand, which the header of each file says -- and then the copies sit there,
+looking current, for as long as the machine lives.
+
+Cost of forgetting, measured on `laptop` 2026-09-04: a 22-minute rebuild that recompiled
+the whole tree against a config script three days stale and produced a `/boot/config-6.18.10`
+byte-identical to the one it replaced. It reports `OK` and it reports the right build time.
+Nothing fails. The only symptom is that the options you added are still absent afterwards,
+which looks exactly like Kconfig having dropped them for an unmet dependency -- the wrong
+place to start debugging, and the place the next hour goes.
+
+Two habits close it:
+
+- Re-stage both files as part of editing either one, not as a step before the build:
+  `install -m755 hosts/<h>/kernel-config.sh bin/kernel-config-base.sh /sources/`.
+- Verify the *build tree's* `.config` a minute into the run rather than `/boot/config-*`
+  after it. `grep -E '^(# )?CONFIG_(NEW|SYMBOLS)\b' /sources/linux-*/.config` answers in
+  one second whether the next twenty minutes are worth waiting for. `/boot/config-*` only
+  tells you after `make modules_install` has already overwritten `/lib/modules`.
+
+The real fix is for `lfsbuild` to stage the pair itself and refuse to run `ch10-kernel` on
+a `/sources` copy that differs from the repo -- the same `--check` discipline the recipe
+extractors already have. Not done yet.
+
 ## Standing policies
 
 - **BLFS Recommended dependencies get installed, not just Required** -- but checked
@@ -399,6 +510,10 @@ grepping for before trusting it against a second host with a non-default layout.
   module needed to reach the root filesystem is a kernel that cannot boot, and the failure
   appears only at boot time. `kernel-config-base.sh` ends with a gate that fails the build
   instead.
+- **Pin the optional dependencies a recipe relies on.** A meson `feature` left at `auto`
+  turns a `seq` ordering mistake into a package that builds clean and quietly lacks half
+  its function -- see the pipewire/ALSA section above. Pin it to `enabled` so the build
+  fails at configure time instead.
 - **Assert defaults whose regression is silent.** The kernel's `defconfig` leaves
   `CPU_FREQ_DEFAULT_GOV_USERSPACE=y`, which pins every core at minimum frequency forever
   because nothing writes `scaling_setspeed` -- a measured 2.1x loss on sustained CPU work

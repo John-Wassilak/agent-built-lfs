@@ -1,0 +1,2 @@
+/usr/lib/firmware/intel/ibt-11-5.ddc
+/usr/lib/firmware/intel/ibt-11-5.sfi

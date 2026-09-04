@@ -32,6 +32,11 @@ Two execution modes, detected automatically and printed by --status:
 
 Override the detection with --native / --chroot, and the source directory with
 --sources (default: the host's build.sources natively, $LFS/sources under chroot).
+A host can also pin its mode permanently in host.toml (build.mode = "native" or
+"chroot"), which wins over auto-detection but still loses to an explicit flag -- for a
+host whose real target never satisfies the heuristic (stays a different distro,
+permanently BLFS-extended in place) or once had a stale populated tree at its
+chroot_tree that would otherwise be picked up by mistake.
 
 The unpack / cd / cleanup wrapper from the book's General Instructions is supplied here,
 not stored in recipes. Source directory names are read from the tarball itself rather
@@ -141,7 +146,7 @@ def detect_mode():
 
 def configure_mode(mode, sources):
     global MODE, LFS, TREE, SOURCES, BUILDDIR
-    MODE = mode or detect_mode()
+    MODE = mode or HOST.mode or detect_mode()
     if MODE is None:
         sys.exit(
             f"cannot tell which mode to run in: no populated tree at {CHROOT_TREE}, "

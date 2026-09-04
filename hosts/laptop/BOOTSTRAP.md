@@ -1,5 +1,16 @@
 # Bootstrapping `laptop`
 
+**Status: done.** Steps 0-5 below ran to completion and step 5's deploy landed
+2026-09-03 (`17c4112`, "deploy to nvme0n1p1") -- this machine's root is real LFS now
+(`/etc/os-release` reads `ID=lfs`), not the Gentoo it started from. Step 6 is where
+things actually are: still native, still ongoing, `host.toml`'s `build.mode = "native"`
+now pins that explicitly rather than relying on auto-detection. The pre-deploy chroot
+tree steps 1-5 describe building under `/mnt/crypt` is gone -- it went stale once the
+deploy above superseded it, and was removed 2026-09-04 after confusing `lfsbuild`'s mode
+detection for a session (see `CLAUDE.md` and `BUILD-REPORT.md`'s 2026-09-04 entries).
+Kept below verbatim as the real record of how this machine got built, not as a procedure
+to re-run.
+
 Build path, revised 2026-08-28 after the hardware audit and disk-space reality (see
 `BUILD-REPORT.md`): **chroot build in a directory inside this repo checkout, not a
 dedicated partition, because there is no unpartitioned space on this disk.** Chapters

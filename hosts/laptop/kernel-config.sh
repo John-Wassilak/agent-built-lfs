@@ -106,12 +106,84 @@ $K --module USB_NET_CDCETHER
 # purely a kernel Kconfig matter, standard/well-known UVC support, not a userspace
 # package. Not on the boot path -- modules. MEDIA_CONTROLLER and the VIDEOBUF2_*
 # buffer-queue helpers uvcvideo needs are select'd automatically by Kconfig, not
-# set explicitly here -- verify their presence the same way BT_HCIBTUSB was verified
-# (grep the built /lib/modules tree for uvcvideo.ko), not assumed from this list.
+# set explicitly here.
+#
+# Verified against a real build 2026-09-04 (the same way BT_HCIBTUSB was), rather
+# than assumed from this list. Built /boot/config-6.18.10 came out with
+# MEDIA_SUPPORT=y, MEDIA_USB_SUPPORT=y, MEDIA_CAMERA_SUPPORT=y,
+# MEDIA_CONTROLLER=y, USB_VIDEO_CLASS=m and VIDEOBUF2_{CORE,V4L2}=m, and
+# /lib/modules/6.18.10 has kernel/drivers/media/usb/uvc/uvcvideo.ko plus the four
+# videobuf2-*.ko helpers -- so the select'd symbols do resolve on their own and
+# need no explicit lines here. One deviation worth knowing: VIDEO_DEV came out
+# **=y, not =m** as asked for below. Kconfig promoted it because MEDIA_SUPPORT=y
+# plus the enabled sub-menus select it as builtin. Harmless (it is the V4L2 core,
+# not a driver, and nothing here is on the boot path), and left as --module so the
+# intent stays readable; just do not expect a videodev.ko to exist.
 $K --enable  MEDIA_SUPPORT
 $K --enable  MEDIA_USB_SUPPORT
 $K --enable  MEDIA_CAMERA_SUPPORT
 $K --module  VIDEO_DEV
 $K --module  USB_VIDEO_CLASS
+
+# --- thermal management: the sensors and control knobs thermald needs ---------------
+# Confirmed live 2026-09-04, after the reboot into the media/USER_NS kernel:
+# thermald 2.5.12 is enabled and running, and cannot do its job. Its own log says so
+# in three lines --
+#
+#   thermald[323]: NO RAPL sysfs present
+#   thermald[323]: Thermal DTS: No coretemp sysfs found
+#   thermald[323]: Thermal DTS or hwmon: No Zones present Need to configure manually
+#
+# -- after which it falls back to polling mode 4 with nothing to read and nothing to
+# actuate. Checked against the running kernel rather than inferred: /sys/class/powercap
+# does not exist at all, no hwmon is named coretemp (the five present are AC, acpitz,
+# BAT0, thinkpad and iwlwifi_1), and /boot/config-6.18.10 has SENSORS_CORETEMP,
+# POWERCAP, INTEL_RAPL and INTEL_POWERCLAMP all unset.
+#
+# The machine was never at risk and this is not an emergency fix: the package's own
+# hardware throttling is unconditional and below the OS, and thermal_zone0 (acpitz)
+# drives the four Processor cooling devices through the step_wise governor. What is
+# missing is thermald's ability to see per-core temperature and to act on anything
+# finer than cpufreq -- i.e. the entire reason the package is installed.
+#
+# Four symbols, all verified against this kernel's own Kconfig (extracted from
+# linux-6.18.10.tar.xz and read, not assumed):
+#
+#   SENSORS_CORETEMP   tristate, depends on X86. The per-core DTS sensor, and
+#                      thermald's primary input -- the "No coretemp sysfs found" line
+#                      above is literally this driver's absence. HWMON is already =y.
+#   POWERCAP           bool, and the menuconfig gate INTEL_RAPL sits inside. This is
+#                      what creates /sys/class/powercap. INTEL_POWERCLAMP select's it
+#                      anyway; set explicitly so the dependency is visible here rather
+#                      than implied.
+#   INTEL_RAPL         tristate, depends on X86 && PCI, select's INTEL_RAPL_CORE
+#                      (which needs IOSF_MBI -- already =y). Running Average Power
+#                      Limit via MSR: thermald's primary *control* knob, and the
+#                      "NO RAPL sysfs present" line. Sandy Bridge and later, so this
+#                      Skylake part is covered.
+#   INTEL_POWERCLAMP   tristate, depends on X86 && CPU_SUP_INTEL && CPU_IDLE (=y).
+#                      Idle-injection cooling device, exposed through the generic
+#                      thermal framework -- the knob thermald reaches for when
+#                      cpufreq alone is not enough.
+#
+# Also INTEL_TCC_COOLING, which is not obviously applicable and was checked before
+# being included: drivers/thermal/intel/intel_tcc_cooling.c matches on an explicit
+# CPU list, and X86_MATCH_VFM(INTEL_SKYLAKE_L) is in it. This CPU reports family 6
+# model 78 stepping 3 (0x6:4e:3) -- SKYLAKE_L -- so the driver will bind here rather
+# than load and do nothing. It exposes the TCC offset as a cooling device, letting
+# thermald move the throttle point instead of only reacting to it.
+#
+# Host, not shared: every one of these names Intel. server is Intel too, but the test
+# in CLAUDE.md is whether the thing is true of *any* machine running this book, and a
+# CPU vendor is not.
+#
+# Modules, not built-in: none of this is on the boot path (root is NVMe, and the
+# thermal framework itself is already =y from defconfig). POWERCAP is the exception
+# only because it is a bool.
+$K --module  SENSORS_CORETEMP
+$K --enable  POWERCAP
+$K --module  INTEL_RAPL
+$K --module  INTEL_POWERCLAMP
+$K --module  INTEL_TCC_COOLING
 
 kernel_config_finish

@@ -46,7 +46,17 @@ grep -q "GTK_DOC_CHECK" configure.ac && {
 
 mkdir -p m4
 autoreconf -fi
-./configure --prefix=/usr --disable-werror
+# --sysconfdir=/etc, not autoconf's default of ${prefix}/etc: without it thermald
+# installs its data files to /usr/etc/thermald/ and, more to the point, compiles that
+# path in as TDCONFDIR and looks there at runtime. Found on laptop 2026-09-04 --
+# `thermald[323]: Config file /usr/etc/thermald/thermal-conf.xml does not exist`,
+# repeated four times at startup, with thermal-cpu-cdev-order.xml and
+# thermald-features.xml sitting in /usr/etc/thermald alongside it. Self-consistent, so
+# nothing was broken by it, but /usr/etc is not a directory this system otherwise has:
+# it was the only package here that created one, and the operator-supplied
+# thermal-conf.xml that overrides thermald's built-in thermal tables is exactly the file
+# that would have been dropped in /etc/thermald and silently ignored.
+./configure --prefix=/usr --sysconfdir=/etc --disable-werror
 make
 make install
 

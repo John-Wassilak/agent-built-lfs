@@ -1,0 +1,3 @@
+/usr/share/doc/hunspell-en_US-2020.12.07/README_en_US.txt
+/usr/share/hunspell/en_US.aff
+/usr/share/hunspell/en_US.dic

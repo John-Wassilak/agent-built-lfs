@@ -1,4 +1,5 @@
-# `laptop` -- hardware audited 2026-08-28 (see BUILD-REPORT.md). Not built yet.
+# `laptop` -- hardware audited 2026-08-28 (see BUILD-REPORT.md). Deployed to real LFS
+# 2026-09-03 (nvme0n1p1); built out further natively ever since (build.mode below).
 #
 # `arch` is deliberately absent: it defaults to the machine lfsbuild is running on, which
 # is right for the build-it-on-the-laptop path. Set it explicitly only if this host is
@@ -7,20 +8,30 @@
 book = "13.0"
 
 [build]
-# Capped at 2, not 0 (auto -> 4 threads): this is the daily driver, and the operator
-# wants two threads left free for everything else running on it during a build. Unlike
-# server's "0 = auto is right, thermal throttling argues for -1 not a hard cap" note,
-# here the cap is about the machine staying usable while the build runs, not thermals.
-jobs = 2
+# Operator decision 2026-09-04: use all 4 threads. This reverses the original cap of 2,
+# which reserved two threads so the daily driver stayed usable during a build. `nproc` is
+# 4 here -- 2 physical Skylake-U cores with 2 threads each (`lscpu`: Core(s) per socket 2,
+# Thread(s) per core 2), so the [hardware] cpu string below is right about the silicon
+# and this is the logical-CPU count. 15GiB RAM makes -j4 safe for ordinary packages; the
+# one known exception is qt6, whose parallel g++ footprint is what the 2026-09-04 disk
+# and memory incidents in BUILD-REPORT.md were about -- drop it back per-build if that
+# one is retried. Written as 4 rather than 0 (auto) to keep the value explicit and
+# reviewable, matching how it was written before.
+jobs = 4
 
-# Deliberately NOT /mnt/lfs: this machine has no free disk (see BUILD-REPORT.md's audit
-# -- the 238.5G NVMe is fully partitioned already, 6-7G free on the two volumes that
-# exist). Operator decision 2026-08-28: build the chroot tree inside this repo checkout
-# instead of on a dedicated partition, get as much of LFS+BLFS built as fits, tar it with
-# bin/lfs-archive --tree --final, and deploy that tarball to the real root partition from
-# USB rescue media later -- the same restore path bin/lfs-archive already documents for
-# --live backups, used here for a --tree image instead. Gitignored; see .gitignore.
-chroot_tree = "/mnt/crypt/john/projects/agent-built-lfs/lfs"
+# The original plan succeeded: build in a chroot under /mnt/crypt, archive with
+# bin/lfs-archive --tree --final, deploy to nvme0n1p1 from USB rescue media (commit
+# 17c4112, 2026-09-03), reboot. This machine's root is real LFS now (/etc/os-release
+# ID=lfs), not Gentoo -- Gentoo was only ever the pre-deploy host distro this was built
+# from/on. Operator decision 2026-09-04: everything from here builds natively against
+# that real root, per BOOTSTRAP.md's own step 6, and there is no more chroot tree --
+# the pre-deploy staging one at /mnt/crypt (superseded the moment the deploy above
+# happened) sat around stale for another session before being noticed and removed
+# 2026-09-04, its still-useful tarball cache moved into this host's own `sources` first.
+# `mode` pins native so lfsbuild's auto-detection -- which prefers a populated
+# chroot_tree over checking whether this is an LFS system, and got this exact host wrong
+# for a whole session while that stale tree existed -- never has to guess again.
+mode = "native"
 sources = "/sources"
 
 [hardware]
