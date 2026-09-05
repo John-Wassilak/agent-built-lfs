@@ -1,10 +1,16 @@
 /usr/bin/firefox
 /usr/lib/firefox/application.ini
+/usr/lib/firefox/browser/chrome/icons/default/default128.png
+/usr/lib/firefox/browser/chrome/icons/default/default16.png
+/usr/lib/firefox/browser/chrome/icons/default/default32.png
+/usr/lib/firefox/browser/chrome/icons/default/default48.png
+/usr/lib/firefox/browser/chrome/icons/default/default64.png
 /usr/lib/firefox/browser/omni.ja
 /usr/lib/firefox/defaults/pref/channel-prefs.js
 /usr/lib/firefox/dependentlibs.list
 /usr/lib/firefox/firefox
 /usr/lib/firefox/firefox-bin
+/usr/lib/firefox/fonts/TwemojiMozilla.ttf
 /usr/lib/firefox/glxtest
 /usr/lib/firefox/gmp-clearkey/0.1/libclearkey.so
 /usr/lib/firefox/gmp-clearkey/0.1/manifest.json
@@ -15,6 +21,7 @@
 /usr/lib/firefox/libmozgtk.so
 /usr/lib/firefox/libmozsandbox.so
 /usr/lib/firefox/libmozsqlite3.so
+/usr/lib/firefox/libmozwayland.so
 /usr/lib/firefox/libxul.so
 /usr/lib/firefox/omni.ja
 /usr/lib/firefox/pingsender
@@ -23,3 +30,9 @@
 /usr/lib/firefox/vaapitest
 /usr/share/applications/firefox.desktop
 /usr/share/pixmaps/firefox.png
+/var/lib/NetworkManager/internal-518a9767-cc1d-337e-aff6-3bea504c8aae-eth0.lease
+/var/lib/upower/history-charge-00HW029-52-2075.dat
+/var/lib/upower/history-rate-00HW029-52-2075.dat
+/var/lib/upower/history-time-empty-00HW029-52-2075.dat
+/var/lib/upower/history-time-full-00HW029-52-2075.dat
+/var/lib/upower/history-voltage-00HW029-52-2075.dat

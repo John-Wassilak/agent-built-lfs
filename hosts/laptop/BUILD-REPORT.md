@@ -3611,3 +3611,48 @@ Verified after build: `/usr/share/icons/AdwaitaLegacy/index.theme` and
 sizes (`emblem-default`, `changes-prevent`, `audio-volume-muted`, `audio-card`) --
 GTK's normal theme-inheritance lookup picks these up automatically via Adwaita's
 existing `Inherits=` line, no further config change needed.
+
+## 2026-09-05: Firefox rebuild (mozconfig changes) -- one real failure, fixed, then a clean build
+
+First attempt failed 109 minutes in: `--with-system-pipewire` (added alongside
+`--with-system-gbm`/`--with-system-libdrm` for WebRTC screencast support, see the
+`blfs-firefox` override's `reason` field) made Firefox's bundled
+`third_party/libwebrtc` video-capture code (`pipewire_session.cc`) compile against
+this host's system SPA/PipeWire headers (1.6.0) instead of Firefox's own vendored
+copy. The two diverged enough that `spa_pod_get_values`/`spa_pod_object_find_prop`
+were undeclared in that translation unit even though the symbols exist elsewhere in
+the installed `spa-0.2` headers (confirmed by direct `grep` of
+`/usr/include/spa-0.2/`) -- a real API-shape mismatch between the system PipeWire and
+the version Firefox 140.8.0's bundled libwebrtc snapshot expects, not a missing
+package. The previously-installed Firefox binary was untouched by this failure (the
+compile error happens before `make install` ever runs), so there was no live-session
+impact.
+
+Fix: dropped `--with-system-pipewire --with-system-gbm --with-system-libdrm` from the
+`blfs-firefox` override entirely, keeping the `--enable-audio-backends=pulseaudio` and
+`--enable-default-toolkit=cairo-gtk3-x11-wayland` changes (both unrelated to the
+failing code path). This feature (WebRTC screen/window sharing under Wayland) also
+needs `xdg-desktop-portal` at the OS level to work end-to-end, which this host does
+not have, so it could not have fully worked regardless of the compile outcome. Not
+pursued further. `bin/extract-blfs.py --host laptop --check` confirmed zero drift
+after the override edit and recipe regeneration.
+
+Rebuilt via `systemd-run --unit=lfsbuild-firefox --force` -- succeeded cleanly,
+125.6 min, 38 files manifested, `completed: 133/133`, 29.0 GB free afterward (was
+18-24GB free during the build, recovered once finished). Verified: the new
+`/usr/lib/firefox/firefox`/`libxul.so` (timestamp 03:52:25, matching the manifest
+time) are the fresh build, not yet running -- the operator's live Firefox process
+predates this build and was left undisturbed, matching this project's standing
+practice of not restarting a live session mid-change. `libmozwayland.so => not
+found` in a bare `ldd libxul.so` is expected, not a defect: the file exists at
+`/usr/lib/firefox/libmozwayland.so`, `ldd` alone just can't resolve it without the
+`LD_LIBRARY_PATH` Firefox's own launcher sets before exec'ing the real binary.
+PulseAudio likewise doesn't show as a link-time dependency of `libxul.so` -- Firefox
+loads its audio backend via `dlopen`, not link-time linking, so this too is expected
+rather than a sign the flag didn't take (confirmed the flag's actual presence instead,
+directly in the generated `mozconfig`/recipe).
+
+A live restart-and-verify (relaunching Firefox to confirm PulseAudio/Wayland audio
+and toolkit actually work end-to-end) is still pending -- deferred to avoid
+disrupting the operator's already-running session; do this the next time Firefox is
+restarted for another reason, or when explicitly asked to verify.
