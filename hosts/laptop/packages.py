@@ -741,6 +741,16 @@ PACKAGES = sorted(BASE + [
     book(229, "hicolor-icon-theme", "x/hicolor-icon-theme.html", "hicolor-icon-theme-0.18.tar.xz"),
     hand(230, "adwaita-icon-theme", "adwaita-icon-theme-49.0.tar.xz", "adwaita-icon-theme-49.0 (hand-authored, shared recipe)"),
 
+    # Operator-requested (2026-09-05): pavucontrol reported missing icons (the "set
+    # as default" button, among others). Traced to devicewidget.ui's real icon_name
+    # values (emblem-default, changes-prevent, audio-volume-muted, audio-card) --
+    # none exist in modern Adwaita-49.0, which dropped its old comprehensive
+    # non-symbolic set. Adwaita's own installed index.theme already declares
+    # `Inherits=AdwaitaLegacy,hicolor` for exactly this; nothing had installed the
+    # AdwaitaLegacy theme it names. Separate GNOME project (gitlab.gnome.org/GNOME/
+    # adwaita-icon-theme-legacy, single release series 46.x), not a book page.
+    hand(230.5, "adwaita-icon-theme-legacy", "adwaita-icon-theme-legacy-46.2.tar.xz", "adwaita-icon-theme-legacy-46.2 (hand-authored, shared recipe)"),
+
     # Operator-requested (2026-09-04). The 2026-09-04 kernel gave this machine a working
     # Bluetooth driver and no working adapter: btusb binds, hci0 exists and is unblocked,
     # bluetooth.service is active, and `bluetoothctl list` still returns nothing, because

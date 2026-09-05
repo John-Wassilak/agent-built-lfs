@@ -3416,6 +3416,20 @@
     "disabled": 0
   },
   {
+    "seq": 230.5,
+    "order": "blfs.230.5",
+    "name": "blfs-adwaita-icon-theme-legacy",
+    "chapter": "blfs",
+    "page": "adwaita-icon-theme-legacy",
+    "title": "adwaita-icon-theme-legacy-46.2 (hand-authored, shared recipe)",
+    "context": "chroot",
+    "tarball": "adwaita-icon-theme-legacy-46.2.tar.xz",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
+  },
+  {
     "seq": 231,
     "order": "blfs.231",
     "name": "blfs-linux-firmware-intel-bluetooth",

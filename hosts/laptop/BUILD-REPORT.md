@@ -3549,3 +3549,65 @@ entry corrected from the stale `{name: "DP-4", model: "SONY TV"}` to the real se
 output, `{name: "DP-5", model: "V193W"}` -- likely inherited from wherever this
 settings.json's `configVersion` 12 baseline originated before migrating forward
 through versions 15-17 on this host's first run.
+
+## 2026-09-04 (continued): Bluetooth audio profile registration, and pavucontrol's missing icons
+
+**Bluetooth**: a real audio device connect attempt failed with
+`org.bluez.Error.Failed br-connection-unknown` (`bluetoothctl` transcript from
+operator). Root cause traced to the same architectural gap already on record twice
+this session (pinentry's DBUS export, polkit's "no session for pid" warnings): this
+host has no PAM at all, so no real logind session is ever registered
+(`loginctl list-sessions` is permanently empty). `loginctl enable-linger john` gives a
+systemd --user instance, but its seat state is "lingering", not "active" --
+WirePlumber's bluez monitor refuses to start hardware monitoring (media
+endpoint/application registration) without an active seat by default. Fix is a
+WirePlumber profile override enabling the existing `monitor.bluez.seat-monitoring =
+disabled` feature flag. First attempt (a bare top-level key in a conf.d fragment) was
+a silent no-op -- confirmed via `WIREPLUMBER_DEBUG=3`, still logged "Seat state
+changed: lingering". The flag only takes effect nested inside a
+`wireplumber.profiles.<name>` block; corrected fragment,
+`~/.config/wireplumber/wireplumber.conf.d/51-bluez-no-seat-check.conf`:
+
+```
+wireplumber.profiles = {
+  main = {
+    monitor.bluez.seat-monitoring = disabled
+  }
+}
+```
+
+Verified live: WirePlumber's own log now shows successful `register_media_endpoint`/
+`register_media_application` calls for the Bluetooth adapter (these are calls
+WirePlumber makes *to* bluez on its own D-Bus name, not objects that appear under
+bluez's own `GetManagedObjects` tree -- an early check against the wrong object tree
+briefly looked like a failure before this was understood). **Not yet made durable**:
+this fragment exists only as a live file under the operator's `~/.config`, not tracked
+in any repo or overlay -- same class of gap as the Slack/Firefox `.desktop` situation
+earlier this session. No overlay entry has been written for it yet.
+
+**pavucontrol icons**: operator reported the "set as default" button and others
+showing no icon. Extracted pavucontrol-6.2's own source (`devicewidget.ui`) to get the
+exact icon names it asks for: `emblem-default` (set-as-default), `changes-prevent`
+(lock channels), `audio-volume-muted` (mute), `audio-card`. None exist anywhere in
+this host's installed Adwaita 49.0 (801 icons total, symbolic-heavy -- modern Adwaita
+dropped its old comprehensive non-symbolic set). Adwaita's own installed
+`index.theme` already declares `Inherits=AdwaitaLegacy,hicolor` -- GNOME's own
+intended fallback for exactly this -- but nothing had ever installed the
+"AdwaitaLegacy" theme it names. Confirmed via gitlab.gnome.org that
+`GNOME/adwaita-icon-theme-legacy` (single release series, tag `46.2`) is the real
+upstream project providing it, downloaded from download.gnome.org and its sha256
+(`548480f58589a54b72d18833b755b15ffbd567e3187249d74e2e1f8f99f22fb4`) checked directly
+against GNOME's own published checksum file before trusting it.
+
+Packaged as a new hand-authored, shared recipe (no BLFS book page exists for this --
+a separate GNOME project from `adwaita-icon-theme` itself):
+`recipes/blfs-adwaita-icon-theme-legacy.sh`, same meson-based shape as
+`blfs-adwaita-icon-theme.sh`. Added `hand(230.5, "adwaita-icon-theme-legacy", ...)` to
+`hosts/laptop/packages.py` right after the existing `adwaita-icon-theme` entry (seq
+230). `bin/extract-blfs.py --check` confirmed zero drift after adding it. Built via
+`systemd-run --unit=lfsbuild-adwaita-legacy` (0.1 min, 1865 files manifested).
+Verified after build: `/usr/share/icons/AdwaitaLegacy/index.theme` and
+`icon-theme.cache` present, and all four icon names present as real PNGs at multiple
+sizes (`emblem-default`, `changes-prevent`, `audio-volume-muted`, `audio-card`) --
+GTK's normal theme-inheritance lookup picks these up automatically via Adwaita's
+existing `Inherits=` line, no further config change needed.
