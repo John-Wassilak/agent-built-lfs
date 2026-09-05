@@ -26,10 +26,15 @@ Things worth knowing before changing anything here:
   the operator's daily driver.** Treat disk and CPU headroom as real constraints, not
   suggestions. `build.jobs` is **4** as of 2026-09-04 (operator decision), using all four
   threads -- `nproc` is 4, from 2 physical Skylake-U cores with 2 threads each. It was
-  originally capped at 2 to keep the machine usable during a build; that cap is gone, but
-  the reasoning still applies to a big C++ package, and qt6 in particular is the one to
-  drop back to 2 for (see the qt6 disk/memory incidents in `BUILD-REPORT.md`). Space is
-  genuinely tight (see below) -- do not raise disk usage without asking.
+  originally capped at 2 to keep the machine usable during a build; that cap is gone.
+  qt6 was once thought to need dropping back to 2 (see the 2026-09-04 disk/memory
+  incidents in `BUILD-REPORT.md`), but that turned out to be the untrimmed ~40-module
+  build compiling qtwebengine by accident, not qt6 itself -- the real trimmed 6-module
+  build this host uses never exceeded ~3GB RAM even at -j2, confirmed live, so it now
+  runs at `-j4` like everything else (hardcoded in the recipe override, since `ninja`
+  ignores this file's MAKEFLAGS-based jobs setting -- ninja-based recipes need their
+  own explicit `-j` flag, ordinary `make`-based ones don't). Space is genuinely tight
+  (see below) -- do not raise disk usage without asking.
 - **Target desktop is Hyprland / Wayland / pipewire, decided from the start** (operator,
   2026-08-28) -- unlike `server`, where Wayland was ruled out mid-build by a Kepler-era
   NVIDIA driver. This GPU has a fully open, current `i915` driver; nothing here should

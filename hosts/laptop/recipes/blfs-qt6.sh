@@ -80,7 +80,7 @@ fi
             -no-rpath               \
             -no-sbom                \
             -journald               &&
-ninja
+ninja -j4
 
 # --- block 4 --------------------------------------------------
 #   ctx: This package does not come with a test suite. Now, as the root user:

@@ -116,6 +116,20 @@ PACKAGES = sorted(BASE + [
     hand(54, "xcb-util-renderutil", "xcb-util-renderutil-0.3.10.tar.xz", "xcb-util-renderutil (hand-authored)"),
     hand(55, "xcb-util-wm", "xcb-util-wm-0.4.2.tar.xz", "xcb-util-wm (hand-authored)"),
     hand(56, "xcb-util-errors", "xcb-util-errors-1.0.1.tar.xz", "xcb-util-errors (hand-authored)"),
+
+    # Operator-requested (2026-09-04): discovered live while chasing why quickshell's
+    # rebuilt-with-X11 Quickshell.I3 module wouldn't compile against this host's qt6 --
+    # `QNativeInterface::QX11Application` is only declared when Qt6 itself was built
+    # with xcb/X11 platform-plugin support (libQt6XcbQpa.so), which this host's qt6
+    # never had (`/opt/qt6/plugins/platforms/` has no libqxcb.so). BLFS's own qt6.html
+    # lists "XCB Utilities" as Recommended for exactly this; four of that combined
+    # page's five sub-packages were already built here (seq 52-56 above) but
+    # xcb-util-cursor was not -- it was only ever queued for `server` (AWESOME-X11-
+    # PLAN.md), never for this host, since nothing here needed it until now. Recipe
+    # already existed (recipes/blfs-xcb-util-cursor.sh, hand-authored, shared, no
+    # host-specific content) -- reused verbatim.
+    hand(56.5, "xcb-util-cursor", "xcb-util-cursor-0.1.5.tar.xz", "xcb-util-cursor (hand-authored)"),
+
     hand(57, "libxscrnsaver", "libXScrnSaver-1.2.5.tar.xz", "libxscrnsaver (hand-authored)"),
     hand(58, "libice", "libICE-1.1.2.tar.xz", "libice (hand-authored)"),
     hand(59, "libsm", "libSM-1.2.6.tar.xz", "libsm (hand-authored)"),

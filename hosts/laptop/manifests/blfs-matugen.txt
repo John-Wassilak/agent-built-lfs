@@ -1,0 +1,6 @@
+/etc/resolv.pre-tailscale-backup.conf
+/usr/.crates.toml
+/usr/.crates2.json
+/usr/bin/matugen
+/var/lib/tailscale/tailscaled.log1.txt
+/var/lib/tailscale/tailscaled.log2.txt

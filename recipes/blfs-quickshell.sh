@@ -20,8 +20,20 @@
 #   - USE_JEMALLOC, CRASH_HANDLER: both optional (better allocator / better crash
 #     backtraces), neither required for functionality, both would add jemalloc/
 #     cpptrace as brand-new dependencies for a benefit nothing here needs yet.
-#   - X11: this project's laptop target is Wayland/Hyprland only (host.toml), no
-#     X11-backed shell panels wanted even though XWayland itself is separately built.
+# X11 was first built OFF (this project's laptop target is Wayland/Hyprland only, no
+# X11-backed shell panels wanted even though XWayland itself is separately built), then
+# turned back ON same day once live verification (`dms run`) failed:
+# `module "Quickshell.I3" is not installed`, traced to DankMaterialShell's own
+# `Services/BarWidgetService.qml` (`import Quickshell.I3` alongside
+# `import Quickshell.Hyprland`). Quickshell's `Quickshell.I3` QML module (the i3/sway
+# IPC protocol client -- a plain Unix-socket JSON client, not an actual X11 display
+# connection) lives under `src/x11/i3/`, gated on the `X11` CMake option purely for
+# source-tree organization, not because it needs a display -- confirmed by reading
+# `src/x11/CMakeLists.txt` and `src/x11/i3/CMakeLists.txt` directly upstream. Its only
+# real dependency is XCB (`find_package(XCB REQUIRED COMPONENTS XCB)`), already built
+# here for XWayland. `I3`/`I3_IPC` are both ON by CMake's own default once `X11` is ON,
+# no extra flags needed. This was NOT a case of needing a newer/untagged Quickshell --
+# v0.3.1 already has the module, it just needed this one flag flipped.
 # Everything else (WAYLAND, WAYLAND_WLR_LAYERSHELL, BLUETOOTH, the SERVICE_* set,
 # SOCKETS) is left on CMake's own auto-detection -- all their real deps (wayland,
 # wayland-protocols, dbus/glib2, polkit, libpipewire, mesa/libdrm) are already
@@ -39,7 +51,7 @@ cmake -GNinja -B . -S .. \
       -D USE_JEMALLOC=OFF \
       -D CRASH_HANDLER=OFF \
       -D SERVICE_PAM=OFF \
-      -D X11=OFF
+      -D X11=ON
 cmake --build .
 cmake --install .
 

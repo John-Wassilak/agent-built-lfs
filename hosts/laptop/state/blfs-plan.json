@@ -812,6 +812,20 @@
     "disabled": 0
   },
   {
+    "seq": 56.5,
+    "order": "blfs.56.5",
+    "name": "blfs-xcb-util-cursor",
+    "chapter": "blfs",
+    "page": "xcb-util-cursor",
+    "title": "xcb-util-cursor (hand-authored)",
+    "context": "chroot",
+    "tarball": "xcb-util-cursor-0.1.5.tar.xz",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
+  },
+  {
     "seq": 57,
     "order": "blfs.57",
     "name": "blfs-libxscrnsaver",

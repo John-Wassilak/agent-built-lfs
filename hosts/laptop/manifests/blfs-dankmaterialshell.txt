@@ -1,0 +1,4 @@
+/etc/resolv.pre-tailscale-backup.conf
+/usr/bin/dms
+/var/lib/tailscale/tailscaled.log1.txt
+/var/lib/tailscale/tailscaled.log2.txt

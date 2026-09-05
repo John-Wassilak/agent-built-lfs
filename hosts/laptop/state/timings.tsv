@@ -491,3 +491,13 @@ blfs-slack	native	3.0	0
 blfs-imv	native	11.4	0
 blfs-imv	native	11.6	0
 blfs-imv	native	11.3	0
+blfs-qt6	native	8293.4	0
+blfs-cli11	native	1.3	0
+blfs-quickshell	native	555.6	0
+blfs-matugen	native	339.1	0
+blfs-dankmaterialshell	native	98.1	0
+blfs-quickshell	native	447.2	1
+blfs-xcb-util-cursor	native	8.3	0
+blfs-qt6	native	5653.0	0
+blfs-quickshell	native	590.6	0
+blfs-dankmaterialshell	native	128.4	0

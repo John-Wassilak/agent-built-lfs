@@ -12,11 +12,21 @@ book = "13.0"
 # which reserved two threads so the daily driver stayed usable during a build. `nproc` is
 # 4 here -- 2 physical Skylake-U cores with 2 threads each (`lscpu`: Core(s) per socket 2,
 # Thread(s) per core 2), so the [hardware] cpu string below is right about the silicon
-# and this is the logical-CPU count. 15GiB RAM makes -j4 safe for ordinary packages; the
-# one known exception is qt6, whose parallel g++ footprint is what the 2026-09-04 disk
-# and memory incidents in BUILD-REPORT.md were about -- drop it back per-build if that
-# one is retried. Written as 4 rather than 0 (auto) to keep the value explicit and
-# reviewable, matching how it was written before.
+# and this is the logical-CPU count. 15GiB RAM makes -j4 safe for ordinary packages.
+# qt6 was once thought to be the one exception (the 2026-09-04 disk/memory incidents in
+# BUILD-REPORT.md), but that incident was actually the untrimmed ~40-module build
+# accidentally compiling qtwebengine (a full Chromium embed) -- confirmed live
+# (2026-09-04, retry) that the real trimmed 6-module qt6 build this host actually uses
+# (hosts/laptop/blfs-overrides.json) never used more than ~3GB of RAM even at -j2, so
+# operator decision raised its own `ninja -j4` (hardcoded in the override, since ninja
+# ignores this file's MAKEFLAGS-based jobs setting entirely -- see that override's
+# reason field) back up to match this host's normal jobs=4. Written as 4 rather than 0
+# (auto) to keep the value explicit and reviewable, matching how it was written before.
+#
+# Note: this [build] jobs value only reaches `make`-based recipes via MAKEFLAGS: ninja
+# (used by qt6, quickshell, cli11) ignores it and needs its own explicit -j flag per
+# recipe, confirmed live 2026-09-04 -- don't assume dropping this value throttles a
+# ninja-based build.
 jobs = 4
 
 # The original plan succeeded: build in a chroot under /mnt/crypt, archive with
