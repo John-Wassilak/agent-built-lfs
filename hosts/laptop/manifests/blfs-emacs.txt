@@ -6,7 +6,7 @@
 /usr/bin/etags
 /usr/include/emacs-module.h
 /usr/lib/systemd/user/emacs.service
-/usr/libexec/emacs/30.2/x86_64-pc-linux-gnu/emacs-d1388da1f8e55dfdcfddbde4811f2aee338152b28cabd1146020be68c7a34599.pdmp
+/usr/libexec/emacs/30.2/x86_64-pc-linux-gnu/emacs-6b1273cce69ed96f7defa7b05ae133016d70bd6f74064513fbf347b2a3257462.pdmp
 /usr/libexec/emacs/30.2/x86_64-pc-linux-gnu/hexl
 /usr/libexec/emacs/30.2/x86_64-pc-linux-gnu/movemail
 /usr/libexec/emacs/30.2/x86_64-pc-linux-gnu/rcs2log
@@ -817,6 +817,7 @@
 /usr/share/emacs/30.2/etc/nxml/README
 /usr/share/emacs/30.2/etc/nxml/test-invalid.xml
 /usr/share/emacs/30.2/etc/nxml/test-valid.xml
+/usr/share/emacs/30.2/etc/org.gnu.emacs.defaults.gschema.valid
 /usr/share/emacs/30.2/etc/org.gnu.emacs.defaults.gschema.xml
 /usr/share/emacs/30.2/etc/org/OrgOdtContentTemplate.xml
 /usr/share/emacs/30.2/etc/org/OrgOdtStyles.xml
@@ -4284,7 +4285,8 @@
 /usr/share/emacs/30.2/lisp/yank-media.el.gz
 /usr/share/emacs/30.2/lisp/yank-media.elc
 /usr/share/emacs/30.2/site-lisp/subdirs.el
-/usr/share/emacs/site-lisp/subdirs.el
+/usr/share/glib-2.0/schemas/gschemas.compiled
+/usr/share/glib-2.0/schemas/org.gnu.emacs.defaults.gschema.xml
 /usr/share/icons/hicolor/128x128/apps/emacs.png
 /usr/share/icons/hicolor/16x16/apps/emacs.png
 /usr/share/icons/hicolor/24x24/apps/emacs.png
@@ -4369,3 +4371,4 @@
 /usr/share/man/man1/emacsclient.1.gz
 /usr/share/man/man1/etags.1.gz
 /usr/share/metainfo/emacs.metainfo.xml
+/var/lib/NetworkManager/internal-518a9767-cc1d-337e-aff6-3bea504c8aae-eth0.lease

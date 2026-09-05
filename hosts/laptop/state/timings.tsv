@@ -536,3 +536,12 @@ blfs-khal	native	9.7	0
 blfs-vdirsyncer	native	13.9	0
 blfs-oauthlib	native	4.1	0
 blfs-aiohttp-oauthlib	native	3.9	0
+blfs-curl	native	96.3	0
+blfs-lcms2	native	19.0	0
+blfs-libjxl	native	430.4	0
+blfs-libwebp	native	46.9	0
+blfs-libjpeg-turbo	native	48.4	0
+blfs-librsvg	native	591.8	0
+blfs-libsndfile	native	50.2	0
+blfs-ffmpeg	native	801.9	0
+blfs-emacs	native	197.0	0

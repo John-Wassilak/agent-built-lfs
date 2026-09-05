@@ -15,11 +15,11 @@
 /usr/lib/libsndfile.so.1
 /usr/lib/libsndfile.so.1.0.37
 /usr/lib/pkgconfig/sndfile.pc
+/usr/share/doc/libsndfile-1.2.2/FAQ.md
 /usr/share/doc/libsndfile-1.2.2/api.md
 /usr/share/doc/libsndfile-1.2.2/bugs.md
 /usr/share/doc/libsndfile-1.2.2/command.md
 /usr/share/doc/libsndfile-1.2.2/embedded_files.md
-/usr/share/doc/libsndfile-1.2.2/FAQ.md
 /usr/share/doc/libsndfile-1.2.2/formats.md
 /usr/share/doc/libsndfile-1.2.2/index.md
 /usr/share/doc/libsndfile-1.2.2/libsndfile.css

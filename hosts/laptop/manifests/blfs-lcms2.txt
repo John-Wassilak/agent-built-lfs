@@ -1,5 +1,7 @@
+/usr/bin/jpgicc
 /usr/bin/linkicc
 /usr/bin/psicc
+/usr/bin/tificc
 /usr/bin/transicc
 /usr/include/lcms2.h
 /usr/include/lcms2_plugin.h

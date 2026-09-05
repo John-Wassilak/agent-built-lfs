@@ -470,3 +470,12 @@ blfs-khal
 blfs-vdirsyncer
 blfs-oauthlib
 blfs-aiohttp-oauthlib
+blfs-curl
+blfs-lcms2
+blfs-libjxl
+blfs-libwebp
+blfs-libjpeg-turbo
+blfs-librsvg
+blfs-libsndfile
+blfs-ffmpeg
+blfs-emacs

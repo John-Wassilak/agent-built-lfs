@@ -3719,3 +3719,115 @@ and fails only because gpg's pinentry has no terminal to prompt from in this
 non-interactive test context -- confirms the tool is fully wired end-to-end, not a
 build defect; a real interactive run (or letting the already-running Hyprland
 session's gpg-agent handle it) was not attempted this session.
+
+## 2026-09-05: feature-parity audit -- 168 book packages checked against BLFS's own Optional/Recommended lists
+
+Operator-requested: go through everything built on this host and enable any feature
+whose dependency has since landed but wasn't present when the package was originally
+built -- e.g. a package built early without Wayland support that could now have it,
+given how much of the desktop stack has landed since. Explicitly not "enable
+everything available" -- only what's genuinely gained and genuinely usable here.
+
+Method: every `book()` step's own BLFS page (168 of laptop's 305 packages) was
+parsed for its real `<p class="recommended">`/`<p class="optional">` dependency
+list (link hrefs resolved against every other package's own book-page path, not
+fuzzy name matching), cross-referenced against this host's actual build order --
+36 pairs where the dependency was built *after* the package itself (so could not
+have been auto-detected at build time), across 33 packages. Each candidate was then
+checked by hand (delegated to three parallel research passes covering the crypto/
+base, fonts/graphics/xorg, and desktop/audio/GPG chains respectively) against: (a)
+the book's own installation instructions, to see whether the dependency is a real
+build-time feature at all versus test-suite-only/runtime-only/an alternate-backend
+swap with no net gain, and (b) the actual recipe/override currently in use, to see
+whether it was already picked up by a later rebuild. One extraction artifact was
+caught and dropped before acting on it: fontconfig was flagged as able to use
+json-c, but `general/fontconfig.html` never actually mentions json-c anywhere --
+a false positive from the extraction script, not a real BLFS dependency.
+
+Separately, Wayland support specifically was spot-checked beyond the automated
+30-plus-package list, since the operator's own example was "native Wayland" --
+mesa (`-D platforms=x11,wayland`), vulkan-loader, and sdl3 all confirmed already
+Wayland-capable. Firefox was confirmed via `hyprctl clients` to already be running
+natively on Wayland (`xwayland: false`, `MOZ_ENABLE_WAYLAND=1`, no `GDK_BACKEND`
+override) -- the crash recorded elsewhere in this file was from an explicit
+`GDK_BACKEND=wayland` diagnostic override, not from the real deployed config.
+Emacs, by contrast, turned out to have **zero** native-Wayland capability: every
+open Emacs window showed `xwayland: true`, and `system-configuration-features`
+listed GTK3/X11 but no PGTK. BLFS's own `postlfs/emacs.html` never mentions
+`--with-pgtk` at all (same category of gap as Firefox's undocumented mozconfig
+flags) -- confirmed as a real, current upstream Emacs-30.2 configure flag by
+extracting the real `configure` script from the cached source tarball, not
+assumed. This was the one gap the automated book-based audit could never have
+found on its own, since it isn't expressed as a BLFS "Optional" dependency at all --
+it only surfaced because the operator asked the direct question.
+
+Final verdict, all packages checked:
+
+- **Rebuilt (10 total)**: make-ca (regenerated via `make-ca -r -t /usr/bin/certutil`,
+  no package rebuild -- see below), curl (Brotli compression), lcms2 (`jpgicc`/
+  `tificc` ICC utilities), libjpeg-turbo (real SIMD via NASM, confirmed in its own
+  build log: `SIMD extensions: x86_64 (WITH_SIMD = 1)`), libjxl (GTK pixbuf loader
+  plugin -- flips the book's own `JPEGXL_ENABLE_PLUGINS=OFF`; the book's stated
+  reason for OFF, "useless when gdk-pixbuf is built with its recommended dependency
+  glycin", does not apply here since this host's gdk-pixbuf already has
+  `glycin=disabled`), libwebp (jpeg/tiff support in the `cwebp`/`dwebp` demo tools),
+  librsvg (AVIF-in-SVG via dav1d), libsndfile (Speex codec -- confirmed
+  `ogg_speex.lo` compiled in the build log), ffmpeg (`--enable-libpulse`, PulseAudio
+  is NOT auto-detected by FFmpeg's own configure, unlike most of its other
+  `--enable-libX` flags -- confirmed via `ffmpeg -devices` showing `pulse` after
+  rebuild), and Emacs (`--with-pgtk`, confirmed via `system-configuration-features`
+  now listing `PGTK`). Ran as one sequential chain (`systemd-run --unit=
+  lfsbuild-feature-audit`), each package independent of the others (no rebuild
+  ordering dependency between them), 9 real package rebuilds totaling ~28 minutes
+  (ffmpeg 13.4 min and emacs 3.3 min were the two largest; the rest were all under
+  a minute). All 9 succeeded clean on the first attempt, all verified live
+  post-rebuild (not just "manifest exists").
+- **make-ca made durable, not just live-fixed**: `make-ca -r` alone regenerates the
+  OpenSSL/GnuTLS/Java cert bundles but does NOT touch the NSS shared DB unless
+  explicitly told to via `-t <certutil-path>` or `-n <nssdb-path>` -- confirmed by
+  reading `/usr/sbin/make-ca`'s own source: `WITH_NSS=0` is hardcoded immediately
+  after the config-file-sourcing block, so there is no way to make this the default
+  via `/etc/make-ca.conf` either. The weekly `update-pki.timer` (already enabled)
+  runs `make-ca -g` with no such flag, so the NSS DB would silently stop getting
+  new certificates on every future scheduled run. Fixed with a systemd drop-in,
+  `/etc/systemd/system/update-pki.service.d/override.conf`, adding
+  `-t /usr/bin/certutil` to the timer's own `ExecStart`; tracked in this repo at
+  `hosts/laptop/overlay/etc/systemd/system/update-pki.service.d/override.conf`
+  (this host's `overlay/` tree gains its first `/etc` entry).
+- **Real gaps, deliberately skipped (technically available, not worth doing)**:
+  nodejs's brotli/icu match is real, but Node's own book config also wants
+  c-ares/libuv/nghttp2 built as shared libraries, none of which exist anywhere in
+  this repo at all (a BASE-tier decision affecting `server` too, out of scope for
+  a laptop-only pass) -- sudo's OpenLDAP support has no practical value on a
+  single-user laptop with no LDAP directory in use -- harfbuzz's cairo backend only
+  feeds harfbuzz's own diagnostic tools (`hb-view`/`hb-shape`), not any real
+  consumer, for a foundational-package-wide rebuild blast radius -- qt6's
+  PulseAudio backend (QtMultimedia) is real but Quickshell/DankMaterialShell (this
+  host's only Qt6 consumer) doesn't use QtMultimedia audio at all, and qt6 is this
+  host's single most expensive class of rebuild (see the qt6 override's own
+  `reason` field, 2026-09-04).
+- **Not real build/runtime features at all (skipped, no action)**: p11-kit/make-ca
+  (runtime hook, already wired), libidn2/git (build-tool-only), wget/gnutls (an
+  *alternative* TLS backend to the already-fully-capable openssl, not additive),
+  cmake/qt6 (only affects the unused `cmake-gui`), graphite2/freetype2 (only builds
+  a test/benchmark tool, `comparerender`), glib2/cairo+dbus (test-suite-only per
+  the book), xcb-proto/libxml2, xkeyboard-config/libxkbcommon, and libdrm/cairo
+  (all three test-only), libssh2/libgcrypt (a lateral crypto-backend swap, no
+  functional gain over the existing OpenSSL backend), gdk-pixbuf/libtiff (the
+  existing `tiff=disabled` is a deliberate choice already matching upstream's own
+  guidance, not an oversight), gtk3/iso-codes (runtime-only locale data lookup,
+  already works automatically now with no rebuild needed), libnotify/gtk4 (book
+  explicitly lists it as "Recommended (required for tests)" only), networkmanager/
+  gnutls (an alternative crypto backend to the already-active, fully-functional NSS
+  default).
+- **Already fine, no rebuild needed**: freetype2/harfbuzz (`--with-harfbuzz=dynamic`
+  already in the recipe, dlopen'd at runtime), pinentry/gcr+libsecret (already
+  rebuilt earlier this project and confirmed via `ldd` to link both).
+
+Host override additions for this pass: `hosts/laptop/blfs-overrides.json` gained
+three new package blocks (`blfs-libjxl`, `blfs-ffmpeg`, `blfs-emacs`), each a
+`replace` on the one block containing the real configure/cmake command, kept
+host-specific rather than shared since none of the three flags are known to apply
+cleanly to `server` (no Wayland target there at all, PulseAudio/glycin status
+unconfirmed) -- `bin/extract-blfs.py --host laptop --check` confirmed zero drift
+both before and after.
