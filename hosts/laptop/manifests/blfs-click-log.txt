@@ -1,0 +1,13 @@
+/usr/lib/python3.14/site-packages/click_log-0.4.0.dist-info/INSTALLER
+/usr/lib/python3.14/site-packages/click_log-0.4.0.dist-info/METADATA
+/usr/lib/python3.14/site-packages/click_log-0.4.0.dist-info/RECORD
+/usr/lib/python3.14/site-packages/click_log-0.4.0.dist-info/REQUESTED
+/usr/lib/python3.14/site-packages/click_log-0.4.0.dist-info/WHEEL
+/usr/lib/python3.14/site-packages/click_log-0.4.0.dist-info/licenses/LICENSE
+/usr/lib/python3.14/site-packages/click_log-0.4.0.dist-info/top_level.txt
+/usr/lib/python3.14/site-packages/click_log/__init__.py
+/usr/lib/python3.14/site-packages/click_log/__pycache__/__init__.cpython-314.pyc
+/usr/lib/python3.14/site-packages/click_log/__pycache__/core.cpython-314.pyc
+/usr/lib/python3.14/site-packages/click_log/__pycache__/options.cpython-314.pyc
+/usr/lib/python3.14/site-packages/click_log/core.py
+/usr/lib/python3.14/site-packages/click_log/options.py

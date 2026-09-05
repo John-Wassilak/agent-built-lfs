@@ -3656,3 +3656,66 @@ A live restart-and-verify (relaunching Firefox to confirm PulseAudio/Wayland aud
 and toolkit actually work end-to-end) is still pending -- deferred to avoid
 disrupting the operator's already-running session; do this the next time Firefox is
 restarted for another reason, or when explicitly asked to verify.
+
+## 2026-09-05: khal + vdirsyncer (seq 259-288), a 30-package pure-Python closure
+
+Operator-requested: khal (CLI calendar) and vdirsyncer (CalDAV/CardDAV sync).
+Neither package -- nor its dependency closure -- is in BLFS
+(`general/python-modules.html` covers a fixed set of modules on one page, not this
+closure; same gap `mako`/`pyyaml` hit for Mesa's build-time deps).
+
+Full runtime dependency closure resolved from PyPI's own JSON metadata
+(`requires_dist`), not guessed or taken from khal/vdirsyncer's own docs -- walked
+recursively via a small script hitting `pypi.org/pypi/<pkg>/json`, skipping `extra ==`
+markers (optional deps) and evaluating version markers (`python_version < "3.11"`,
+etc.) against this host's real Python (3.14.3, confirmed via `python3 --version`
+before resolving, not assumed). This narrowed the closure from a naive reading:
+`async-timeout` (aiohttp, python<3.11 only) and `typing-extensions` for
+`multidict`/`aiosignal` (python<3.13 only) all turned out not to apply here --
+`typing-extensions` was still needed, but only because `urwid` requires it
+unconditionally, not because of the async-io packages. Landed on 30 packages total
+(28 dependencies + khal + vdirsyncer itself); every sdist tarball fetched from
+`files.pythonhosted.org` and its sha256 checked directly against PyPI's own published
+digest before staging to `/sources`.
+
+Each package's own build backend was checked (`tar -xzO pyproject.toml`, not
+assumed) against what this host already has installed (setuptools-82.0.0,
+flit_core-3.12.0, wheel-0.46.3) to decide whether `--no-build-isolation` was safe:
+18 of the 30 use setuptools or flit_core already present, so their recipes use
+`--no-build-isolation` (matching the existing `pyyaml`/`mako` pattern). The other 12
+(`wcwidth`, `attrs`, `urllib3`, `icalendar` -- hatchling; `aiohappyeyeballs` --
+poetry-core; `frozenlist`/`propcache`/`yarl` -- an in-tree backend needing the
+`expandvars` PyPI module; `aiohttp` -- needs the PyPI `pkgconfig` module; `khal`/
+`vdirsyncer`/`urwid` -- `setuptools_scm`) leave build isolation on, letting pip's own
+isolated-build venv fetch that backend from PyPI itself -- same precedent
+`hand(122, "attrs", ...)` already established on `server` (this target has confirmed
+direct internet access; the final `pip3 install --no-index` step still installs only
+the offline-built wheel, no network involved in the actual install). `attrs` itself
+reuses `server`'s exact recipe and version (25.4.0, not PyPI's current 26.1.0) --
+one canonical attrs source across both hosts sharing the one recipe.
+
+29 new hand-authored recipes written (`recipes/blfs-<name>.sh`, all shared -- pure
+Python, nothing host-specific); `attrs` reuses the existing shared
+`recipes/blfs-attrs.sh` verbatim. `bin/extract-blfs.py --host laptop --check`
+confirmed zero drift both before and after regenerating the plan (303 steps).
+
+Built the whole chain in one `--from blfs-six --to blfs-vdirsyncer` run (learned
+mid-session that `--only` does not take a comma-separated list -- failed instantly
+with "no such step: blfs-six,blfs-wcwidth,..."; `--from`/`--to` was the right tool
+since seq 259-288 is contiguous). All 30 steps completed clean, no failures, 3 min
+48 sec wall clock total (these are small pure-Python/light-C-extension packages,
+nothing like the qt6/Firefox builds earlier this project).
+
+Verified live, not just "manifest exists": `khal --version` (0.14.1) and
+`vdirsyncer --version` (0.21.0) both run; `python3 -c "import khal, vdirsyncer"`
+succeeds. Found this host already has real, pre-existing khal/vdirsyncer config and
+data waiting (`~/.config/khal/config`, `~/.vdirsyncer`, `~/calendars/{fam,infocus,
+cobus}/*.ics` -- same pattern as mu4e's already-configured `email.el`/`mbsyncrc`
+from a prior system) -- `khal calendar` renders real events from the actual
+synced `.ics` files (one pre-existing, unrelated warning: a malformed recurrence
+rule, "UNTIL is before DTSTART", in one `.ics` file). `vdirsyncer discover` correctly
+reaches for OAuth credentials via `pass-auto` (`google-calendar/infocus/client_id`)
+and fails only because gpg's pinentry has no terminal to prompt from in this
+non-interactive test context -- confirms the tool is fully wired end-to-end, not a
+build defect; a real interactive run (or letting the already-running Hyprland
+session's gpg-agent handle it) was not attempted this session.

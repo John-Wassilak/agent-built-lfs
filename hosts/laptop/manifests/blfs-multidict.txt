@@ -1,0 +1,17 @@
+/usr/lib/python3.14/site-packages/multidict-6.7.1.dist-info/INSTALLER
+/usr/lib/python3.14/site-packages/multidict-6.7.1.dist-info/METADATA
+/usr/lib/python3.14/site-packages/multidict-6.7.1.dist-info/RECORD
+/usr/lib/python3.14/site-packages/multidict-6.7.1.dist-info/REQUESTED
+/usr/lib/python3.14/site-packages/multidict-6.7.1.dist-info/WHEEL
+/usr/lib/python3.14/site-packages/multidict-6.7.1.dist-info/licenses/LICENSE
+/usr/lib/python3.14/site-packages/multidict-6.7.1.dist-info/top_level.txt
+/usr/lib/python3.14/site-packages/multidict/__init__.py
+/usr/lib/python3.14/site-packages/multidict/__pycache__/__init__.cpython-314.pyc
+/usr/lib/python3.14/site-packages/multidict/__pycache__/_abc.cpython-314.pyc
+/usr/lib/python3.14/site-packages/multidict/__pycache__/_compat.cpython-314.pyc
+/usr/lib/python3.14/site-packages/multidict/__pycache__/_multidict_py.cpython-314.pyc
+/usr/lib/python3.14/site-packages/multidict/_abc.py
+/usr/lib/python3.14/site-packages/multidict/_compat.py
+/usr/lib/python3.14/site-packages/multidict/_multidict.cpython-314-x86_64-linux-gnu.so
+/usr/lib/python3.14/site-packages/multidict/_multidict_py.py
+/usr/lib/python3.14/site-packages/multidict/py.typed

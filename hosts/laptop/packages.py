@@ -939,4 +939,60 @@ PACKAGES = sorted(BASE + [
     # stubbed rather than built from the real cups.html page).
     hand(257, "imv", "imv-4.3.0.tar.gz", "imv-4.3.0 (hand-authored)"),
     hand(258, "slack", "", "Slack Desktop 4.52.155 (hand-authored, proprietary .deb)"),
+
+    # Operator-requested (2026-09-05): khal (CLI calendar) + vdirsyncer (CalDAV/
+    # CardDAV sync). Neither package, nor its dependency closure, is in BLFS --
+    # general/python-modules.html covers a fixed set of modules on one page, not
+    # this closure (same gap mako/pyyaml hit for Mesa). Full runtime dependency
+    # closure resolved from PyPI's own JSON metadata (requires_dist), not guessed --
+    # each tarball's sha256 verified against PyPI's own published digest. Version
+    # markers evaluated against this host's real Python (3.14.3): async-timeout and
+    # some typing-extensions constraints are Python-version-gated and turned out not
+    # to apply here, narrowing the closure from what a naive read of "requires
+    # typing-extensions" everywhere would suggest -- confirmed live, not assumed.
+    # Each recipe's own comment records its build backend and whether that backend's
+    # own build-time requirements were already satisfied by what this host already
+    # has installed (setuptools 82.0.0, wheel, flit_core 3.12.0) -- where they were
+    # not (hatchling, poetry-core, setuptools_scm, expandvars, the PyPI "pkgconfig"
+    # module), `--no-build-isolation` is left off so pip's normal isolated build
+    # fetches that backend itself into a throwaway venv, same precedent as `attrs`
+    # below (this target has direct internet access). All final `pip3 install`
+    # steps still install only the offline-built wheel, no network involved.
+    # Build order below is dependency order (leaf packages first) for readability;
+    # every install uses --no-deps, so it is not load-bearing for the build itself.
+    hand(259, "six", "six-1.17.0.tar.gz", "six-1.17.0 (hand-authored, shared recipe)"),
+    hand(260, "wcwidth", "wcwidth-0.8.3.tar.gz", "wcwidth-0.8.3 (hand-authored, shared recipe)"),
+    hand(261, "typing-extensions", "typing_extensions-4.16.0.tar.gz", "typing-extensions-4.16.0 (hand-authored, shared recipe)"),
+    hand(262, "pytz", "pytz-2026.3.post1.tar.gz", "pytz-2026.3.post1 (hand-authored, shared recipe)"),
+    hand(263, "tzdata", "tzdata-2026.3.tar.gz", "tzdata-2026.3 (hand-authored, shared recipe)"),
+    hand(264, "configobj", "configobj-5.0.9.tar.gz", "configobj-5.0.9 (hand-authored, shared recipe)"),
+    hand(265, "pyxdg", "pyxdg-0.28.tar.gz", "pyxdg-0.28 (hand-authored, shared recipe)"),
+    hand(266, "click", "click-8.5.0.tar.gz", "click-8.5.0 (hand-authored, shared recipe)"),
+    hand(267, "click-log", "click-log-0.4.0.tar.gz", "click-log-0.4.0 (hand-authored, shared recipe)"),
+
+    # attrs: reuses the exact recipe and version server's libei chain already
+    # established (recipes/blfs-attrs.sh, shared) rather than pulling PyPI's current
+    # 26.1.0 -- one canonical attrs source across hosts using the one shared recipe.
+    hand(268, "attrs", "attrs-25.4.0.tar.gz", "attrs-25.4.0 (hand-authored, shared recipe)"),
+
+    hand(269, "aiohappyeyeballs", "aiohappyeyeballs-2.7.1.tar.gz", "aiohappyeyeballs-2.7.1 (hand-authored, shared recipe)"),
+    hand(270, "frozenlist", "frozenlist-1.8.0.tar.gz", "frozenlist-1.8.0 (hand-authored, shared recipe)"),
+    hand(271, "propcache", "propcache-0.5.2.tar.gz", "propcache-0.5.2 (hand-authored, shared recipe)"),
+    hand(272, "charset-normalizer", "charset_normalizer-3.5.1.tar.gz", "charset-normalizer-3.5.1 (hand-authored, shared recipe)"),
+    hand(273, "idna", "idna-3.19.tar.gz", "idna-3.19 (hand-authored, shared recipe)"),
+    hand(274, "certifi", "certifi-2026.7.22.tar.gz", "certifi-2026.7.22 (hand-authored, shared recipe)"),
+    hand(275, "tenacity", "tenacity-9.1.4.tar.gz", "tenacity-9.1.4 (hand-authored, shared recipe)"),
+    hand(276, "urllib3", "urllib3-2.7.0.tar.gz", "urllib3-2.7.0 (hand-authored, shared recipe)"),
+    hand(277, "python-dateutil", "python-dateutil-2.9.0.post0.tar.gz", "python-dateutil-2.9.0.post0 (hand-authored, shared recipe)"),
+    hand(278, "icalendar", "icalendar-7.3.0.tar.gz", "icalendar-7.3.0 (hand-authored, shared recipe)"),
+    hand(279, "urwid", "urwid-4.1.1.tar.gz", "urwid-4.1.1 (hand-authored, shared recipe)"),
+    hand(280, "tzlocal", "tzlocal-5.4.4.tar.gz", "tzlocal-5.4.4 (hand-authored, shared recipe)"),
+    hand(281, "requests", "requests-2.34.2.tar.gz", "requests-2.34.2 (hand-authored, shared recipe)"),
+    hand(282, "aiosignal", "aiosignal-1.4.0.tar.gz", "aiosignal-1.4.0 (hand-authored, shared recipe)"),
+    hand(283, "multidict", "multidict-6.7.1.tar.gz", "multidict-6.7.1 (hand-authored, shared recipe)"),
+    hand(284, "yarl", "yarl-1.24.5.tar.gz", "yarl-1.24.5 (hand-authored, shared recipe)"),
+    hand(285, "aiohttp", "aiohttp-3.14.3.tar.gz", "aiohttp-3.14.3 (hand-authored, shared recipe)"),
+    hand(286, "aiostream", "aiostream-0.7.1.tar.gz", "aiostream-0.7.1 (hand-authored, shared recipe)"),
+    hand(287, "khal", "khal-0.14.1.tar.gz", "khal-0.14.1 (hand-authored, shared recipe)"),
+    hand(288, "vdirsyncer", "vdirsyncer-0.21.0.tar.gz", "vdirsyncer-0.21.0 (hand-authored, shared recipe)"),
 ], key=lambda p: p["seq"])
