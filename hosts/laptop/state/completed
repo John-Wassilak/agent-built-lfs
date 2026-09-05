@@ -468,3 +468,5 @@ blfs-aiohttp
 blfs-aiostream
 blfs-khal
 blfs-vdirsyncer
+blfs-oauthlib
+blfs-aiohttp-oauthlib

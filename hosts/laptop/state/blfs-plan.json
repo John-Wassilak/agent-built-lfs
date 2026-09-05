@@ -4240,5 +4240,33 @@
     "blocks": 1,
     "enabled": 1,
     "disabled": 0
+  },
+  {
+    "seq": 289,
+    "order": "blfs.289",
+    "name": "blfs-oauthlib",
+    "chapter": "blfs",
+    "page": "oauthlib",
+    "title": "oauthlib-3.3.1 (hand-authored, shared recipe)",
+    "context": "chroot",
+    "tarball": "oauthlib-3.3.1.tar.gz",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
+  },
+  {
+    "seq": 290,
+    "order": "blfs.290",
+    "name": "blfs-aiohttp-oauthlib",
+    "chapter": "blfs",
+    "page": "aiohttp-oauthlib",
+    "title": "aiohttp-oauthlib-0.1.0 (hand-authored, shared recipe)",
+    "context": "chroot",
+    "tarball": "aiohttp-oauthlib-0.1.0.tar.gz",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
   }
 ]

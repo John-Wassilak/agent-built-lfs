@@ -995,4 +995,14 @@ PACKAGES = sorted(BASE + [
     hand(286, "aiostream", "aiostream-0.7.1.tar.gz", "aiostream-0.7.1 (hand-authored, shared recipe)"),
     hand(287, "khal", "khal-0.14.1.tar.gz", "khal-0.14.1 (hand-authored, shared recipe)"),
     hand(288, "vdirsyncer", "vdirsyncer-0.21.0.tar.gz", "vdirsyncer-0.21.0 (hand-authored, shared recipe)"),
+
+    # Operator-requested (2026-09-05): `vdirsyncer sync` failed live against every
+    # collection -- "critical: aiohttp-oauthlib not installed" -- because
+    # vdirsyncer's Google OAuth storage backend needs its own "google" extra,
+    # which the seq 259-288 closure deliberately left out as optional. aiohttp
+    # itself is already built (seq 285); oauthlib is aiohttp-oauthlib's only
+    # unconditional dependency. Both fetched via `pip3 download --no-binary :all:
+    # --no-deps`, not a hand-rolled PyPI JSON fetch -- see each recipe.
+    hand(289, "oauthlib", "oauthlib-3.3.1.tar.gz", "oauthlib-3.3.1 (hand-authored, shared recipe)"),
+    hand(290, "aiohttp-oauthlib", "aiohttp-oauthlib-0.1.0.tar.gz", "aiohttp-oauthlib-0.1.0 (hand-authored, shared recipe)"),
 ], key=lambda p: p["seq"])

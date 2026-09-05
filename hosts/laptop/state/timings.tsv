@@ -534,3 +534,5 @@ blfs-aiohttp	native	37.2	0
 blfs-aiostream	native	4.0	0
 blfs-khal	native	9.7	0
 blfs-vdirsyncer	native	13.9	0
+blfs-oauthlib	native	4.1	0
+blfs-aiohttp-oauthlib	native	3.9	0
