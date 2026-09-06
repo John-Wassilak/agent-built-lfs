@@ -47,7 +47,7 @@ sources = "/sources"
 [hardware]
 model     = "Lenovo ThinkPad X1 Carbon 4th Gen (20FRS17200), BIOS N1FET68W (1.42)"
 cpu       = "Intel Core i7-6600U, Skylake, 2 cores / 4 threads, 2.6 GHz (3.4 GHz turbo)"
-microcode = "0xc6 loaded, but 'Vulnerability Old microcode: Vulnerable' -- update via an early-load initrd, same pattern as server's blfs-intel-microcode"
+microcode = "0xf0 loaded (updated early from 0xc6 via an early-load initrd, same pattern as server's blfs-intel-microcode -- confirmed via dmesg; /sys/devices/system/cpu/vulnerabilities/old_microcode now reads 'Not affected'). gather_data_sampling remains 'Vulnerable: No microcode' at this revision -- open, no fix available yet, found in /lfs-audit 2026-09-05"
 gpu       = "Intel HD Graphics 520 (Skylake GT2, in-SoC) -- i915 kernel driver, mesa gallium-drivers=iris. No proprietary-driver dead end here: this is the box server's Kepler card could not be"
 graphics  = "Hyprland / Wayland / pipewire (operator decision, 2026-08-28) -- unlike server, whose NVIDIA 470.xx branch made Wayland a dead end, this GPU is fully open-driver and current"
 audio     = "Conexant CX20753/4 codec (snd_hda_codec_conexant) + Intel Skylake HDMI codec (snd_hda_codec_hdmi), both on snd_hda_intel/PCH -- probes cleanly under the live host kernel already, no force-probe quirk needed unlike server. Also 3 USB audio devices (dock, headset passthrough, C920 webcam mic) via snd_usb_audio"

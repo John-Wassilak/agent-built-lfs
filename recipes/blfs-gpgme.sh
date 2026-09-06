@@ -19,7 +19,7 @@ make
 
 # --- block 1 --------------------------------------------------
 #   ctx: To test the results, you should have GnuPG-2.5.17 installed. If so, run:
-#   TAGS: testsuite   [DISABLED - review]
+#   REVIEWED [drop]: Optional test suite ('To test the results, you should have GnuPG-2.5.17 installed. If so, run: make -k check'), same class of skip as every other optional test/doc block throughout this project. GnuPG-2.5.17 is built here (a Recommended dep, not Required), but this project doesn't run test suites regardless of whether the tool they need is present.
 # make -k check
 
 # --- block 2 --------------------------------------------------

@@ -33,3 +33,6 @@ __pycache__/
 
 # Session-local scheduler lock (pid/session id/timestamp) -- not project content.
 .claude/scheduled_tasks.lock
+
+# Personal research notes, not part of this project's own build/history.
+/OSS-CONTRIBUTION-RESEARCH.md

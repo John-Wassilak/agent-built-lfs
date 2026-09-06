@@ -446,7 +446,14 @@ PACKAGES = sorted(BASE + [
     # feature, not per-host) alongside this. Kernel needs a rebuild before sshfs
     # can actually mount anything, same two-step as cryptsetup's DM_CRYPT gap.
     book(166, "fuse", "postlfs/fuse.html", "fuse-3.18.1.tar.gz"),
-    book(167, "sshfs", "postlfs/sshfs.html", "sshfs-3.7.5.tar.xz"),
+    # Critical-CVE triage (2026-09-05, /lfs-audit follow-up): sa-13.0-117 (Critical)
+    # affects sshfs-3.7.5, the book's own pin -- CVE-2026-47187 (symlink escape, local
+    # file read/write via a rogue SFTP server) and CVE-2026-48711 (argument injection
+    # via a path-valued sftp_server -> local command execution), both fixed in the
+    # single point release 3.7.6 (github.com/libfuse/sshfs/releases/tag/sshfs-3.7.6).
+    # No hardcoded version string in the book's recipe body (checked recipes/
+    # blfs-sshfs.sh -- only the tarball name itself), so no override needed.
+    book(167, "sshfs", "postlfs/sshfs.html", "sshfs-3.7.6.tar.xz"),
     # Not in BLFS -- no dedicated wireguard-tools chapter in this book mirror. The
     # kernel module (CONFIG_WIREGUARD) is already in the shared base config; this
     # is only the userspace wg/wg-quick CLI. Server's hand-authored recipe (git
@@ -491,7 +498,16 @@ PACKAGES = sorted(BASE + [
     # iptables-unit addition since both come from the same shared source package.
     book(179, "jansson", "general/jansson.html", "jansson-2.15.0.tar.bz2"),
     book(180, "libtiff", "general/libtiff.html", "tiff-4.7.1.tar.gz"),
-    book(181, "gnutls", "postlfs/gnutls.html", "gnutls-3.8.12.tar.xz"),
+    # Bumped ahead of the book 2026-09-05 (/lfs-audit critical-CVE follow-up, same pass
+    # as openssh/linux): sa-13.0-076 (Critical) affects gnutls-3.8.12, the book's pin.
+    # GnuTLS-3.8.13 (2026-04-29, www.gnupg.org/ftp/gcrypt/gnutls/v3.8/) is the fix --
+    # confirmed against the live linuxfromscratch.org advisories DB, no later gnutls
+    # advisory exists in the tracked set. No published sha256sum file at the mirror
+    # (only a .sig, and this project verifies by checksum not GPG per the openssh
+    # precedent) -- downloaded over HTTPS from the canonical gnupg.org mirror, size
+    # matches the mirror's own directory listing exactly (7275324 bytes), no stronger
+    # check was available.
+    book(181, "gnutls", "postlfs/gnutls.html", "gnutls-3.8.13.tar.xz"),
     # emacs's Recommended deps (harfbuzz, giflib, cairo, dbus -- all already present;
     # jansson, libtiff, gnutls added directly above) all checked against this build,
     # not assumed present.
@@ -1005,4 +1021,95 @@ PACKAGES = sorted(BASE + [
     # --no-deps`, not a hand-rolled PyPI JSON fetch -- see each recipe.
     hand(289, "oauthlib", "oauthlib-3.3.1.tar.gz", "oauthlib-3.3.1 (hand-authored, shared recipe)"),
     hand(290, "aiohttp-oauthlib", "aiohttp-oauthlib-0.1.0.tar.gz", "aiohttp-oauthlib-0.1.0 (hand-authored, shared recipe)"),
+
+    # Critical-CVE triage (2026-09-05, /lfs-audit follow-up): XML::Parser-2.48 (the fix
+    # for CVE-2006-10002/CVE-2006-10003, sa-13.0-020) added a real build+runtime
+    # dependency neither 2.47 nor this book's minimal Perl set carries --
+    # File::ShareDir::Install at build time, File::ShareDir at runtime (Expat.pm's own
+    # `require File::ShareDir` to locate the installed encoding maps), which itself
+    # needs Class::Inspector. All three are plain, dependency-light CPAN modules (no
+    # further prereqs beyond core Perl), same "hand-authored addition" pattern already
+    # used for the seq 271-290 pure-language closure. ch08-xml-parser itself has no
+    # override mechanism (LFS chapter step, not a BLFS book() page) so its version bump
+    # is hand-built and undocumented here in packages.py -- these three are the real,
+    # trackable additions this bump required.
+    hand(291, "class-inspector", "Class-Inspector-1.36.tar.gz", "Class-Inspector-1.36 (hand-authored, shared recipe)"),
+    hand(292, "file-sharedir", "File-ShareDir-1.118.tar.gz", "File-ShareDir-1.118 (hand-authored, shared recipe)"),
+    hand(293, "file-sharedir-install", "File-ShareDir-Install-0.14.tar.gz", "File-ShareDir-Install-0.14 (hand-authored, shared recipe, build-time only)"),
+
+    # LibreOffice (operator-requested 2026-09-06). A real from-source build (BLFS's
+    # own page: 21 SBU at parallelism=8, 11GB disk for one language pair, 827MB
+    # installed) -- there is no book-documented "minimal" build; Writer/Calc/Impress/
+    # Draw/Math/Base share one core codebase (vcl, svx, framework, sw, sc, sd...), so
+    # every subset still compiles that shared core. What a subset *does* buy: a single
+    # locale (en-US, no translations/help-locale downloads) and skipping optional
+    # integrations this host doesn't want, both decided below.
+    #
+    # Feature decisions (operator, 2026-09-06): no CUPS, no D-Bus/Bluetooth, no
+    # PostgreSQL/Firebird connectors, single locale en-US. Java was also dropped
+    # (--without-java, see blfs-libreoffice's own override reason) once research
+    # showed OpenJDK -- needed for LO's Java support, and apache-ant's own build
+    # dependency -- lists Cups as a hard Required build dependency in BLFS: no way to
+    # build a JDK here without Cups ending up on the system regardless. Dropping Java
+    # only loses the deprecated HSQLDB import driver and a few optional Base wizards.
+    # gstreamer (embedded-media playback in Impress) and skia (bundled GPU rendering,
+    # cairo already built at seq 86 covers the fallback) were also disabled -- neither
+    # was asked for, and both would otherwise pull in a new dependency chain or a long
+    # bundled compile for a feature not requested.
+    #
+    # seq 294-308: BLFS "Recommended" dependencies LibreOffice would otherwise compile
+    # bundled (older, unreviewable) copies of internally -- built as real system
+    # packages instead so they're reusable elsewhere on this host, per operator
+    # request. Graphite2, GTK3, harfBuzz, ICU, libepoxy, libjpeg-turbo, libtiff,
+    # libwebp, libxml2, LittleCMS(lcms2), LLVM, Mesa, nss, OpenLDAP, cURL are already
+    # built (see their own seq entries above) and reused via --with-system-*; so are
+    # librsvg (seq 91, built for gdk-pixbuf's icon loader) and gpgme (seq 251, built
+    # for mu4e's inline PGP) -- not re-added here, LibreOffice's configure links
+    # straight against those existing installs. expat and zstd come from LFS chapter 8
+    # itself, already present on any completed LFS 13.0 system. Order below is
+    # dependency order: libxslt -> raptor -> rasqal -> redland (Rasqal/Redland's own
+    # Required chain, confirmed against each page); gpgmepp after the existing gpgme
+    # (its own Required dep); boost before clucene (CLucene's own Recommended dep).
+    # zip-3.0 and Archive::Zip (a plain CPAN module, same "hand-authored, no further
+    # prereqs" pattern as seq 291-293) are LibreOffice's own Required build tools, not
+    # optional.
+    book(294, "zip", "general/zip.html", "zip30.tar.gz"),
+    book(295, "libxslt", "general/libxslt.html", "libxslt-1.1.45.tar.xz"),
+    book(296, "raptor", "general/raptor.html", "raptor2-2.0.16.tar.gz"),
+    book(297, "rasqal", "general/rasqal.html", "rasqal-0.9.33.tar.gz"),
+    book(298, "redland", "general/redland.html", "redland-1.0.17.tar.gz"),
+    book(299, "glm", "general/glm.html", "glm-1.0.3.tar.gz"),
+    book(300, "glu", "x/glu.html", "glu-9.0.3.tar.xz"),
+    book(301, "libatomic_ops", "general/libatomic_ops.html", "libatomic_ops-7.10.0.tar.gz"),
+
+    # gpgmepp moved ahead of poppler (2026-09-06, real failure): poppler's own cmake
+    # auto-detects the gpgme-2.0.1 already built at seq 251 (poppler's page lists
+    # gpgmepp as Recommended, "for PDF signature verification") and then hard-requires
+    # the C++ binding too -- 'Could not find the 1.19 version of Gpgmepp ... Add the
+    # installation prefix of "Gpgmepp" to CMAKE_PREFIX_PATH', confirmed live
+    # (hosts/laptop/logs/blfs-poppler.log) when gpgmepp hadn't been built yet at its
+    # original seq 304. The book's own -D ENABLE_GPGME=OFF flag ('Use this parameter if
+    # you have not installed gpgme') doesn't fit either -- gpgme IS installed here, so
+    # disabling the feature just to dodge the ordering bug would be papering over a
+    # planning mistake, not a real decision. Simplest correct fix: build the real
+    # dependency first.
+    book(302, "gpgmepp", "postlfs/gpgmepp.html", "gpgmepp-2.0.0.tar.xz"),
+
+    # boost moved ahead of poppler too (2026-09-06, second real failure at the same
+    # spot): poppler's cmake treats several Recommended deps as hard-required unless
+    # explicitly disabled, not silently auto-skipped -- confirmed live twice now, first
+    # for Gpgmepp (fixed above by reordering) and then for Boost: 'CMake Error ...
+    # Boost recommended for Splash. Use ENABLE_BOOST=OFF to skip.' (poppler's own
+    # Command Explanations list ENABLE_BOOST=OFF/ENABLE_NSS3=OFF/ENABLE_GPGME=OFF/
+    # ENABLE_LIBTIFF=OFF as the exact opt-outs for this, one per Recommended dep that
+    # behaves this way -- nss and libtiff are already built system-wide so those two
+    # never triggered it). Same fix as gpgmepp: build the real dependency first rather
+    # than pass ENABLE_BOOST=OFF to dodge a library this host is building anyway.
+    book(303, "boost", "general/boost.html", "boost-1.90.0-b2-nodocs.tar.xz"),
+    book(304, "poppler", "general/poppler.html", "poppler-26.02.0.tar.xz"),
+    book(305, "unixodbc", "general/unixodbc.html", "unixODBC-2.3.14.tar.gz"),
+    book(306, "clucene", "general/clucene.html", "clucene-core-2.3.3.4.tar.gz"),
+    hand(307, "archive-zip", "Archive-Zip-1.68.tar.gz", "Archive-Zip-1.68 (hand-authored, shared recipe, build-time only)"),
+
+    book(308, "libreoffice", "xsoft/libreoffice.html", "libreoffice-26.2.1.2.tar.xz"),
 ], key=lambda p: p["seq"])

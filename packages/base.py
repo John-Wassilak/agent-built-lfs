@@ -60,7 +60,17 @@ BASE = [
     book(2, "libtasn1", "general/libtasn1.html", "libtasn1-4.21.0.tar.gz"),
     book(3, "p11-kit", "postlfs/p11-kit.html", "p11-kit-0.26.2.tar.xz"),
     book(4, "make-ca", "postlfs/make-ca.html", "make-ca-1.16.1.tar.gz"),
-    book(5, "openssh", "postlfs/openssh.html", "openssh-10.2p1.tar.gz"),
+    # Bumped ahead of the book 2026-09-05 (/lfs-audit follow-up on laptop): sa-13.0-032/
+    # 173/200 (High/High/Medium) all affect openssh-10.2p1, the book's own pin. Fixed
+    # versions confirmed against openssh.org/releasenotes.html, not guessed -- 10.3
+    # (2026-04-02) fixes shell-metacharacter/username validation and certificate
+    # principal matching, 10.4 (2026-07-06) fixes malicious-server path traversal in
+    # sftp/scp and a pre-auth GSSAPI DoS, 10.5 (2026-08-11) fixes an ssh-agent locking/
+    # session-binding issue and a remote-forwarding use-after-free. Each release date
+    # lines up with its advisory's date. Same fix applies to any host built from this
+    # book, per CLAUDE.md's shared/host test -- this does not by itself rebuild
+    # server's already-running sshd, only records the new target.
+    book(5, "openssh", "postlfs/openssh.html", "openssh-10.5p1.tar.gz"),
     book(6, "nodejs", "general/nodejs.html", "node-v22.22.0.tar.xz"),
 
     # Added after the fact: curl and wget are required or recommended by a large

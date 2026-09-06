@@ -12,7 +12,7 @@ set -e
 #   ctx: libtasn1-4.21.0, a version shipped in the GnuTLS tarball will be used instead.
 #   ctx: Installation of GnuTLS Install GnuTLS by running the following commands:
 ./configure --prefix=/usr \
-            --docdir=/usr/share/doc/gnutls-3.8.12 \
+            --docdir=/usr/share/doc/gnutls-3.8.13 \
             --with-default-trust-store-pkcs11="pkcs11:" &&
 make
 

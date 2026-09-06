@@ -1,0 +1,3 @@
+/usr/lib/perl5/5.42/site_perl/File/ShareDir/Install.pm
+/usr/lib/perl5/5.42/site_perl/auto/File/ShareDir/Install/.packlist
+/usr/share/man/man3/File::ShareDir::Install.3

@@ -1,0 +1,7 @@
+/usr/lib/perl5/5.42/site_perl/File/ShareDir.pm
+/usr/lib/perl5/5.42/site_perl/auto/File/ShareDir/.packlist
+/usr/lib/perl5/5.42/site_perl/auto/File/ShareDir/Install/.packlist
+/usr/lib/perl5/5.42/site_perl/auto/share/dist/File-ShareDir/sample.txt
+/usr/lib/perl5/5.42/site_perl/auto/share/dist/File-ShareDir/subdir/sample.txt
+/usr/lib/perl5/5.42/site_perl/auto/share/module/File-ShareDir/test_file.txt
+/usr/share/man/man3/File::ShareDir.3

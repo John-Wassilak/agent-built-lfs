@@ -5,6 +5,33 @@
     "BLFS pages carry far more optional and alternative commands than LFS, and mark",
     "root-only commands with <pre class=\"root\">, which is where every 'make install' lives."
   ],
+  "blfs-poppler": {
+    "0": {
+      "action": "replace",
+      "cmd": "mkdir build                         &&\ncd    build                         &&\n\ncmake -D CMAKE_BUILD_TYPE=Release   \\\n      -D CMAKE_INSTALL_PREFIX=/usr  \\\n      -D TESTDATADIR=$PWD/testfiles \\\n      -D ENABLE_QT5=OFF             \\\n      -D ENABLE_UNSTABLE_API_ABI_HEADERS=ON \\\n      -D ENABLE_LIBOPENJPEG=none    \\\n      -G Ninja ..                   &&\nninja",
+      "reason": "Real failure (2026-09-06): poppler's cmake hard-errors on missing OpenJPEG the same way it does for Boost/Gpgmepp when not installed and not explicitly told to skip -- 'Could NOT find openjpeg2. ... Install libopenjpeg2 before trying to build poppler ... Possible options are: -DENABLE_LIBOPENJPEG=openjpeg2, -DENABLE_LIBOPENJPEG=none, -DENABLE_LIBOPENJPEG=UnmaintainedWillBeRemovedInJuly2026'. Unlike Boost/Gpgmepp (both real LibreOffice dependencies already being built anyway, see hosts/laptop/packages.py's seq 302-303 reordering comment), OpenJPEG has no other consumer in this project -- it exists solely to let poppler decode embedded JPEG2000/JPX images in PDFs, a narrow feature. =none over the 'UnmaintainedWillBeRemovedInJuly2026' internal-decoder option since the book's own CMakeLists message flags that path for removal in July 2026 -- not worth relying on a decoder upstream is actively dropping. True of any host building poppler without OpenJPEG installed, not host-specific."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "Book's own text is explicitly conditional: 'If you downloaded the additional encoding data package, install it by issuing the following commands'. The poppler-data-0.4.12 tarball (CJK/Cyrillic encoding files, listed as an Additional Download, not Required/Recommended) was not fetched -- nothing in this project's PDF workflow needs CJK/Cyrillic PDF rendering specifically, and it's a separate optional download the book itself frames as skippable."
+    },
+    "4": {
+      "action": "drop",
+      "reason": "Installs the poppler-data package from block 3, which is dropped for the same reason -- the tarball was never extracted so poppler-data-0.4.12/ doesn't exist."
+    }
+  },
+  "blfs-gpgme": {
+    "1": {
+      "action": "drop",
+      "reason": "Optional test suite ('To test the results, you should have GnuPG-2.5.17 installed. If so, run: make -k check'), same class of skip as every other optional test/doc block throughout this project. GnuPG-2.5.17 is built here (a Recommended dep, not Required), but this project doesn't run test suites regardless of whether the tool they need is present."
+    }
+  },
+  "blfs-boost": {
+    "2": {
+      "action": "drop",
+      "reason": "Book's own text is explicitly conditional on an upgrade: 'Boost installs many versioned directories in /usr/lib/cmake. If a new version of Boost is installed over a previous version, the older cmake directories need to be explicitly removed.' A fresh install has no previous Boost version's cmake directories to remove -- the glob would just match nothing (harmless) but there's nothing to clean up, so it's dropped as inapplicable rather than kept as a no-op."
+    }
+  },
   "blfs-firefox": {
     "3": {
       "action": "replace",
@@ -119,6 +146,11 @@
     }
   },
   "blfs-openssh": {
+    "2": {
+      "action": "replace",
+      "cmd": "make install &&\ninstall -v -m755    contrib/ssh-copy-id /usr/bin     &&\n\ninstall -v -m644    contrib/ssh-copy-id.1 \\\n                    /usr/share/man/man1              &&\ninstall -v -m755 -d /usr/share/doc/openssh-10.5p1     &&\ninstall -v -m644    INSTALL LICENCE OVERVIEW README* \\\n                    /usr/share/doc/openssh-10.5p1",
+      "reason": "Version bumped ahead of the book 2026-09-05 (openssh-10.2p1 -> 10.5p1, packages/base.py seq 5) -- sa-13.0-032/173/200 all affect 10.2p1, fixed versions confirmed against openssh.org/releasenotes.html. The book's own text for this block hardcodes the doc-install path to the version it was written against (openssh-10.2p1); everything else in this recipe (configure/make/make install) is version-agnostic and needs no change. Shared, not host-specific, since the version bump itself lives in the shared packages/base.py and applies to any host built from this book."
+    },
     "3": {
       "action": "replace",
       "cmd": "echo \"PermitRootLogin yes\" >> /etc/ssh/sshd_config",
@@ -705,6 +737,13 @@
     "4": {
       "action": "drop",
       "reason": "Installs the API documentation doxygen generated in block 2, which is dropped -- there is no doxygen/html/ directory to copy from."
+    }
+  },
+  "blfs-gnutls": {
+    "0": {
+      "action": "replace",
+      "cmd": "./configure --prefix=/usr \\\n            --docdir=/usr/share/doc/gnutls-3.8.13 \\\n            --with-default-trust-store-pkcs11=\"pkcs11:\" &&\nmake",
+      "reason": "Version bumped ahead of the book 2026-09-05 (gnutls-3.8.12 -> 3.8.13, hosts/laptop/packages.py seq 181) -- sa-13.0-076 (Critical) affects 3.8.12, fixed version confirmed against the live linuxfromscratch.org advisories DB (no later gnutls advisory exists in the tracked set). The book's own text for this block hardcodes --docdir to the version it was written against (gnutls-3.8.12); configure's other flags and make are version-agnostic and need no change. Shared, not host-specific, since this is a book-text fact true of any host building this page."
     }
   }
 }
