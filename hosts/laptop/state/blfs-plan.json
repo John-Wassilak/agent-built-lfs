@@ -4520,5 +4520,19 @@
     "blocks": 11,
     "enabled": 10,
     "disabled": 1
+  },
+  {
+    "seq": 309,
+    "order": "blfs.309",
+    "name": "blfs-desktop-file-utils",
+    "chapter": "blfs",
+    "page": "desktop-file-utils",
+    "title": "desktop-file-utils-0.28",
+    "context": "chroot",
+    "tarball": "desktop-file-utils-0.28.tar.xz",
+    "manifest": true,
+    "blocks": 4,
+    "enabled": 4,
+    "disabled": 0
   }
 ]

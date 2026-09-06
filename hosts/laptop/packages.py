@@ -1112,4 +1112,13 @@ PACKAGES = sorted(BASE + [
     hand(307, "archive-zip", "Archive-Zip-1.68.tar.gz", "Archive-Zip-1.68 (hand-authored, shared recipe, build-time only)"),
 
     book(308, "libreoffice", "xsoft/libreoffice.html", "libreoffice-26.2.1.2.tar.xz"),
+
+    # Operator-requested (2026-09-06): ~/Scripts/desktop-files/install.sh (a real
+    # standalone GitHub repo, not part of this project) calls update-desktop-database
+    # at the end -- not installed anywhere in this project until now, discovered when
+    # none of that repo's five custom .desktop entries showed up in wofi (they were
+    # never actually copied into /usr/share/applications, since install.sh's last line
+    # has been silently failing with 'command not found'). Small, no complications:
+    # GLib-2.86.4 (Required) already built at seq 29.
+    book(309, "desktop-file-utils", "general/desktop-file-utils.html", "desktop-file-utils-0.28.tar.xz"),
 ], key=lambda p: p["seq"])
