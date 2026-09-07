@@ -4492,3 +4492,136 @@ Applications that take a SOCKS proxy setting directly need nothing further: curl
 `-x socks5h://127.0.0.1:9050` (verified above), Firefox's network settings, git's
 `ALL_PROXY`. Transparently torifying a program that has no proxy setting is a separate
 step and a separate decision.
+
+## 2026-09-07 (continued): screen sharing fixed -- the whole xdg-desktop-portal layer was missing (seq 314-318)
+
+Operator report: joining a Google Meet, screen sharing failed with a permissions
+message and **no picker dialog ever appeared**. That second half is the diagnostic
+half: on Wayland the "what do you want to share?" dialog is drawn by the portal
+backend, so no dialog means nothing answered the request at all.
+
+**Root cause.** This host had no `xdg-desktop-portal` installed -- not the service, not
+any backend. Screen sharing in a browser goes `getDisplayMedia` ->
+`org.freedesktop.portal.ScreenCast` (D-Bus) -> compositor-side picker -> a PipeWire
+node handed back to the page. With nothing owning that bus name the call fails, and
+Firefox surfaces it as `NotAllowedError`, which Meet renders as a permissions problem.
+
+Firefox itself was never the problem and needed no rebuild -- checked before assuming:
+
+    tr '\0' '\n' < /proc/<pid>/environ | grep MOZ    MOZ_ENABLE_WAYLAND=1
+    strings /usr/lib/firefox/libxul.so                org.freedesktop.portal.ScreenCast
+                                                      pw_stream_connect
+
+so it runs Wayland-native and its vendored libwebrtc screencast path is compiled in.
+The 2026-09-05 mozconfig comment in `hosts/laptop/recipes/blfs-firefox.sh` had already
+written this gap down -- "this feature also needs xdg-desktop-portal at the OS level to
+work end-to-end, which this host does not have" -- and then nothing followed up on it.
+
+Three other pieces of evidence had been sitting in plain sight:
+
+- `journalctl --user`, every boot: `m-portal-permissionstore: ... The name
+  org.freedesktop.impl.portal.PermissionStore was not provided by any .service files`
+  (wireplumber's portal plugin, failing quietly).
+- This host's own `hyprland.lua` lines 75-76 restart
+  `xdg-desktop-portal.service`/`xdg-desktop-portal-hyprland.service` and launch
+  `/usr/libexec/xdg-desktop-portal-hyprland` at session start. Neither existed, so both
+  were silent no-ops.
+- Hyprland (seq 121) installs `/usr/share/xdg-desktop-portal/hyprland-portals.conf`
+  containing `[preferred] default=hyprland;gtk` -- the session has been declaring a
+  backend preference for a backend nobody built.
+
+**Why BLFS alone could not fix it.** The book carries `xdg-desktop-portal` and three
+backends (gtk, gnome, lxqt). None implements ScreenCast for a wlroots-style compositor
+-- the GNOME one drives Mutter, the GTK one has no ScreenCast interface at all. On
+Hyprland that implementation is a separate upstream project, so two of the five steps
+are `hand()`.
+
+| seq | package | source | role |
+|-----|---------|--------|------|
+| 314 | bubblewrap 0.11.0 | BLFS `general/` | sandboxes the portal's image/sound validation |
+| 315 | xdg-desktop-portal 1.20.3 | BLFS `x/` | the D-Bus service itself |
+| 316 | xdg-desktop-portal-gtk 1.15.3 | BLFS `x/` | the `;gtk` fallback the session already names |
+| 317 | sdbus-c++ 2.3.1 | hand, upstream | XDPH's hard dependency |
+| 318 | xdg-desktop-portal-hyprland 1.4.1 | hand, upstream | ScreenCast/Screenshot/GlobalShortcuts + the picker |
+
+bubblewrap is Recommended, not Required, and the book is blunt about the difference
+("upstream developers and LFS editors alike highly recommend to not use this
+possibility, as it will create a large security issue"): both
+`sandboxed-image-validation` and `sandboxed-sound-validation` are `enabled` by default
+in the portal's meson options, so this is what keeps untrusted image and sound data
+being parsed inside a namespace. Its kernel prerequisite was checked on the running
+kernel before queueing it: `CONFIG_USER_NS=y`.
+
+**One real build failure, and it is a useful one.** `xdg-desktop-portal-gtk` died at
+configure: `../src/meson.build:24:17: ERROR: Dependency "gnome-desktop-3.0" not found,
+tried pkgconfig and cmake`. gnome-desktop is not built here, and the option that pulls
+it is declared `auto`, which is why this was not expected. The mechanism, read out of
+`src/meson.build` rather than guessed: the guard is
+`get_option('wallpaper').allowed()`, and `allowed()` is true for an `auto` feature -- it
+only means "not disabled" -- after which the code calls plain
+`dependency('gnome-desktop-3.0')` with `required` defaulting to true. BLFS's own Command
+Explanations carry the fix (`-D wallpaper=disabled`), now a shared review decision.
+Generalized in `PRACTICES.md` next to the existing entry about `auto` features silently
+*disabling* things: an `auto` option guarding a required `dependency()` call is auto in
+name only, and it fails in the opposite direction.
+
+Two more review decisions, both `drop`, both the project's standing skip for optional
+test blocks: bubblewrap's merged-`/usr` `sed` (only patches `tests/libtest.sh`, and its
+test suite needs libseccomp with python bindings, which this build does not have), and
+xdg-desktop-portal's test block -- that one matters more than a usual test skip because
+its first command is `meson configure -D tests=enabled`, which would reconfigure the
+tree away from the `-D tests=disabled` the book's own build block sets.
+
+**Dependency facts checked live before building, not assumed.** XDPH's tag archive
+ships `subprojects/hyprland-protocols` and `subprojects/sdbus-cpp` as git submodules,
+which means both arrive empty, which means both must come from the system: hence seq
+317, and hence a check that the installed hyprland-protocols 0.7.0 carries all four XML
+files XDPH 1.4.1 generates bindings from (global-shortcuts, toplevel-export,
+toplevel-mapping, input-capture -- it does). Arch's PKGBUILD pins an extra
+hyprland-protocols commit into that subproject; ignored deliberately here, because that
+commit contains only two of the four XMLs and is therefore *older* than the release this
+host already has. `pkg-config` was queried for all eleven of XDPH's declared
+dependencies first; the only miss was sdbus-c++.
+
+### Verification
+
+    systemctl --user status xdg-desktop-portal          active (running)
+    systemctl --user status xdg-desktop-portal-hyprland active (running)
+    busctl --user introspect org.freedesktop.portal.Desktop \
+      /org/freedesktop/portal/desktop org.freedesktop.portal.ScreenCast
+        .AvailableSourceTypes   property u  7   (monitor|window|virtual)
+        .AvailableCursorModes   property u  3
+        .version                property u  5
+    journalctl --user -u xdg-desktop-portal-hyprland
+        XDG_CURRENT_DESKTOP set to Hyprland
+        Got interface: zwlr_screencopy_manager_v1 (ver 3) -> [screencopy] init successful
+        Got interface: hyprland_toplevel_export_manager_v1 (ver 2)
+        [toplevel mapping] registered / [globalshortcuts] registered
+    ldd /usr/bin/hyprland-share-picker      no missing libraries;
+                                            libQt6Widgets/libQt6Gui from /opt/qt6
+    hyprland-share-picker (4s timeout)      starts clean on Wayland, no output
+    lfsmaint owns /usr/libexec/xdg-desktop-portal-hyprland
+                                            xdg-desktop-portal-hyprland-1.4.1 (BLFS)
+
+`AvailableSourceTypes 7` is the answer that matters: the portal only reports source
+types its backend advertises, so a non-zero value proves the Hyprland backend replied.
+`extract-blfs.py --check` reports zero drift at 333 steps. Build cost: 2.4 min total
+across the five steps.
+
+**Two things left for the operator.**
+
+1. The actual Meet share is the one test that needs a human click; everything up to it
+   is verified above. If the first attempt still fails, restart Firefox -- it was
+   started while no portal existed.
+2. `hyprland.lua` line 76 (`sleep 1 && /usr/libexec/xdg-desktop-portal-hyprland &`) is
+   now redundant and slightly noisy: with the D-Bus service file and systemd user unit
+   installed, the daemon is activated on demand, and a second manual instance exits
+   immediately -- confirmed live: `[CRITICAL] Couldn't create the dbus connection
+   ([org.freedesktop.DBus.Error.FileExists] Failed to request bus name (File exists))`.
+   Line 75's `systemctl --user restart` is enough. That file lives in the operator's own
+   `~/Config` repo, not this one, so it was left alone.
+
+Also noted, not fixed: the portal logs `Failed to load RealtimeKit property: ... The
+name org.freedesktop.RealtimeKit1 was not provided by any .service files` three times at
+startup. rtkit is not built here; it only lets the portal hand out realtime scheduling
+priority, and nothing on this host asks for that. Cosmetic.

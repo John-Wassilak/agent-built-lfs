@@ -1157,4 +1157,45 @@ PACKAGES = sorted(BASE + [
     # NOT in this build, so torrc's `Sandbox 1` is unavailable and the systemd unit
     # sandboxes the daemon from outside instead; see the recipe.
     hand(313, "tor", "tor-0.4.9.11.tar.gz", "tor-0.4.9.11 (hand-authored, shared recipe)"),
+
+    # Operator-requested (2026-09-07): screen sharing in Google Meet failed with a
+    # permissions error and no share picker ever appearing. Diagnosed live -- this host
+    # has NO xdg-desktop-portal at all, so Firefox's getDisplayMedia call has nothing
+    # to talk to. Firefox itself is fine and needs no rebuild: it runs Wayland-native
+    # (MOZ_ENABLE_WAYLAND=1) and its libxul carries both
+    # `org.freedesktop.portal.ScreenCast` and `pw_stream_connect`, i.e. the vendored
+    # PipeWire screencast path IS compiled in. The 2026-09-05 mozconfig comment in
+    # hosts/laptop/recipes/blfs-firefox.sh had already flagged exactly this gap
+    # ("needs xdg-desktop-portal at the OS level ... which this host does not have"),
+    # and this host's own hyprland.lua has been restarting two portal units that were
+    # never installed. wireplumber has been logging the same gap every boot:
+    # "org.freedesktop.impl.portal.PermissionStore was not provided by any .service
+    # files". Slack (Electron, running with WebRTCPipeWireCapturer) was equally
+    # affected and is fixed by the same five steps.
+    #
+    # BLFS covers three of the five. It carries xdg-desktop-portal itself plus the
+    # gtk/gnome/lxqt backends -- and NONE of those backends implements ScreenCast for a
+    # wlroots-style compositor, so the book alone cannot fix this: the Hyprland
+    # ScreenCast backend is a separate upstream project, hence two hand() steps at the
+    # end. Order is dependency order.
+    #
+    # bubblewrap is xdg-desktop-portal's Recommended dependency, and the book is
+    # unusually blunt about it ("upstream developers and LFS editors alike highly
+    # recommend to not use this possibility, as it will create a large security
+    # issue") -- it sandboxes the portal's image and sound validation, both `enabled`
+    # by default in the portal's meson options. Its kernel requirement was checked on
+    # the running kernel first: CONFIG_USER_NS=y.
+    book(314, "bubblewrap", "general/bubblewrap.html", "bubblewrap-0.11.0.tar.xz"),
+    book(315, "xdg-desktop-portal", "x/xdg-desktop-portal.html", "xdg-desktop-portal-1.20.3.tar.xz"),
+    # The gtk backend is not what fixes screen sharing -- it has no ScreenCast at all.
+    # It is here because Hyprland's own /usr/share/xdg-desktop-portal/
+    # hyprland-portals.conf (installed at seq 121) already declares
+    # `default=hyprland;gtk`, i.e. gtk is the fallback this session is configured to
+    # use for every OTHER portal interface (file chooser, settings, app chooser), and
+    # without it that fallback names a backend that does not exist. gnome-desktop is
+    # not built here, so its `wallpaper` feature (Recommended, `auto`) self-disables --
+    # no override needed, which is why the book's command is used unchanged.
+    book(316, "xdg-desktop-portal-gtk", "x/xdg-desktop-portal-gtk.html", "xdg-desktop-portal-gtk-1.15.3.tar.xz"),
+    hand(317, "sdbus-cpp", "sdbus-cpp-2.3.1.tar.gz", "sdbus-c++-2.3.1 (hand-authored, shared recipe)"),
+    hand(318, "xdg-desktop-portal-hyprland", "xdg-desktop-portal-hyprland-1.4.1.tar.gz", "xdg-desktop-portal-hyprland-1.4.1 (hand-authored, shared recipe)"),
 ], key=lambda p: p["seq"])

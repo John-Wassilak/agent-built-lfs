@@ -433,6 +433,21 @@ permanent, so pipewire/wireplumber moved to the unused fractional seqs 130.5/130
 after alsa-lib, keeping their position relative to everything downstream) and 123/124
 were left as documented gaps.
 
+And the mirror-image trap, found on `laptop` 2026-09-07 building
+`xdg-desktop-portal-gtk`: an `auto` feature can *hard-error* instead of degrading, so
+"it is auto, it will sort itself out" is not safe in either direction. That package
+declares `option('wallpaper', type: 'feature', value: 'auto')`, and the build died at
+configure time with `ERROR: Dependency "gnome-desktop-3.0" not found, tried pkgconfig
+and cmake`. The reason is in one line of `src/meson.build`: the guard is
+`get_option('wallpaper').allowed()`, and `allowed()` is true for `auto` -- it means only
+"not disabled" -- after which the code calls plain `dependency('gnome-desktop-3.0')`,
+whose `required` defaults to true. An `auto` option guarding a required `dependency()`
+call is auto in name only. Read the guard, not the option's default: `.allowed()` needs
+an explicit `-D <feature>=disabled` to skip, while `.enabled()` or a
+`dependency(..., required: get_option(...).enabled())` genuinely self-disables. BLFS's
+own Command Explanations had the fix (`-D wallpaper=disabled`) and it is now a recorded
+review decision.
+
 ## `/run/user/$UID` has two owners on a PAM-less box, and the loser's sockets vanish
 
 Both machines here run systemd built `-PAM` (`systemctl --version` confirms it), which

@@ -1,0 +1,6 @@
+/usr/bin/hyprland-share-picker
+/usr/lib/systemd/user/xdg-desktop-portal-hyprland.service
+/usr/libexec/xdg-desktop-portal-hyprland
+/usr/share/dbus-1/services/org.freedesktop.impl.portal.desktop.hyprland.service
+/usr/share/licenses/xdg-desktop-portal-hyprland/LICENSE
+/usr/share/xdg-desktop-portal/portals/hyprland.portal

@@ -745,5 +745,24 @@
       "cmd": "./configure --prefix=/usr \\\n            --docdir=/usr/share/doc/gnutls-3.8.13 \\\n            --with-default-trust-store-pkcs11=\"pkcs11:\" &&\nmake",
       "reason": "Version bumped ahead of the book 2026-09-05 (gnutls-3.8.12 -> 3.8.13, hosts/laptop/packages.py seq 181) -- sa-13.0-076 (Critical) affects 3.8.12, fixed version confirmed against the live linuxfromscratch.org advisories DB (no later gnutls advisory exists in the tracked set). The book's own text for this block hardcodes --docdir to the version it was written against (gnutls-3.8.12); configure's other flags and make are version-agnostic and need no change. Shared, not host-specific, since this is a book-text fact true of any host building this page."
     }
+  },
+  "blfs-bubblewrap": {
+    "1": {
+      "action": "drop",
+      "reason": "Book's own text is conditional on running the test suite: 'Next, if you desire to run the test suite, fix an issue caused by the merged-/usr configuration in LFS'. The sed only patches tests/libtest.sh, so it changes nothing that gets installed, and the test suite itself is skipped here the same way every other optional test block in this project is -- Bubblewrap's tests need libseccomp built with its python bindings (Optional on the page), which is not in this build's closure. True of any host building bubblewrap without libseccomp."
+    }
+  },
+  "blfs-xdg-desktop-portal": {
+    "1": {
+      "action": "drop",
+      "reason": "Optional test suite, guarded by the book's own conditional: 'If the optional dependencies are installed, you can test the results by running'. Those dependencies are pytest-9.0.2, libportal-0.9.1, dbusmock-0.38.1 and umockdev-0.19.4, none of which is in this build. This block is worse than a plain 'make check' skip: its first command is 'meson configure -D tests=enabled', which reconfigures the tree away from the '-D tests=disabled' the book's own block 0 sets, so running it on a system without those four packages breaks the configured build rather than merely failing a test. The book itself notes that one test (integration/dynamiclauncher) fails without the external dependencies anyway."
+    }
+  },
+  "blfs-xdg-desktop-portal-gtk": {
+    "0": {
+      "action": "replace",
+      "cmd": "mkdir build &&\ncd    build &&\n\nmeson setup --prefix=/usr --buildtype=release -D wallpaper=disabled .. &&\nninja",
+      "reason": "Real failure (2026-09-07, laptop): '../src/meson.build:24:17: ERROR: Dependency \"gnome-desktop-3.0\" not found, tried pkgconfig and cmake'. The book's own Command Explanations give exactly this fix -- '-D wallpaper=disabled: Use this option if you have not installed the recommended dependency gnome-desktop-44.5' -- and gnome-desktop is not in this build. Worth recording why the flag is not optional despite the option being declared 'auto': src/meson.build guards the wallpaper portal with get_option('wallpaper').allowed(), which is true for an auto feature (allowed() only means 'not disabled'), and then calls dependency('gnome-desktop-3.0') with required defaulting to true. So an 'auto' feature here hard-errors on a missing dependency instead of degrading, and only an explicit 'disabled' avoids it. True of any host building this page without gnome-desktop, not host-specific."
+    }
   }
 }
