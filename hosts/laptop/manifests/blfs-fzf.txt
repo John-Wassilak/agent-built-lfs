@@ -1,0 +1,4 @@
+/etc/profile.d/fzf.sh
+/usr/bin/fzf
+/usr/share/licenses/fzf/LICENSE
+/usr/share/man/man1/fzf.1

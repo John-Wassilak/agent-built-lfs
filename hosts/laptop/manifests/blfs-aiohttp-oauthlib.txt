@@ -1,9 +1,9 @@
 /usr/lib/python3.14/site-packages/__pycache__/aiohttp_oauthlib.cpython-314.pyc
-/usr/lib/python3.14/site-packages/aiohttp_oauthlib-0.0.0.dist-info/INSTALLER
-/usr/lib/python3.14/site-packages/aiohttp_oauthlib-0.0.0.dist-info/METADATA
-/usr/lib/python3.14/site-packages/aiohttp_oauthlib-0.0.0.dist-info/RECORD
-/usr/lib/python3.14/site-packages/aiohttp_oauthlib-0.0.0.dist-info/REQUESTED
-/usr/lib/python3.14/site-packages/aiohttp_oauthlib-0.0.0.dist-info/WHEEL
-/usr/lib/python3.14/site-packages/aiohttp_oauthlib-0.0.0.dist-info/licenses/LICENCE
-/usr/lib/python3.14/site-packages/aiohttp_oauthlib-0.0.0.dist-info/top_level.txt
+/usr/lib/python3.14/site-packages/aiohttp_oauthlib-0.1.0.dist-info/INSTALLER
+/usr/lib/python3.14/site-packages/aiohttp_oauthlib-0.1.0.dist-info/METADATA
+/usr/lib/python3.14/site-packages/aiohttp_oauthlib-0.1.0.dist-info/RECORD
+/usr/lib/python3.14/site-packages/aiohttp_oauthlib-0.1.0.dist-info/REQUESTED
+/usr/lib/python3.14/site-packages/aiohttp_oauthlib-0.1.0.dist-info/WHEEL
+/usr/lib/python3.14/site-packages/aiohttp_oauthlib-0.1.0.dist-info/licenses/LICENCE
+/usr/lib/python3.14/site-packages/aiohttp_oauthlib-0.1.0.dist-info/top_level.txt
 /usr/lib/python3.14/site-packages/aiohttp_oauthlib.py

@@ -500,6 +500,66 @@ The real fix is for `lfsbuild` to stage the pair itself and refuse to run `ch10-
 a `/sources` copy that differs from the repo -- the same `--check` discipline the recipe
 extractors already have. Not done yet.
 
+## `--no-build-isolation` can silently stamp a Python package version 0.0.0
+
+Found on `laptop`, 2026-09-07, in `blfs-python-dateutil` and `blfs-aiohttp-oauthlib`.
+
+`pip3 wheel --no-build-isolation` is the right call when the build backend is already
+installed -- it avoids a pointless network fetch, and most of the pure-Python steps here
+use it. The trap is that a `[build-system] requires` list, or a legacy
+`setup_requires=[...]`, holds more than the backend. When it also names
+`setuptools_scm`, and `setuptools_scm` is not installed, the wheel **still builds and
+still works**. It just records its version as `0.0.0`, because for these packages
+`setuptools_scm` is the only source of a version -- there is no static `version =`
+anywhere in `setup.py` or `setup.cfg` to fall back to.
+
+Nothing notices until something pins a floor. `recurring-ical-events` requires
+`python-dateutil>=2.8.1`, and `pip install` rejected an install that was present,
+importable and functionally correct:
+
+    ERROR: Could not find a version that satisfies the requirement
+    python-dateutil<3.0.0,>=2.8.1 (from versions: none)
+
+Two lessons, both general:
+
+- **`lfsmaint` cannot catch this.** Its version column comes from the tarball name in the
+  plan, so the database read `python-dateutil 2.9.0.post0` for two days while the install
+  said `0.0.0`. This is the same class as the manifest lesson above: the database reports
+  what the plan claims, not what landed on disk. Only
+  `ls /usr/lib/python3.*/site-packages/*.dist-info` shows the truth, and that scan is
+  cheap enough to be worth running after any batch of Python steps -- one pass found the
+  second case, which had never broken a build and would not have been noticed otherwise.
+- **A repair needs `--upgrade`, not `--force`.** `lfsbuild --only <step> --force` reruns
+  the recipe, but `pip install <name>` inside it considers a bare requirement already
+  satisfied by the broken `0.0.0` and does nothing, so the step passes and changes
+  nothing. The recipe itself has to carry `--upgrade` to be able to fix its own earlier
+  output. With `--no-index --find-links dist` the only candidate pip can choose is the
+  wheel just built, so `--upgrade` costs nothing on a fresh system.
+
+Standing fix in both recipes: leave build isolation on, and echo
+`pip3 show <pkg> | grep '^Version:'` at the end so the log carries the answer instead of
+requiring an archaeology session.
+
+## `pip install --user` leftovers outshadow every managed copy
+
+Same session, and it is why the tool in question had been half-working.
+`/home/john/.local/lib/python3.14/site-packages` held three packages from an earlier
+`pip install --user`. User site precedes system site on `sys.path`, so those copies won
+every import: invisible to `lfsmaint owns`, unmanaged by anything, and they would have
+kept shadowing three brand-new system packages, making the whole build a no-op from the
+consuming program's point of view.
+
+`--no-user` on the install line (already the pattern here) stops a *recipe* from writing
+there. It does nothing about what a human already put there. On a box with no package
+manager, `ls ~/.local/lib/python3.*/site-packages` belongs in any audit that touches
+Python, and the check is `importlib.util.find_spec(mod).origin` -- an import that
+succeeds proves nothing about which copy answered it.
+
+Not everything found there is removable: two of the five entries existed nowhere else on
+the system, so deleting them would have broken whatever uses them. Those are the real
+signal -- an unmanaged install that nothing in the build provides is a missing step, not
+a leftover.
+
 ## Standing policies
 
 - **BLFS Recommended dependencies get installed, not just Required** -- but checked

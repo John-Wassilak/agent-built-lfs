@@ -1121,4 +1121,29 @@ PACKAGES = sorted(BASE + [
     # has been silently failing with 'command not found'). Small, no complications:
     # GLib-2.86.4 (Required) already built at seq 29.
     book(309, "desktop-file-utils", "general/desktop-file-utils.html", "desktop-file-utils-0.28.tar.xz"),
+
+    # Operator-requested (2026-09-07): the dependency closure for ifd-time-sync
+    # (/mnt/crypt/john/nextcloud/repos/ifd-time-sync -- a standalone Harvest/Jira/
+    # calendar time-entry tool, not part of this project). Audited its actual imports
+    # and subprocess calls rather than trusting requirements.txt alone: of the three
+    # PyPI names it lists, icalendar (seq 278) and requests (seq 281) were already
+    # built here for khal/vdirsyncer, and recurring-ical-events was not -- nor was
+    # x-wr-timezone, its own hard runtime dependency, which requirements.txt does not
+    # mention. The two external binaries it shells out to are `pass` (seq 222, already
+    # built) and `fzf` (nothing in this build provided it).
+    #
+    # All three are portable with no host-specific content, so the recipes are shared
+    # per CLAUDE.md's shared/host test. Order below is dependency order: x-wr-timezone
+    # before recurring-ical-events (which requires it). fzf is independent of both but
+    # needs go (seq 169), long since built.
+    #
+    # Found in the same pass and NOT fixed by these steps: recurring_ical_events,
+    # x_wr_timezone and a duplicate python-dateutil were sitting in
+    # /home/john/.local/lib/python3.14/site-packages from an earlier `pip install
+    # --user`, invisible to lfsmaint and shadowing the system copies. See
+    # BUILD-REPORT.md for what was removed and why the user-site copies had to go
+    # before these steps meant anything.
+    hand(310, "x-wr-timezone", "x_wr_timezone-2.0.1.tar.gz", "x-wr-timezone-2.0.1 (hand-authored, shared recipe)"),
+    hand(311, "recurring-ical-events", "recurring_ical_events-3.8.2.tar.gz", "recurring-ical-events-3.8.2 (hand-authored, shared recipe)"),
+    hand(312, "fzf", "fzf-0.74.3.tar.gz", "fzf-0.74.3 (hand-authored, shared recipe)"),
 ], key=lambda p: p["seq"])

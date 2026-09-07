@@ -4232,3 +4232,145 @@ the whole 15-package dependency closure plus LibreOffice itself cost under
 after it runs). Verified live: `libreoffice --version` reports `26.2.1.2`;
 `scalc`/`sdraw`/`simpress`/`smath`/`swriter` all present under
 `/usr/lib/libreoffice/program/`.
+
+## 2026-09-07: fzf + ifd-time-sync's missing dependency closure (seq 310-312), and two silently-wrong recorded versions
+
+Operator asked for `fzf` plus "any other missing dependencies" for
+`/mnt/crypt/john/nextcloud/repos/ifd-time-sync` -- a standalone Harvest/Jira/
+calendar time-entry tool living on this host's LUKS volume, not part of this
+project.
+
+Audited what the tool actually reaches for rather than trusting its
+`requirements.txt`, which lists three names and understates the real set:
+
+- `requirements.txt`: `icalendar` (seq 278) and `requests` (seq 281) were
+  already built here for khal/vdirsyncer. `recurring-ical-events` was not.
+- Undeclared: `x-wr-timezone`, `recurring-ical-events`'s own hard runtime
+  dependency (`x-wr-timezone >= 1.0.0, < 3.0.0` in its `pyproject.toml`),
+  absent from `requirements.txt` entirely.
+- External binaries, found by grepping the tool's `subprocess` calls: `pass`
+  (seq 222, already built) and `fzf` (nothing in this build provided it --
+  `lib/ui.py` prints "fzf not found" and returns `None` from every interactive
+  pick without it, which makes the tool unusable, not merely degraded).
+
+Three new steps, all portable with no host-specific content, so all three
+recipes are shared per `CLAUDE.md`'s shared/host test:
+
+    hand(310, "x-wr-timezone",          "x_wr_timezone-2.0.1.tar.gz")
+    hand(311, "recurring-ical-events",  "recurring_ical_events-3.8.2.tar.gz")
+    hand(312, "fzf",                    "fzf-0.74.3.tar.gz")
+
+Both Python packages follow the existing `pip3 wheel` + `pip3 install
+--no-index --find-links dist` pattern from the khal/vdirsyncer closure.
+Tarballs came from PyPI with sha256 verified against PyPI's own published
+digests; fzf's from its GitHub release tag with the sha256 recorded in the
+recipe header.
+
+`fzf` is Go, so it needed nothing new beyond `go` (seq 169). Built with a plain
+`go build` rather than the repo's own `make`: upstream's Makefile derives
+`$VERSION`/`$REVISION` from `git describe`/`git log` and hard-errors with "Not
+on git repository" against a release tarball. The two `-X` ldflags supply
+exactly what those variables would have held (`0.74.3` and commit `15f64c49`,
+the commit tag `v0.74.3` dereferences to), so `fzf --version` reports the real
+release rather than main.go's in-tree `0.74`/`devel` defaults -- confirmed
+live: `0.74.3 (15f64c49)`.
+
+Shell integration is `/etc/profile.d/fzf.sh` evaluating `fzf --bash`, fzf's own
+built-in integration since 0.48, guarded to interactive Bash (the script emits
+`bind` and `complete` calls that are meaningless and noisy otherwise).
+Preferred over installing `shell/completion.bash` + `shell/key-bindings.bash`
+by hand because it cannot drift from the binary. Verified in a real
+login-interactive shell: `\C-t` bound to `fzf-file-widget`, `\C-r` to
+`__fzf_history__`, 78 fzf completions registered. Bash only -- no zsh, fish or
+tmux in this build's closure, so `bin/fzf-tmux` and its man page were
+deliberately left uninstalled.
+
+### The real find: two packages had been recording version 0.0.0 since 2026-09-05
+
+`blfs-recurring-ical-events` failed on its first run, and the error was not
+about anything new:
+
+    ERROR: Could not find a version that satisfies the requirement
+    python-dateutil<3.0.0,>=2.8.1 (from recurring-ical-events)
+    (from versions: none)
+
+`dateutil` was installed and importable the whole time. What was wrong was its
+recorded version: `/usr/lib/python3.14/site-packages/python_dateutil-0.0.0.dist-info`.
+
+Cause: `blfs-python-dateutil.sh` passed `--no-build-isolation`. That flag is
+correct when the build backend is already installed, and its header said
+"setuptools.build_meta (already present)" -- true as far as it went, but the
+package's `pyproject.toml` `[build-system]` also requires `setuptools_scm<8.0`,
+which is not installed anywhere on this system, and `setuptools_scm` is the
+*only* source of this package's version (there is no static `version =` in
+`setup.py` or `setup.cfg`). Without it the wheel still builds and still works
+-- it just silently stamps itself 0.0.0. Every dependent that pins a floor
+then rejects it.
+
+`lfsmaint list` read `python-dateutil 2.9.0.post0` throughout, which is worth
+noting on its own: that column comes from the tarball name in the plan, not
+from anything measured off the install. The package database could not have
+caught this.
+
+A scan of every `*.dist-info` under `/usr/lib/python3.14/site-packages` found
+exactly one other case, same root cause: `aiohttp_oauthlib-0.0.0.dist-info`
+(seq 290, built the same night). Its `setup.py` takes its version solely from
+`use_scm_version` + `setup_requires=["setuptools_scm"]`. That one never broke a
+build, because vdirsyncer's `google` extra names `aiohttp-oauthlib` with no
+version constraint -- it only made the recorded version a lie.
+
+Both fixed the same way: drop `--no-build-isolation` so pip fetches
+`setuptools_scm` into a throwaway build env (with no `.git` in a release sdist
+it falls back to the sdist's own `PKG-INFO`), and add `--upgrade` to the
+install line. The `--upgrade` matters for the repair case specifically: pip
+considers a bare `python-dateutil` requirement already satisfied by the broken
+0.0.0 and would otherwise no-op, so without it the recipe cannot fix its own
+earlier output. On a fresh system `--upgrade` is a plain install, and
+`--no-index --find-links dist` means the only candidate pip can ever choose is
+the wheel built on the line above. Both recipes now echo `pip3 show <pkg> |
+grep '^Version:'` at the end so the log carries the answer.
+
+Rebuilt and verified: `python-dateutil 2.9.0.post0`, `aiohttp-oauthlib 0.1.0`,
+stale `*-0.0.0.dist-info` directories gone.
+
+These are shared recipes, so `server` inherits both fixes as a new target. This
+does not rebuild `server`'s existing 0.0.0 installs -- if that host ran these
+two steps, it has the same two wrong version records and needs the same two
+`--only ... --force` rebuilds.
+
+### `pip install --user` leftovers in john's home, shadowing the managed copies
+
+Found in the same pass, and it explains why the tool had been half-working:
+`/home/john/.local/lib/python3.14/site-packages` held `recurring_ical_events`
+3.8.2, `x_wr_timezone` 2.0.1, and a duplicate `python-dateutil` 2.9.0.post0
+from an earlier `pip install --user`. User site precedes system site on
+`sys.path`, so those copies won every import -- invisible to `lfsmaint`,
+unmanaged by anything, and they would have kept shadowing the three new system
+packages built above, making the whole exercise a no-op from the tool's point
+of view.
+
+Moved aside (not deleted -- backed up to this session's scratchpad), then
+confirmed every relevant import now resolves under `/usr/lib/python3.14/
+site-packages` at the expected version. `tabulate` 0.10.0 and `yt_dlp`
+2026.8.19 are still there and were left alone deliberately: nothing in this
+build provides either, so removing them would break whatever uses them. They
+are the remaining unmanaged Python installs on this host and are worth turning
+into real steps if anything depends on them.
+
+### Verification
+
+    fzf --version                    0.74.3 (15f64c49)
+    lfsmaint owns /usr/bin/fzf       fzf-0.74.3 (BLFS)
+    lfsmaint list | grep ...         fzf 0.74.3 (4 files), recurring_ical_events
+                                     3.8.2 (303), x_wr_timezone 2.0.1 (12),
+                                     python-dateutil 2.9.0.post0 (45),
+                                     aiohttp-oauthlib 0.1.0 (9)
+
+Every module the tool imports (`lib/calendar_reader`, `harvest_client`,
+`jira_client`, `ui`, `auth`, `cache`, `state`) imports cleanly as john.
+`bin/extract-blfs.py --check` reports zero drift at 327 planned steps; the
+regenerated `blfs-plan.json` differs from the previous one by exactly the three
+added steps and nothing else (diffed field-by-field before committing).
+`lfsmaint db` rebuilt with `--timings` so the build-time column survives.
+
+Total cost: 0.7 min of build time across five steps, ~1MB of installed files.

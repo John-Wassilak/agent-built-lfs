@@ -576,3 +576,9 @@ blfs-libreoffice	native	46.3	2
 blfs-libreoffice	native	50.8	2
 blfs-libreoffice	native	16624.2	0
 blfs-desktop-file-utils	native	4.5	0
+blfs-x-wr-timezone	native	3.8	0
+blfs-recurring-ical-events	native	5.5	1
+blfs-python-dateutil	native	8.3	0
+blfs-aiohttp-oauthlib	native	9.3	0
+blfs-recurring-ical-events	native	6.7	0
+blfs-fzf	native	17.2	0

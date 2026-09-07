@@ -502,3 +502,8 @@ blfs-clucene
 blfs-archive-zip
 blfs-libreoffice
 blfs-desktop-file-utils
+blfs-x-wr-timezone
+blfs-python-dateutil
+blfs-aiohttp-oauthlib
+blfs-recurring-ical-events
+blfs-fzf

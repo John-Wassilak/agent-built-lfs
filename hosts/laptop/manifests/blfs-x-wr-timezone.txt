@@ -1,0 +1,12 @@
+/usr/bin/x-wr-timezone
+/usr/lib/python3.14/site-packages/__pycache__/x_wr_timezone.cpython-314.pyc
+/usr/lib/python3.14/site-packages/x_wr_timezone-2.0.1.dist-info/INSTALLER
+/usr/lib/python3.14/site-packages/x_wr_timezone-2.0.1.dist-info/METADATA
+/usr/lib/python3.14/site-packages/x_wr_timezone-2.0.1.dist-info/RECORD
+/usr/lib/python3.14/site-packages/x_wr_timezone-2.0.1.dist-info/REQUESTED
+/usr/lib/python3.14/site-packages/x_wr_timezone-2.0.1.dist-info/WHEEL
+/usr/lib/python3.14/site-packages/x_wr_timezone-2.0.1.dist-info/entry_points.txt
+/usr/lib/python3.14/site-packages/x_wr_timezone-2.0.1.dist-info/licenses/LICENSE
+/usr/lib/python3.14/site-packages/x_wr_timezone-2.0.1.dist-info/top_level.txt
+/usr/lib/python3.14/site-packages/x_wr_timezone-2.0.1.dist-info/zip-safe
+/usr/lib/python3.14/site-packages/x_wr_timezone.py
