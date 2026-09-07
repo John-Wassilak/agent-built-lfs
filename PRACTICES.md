@@ -560,6 +560,29 @@ the system, so deleting them would have broken whatever uses them. Those are the
 signal -- an unmanaged install that nothing in the build provides is a missing step, not
 a leftover.
 
+## A recipe that starts a daemon sweeps that daemon's state into its own manifest
+
+Third variant of the manifest-boundary problem, after the ctime fix and the scratch-cache
+one above, and the only one where the *correct* recipe is what causes it. `blfs-tor`
+(laptop, 2026-09-07) ends with `systemctl enable tor` and `systemctl restart tor`, which
+is right -- on a booted native host that is what "install and enable" means, and a future
+machine running this step should end up with a running service, not a stopped one. But the
+daemon then writes its consensus cache, state file, lock and entry-guard record into
+`/var/lib/tor` while the step is still running, and every one of those files is newer than
+the step's own stamp, so the manifest claimed tor "installed" runtime state it merely
+created on first start.
+
+The scratch-cache case had no generic fix because a build tool's cache location is not
+knowable in advance. This one is different: a service's state directory is a fixed,
+declared property of the package (it is in the unit's `StateDirectory=` and the daemon's
+own config), so it belongs in the driver's `MANIFEST_NOISE` alongside systemd's
+`timesync/clock` and `random-seed` -- which are the same category of file, put there for
+the same reason. The rule for a new step that enables a daemon: if the service writes
+under one of `MANIFEST_ROOTS` at runtime, add that path to `MANIFEST_NOISE` in the same
+change, or the package's file list is wrong the first time it is captured and stays wrong.
+Directories themselves are already excluded (`! -type d`), so only the contents need
+naming.
+
 ## Standing policies
 
 - **BLFS Recommended dependencies get installed, not just Required** -- but checked

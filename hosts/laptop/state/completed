@@ -507,3 +507,4 @@ blfs-python-dateutil
 blfs-aiohttp-oauthlib
 blfs-recurring-ical-events
 blfs-fzf
+blfs-tor

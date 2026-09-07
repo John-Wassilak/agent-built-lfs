@@ -582,3 +582,4 @@ blfs-python-dateutil	native	8.3	0
 blfs-aiohttp-oauthlib	native	9.3	0
 blfs-recurring-ical-events	native	6.7	0
 blfs-fzf	native	17.2	0
+blfs-tor	native	366.9	0

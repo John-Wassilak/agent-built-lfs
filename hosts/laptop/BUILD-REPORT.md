@@ -4374,3 +4374,121 @@ added steps and nothing else (diffed field-by-field before committing).
 `lfsmaint db` rebuilt with `--timings` so the build-time column survives.
 
 Total cost: 0.7 min of build time across five steps, ~1MB of installed files.
+
+## 2026-09-07 (continued): tor (seq 313) -- client only, enabled, bootstrapped and verified through a real circuit
+
+Operator request: "install and enable tor". BLFS 13.0-systemd has no Tor page, so this
+is a `hand()` step with a shared recipe (`recipes/blfs-tor.sh`) -- nothing in it names
+this machine's hardware. Its whole dependency closure was already here: `libevent`
+2.1.12 (seq 159), plus openssl 3.6.1, zlib, xz 5.8.3 and zstd 1.5.7 from LFS chapter 8.
+Nothing had to be built ahead of it.
+
+**Version and provenance.** `tor-0.4.9.11` (2026-06-25), newest stable on the 0.4.9.x
+line and a security release -- its `ReleaseNotes` lead with an onion-service rendezvous
+point able to impersonate the service a client was reaching (bug 41297) and "We strongly
+recommend upgrading as soon as possible". The older 0.4.8.25 LTS line is still published;
+no reason for this host to sit on it.
+
+The provenance record is better than most non-book tarballs here get. sha256
+`2e6c1720118c812acf0079fd47cf91b6bfaba5d766c321c4d3d2a28d6a11a8ed` matches upstream's own
+published `.sha256sum`, and that file's detached signature verifies GOOD against
+Alexander Faeroy's key `1C1BC007A9F607AA8152C040BEA7B180B1491921` (signing subkey
+`514102454D0A87DB0767A1EBBE6A0531C18A9179`), fetched by **WKD from torproject.org
+itself** rather than from a keyserver -- so the key comes from the same organization that
+publishes the release, not from whoever last uploaded it somewhere. A second signature
+from David Goulet's key `B74417ED...` also verifies GOOD but that key expired 2026-03-24,
+so it is recorded and not relied on.
+
+**Client only, deliberately.** SOCKS5 on 127.0.0.1:9050 and nothing else: no `ORPort`, no
+bridge, no exit policy, no onion service. Each of those makes this laptop public Tor
+infrastructure and is an operator decision, not something a build step should default
+into. `/etc/tor/torrc` states `ClientOnly 1` rather than leaving it implied by the absence
+of an `ORPort`.
+
+**Two build-flag findings, both checked against the tarball rather than assumed:**
+
+- `--disable-asciidoc` would have installed **no man pages at all**, which is the
+  opposite of what the flag name suggests here. There is no asciidoc on this host, and
+  upstream ships pre-built `doc/man/*.1.in` precisely "so that people without asciidoc
+  can just use the .1 and .html files" -- `config.status` substitutes `@CONFDIR@` and
+  `@LOCALSTATEDIR@` into them with no asciidoc involved. But `doc/include.am` gates
+  `nodist_man1_MANS` on `USE_ASCIIDOC`, which `configure.ac` sets from the *flag*, not
+  from whether asciidoc was found. Left at the default; all five man pages installed
+  (`tor`, `torify`, `tor-gencert`, `tor-resolve`, `tor-print-ed-signing-cert`).
+  `--disable-html-manual` drops the HTML copy of the same content instead.
+- Every file in this tarball carries the same mtime (`1782410294`), so `doc/man/tor.1.in`
+  and its `.txt` prerequisite are exactly equal and `make` treats the target as up to
+  date. That is one `touch` away from firing `asciidoc-helper.sh` and hard-failing at the
+  end of a 6-minute build. The recipe `touch`es the `.1.in`/`.html.in` files first rather
+  than relying on it.
+
+`--enable-systemd` (libsystemd 259) is load-bearing, not decoration: without it the unit
+would have to be `Type=simple` and systemd would report the service started the moment
+the process forked, long before tor has a circuit. `--enable-lzma`/`--enable-zstd` are
+both off by default and are what relays actually serve consensus diffs with.
+
+**No `Sandbox 1`, so the sandbox is systemd's.** libseccomp is not in this build, so
+torrc's in-process sandbox is unavailable (`--disable-seccomp` records that rather than
+letting configure decide silently). The unit confines it from outside instead:
+`CapabilityBoundingSet=` and `AmbientCapabilities=` empty (a Tor client needs no
+capability -- its only listener is a high loopback port), `ProtectSystem=strict`,
+`ProtectHome=yes`, `ProtectProc=invisible`, `MemoryDenyWriteExecute=yes`,
+`RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX`, `SystemCallFilter=@system-service`,
+plus `StateDirectory=tor` at 0700. Verified the confinement does not break it rather than
+assuming: the service reached `Bootstrapped 100% (done)` and the journal has **no warning
+or higher entries at all** for the unit.
+
+No unit came from upstream to install (unlike `blfs-tailscale`, which installs
+tailscale's own): this release's `contrib/` has `client-tools`, `operator-tools` and
+`or-tools` and no `dist/`, so the recipe writes `tor.service` itself.
+
+The `tor` account is created with `useradd -r` (system range, above 100), not a fixed low
+id -- LFS and BLFS hand out 0-99 by name in their own pages (sshd 50, polkitd 27, ldap 83,
+ntp 87), tor is in neither book, and any free number picked out of that range collides the
+day a book edition assigns it. Same reasoning and same flag as `blfs-seatd.sh`. It landed
+at uid 999, gid 997.
+
+**Manifest fix in `bin/lfsbuild`.** The recipe correctly ends by starting the service,
+and tor then writes its consensus cache, state file, lock and guard record into
+`/var/lib/tor` *during the step* -- all newer than the manifest stamp, so all captured as
+files tor "installed". Added `^/var/lib/tor/` to `MANIFEST_NOISE`, the same list that
+already excludes systemd's `timesync/clock` and `random-seed` for exactly this reason.
+Generalized in `PRACTICES.md`: any new step that enables a daemon needs its state
+directory added in the same change.
+
+### Verification
+
+    make check                       33 tests: 32 PASS, 1 SKIP, 0 FAIL, 0 ERROR
+                                     (skip is fuzz_static_testcases.sh -- no corpus)
+    tor --version                    Tor version 0.4.9.11
+    systemctl is-enabled tor         enabled
+    systemctl is-active tor          active
+    journalctl -u tor                Bootstrapped 100% (done), 12s after start
+    journalctl -u tor -p warning     no entries
+    ps -o user -p $MAINPID           tor
+    ss -lntp                         LISTEN 127.0.0.1:9050 only (not 0.0.0.0)
+    curl -x socks5h://127.0.0.1:9050 https://check.torproject.org/api/ip
+                                     {"IsTor":true,"IP":"192.76.153.253"}
+    curl (same URL, direct)          {"IsTor":false,"IP":"24.254.103.217"}
+    lfsmaint owns /usr/bin/tor       tor-0.4.9.11 (BLFS)
+
+`bin/extract-blfs.py --check` reports zero drift at 328 planned steps. No firewall change
+was needed: the existing iptables policy is `OUTPUT ACCEPT` with `INPUT -i lo ACCEPT`, so
+a loopback SOCKS listener and outbound circuits both already pass, and nothing about this
+step opens an inbound port.
+
+Cost: 6.1 min of build time (`make check` is roughly half of it), 24 files installed.
+
+**Not installed, and it fails quietly:** `torsocks`. `make install` puts
+`/usr/bin/torify` on the system, but modern torify is only a backwards-compatibility
+shim around `torsocks` (its own header says so), and without torsocks it does not work
+-- checked live, because the failure mode matters: `torify /bin/echo RAN` prints
+`torsocks not found in your PATH`, does **not** run the command, and **exits 0**. A
+script that torifies something and checks the exit status therefore sees success while
+having sent no traffic at all, over Tor or otherwise. Do not use `torify` on this host
+until torsocks is a step.
+
+Applications that take a SOCKS proxy setting directly need nothing further: curl
+`-x socks5h://127.0.0.1:9050` (verified above), Firefox's network settings, git's
+`ALL_PROXY`. Transparently torifying a program that has no proxy setting is a separate
+step and a separate decision.

@@ -4576,5 +4576,19 @@
     "blocks": 1,
     "enabled": 1,
     "disabled": 0
+  },
+  {
+    "seq": 313,
+    "order": "blfs.313",
+    "name": "blfs-tor",
+    "chapter": "blfs",
+    "page": "tor",
+    "title": "tor-0.4.9.11 (hand-authored, shared recipe)",
+    "context": "chroot",
+    "tarball": "tor-0.4.9.11.tar.gz",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
   }
 ]

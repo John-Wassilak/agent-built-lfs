@@ -96,6 +96,13 @@ MANIFEST_NOISE = "|".join([
     r"^/etc/ssh/ssh_host_",
     r"^/root/\.",
     r"^/root/build",
+    # tor's DataDirectory: the consensus/microdescriptor cache, the state file, the
+    # lock and the entry-guard record, all written by the daemon the moment
+    # blfs-tor's own recipe starts it (2026-09-07, laptop). Same category as
+    # systemd's clock/random-seed above -- runtime state of a service, not files the
+    # package installed. The directory itself is created by the recipe and is a
+    # directory, which the manifest sweep already excludes.
+    r"^/var/lib/tor/",
 ])
 
 # Steps the driver handles specially rather than executing verbatim.

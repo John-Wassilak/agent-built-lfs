@@ -1146,4 +1146,15 @@ PACKAGES = sorted(BASE + [
     hand(310, "x-wr-timezone", "x_wr_timezone-2.0.1.tar.gz", "x-wr-timezone-2.0.1 (hand-authored, shared recipe)"),
     hand(311, "recurring-ical-events", "recurring_ical_events-3.8.2.tar.gz", "recurring-ical-events-3.8.2 (hand-authored, shared recipe)"),
     hand(312, "fzf", "fzf-0.74.3.tar.gz", "fzf-0.74.3 (hand-authored, shared recipe)"),
+
+    # Operator-requested (2026-09-07): "install and enable tor". BLFS 13.0-systemd has
+    # no Tor page (checked the whole book tree), so this is a hand() entry -- the
+    # recipe carries its own provenance record, build-flag rationale, torrc and systemd
+    # unit, all portable, so it is a shared recipe. Client only: SOCKS on
+    # 127.0.0.1:9050, no relay/bridge/exit/onion service. Its whole dependency closure
+    # was already built here -- libevent (seq 159), plus openssl, zlib, xz and zstd
+    # from LFS chapter 8 -- so nothing else had to be added ahead of it. libseccomp is
+    # NOT in this build, so torrc's `Sandbox 1` is unavailable and the systemd unit
+    # sandboxes the daemon from outside instead; see the recipe.
+    hand(313, "tor", "tor-0.4.9.11.tar.gz", "tor-0.4.9.11 (hand-authored, shared recipe)"),
 ], key=lambda p: p["seq"])
