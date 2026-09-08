@@ -4883,3 +4883,15 @@ in the Firefox build itself was changed at any point in this. The book-wide half
 this cost -- that BLFS spends a dead Google key on two separate pages, and that
 `geo.provider.network.url` is a pref rather than a compile-time constant -- is in
 `PRACTICES.md`.
+
+### Coordinate change, same day
+
+Operator supplied a new position: `35.46361436971869, -97.33611945532424`, written to the
+cfg rounded to six decimals as `35.463614, -97.336119` for the reason given above. Same
+verification from a fresh profile:
+
+    GEO_OK lat=35.463614 lon=-97.336119 acc=30 ms=298
+    GeoClue probes 0; value absent from the profile's prefs.js
+
+Editing this is a one-line change to `hosts/laptop/overlay/usr/lib/firefox/firefox.cfg`
+plus a copy to `/usr/lib/firefox/`, and takes effect at the next Firefox start.
