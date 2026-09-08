@@ -4625,3 +4625,66 @@ Also noted, not fixed: the portal logs `Failed to load RealtimeKit property: ...
 name org.freedesktop.RealtimeKit1 was not provided by any .service files` three times at
 startup. rtkit is not built here; it only lets the portal hand out realtime scheduling
 priority, and nothing on this host asks for that. Cosmetic.
+
+## 2026-09-08: sshpass 1.10 (seq 319)
+
+Operator-requested: "need to install sshpass". BLFS 13.0-systemd has no sshpass page
+(grepped the whole book tree, zero hits), so a `hand()` entry with a shared recipe --
+one C file, glibc its only dependency, nothing in it names this hardware.
+
+Upstream is a SourceForge project. 1.10 (the newest release published there; the file
+listing runs 0.01 through 1.09, then 1.10) ships no sha256 and no signature, so the
+provenance record is weaker than tor's: SourceForge's own file API reports sha1
+`40d6f209340c06a6abc9515ddf1000f967bea58e` and md5 `e435c55deb6e2e410508ecc5da3066f8`,
+both of which match the downloaded tarball (sha256
+`ad1106c203cbb56185ca3bad8c6ccafca3b4064696194da879f81c8d7bdfeeda`). Recorded as what
+it is.
+
+Nothing interesting in the build: `./configure --prefix=/usr && make && make install`,
+0.1 min, two installed files. Checked before writing the recipe rather than after:
+`configure.ac`, `aclocal.m4`, `config.h.in` and `configure` all carry the same mtime in
+the tarball and `Makefile.in` is newer than `Makefile.am`, so automake's rebuild rules
+never fire and the shipped autoconf-2.71 `configure` is what runs. (`autoreconf -fi`
+under this host's autoconf 2.72 / automake 1.18.1 does still work, with four
+obsolete-macro warnings -- so regenerating is possible, just unnecessary.)
+`--enable-password-prompt` was left at its default `assword`, which matches this
+system's own openssh-10.5p1 prompt string `%s@%s's password: `.
+
+### Verification
+
+    lfsmaint owns /usr/bin/sshpass              sshpass-1.10 (BLFS)
+    lfsmaint owns .../man1/sshpass.1            sshpass-1.10 (BLFS)
+    sshpass -V                                  sshpass 1.10
+    man -w sshpass                              /usr/share/man/man1/sshpass.1
+    extract-blfs.py --check                     zero drift, 334 steps
+
+Functional test, from a non-tty shell (the case sshpass exists for), with a deliberately
+wrong password against this host's own sshd:
+
+    SSHPASS='deliberately-wrong-password' sshpass -e ssh \
+      -o PreferredAuthentications=password -o PubkeyAuthentication=no \
+      -o NumberOfPasswordPrompts=1 john@127.0.0.1 true
+    -> Permission denied; journalctl -u sshd: "Failed password for john from 127.0.0.1"
+
+The sshd log line is the proof: `Failed password` is only emitted if a password was
+actually submitted, so sshpass did drive the pty and answer the prompt. (`sshpass`
+returns 255 here rather than its own code 5 because `NumberOfPasswordPrompts=1` makes
+ssh give up before the prompt reappears.) `lfsmaint db` was rebuilt so the new manifest
+is in the package database; `/var/lib/lfsmaint/manifests` does not exist on this host,
+so lfsbuild's optional copy there was skipped, as for every previous step.
+
+### Found while testing, not fixed: duplicated `PasswordAuthentication` in sshd_config
+
+`/etc/ssh/sshd_config` sets the keyword twice in the uncommented tail of the file --
+line 119 `PasswordAuthentication yes`, line 122 `PasswordAuthentication no` (and the
+same pair for `KbdInteractiveAuthentication`, lines 120/123). OpenSSH takes **the first
+value obtained** for a keyword, so the effective setting is `yes`:
+
+    sshd -T -C user=john,host=localhost,addr=127.0.0.1
+        PasswordAuthentication yes
+        KbdInteractiveAuthentication yes
+
+Password logins over ssh are therefore enabled on this laptop, which is presumably not
+what whoever added lines 122-123 intended. Left alone deliberately: it is a live sshd
+policy change, the operator's call, and this session's task was sshpass. Deleting lines
+119-120 (or the 122-123 pair, to keep passwords on) resolves it either way.

@@ -4660,5 +4660,19 @@
     "blocks": 1,
     "enabled": 1,
     "disabled": 0
+  },
+  {
+    "seq": 319,
+    "order": "blfs.319",
+    "name": "blfs-sshpass",
+    "chapter": "blfs",
+    "page": "sshpass",
+    "title": "sshpass-1.10 (hand-authored, shared recipe)",
+    "context": "chroot",
+    "tarball": "sshpass-1.10.tar.gz",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
   }
 ]
