@@ -4688,3 +4688,198 @@ Password logins over ssh are therefore enabled on this laptop, which is presumab
 what whoever added lines 122-123 intended. Left alone deliberately: it is a live sshd
 policy change, the operator's call, and this session's task was sshpass. Deleting lines
 119-120 (or the 122-123 pair, to keep passwords on) resolves it either way.
+
+## 2026-09-08 (continued): Firefox geolocation -- the build was right, the book's Google key is dead
+
+A website asking for location got nothing. The build turned out to be correct; the
+service behind it is not.
+
+### What the build actually has
+
+Firefox-140.8.0esr on this host was built with BLFS's geolocation instructions applied,
+and all of it landed:
+
+    omni.ja: modules/AppConstants.sys.mjs   MOZ_GOOGLE_LOCATION_SERVICE_API_KEY:
+                                            "AIzaSyDxKL42zsPjbke5O8_rPVpVrLrJ8aeE9rQ"
+    omni.ja: greprefs.js:1158               geo.provider.network.url =
+                                            .../geolocate?key=%GOOGLE_LOCATION_SERVICE_API_KEY%
+    libxul.so strings                        org.freedesktop.GeoClue2{,.Manager,.Client,.Location}
+                                             geo.provider.use_geoclue
+                                             org.freedesktop.portal.Location
+
+So the `google-key` file and `--with-google-location-service-api-keyfile` in this host's
+mozconfig override did their job, and GeoClue *support* is compiled in.
+
+### Why it still failed
+
+Two independent breaks, either one sufficient:
+
+1. **No local provider.** GeoClue-2.8.0 is not installed -- no `/usr/libexec/geoclue*`,
+   no `org.freedesktop.GeoClue2.service` activation file, no name on the system bus, no
+   manifest. That was the documented choice in the firefox override's `reason` (optional
+   deps whose packages aren't built here). Firefox therefore has only its network
+   provider. The `xdg-desktop-portal` Location interface is present but has no GeoClue
+   behind it, so that route is dead too.
+2. **The book's shared Google key no longer works.** Tested directly:
+
+        curl -X POST -d '{"considerIp":true}' \
+          'https://www.googleapis.com/geolocation/v1/geolocate?key=AIzaSy...aeE9rQ'
+        -> HTTP 403
+        {"error":{"code":403,"message":"PERMISSION_DENIED: You must enable Billing
+                  on the Google Cloud Project"}}
+
+Reproduced end to end in a throwaway profile (`geo.prompt.testing.allow`, a `file://`
+page -- Firefox treats those as secure contexts, `window.isSecureContext=true`) with
+`MOZ_LOG=Geolocation:5`:
+
+    D/Geolocation Checking GeoclueLocationProvider
+    console.error: Error("The geolocation provider returned a non-ok status 403",
+                         "resource://gre/modules/NetworkGeolocationProvider.sys.mjs", 397)
+    GEO_ERR code=2 msg=Unknown error acquiring position
+
+Code 2 is `POSITION_UNAVAILABLE`, which is what the site saw. Note the order: Firefox
+tries GeoClue first, finds no D-Bus service, then falls back to the network provider on
+its own -- so no pref was needed to disable the GeoClue path.
+
+Building GeoClue would not have fixed this by itself either: `book/blfs-13.0/basicnet/
+geoclue2.html:243` configures GeoClue's own `[wifi]` source with that same dead key.
+
+### The fix: point the network provider at beaconDB
+
+beaconDB is the keyless community successor to the retired Mozilla Location Service and
+speaks the same geolocate API. It answers a request with no wifi payload -- which is
+what this build always sends, since it keeps BLFS's `--disable-necko-wifi` and so does
+no wifi scanning of its own (confirmed: no `nsWifiMonitor` strings in `libxul.so`):
+
+    curl -X POST -H 'Content-Length: 0' https://beacondb.net/v1/geolocate
+    -> HTTP 200 {"accuracy":25000,"fallback":"ipf","location":{...}}
+
+The endpoint is a pref, not a compile-time constant, so this needed no rebuild. Set
+system-wide via Firefox autoconfig, new in `hosts/laptop/overlay/`:
+
+    usr/lib/firefox/defaults/pref/autoconfig.js   general.config.filename = firefox.cfg
+                                                  general.config.obscure_value = 0
+    usr/lib/firefox/firefox.cfg                   defaultPref("geo.provider.network.url",
+                                                    "https://beacondb.net/v1/geolocate")
+
+Autoconfig rather than a profile `user.js` because profile directory names are random
+and this should hold for every profile and every user. `defaultPref` rather than
+`lockPref` -- a better default, still overridable in `about:config`. Both files are
+deploy-time overlay content, so they are not in any manifest, same as this host's
+`grub.cfg` and dotfiles.
+
+### Verification
+
+Installed to the live host, then re-run with a **fresh** profile carrying only the
+prompt-testing prefs -- no URL override of its own:
+
+    GEO_OK lat=35.4689 lon=-97.5195 acc=25000
+    grep geo.provider.network.url <newprofile>/prefs.js   -> absent
+
+Absent from `prefs.js` is the point: a default supplied by autoconfig is not persisted
+into the profile, so the working value came from `/usr/lib/firefox/firefox.cfg`.
+
+Accuracy is city-scale (~25 km), IP-derived -- enough for a site that wants a region,
+not enough for anything map-scale. Real wifi trilateration would mean building
+libsoup-3 (missing; `json-glib-1.10.8` and `libnotify-0.8.8` are already here) and then
+GeoClue, with GeoClue's `[wifi]` url pointed at beaconDB instead of the dead Google
+key. NetworkManager and wpa_supplicant are already present to do the scanning. Still no
+Firefox rebuild either way.
+
+### Found while testing, not fixed
+
+`--disable-necko-wifi` stays as BLFS has it. Flipping it is the only part of this that
+*would* need a Firefox rebuild (~4 h on this box), and it would be redundant with the
+GeoClue path above, which does the same scanning outside the browser.
+
+### Addendum, same day: beaconDB dropped, position hardcoded instead
+
+beaconDB answered, but never with anything better than its IP fallback, and sites were
+reported spinning and then giving up rather than getting a usable fix. Checked its
+coverage directly before committing to the GeoClue build the earlier entry proposed --
+11 APs scanned off this laptop's own radio, handed to the same endpoint the browser
+uses:
+
+    sudo nmcli -t -f BSSID,SIGNAL,FREQ device wifi list --rescan yes   -> 11 APs
+    curl -X POST -d '{"considerIp":true,"wifiAccessPoints":[...11 APs...]}' \
+      https://beacondb.net/v1/geolocate
+    -> HTTP 200 {"accuracy":25000,"fallback":"ipf","location":{...}}
+
+`"fallback":"ipf"` with 11 real APs attached means beaconDB matched none of them: it has
+no wifi coverage in this area. That settles the GeoClue question -- libsoup-3 + GeoClue
+would have queried the same database for the same 25 km IP answer, so the two package
+builds would have bought nothing. Not pursued.
+
+Remaining choices were a Google Cloud project with billing enabled, or stating the
+position outright. Operator chose the latter. `geo.provider.network.url` accepts any
+URL, `data:` included, and Firefox parses the response with the same JSON reader it uses
+for a real provider, so a literal answer needs no network, no D-Bus and no third party:
+
+    defaultPref('geo.provider.network.url',
+      'data:application/json,{"location": {"lat": 35.4614…, "lng": -97.3202…}, "accuracy": 30.0}');
+    defaultPref('geo.provider.use_geoclue', false);
+
+Coordinates are the operator's, supplied this day. The `accuracy` field is a claim, not
+a measurement -- 30 m reads like a GPS fix, which is what a site expecting a phone-grade
+position looks for. `use_geoclue` off because there is nothing on the bus for it to
+find; the failing probe only added latency to every request.
+
+### Verification
+
+Fresh profile again, only the prompt-testing prefs, and this time a
+`enableHighAccuracy: true` request, which is the harder case:
+
+    GEO_OK lat=35.461479391741314 lon=-97.3202474440487 acc=30 ms=232
+    grep -c "Checking GeoclueLocationProvider" <stderr>   -> 0
+    grep geo.provider <newprofile>/prefs.js               -> absent
+    provider errors in log                                -> none
+
+Zero GeoClue probes confirms the second pref took effect; absent from `prefs.js`
+confirms both values came from `/usr/lib/firefox/firefox.cfg` rather than the profile.
+The 232 ms includes headless startup and page load, and no request leaves the machine,
+which is what fixes the spinning.
+
+One gotcha for anyone hitting this again: the position is only half of it. Firefox still
+prompts per site, and a "Block" remembered from while this was broken keeps a site
+failing no matter what the provider returns. Clear it in
+`about:preferences#privacy` -> Permissions -> Location -> Settings.
+
+### Addendum 2, same day: the site still refuses; two things tightened, one ruled out
+
+The operator confirmed the hardcoded position reaches the page in their own profile, and
+the site still shows "We were unable to locate your device / It looks like Firefox's
+geolocation settings may have been changed or disabled." So the browser side is done and
+whatever remains is the site's validation of the answer.
+
+Tightened:
+
+- **Precision.** The coordinates arrived with 15 decimals (~0.1 um). No real position
+  source emits that, and it is a cheap thing for a site to notice, so the cfg now
+  carries six (`35.461479, -97.320247`).
+- **Permission durability.** `permissions.sqlite` in `ftfaevf4.default-default` holds 5
+  rows and *none* of type `geo` (checked with the `-wal` alongside, so this is not an
+  uncommitted-write artifact). No site has a persistently granted Location permission,
+  which means `navigator.permissions.query({name:'geolocation'})` answers `prompt`
+  rather than `granted`. A flow wanting a durable grant rejects that, and its canned
+  message would look much like the one above. A session-only Allow from the doorhanger
+  is not enough; the grant has to be made permanent per site.
+
+Ruled out: a stalled update stream. `watchPosition` against the `data:` URL keeps
+firing, so a site waiting on updates does get them:
+
+    WATCH 1 t=303ms  WATCH 2 t=5168ms  WATCH 3 t=10188ms   -> 3 updates in 12s, ~5s cadence
+
+### Resolved
+
+With the coordinates rounded to six decimals, Firefox fully restarted so the new cfg was
+read, and the site given a permanent Location permission rather than a session Allow, the
+site accepted the position. Which of the three was decisive is not known -- they were
+applied together and the site gives no diagnostic beyond its one dialog -- so all three
+stay. The throwaway diagnostic page in `/home/john/geo-test.html` was removed.
+
+End state: geolocation on this host is a hardcoded answer served from
+`hosts/laptop/overlay/usr/lib/firefox/`, no service and no network involved, and nothing
+in the Firefox build itself was changed at any point in this. The book-wide half of what
+this cost -- that BLFS spends a dead Google key on two separate pages, and that
+`geo.provider.network.url` is a pref rather than a compile-time constant -- is in
+`PRACTICES.md`.

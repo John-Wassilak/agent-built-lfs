@@ -598,6 +598,56 @@ change, or the package's file list is wrong the first time it is captured and st
 Directories themselves are already excluded (`! -type d`), so only the contents need
 naming.
 
+## The book's Google Location Service key is dead, and BLFS spends it twice
+
+Firefox's BLFS page has you write the book's shared Google Location Service key into a
+`google-key` file and pass `--with-google-location-service-api-keyfile`; the GeoClue page
+writes the same key into `/etc/geoclue/conf.d/90-lfs-google.conf` as the `[wifi]` source
+URL. Both landed correctly on `laptop` (the key is verifiable after the fact in
+`omni.ja`'s `modules/AppConstants.sys.mjs`), and geolocation still failed on every
+request, because as of 2026-09-08 Google answers that key with
+
+    403 PERMISSION_DENIED: You must enable Billing on the Google Cloud Project
+
+So on any machine built from BLFS 13.0, both the browser-level and the OS-level
+geolocation providers are wired to a service that refuses them, and the symptom is a
+`GeolocationPositionError` code 2 that looks exactly like a missing dependency. Building
+GeoClue is not the fix it appears to be: it reaches the same dead endpoint.
+
+Two follow-on facts worth knowing before spending build time on this:
+
+- **beaconDB** is the keyless successor to the retired Mozilla Location Service and
+  speaks the same geolocate API, but coverage is regional. Handed 11 APs scanned off
+  `laptop`'s own radio it matched none of them and answered `"fallback":"ipf"` with
+  25 km accuracy. Test it with a real scan *before* building `libsoup-3` + GeoClue for
+  wifi trilateration, or the two builds buy nothing.
+- The book's mozconfig keeps `--disable-necko-wifi`, so Firefox does no wifi scanning of
+  its own (confirm with `grep -a nsWifiMonitor libxul.so` -- no hits). Even a paid,
+  working key therefore yields IP-level accuracy from Firefox alone; wifi accuracy needs
+  GeoClue to do the scanning, or a Firefox rebuild.
+
+The mechanism that made all of this cheap to fix: **`geo.provider.network.url` is a pref,
+not a compile-time constant**, and it will fetch any URL, including a `data:` URL holding
+a literal answer, which Firefox parses with the same JSON reader it uses for a real
+provider. Nothing above ever required rebuilding Firefox (~4 h on `laptop`). To set a
+pref for every profile and every user without owning a profile directory, use autoconfig:
+`<installdir>/defaults/pref/autoconfig.js` naming `general.config.filename`, plus
+`general.config.obscure_value = 0` or the cfg is read as ROT-13 and silently ignored --
+and the first line of the cfg is *always* skipped, so it must be a comment. Both files
+are deploy-time overlay content, so they belong in the host's `overlay/`, not a manifest.
+
+Last, a debugging fact that cost an hour: a page can call `getCurrentPosition`
+successfully while `navigator.permissions.query({name: 'geolocation'})` still answers
+`prompt`, because an Allow from the doorhanger is not necessarily persisted -- `laptop`'s
+profile had 5 rows in `permissions.sqlite` and none of type `geo`. A site that wants a
+durable grant rejects that state, with a message that reads like the position itself
+failed. Check the permission database, not just the API call.
+
+The general rule: **a book recipe that embeds a third-party service credential is a
+liability with a shelf life.** That the feature compiled in is not evidence the feature
+works -- query the service directly (one `curl`, above) before believing it, and before
+building anything downstream of it.
+
 ## Standing policies
 
 - **BLFS Recommended dependencies get installed, not just Required** -- but checked
