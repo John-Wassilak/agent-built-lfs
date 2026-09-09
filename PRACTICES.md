@@ -648,6 +648,52 @@ liability with a shelf life.** That the feature compiled in is not evidence the 
 works -- query the service directly (one `curl`, above) before believing it, and before
 building anything downstream of it.
 
+## Re-running a completed step over its own install *under*-reports its manifest
+
+Fourth variant of the manifest-boundary problem, and the mirror image of the three above:
+they all recorded too much, this one records too little. Found on `blfs-nginx` (laptop,
+2026-09-08) while iterating on a hand-authored recipe against a live host.
+
+The sweep is `find -cnewer` against a stamp touched at the start of the step, so it sees
+files whose inode changed *during this run*. A well-behaved installer is idempotent -- nginx
+generates its install rules as `test -f <conf> || cp conf/<conf> <conf>` for `nginx.conf`,
+`mime.types`, `fastcgi.conf` and the fastcgi/scgi/uwsgi params files, and this recipe's own
+account creation and config writing are `getent ... ||` and `[ ! -f ... ]` guarded for the
+same reason. On a re-run every one of those guards correctly does nothing, so the files are
+not newer than the stamp and silently drop out of the file list. The manifest went 28 files
+to 13, losing `/etc/nginx/mime.types`, all four params files and the whole passwd/group
+family, and *gaining* `/usr/sbin/nginx.old` -- the rename `make install` performs on a
+running binary, which is not an installed file at all.
+
+Nothing fails and nothing warns. The step reports OK, the service works, and the package
+database quietly holds a file list that would under-report the package forever after.
+
+The fix is not to hand-edit the manifest into what it should have been: remove what the
+step installs -- including the system account, or the passwd family stays missing -- and
+re-run clean, then check the file list actually reproduces. On `blfs-nginx` it came back at
+28 files identically. The general rule: a manifest captured by a `--force` rerun over an
+existing install is not trustworthy, and any recipe iteration that ends in `--force` should
+end in a clean re-capture instead. This compounds with the `--force` section above, which
+covers the same reruns *failing*; here they succeed and the damage is invisible.
+
+## The daemon-state manifest rule extends to daemons the step has nothing to do with
+
+Addendum to the `blfs-tor` section above, found the same way (`blfs-nginx`, laptop,
+2026-09-08). That section's rule is about the step's *own* service writing state while the
+step runs. The same sweep also catches any *unrelated* daemon that happens to write under
+`MANIFEST_ROOTS` during the build window: nginx's manifest claimed five
+`/var/lib/upower/history-{charge,rate,time-empty,time-full,voltage}-JLab_JBuds_Sport_ANC_4-*.dat`
+files, because a bluetooth headset connected while the step was compiling and upower wrote
+its battery history.
+
+`^/var/lib/upower/` is now in `MANIFEST_NOISE` for that reason -- upower writes those files
+on a timer for the battery and for every bluetooth peripheral reporting a battery level, so
+this is not specific to one headset or one host. The broader point for reviewing a new
+manifest: a file list is not only checked for what is *missing*, it is checked for entries
+that have no business belonging to this package. A path under `/var/lib/<some other
+service>/` in a package's manifest is a bug in the exclusion list, not a discovery about
+the package.
+
 ## Standing policies
 
 - **BLFS Recommended dependencies get installed, not just Required** -- but checked

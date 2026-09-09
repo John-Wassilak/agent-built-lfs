@@ -103,6 +103,14 @@ MANIFEST_NOISE = "|".join([
     # package installed. The directory itself is created by the recipe and is a
     # directory, which the manifest sweep already excludes.
     r"^/var/lib/tor/",
+    # upower's per-device history. It writes history-{charge,rate,time-empty,
+    # time-full,voltage}-<device>.dat on a timer for the battery and for every
+    # bluetooth peripheral that reports a battery level, so a build that happens to
+    # span a headset connecting picks them up. Caught 2026-09-08 on laptop, where
+    # blfs-nginx's manifest claimed five history-*-JLab_JBuds_Sport_ANC_4-*.dat files.
+    # Same category as systemd's clock/random-seed and tor's DataDirectory above:
+    # service runtime state, not package-installed content.
+    r"^/var/lib/upower/",
 ])
 
 # Steps the driver handles specially rather than executing verbatim.

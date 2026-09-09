@@ -4895,3 +4895,208 @@ verification from a fresh profile:
 
 Editing this is a one-line change to `hosts/laptop/overlay/usr/lib/firefox/firefox.cfg`
 plus a copy to `/usr/lib/firefox/`, and takes effect at the next Firefox start.
+
+## 2026-09-08 (continued): nginx 1.30.4 (seq 320), with the old Gentoo config reviewed and carried forward
+
+Operator request: "install nginx, and my old config is at /mnt/server/laptop_backup/nginx
+review and make any recommendations but then ensure up and running".
+
+BLFS 13.0-systemd has no nginx page -- `find book/blfs-13.0 -iname '*nginx*'` returns
+nothing and a case-insensitive grep of the whole tree agrees; the book's only HTTP servers
+are Apache and lighttpd. So this is a `hand()` entry, the fourth on this host after tor,
+sdbus-c++/xdg-desktop-portal-hyprland and sshpass. Nothing had to be built ahead of it:
+the entire dependency closure -- pcre2 10.47, openssl 3.6.1, zlib 1.3.2 -- is LFS chapter
+8 and was already here. 0.8 min, 28 files.
+
+### The version is a security decision, not a preference
+
+1.30.4, the head of the stable branch (nginx numbers even minors stable, odd mainline;
+1.31.5 is current mainline). Checked against nginx.org/en/security_advisories.html rather
+than picking the newest-looking number: the three most recent advisories --
+CVE-2026-42533 (major, buffer overflow using `map` with a regex), CVE-2026-60005 (medium,
+memory disclosure in the slice module) and CVE-2026-56434 (medium, use-after-free in the
+SSI module) -- all read "Not vulnerable: 1.31.3+, 1.30.4+". 1.30.4 is therefore the oldest
+stable release that clears every published advisory; 1.28.x and 1.26.x are vulnerable to
+all three.
+
+Provenance is better than most non-book tarballs here get, but not as good as tor's. The
+detached signature verifies GOOD against Roman Arutyunyan's key
+`43387825DDB1BB97EC36BA5D007C8D7C15D87369`, one of the four release-manager keys
+nginx.org lists -- but that key came from nginx.org/keys/arut.key, the same TLS origin as
+the tarball, so it is a same-origin integrity check rather than the independent trust path
+WKD gave `blfs-tor.sh`. Recorded in the recipe as what it is.
+
+### Two CVE-prone modules are absent for free, one was turned off
+
+`ngx_http_mp4_module` and `ngx_http_dav_module` are not default modules, so not asking for
+them costs nothing. That is worth writing down because the mp4 one is tempting on a host
+whose docroot is 836 `.mp4` files, and it is the single most advisory-prone module in
+nginx's history -- CVE-2026-27784, CVE-2026-32647, CVE-2024-7347 and CVE-2022-41741 are
+all it. It is also not needed: HTML5 video seeking uses HTTP range requests, which plain
+static serving already answers. Verified live, not assumed:
+
+    curl -r 0-99 http://127.0.0.1/<a 246 MB mp4>
+    HTTP/1.1 206 Partial Content
+    Content-Range: bytes 0-99/246444657
+
+`ngx_http_ssi_module` *is* a default module and was turned off with
+`--without-http_ssi_module`. No config in this repo uses server-side includes, and it is
+the module behind CVE-2026-56434 above.
+
+### The old config had one accident, one live bug, and a lot of 2005
+
+The Gentoo config at `/mnt/server/laptop_backup/nginx/nginx.conf` was reviewed directive
+by directive; the annotated result is `hosts/laptop/overlay/etc/nginx/nginx.conf`, which
+records every keep, change and removal inline. The findings worth repeating:
+
+- **The exposure.** `root /mnt/crypt/john` (the whole home directory, not the
+  `web_server/` subdirectory that looks like it was the intent) plus `autoindex on` plus
+  `listen 0.0.0.0` publishes a browsable index of `2023-taxes/`, `crt/` (fatcow.crt,
+  gmail.crt), `jumpbox-backup.tar.gz`, `resume/`, `phone_backup/`, `nextcloud/` and
+  `config/`. The LAN cannot reach it -- INPUT policy is DROP and `blfs-iptables.sh` opens
+  only tcp/22 -- but `ts-input`'s second rule is
+  `ACCEPT all -- tailscale0 * 0.0.0.0/0`, so every node on the tailnet can, and this is
+  not a single-user tailnet: `tailscale status` lists `ifd-container-registry`,
+  `ifd-data-01`, `ifd-grafana` and `ifd-k8s-cp-01` next to `johns-laptop`.
+
+  **Operator decision:** told the above and offered `web_server/` or `/srv/www` as the
+  docroot, and the tailscale IP or loopback as the listen address, the operator chose to
+  reproduce the old behaviour exactly. Done, and recorded at the top of the config rather
+  than quietly narrowed. The firewall was *not* opened for tcp/80, so LAN reachability
+  still requires an iptables change nobody has made.
+
+- **A live bug, not just noise.** `large_client_header_buffers 4 2k` shrinks the default
+  (`4 8k`). A request line longer than the buffer gets 414, and this docroot's filenames
+  run past 130 characters before URL-encoding inflates every space and bracket to three
+  bytes. Removed, restoring the default.
+
+- **Mime coverage regressed and had to be patched back.** The old config included
+  `mime.types.nginx`, Gentoo's 1079-entry table from its `app-misc/mime-types` package,
+  which does not exist here; nginx's own table has 98 entries. Inventoried the docroot
+  rather than guessing (`find /mnt/crypt/john -maxdepth 3 -type f`): 836 mp4, 448 jpg,
+  323 go, 168 webm, 89 mp3, 72 org, 44 md, 25 pdf, 13 mkv. Matroska is absent from
+  nginx's table entirely, and `.m4b` (2 audiobooks at the top level) is absent from both.
+  A `types { }` block adds mkv/mka, m4b as `audio/mp4`, and md/org/conf/log as
+  `text/plain` so they read in a browser instead of downloading. Verified:
+
+      200  video/x-matroska          .../*.mkv
+      200  audio/mp4                 Jim Cramers get rich carefully ....m4b
+      200  text/plain; charset=utf-8 web_server/lentil-recipe.md
+      200  video/mp4                 .../*.mp4
+
+- **The 2005 tuning knobs.** `connection_pool_size 256`, `request_pool_size 4k`,
+  `client_header_buffer_size 1k` and `ignore_invalid_headers on` all restate the current
+  default; `output_buffers 1 32k` and `postpone_output 1460` are *worse* than it for
+  large-file reads (the latter pinned to one ethernet MSS, predating TSO and the
+  `tcp_nopush` on the next line). All removed with the reason recorded per directive.
+
+- **`gzip off` was right** and was kept: the docroot is mp4/webm/jpg/mp3, already
+  compressed. `$gzip_ratio` stays in `log_format main` so the format is byte-identical to
+  the old one; it logs `-`.
+
+- **Slowloris surface.** `client_header_timeout`/`client_body_timeout` were 10m, meaning a
+  client can hold a worker connection open for ten minutes dribbling a byte at a time.
+  Cut to 60s. `send_timeout` deliberately stays at 10m -- it bounds the gap between
+  successful writes to a client that is *receiving*, and a browser buffering a 425 MB mp4
+  over a slow tailnet link legitimately pauses for minutes.
+
+- **`worker_processes 1` -> `auto`** (4 threads on this i7-6600U). One worker serialises
+  every request through a single event loop.
+
+- **`aio threads` + `sendfile_max_chunk 2m` added**, which is why the recipe compiles
+  `--with-threads --with-file-aio`. Bare `sendfile()` on a large file that is not in page
+  cache blocks the whole worker; this moves the read to a thread pool and bounds how much
+  one client may transfer before nginx returns to the event loop.
+
+- **`/pi` is disabled, not deleted.** The old config proxied it to `127.0.0.1:8080`.
+  Nothing listens there (`ss -ltn`, and no unit in this build provides it), so left
+  enabled it would answer 502 and fill the error log. Preserved verbatim as a comment
+  with restore instructions; `/pi` now returns 404, confirmed.
+
+- **`server_tokens off` and `charset utf-8` added.** The former stopped advertising the
+  exact version to anything scanning the tailnet; the latter matters because autoindex
+  renders this docroot's YouTube-derived filenames, which are UTF-8 with brackets and
+  non-ASCII characters.
+
+### Known limitation: the docroot is not mounted at boot
+
+`/mnt/crypt` is not in `/etc/fstab`. It is the LUKS volume (`/dev/mapper/cryptroot`)
+unlocked and mounted by hand. nginx starts fine without it -- `root` is resolved per
+request, not at startup -- but until it is mounted every request returns 404 with "No such
+file or directory" in the error log. Making this docroot survive a reboot unattended needs
+fstab plus crypttab entries, which is a separate decision because it means either a keyfile
+on the unencrypted root or a boot-time passphrase prompt. Not done; flagged.
+
+### Shared recipe, host config
+
+Split per CLAUDE.md's shared/host test rather than dumped in one place. The build, the
+`nginx` system account, the systemd unit and a fail-safe stub config are true of any
+machine running this book, so they are `recipes/blfs-nginx.sh`. The real config names
+`/mnt/crypt/john` and is therefore `hosts/laptop/overlay/etc/nginx/nginx.conf`, applied by
+hand like `server`'s `grub.cfg`/`xorg.conf`/`mpv.conf`.
+
+The stub matters for that split to be safe. A host whose overlay has not been applied gets
+loopback-only, no autoindex, and an empty `/srv/www/nginx` with a placeholder page -- it
+serves a page to itself and nothing to the network, rather than a directory listing of
+something nobody chose. It is written only when absent, so neither a rebuild nor a version
+bump overwrites the config a host actually runs (`make install` has the same guard:
+auto/install emits `test -f <conf> || cp conf/nginx.conf <conf>`, and the same guard covers
+mime.types and the fastcgi/scgi/uwsgi params -- a version bump does *not* refresh those in
+place, it only rewrites the `.default` copies next to them).
+
+### Three things the first install got wrong, found by checking rather than assuming
+
+1. **`/usr/html`.** `make install` hardcodes one path with no configure flag to redirect
+   it: auto/install emits `test -d $NGX_PREFIX/html || cp -R html /usr`. With
+   `--prefix=/usr` that lands `index.html` and `50x.html` in `/usr/html`, which the FHS
+   has no place for -- and because lfsmaint records what a step installed, leaving it
+   there means `/usr/html` is reported as nginx-owned for the life of the system. The
+   recipe now relocates `50x.html` to `/usr/share/nginx/html` and removes the directory.
+2. **The log directory ownership was a comment that was going to be wrong.** The recipe
+   created `/var/log/nginx` as `root:nginx`, and systemd silently undid it: `LogsDirectory`
+   chowns to the unit's `User=`/`Group=`, which this unit does not set, so it resolves to
+   `root:root`. The nginx account needs no access anyway -- the *master* (root) opens every
+   log file and workers inherit the descriptors. Recipe now sets what will actually be
+   true and says why.
+3. **`RuntimeDirectory=nginx` created an empty `/run/nginx` that looked meaningful.**
+   `--pid-path` puts the pidfile at `/run/nginx.pid`, not under a subdirectory, and nothing
+   else writes there. Dropped.
+
+A fourth was a measurement artifact rather than a defect, and is worth recording because
+it will recur: **re-running a completed step over its own install produces an incomplete
+manifest.** The sweep is `find -cnewer` against a start-of-step stamp, so on a second run
+the files `test -f || cp` skipped are not newer than the stamp and drop out -- the manifest
+went 28 -> 13 files, losing `/etc/nginx/mime.types`, the params files and the passwd family,
+and gaining `/usr/sbin/nginx.old` (nginx's install renames the running binary, which is not
+an installed file). The fix is to remove what the step installs, including the account, and
+re-run clean; the manifest then reproduces at 28 files exactly. Not a tool bug, but a real
+trap when iterating on a recipe against a live host.
+
+### Tooling change (shared): upower history is manifest noise
+
+`bin/lfsbuild`'s `MANIFEST_NOISE` gained `^/var/lib/upower/`. upower writes
+`history-{charge,rate,time-empty,time-full,voltage}-<device>.dat` on a timer for the
+battery and for every bluetooth peripheral reporting a battery level, so a build that
+happens to span a headset connecting picks them up -- blfs-nginx's manifest claimed five
+`history-*-JLab_JBuds_Sport_ANC_4-*.dat` files. Same category as systemd's
+clock/random-seed and tor's DataDirectory, and true of any host with a battery, so the
+exclusion is shared rather than host-specific.
+
+### End state
+
+    systemctl is-enabled nginx   -> enabled
+    systemctl is-active  nginx   -> active
+    master process as root, 4 workers as nginx
+    ss -ltn                      -> 0.0.0.0:80
+    nginx -t                     -> syntax ok, test successful
+    curl http://127.0.0.1/       -> 200, autoindex, text/html; charset=utf-8
+    curl http://100.89.41.78/    -> 200 (tailnet, as chosen)
+    curl -r 0-99 <246 MB mp4>    -> 206 Partial Content, correct Content-Range
+    curl -I /                    -> Server: nginx  (no version)
+    curl /pi                     -> 404 (proxy disabled, not 502)
+    systemctl reload nginx       -> active, no error-log output
+    error log clean apart from the deliberate /pi probe
+
+Both the installed unit and the installed config were diffed against the repo copies and
+match byte for byte.
+

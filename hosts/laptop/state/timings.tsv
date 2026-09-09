@@ -590,3 +590,8 @@ blfs-xdg-desktop-portal-gtk	native	14.0	0
 blfs-sdbus-cpp	native	15.0	0
 blfs-xdg-desktop-portal-hyprland	native	72.2	0
 blfs-sshpass	native	4.9	0
+blfs-nginx	native	43.1	0
+blfs-nginx	native	43.9	0
+blfs-nginx	native	47.1	0
+blfs-nginx	native	53.9	0
+blfs-nginx	native	45.8	0

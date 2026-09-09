@@ -1207,4 +1207,30 @@ PACKAGES = sorted(BASE + [
     # step there would also inject a never-run step into `server`'s live --resume queue,
     # the same hazard the seq-14.5 note above records.
     hand(319, "sshpass", "sshpass-1.10.tar.gz", "sshpass-1.10 (hand-authored, shared recipe)"),
+
+    # Operator-requested (2026-09-08): "install nginx", with the pre-LFS Gentoo config
+    # preserved at /mnt/server/laptop_backup/nginx to review and carry forward. BLFS
+    # 13.0-systemd has no nginx page (the book's only HTTP servers are Apache and
+    # lighttpd; `find book/blfs-13.0 -iname '*nginx*'` returns nothing), so this is a
+    # hand() entry. Its whole dependency closure was already built here -- pcre2,
+    # openssl and zlib, all from LFS chapter 8 -- so nothing had to be added ahead of
+    # it.
+    #
+    # The recipe is SHARED (recipes/blfs-nginx.sh): the build, the nginx system
+    # account, the systemd unit and a fail-safe loopback-only stub config are true of
+    # any machine running this book. This host's real configuration is host-specific --
+    # it names /mnt/crypt/john, this machine's hand-mounted LUKS volume -- so it lives
+    # in hosts/laptop/overlay/etc/nginx/nginx.conf per CLAUDE.md's shared/host test,
+    # and that file carries the directive-by-directive review of the Gentoo original.
+    #
+    # 1.30.4 is not an arbitrary pin: it is the oldest stable release that clears every
+    # advisory on nginx.org/en/security_advisories.html, three of which read "Not
+    # vulnerable: 1.31.3+, 1.30.4+". See the recipe header.
+    #
+    # Not promoted into packages/base.py: BASE is the closure of a workable LFS system
+    # and does not include a web server, and adding a step there would inject a
+    # never-run step into `server`'s live --resume queue -- the same hazard the seq-14.5
+    # note above records.
+    hand(320, "nginx", "nginx-1.30.4.tar.gz", "nginx-1.30.4 (hand-authored, shared recipe)"),
+
 ], key=lambda p: p["seq"])
