@@ -5389,3 +5389,104 @@ Spun out of this build, not part of it: `BOOK-PATCHES.md` at the repo root colle
 findings from this host's builds that are defects in the *book* rather than in this
 project -- the dead Google key first among them -- ranked for submission upstream, with
 the method for re-verifying each. Nothing has been submitted.
+
+### 2026-09-09: tcp/80 opened to the WireGuard subnet
+
+Operator request: reach nginx from the WireGuard subnet. nginx already listened on
+`0.0.0.0:80` -- the missing piece was the firewall, exactly the gap `overlay/etc/nginx/
+nginx.conf`'s own header had flagged on 2026-09-08 ("LAN reachability still depends on an
+iptables change nobody has made").
+
+The rule, added as a host review decision in `hosts/laptop/blfs-overrides.json` under
+`blfs-iptables` block 2 rather than in the shared `recipes/blfs-overrides.json`, because
+it names this machine's VPN:
+
+    iptables -A INPUT -i wg+ -s 10.0.0.0/24 -p tcp --dport 80 \
+             -m conntrack --ctstate NEW -j ACCEPT
+
+Two matches, not one. `-s 10.0.0.0/24` is the subnet from `/etc/wireguard/wg0.conf`'s
+`Address=` and the router peer's `AllowedIPs=`; `-i wg+` covers both `wg0` (split tunnel)
+and `wg1` (full tunnel), which carry the same address and are never up together. Without
+the interface match the source match would be a claim the sender makes about itself.
+
+`bin/extract-blfs.py --check` reported the new host recipe as the only change (1 recipe
+CREATED, zero drift), and `hosts/laptop/recipes/blfs-iptables.sh` now diffs against the
+live `/etc/systemd/scripts/iptables` by exactly the new rule and its comment.
+
+Applied live with `iptables -A` rather than `systemctl restart iptables.service`. The
+service's script begins `iptables -F; iptables -X`, which would delete tailscaled's
+`ts-input`/`ts-forward` chains and the `INPUT -j ts-input` jump that carries every
+tailnet connection to this box. tailscaled re-installs those on its own schedule, not
+immediately, so a restart trades a working tailnet for a cosmetically cleaner apply. The
+appended rule and the boot-time script now agree; a reboot reproduces the same ruleset.
+
+Verified, not assumed:
+
+- `curl` from `10.0.0.1` over wg0 to `http://10.0.0.2/` returns `200`, `Server: nginx`.
+- The same host curling this machine's LAN address `http://192.168.0.210/` still times
+  out after 6 s (`curl: (28)`), so the LAN did not get opened as a side effect.
+- The rule's own counter moved from 0 to 2 packets across that test.
+- Previous script kept at `/etc/systemd/scripts/iptables.bak-2026-09-09`.
+
+The exposure is unchanged in kind and wider in reach: the docroot is still
+`/mnt/crypt/john` with `autoindex on`, so every holder of a peer key on the home router
+can now browse it, on the same terms as the four tagged tailnet devices already could.
+That is recorded in the override's `reason` and in the config header, both amended
+today, rather than narrowed on the operator's behalf. Narrowing it later is a docroot
+change (`/mnt/crypt/john/web_server`), not a firewall change.
+
+### 2026-09-09, later: the book's ICMP-redirect line was a no-op
+
+Found while writing the firewall posture up in `~/Scripts/firewall.sh` -- documenting a
+rule meant reading what the kernel actually consults, and the answer did not match the
+script.
+
+The BLFS Personal Firewall script this host runs writes
+`/proc/sys/net/ipv4/conf/default/accept_redirects` under the comment "Disable ICMP
+Redirect Acceptance". It had not disabled anything. `conf/default` is the template copied
+into interfaces created *after* it is written, and `include/linux/inetdevice.h:126` makes
+`IN_DEV_RX_REDIRECTS` an OR of `conf/all` and the per-interface value whenever forwarding
+is off -- which this host is. `conf/all/accept_redirects` defaults to 1 and the script
+never wrote it. Live values before the fix, which is what made it visible:
+
+    net.ipv4.conf.all.accept_redirects        = 1
+    net.ipv4.conf.default.accept_redirects    = 0
+    net.ipv4.conf.eth0.accept_redirects       = 0
+    net.ipv4.conf.wlp4s0.accept_redirects     = 0
+    net.ipv4.conf.wg0.accept_redirects        = 0
+    net.ipv4.conf.tailscale0.accept_redirects = 0
+
+Every interface reading 0 while every interface accepted redirects. `secure_redirects`
+(default 1) narrows that to an on-link default-gateway impersonator; it does not close it.
+
+Fixed in **both** override layers, and the second one is the part worth remembering.
+`recipes/blfs-overrides.json` is the right home -- the fix is true of any machine running
+this book, so it went shared, and `server` picks it up from the same block. But a host
+block *replaces* the shared block rather than adding to it, so this host's own
+`blfs-iptables` block 2 (added earlier today for the WireGuard rule) would have kept
+serving the old text and the fix would never have reached the machine it was found on.
+The host block is now re-derived from the shared text programmatically -- shared `cmd`,
+then the WireGuard segment spliced back in after the SSH rule -- rather than hand-merged,
+and its `reason` says so, because the next shared-layer change has the same problem.
+
+Applied: `bin/extract-blfs.py` regenerated both recipes (drift check named exactly the
+two expected files, zero after), the generated heredoc now diffs against the installed
+`/etc/systemd/scripts/iptables` by only the new stanza, that file was reinstalled, and
+`sysctl -w net.ipv4.conf.all.accept_redirects=0` closed it on the running kernel without
+waiting for a reboot.
+
+Verified after: `all`, `default`, `eth0`, `wlp4s0`, `wg0` and `tailscale0` all read 0;
+`lo` still reads 1, which is the kernel's own default for loopback and is left alone
+since an ICMP redirect cannot arrive on `lo` from off-box. nginx over WireGuard still
+answers 200 from `10.0.0.1`, outbound HTTPS still works, `tailscale status` still lists
+the tailnet. `~/Scripts/firewall.sh check` now verifies all 14 tunables plus the five
+rules and the three policies against the running kernel, exit 0.
+
+Two records outside this file: `PRACTICES.md` gained "A sysctl written to `conf/default`
+can be a no-op, and for `accept_redirects` it is", with the `MAXCONF` vs `ORCONF` table
+and the practice of reading back the *effective* value; `BOOK-PATCHES.md` gained tier 1
+item 3, since a security line that reads as done and is not belongs upstream.
+
+Still open, and not this host's to fix: `server` was built before this, and regenerating
+a recipe does not touch an installed script or a running kernel there. Until that file is
+reinstalled on `server`, it accepts ICMP redirects on every interface.

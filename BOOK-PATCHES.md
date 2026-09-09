@@ -96,6 +96,68 @@ glycin switch itself is gated, or promote glycin to Required.
 
 **Evidence:** `recipes/blfs-overrides.json` (`blfs-gdk-pixbuf` block 0).
 
+### 3. The Personal Firewall's "Disable ICMP Redirect Acceptance" line does not disable it
+
+`postlfs/iptables.html` ships two firewall scripts. The Personal Firewall one -- the
+example for a single-interface machine, which is what most readers of that page have --
+writes:
+
+    # Disable ICMP Redirect Acceptance
+    echo 0 > /proc/sys/net/ipv4/conf/default/accept_redirects
+
+That line does not do what the comment above it says. Two reasons, both in the kernel:
+
+- `conf/default/*` is the template copied into interfaces created *after* it is written.
+  It cannot change an interface that already exists, and on a boot-time firewall script
+  every physical interface already exists.
+- For this particular knob the "all" value is not a fallback, it is an override. From
+  `include/linux/inetdevice.h:126` (read in 6.18.49, unchanged in shape for many
+  releases):
+
+        #define IN_DEV_RX_REDIRECTS(in_dev) \
+         ((IN_DEV_FORWARD(in_dev) && IN_DEV_ANDCONF((in_dev), ACCEPT_REDIRECTS)) \
+          || (!IN_DEV_FORWARD(in_dev) && IN_DEV_ORCONF((in_dev), ACCEPT_REDIRECTS)))
+
+  A Personal Firewall host is not forwarding, so it is the `ORCONF` branch: `conf/all`
+  OR the per-interface value. `conf/all/accept_redirects` defaults to 1 and the script
+  never writes it, so the OR is 1 on every interface and redirects are accepted.
+
+Measured on `laptop` after running the book's script unmodified, before the fix:
+
+    net.ipv4.conf.all.accept_redirects        = 1
+    net.ipv4.conf.default.accept_redirects    = 0
+    net.ipv4.conf.{eth0,wlp4s0,wg0,tailscale0}.accept_redirects = 0
+
+Every interface reads 0 and every interface accepts redirects. `secure_redirects`
+(default 1) limits acceptance to redirects whose source is already a default gateway,
+which narrows the attack to an on-link gateway impersonator; it does not make the line
+work as documented.
+
+The book contradicts itself on the same page: the Masquerading Router script two sections
+down writes `conf/all/accept_source_route`, `conf/all/accept_redirects` and
+`conf/all/rp_filter`, i.e. the "all" form throughout. Only the Personal Firewall example
+uses `default`, and it does so for `accept_source_route` and `rp_filter` too -- but those
+two are read with `MAXCONF`/per-interface semantics where the book's values happen to be
+the safe direction, so `accept_redirects` is the one that inverts.
+
+**Proposed change.** In the Personal Firewall script, write `conf/all/accept_redirects`
+(keeping the `default` line is fine and is what this project did, so interfaces brought
+up later inherit it). The one-line version is to change `default` to `all` and match the
+other example on the page.
+
+**Evidence:** `recipes/blfs-overrides.json` (`blfs-iptables` block 2), the "CHANGED from
+the book's Personal Firewall example" comment in the generated
+`/etc/systemd/scripts/iptables`, and `PRACTICES.md`, "A sysctl written to `conf/default`
+can be a no-op, and for `accept_redirects` it is". Found 2026-09-09 on `laptop` while
+writing up the firewall posture in `~/Scripts/firewall.sh`, not during the build.
+
+**Strength:** high. It is a security line that reads as done and is not, the
+reproduction is three `sysctl -n` reads after running the book's own script, and the fix
+is one word. Weaker than item 1 only in that the consequence needs an attacker on-link
+rather than being unconditional.
+
+---
+
 ## Tier 2 -- the printed command hard-fails without a Recommended dependency, and the page documents no escape
 
 One shape, ten pages. The meson/cmake option is a plain boolean, or a feature passed

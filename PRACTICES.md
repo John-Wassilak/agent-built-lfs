@@ -758,6 +758,58 @@ that have no business belonging to this package. A path under `/var/lib/<some ot
 service>/` in a package's manifest is a bug in the exclusion list, not a discovery about
 the package.
 
+## A sysctl written to `conf/default` can be a no-op, and for `accept_redirects` it is
+
+The BLFS Personal Firewall script (`postlfs/iptables.html`), which this project's
+`blfs-iptables` step installs as `/etc/systemd/scripts/iptables`, hardens the network
+stack with a block of `echo <n> > /proc/sys/...` lines. Three of them write
+`net.ipv4.conf.default.*`. One of those three does nothing at all, and it is the one
+whose comment says "Disable ICMP Redirect Acceptance".
+
+Two independent reasons, both worth knowing beyond this one knob:
+
+- `conf/default/*` is not a fallback for interfaces that lack a value. It is the
+  template copied into an interface's config *when the interface is created*. A
+  boot-time script writing `default` changes nothing about `eth0`, which already exists.
+- Whether `conf/all/*` is a floor, a ceiling, an override or irrelevant is per-knob, and
+  the kernel header is the only honest source. `include/linux/inetdevice.h`:
+
+      IN_DEV_RPFILTER   -> MAXCONF   max(all, interface)          -- rp_filter
+      IN_DEV_ARP_IGNORE -> MAXCONF   max(all, interface)
+      IN_DEV_RX_REDIRECTS -> ANDCONF when forwarding is on,
+                             ORCONF  when it is off               -- accept_redirects
+
+  `max()` means a safe value in `all` cannot be undone by an interface, which is why the
+  book's `rp_filter` line is harmless. `OR` means the opposite: an unsafe value in `all`
+  cannot be fixed by an interface. `conf/all/accept_redirects` defaults to 1, the book's
+  script never writes it, and a Personal Firewall host is not forwarding -- so after
+  running the book's own hardening script, every interface reads
+  `accept_redirects = 0` and every interface accepts ICMP redirects.
+
+Fixed in the shared layer (`recipes/blfs-overrides.json`, `blfs-iptables` block 2), which
+now writes `conf/all/accept_redirects` alongside the book's `default` line. Keeping both
+is deliberate: `all` closes it now, `default` does the job the book intended for
+interfaces brought up later (`wg0`, `tailscale0`).
+
+The general practice, which is not specific to firewalls:
+
+- **A hardening line is not done until the effective value has been read back.** Not the
+  value you wrote -- the value the kernel consults. For anything under
+  `net.ipv4.conf.*`, that means reading `all`, `default`, and each real interface, then
+  checking the header for how they combine. `sysctl -a | grep <knob>` shows the
+  disagreement in one screen.
+- **`conf/default` alone is almost always a bug in a boot script.** Write `all` for the
+  machine's posture and `default` for interfaces yet to exist. Writing only the second
+  hardens nothing that is currently plugged in.
+
+Cross-machine consequence, still open at the time of writing: this fix landed in the
+shared override, so `server`'s generated recipe carries it too -- but `server` was built
+before it, and a regenerated recipe does not touch an already-installed
+`/etc/systemd/scripts/iptables` or a running kernel. Until someone reinstalls that file
+on `server` (or writes the sysctl by hand there), `server` still accepts redirects on
+every interface. A shared-layer fix reaches a built machine only when something applies
+it.
+
 ## Standing policies
 
 - **BLFS Recommended dependencies get installed, not just Required** -- but checked

@@ -114,6 +114,19 @@ iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 # rule above already covers the rest of each session once it exists.
 iptables -A INPUT -p tcp --dport 22 -m conntrack --ctstate NEW -j ACCEPT
 
+# Not in the book's example either, and the reason it is here rather than in the shared
+# file: it names this machine's VPN subnet and interface. nginx (blfs-nginx, seq 320)
+# listens on 0.0.0.0:80, but the book's script opens no inbound port besides the SSH
+# rule above -- /etc/nginx/nginx.conf's own header records that tcp/80 was deliberately
+# left closed. Operator request 2026-09-09: reach it from the home router's WireGuard
+# subnet. Scoped two ways: source 10.0.0.0/24 (the subnet in /etc/wireguard/wg0.conf's
+# Address= and the peer's AllowedIPs=) and inbound interface wg+, which covers both wg0
+# (split tunnel) and wg1 (full tunnel) -- same address, only one up at a time. The
+# interface match is what makes the source match meaningful: a packet arriving on eth0
+# or wlp4s0 claiming a 10.0.0.x source does not match this rule, so the LAN still has
+# no path to tcp/80.
+iptables -A INPUT -i wg+ -s 10.0.0.0/24 -p tcp --dport 80 -m conntrack --ctstate NEW -j ACCEPT
+
 # Everything else is dropped by policy (no LOG rule -- the book's example logs
 # every dropped packet, which on an internet-facing host is a constant stream
 # of scan/noise traffic; not wanted here, dropped without a paper trail).
