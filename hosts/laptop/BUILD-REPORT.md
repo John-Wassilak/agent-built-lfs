@@ -5490,3 +5490,74 @@ item 3, since a security line that reads as done and is not belongs upstream.
 Still open, and not this host's to fix: `server` was built before this, and regenerating
 a recipe does not touch an installed script or a running kernel there. Until that file is
 reinstalled on `server`, it accepts ICMP redirects on every interface.
+
+### 2026-09-09, third pass: keys-only ssh, IPv6 blocked, tailscale shields up
+
+Three operator requests, each verified against the running system rather than the config
+that was supposed to produce it. That distinction earned its keep twice.
+
+**Password authentication off.** `blfs-openssh` block 3 now deletes
+PermitRootLogin/PasswordAuthentication/KbdInteractiveAuthentication before appending all
+three, instead of appending PermitRootLogin alone. KbdInteractiveAuthentication is in
+there because it reaches the same PAM password prompt by another path and leaving it on
+makes the first setting cosmetic.
+
+The interesting part: this was already half-done and silently not working.
+`/etc/ssh/sshd_config` carried the book's `PasswordAuthentication yes` at line 119 and an
+appended `PasswordAuthentication no` at line 122, and sshd honours the first occurrence
+of a repeated directive -- `sshd -T` reported **yes**. Anyone reading the tail of that
+file would have concluded passwords were off. This is the same trap this override's own
+`reason` documents for PermitRootLogin, hit a second time by the same append-only shape.
+`sshd -T` after the fix: PermitRootLogin no, PasswordAuthentication no,
+KbdInteractiveAuthentication no, PubkeyAuthentication yes.
+
+Access proven still working before moving on, not assumed: john's three authorized_keys
+are all 4096-bit RSA (pi-tv, pi-master-tv, server), and `server`'s key fingerprint
+matches its `id_rsa.pub`. A first non-interactive test failed with "Permission denied
+(publickey)", which looked briefly like a lockout -- the cause was that `server`'s private
+key is passphrase-protected, so a BatchMode session offers nothing. Re-run against the
+ssh-agent already running there: `KEY-LOGIN-OK: john@laptop`. Root has no
+authorized_keys and no password path, so root over ssh is closed both ways.
+
+**IPv6 blocked entirely.** New section in `blfs-iptables` block 2 (host layer): policy
+DROP on all three ip6tables chains, flushed, with `::1` allowed in both directions and
+nothing else. Before this, ip6tables was policy ACCEPT with zero rules -- the book's
+script never touches it -- so an unfiltered stack sat behind a filtered one, and sshd
+listens on `[::]:22`.
+
+The `::1` exception is deliberate and is not a compromise: DROP gives a client nothing to
+fail on, so a dropped loopback connection is a hang until the client times out and retries
+127.0.0.1. Blocking off-box v6 was the goal; making local sockets stall was not.
+
+Verified from `server`, same LAN segment: `ssh -6` to this box's `fe80::` address port 22
+times out, while the v4 control to the same sshd in the same run answers with a publickey
+denial. Off-box v6 egress fails in ~1ms rather than hanging (no global address means no
+route to hang on) and a dual-stack `curl https://example.com` still completes in ~80ms.
+
+**Tailscale shields up.** `tailscale set --shields-up`, confirmed `"ShieldsUp": true` in
+`tailscale debug prefs`. tailscaled now refuses inbound tailnet connections in its own
+userspace filter while return traffic for outbound flows is unaffected -- verified by
+toggling it off and back on, which changed nothing about outbound. Note that
+`-A ts-input -i tailscale0 -j ACCEPT` is still in the chain: the enforcement is upstream
+of iptables, in tailscaled, and the setting lives in its prefs rather than in this repo.
+
+This one corrected a claim that had been propagating. The nginx OPERATOR DECISION header
+from 2026-09-08 said every node on this tailnet can browse the docroot, and today's
+earlier WireGuard work repeated it. It was never demonstrated and the counters contradict
+it: `iptables -L ts-input -v` shows **13 packets** on the tailscale0 accept rule across
+four days of uptime, and an ssh from `server` to this box's tailnet address moved that
+counter by zero -- the packets never reached the kernel. Inbound was already being refused
+inside tailscaled by the tailnet's ACL policy, not by anything on this host. Corrected in
+the nginx.conf header, the override `reason`, and `~/Scripts/firewall.sh`: what is true is
+that this host's firewall imposes nothing on the tailnet, and the enforcement was living
+in a policy someone can change in a web console. Shields-up moves it onto the device.
+
+Also observed while testing, pre-existing and not caused by any of this: TCP over the
+tailnet between `laptop` and `server` does not work in either direction, with shields up
+or down. `tailscale ping johns-server` answers in 1ms via 192.168.0.233:41641, so the
+tunnel is alive, but `server` has no `ts-input` chain at all -- its tailscaled installed
+no netfilter rules -- while its INPUT policy is DROP. Untouched: `server` is mid-migration
+to BLFS 13.1 with 314 uncommitted files, and the operator is handling it separately.
+
+`~/Scripts/firewall.sh check` now verifies 14 sysctls, three v4 policies, five v4 rules,
+three v6 policies, two v6 rules and ShieldsUp against the running kernel. Exit 0.

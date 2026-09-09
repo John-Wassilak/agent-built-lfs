@@ -47,8 +47,14 @@ install -v -m644    INSTALL LICENCE OVERVIEW README* \
 #   ctx: may wish to view the /etc/ssh/ files and make any changes appropriate for the security
 #   ctx: of your system. One recommended change is that you disable root login via ssh. Execute
 #   ctx: the following command as the root user to disable root login via ssh:
-sed -i '/^PermitRootLogin /d' /etc/ssh/sshd_config
-echo "PermitRootLogin no" >> /etc/ssh/sshd_config
+sed -i '/^PermitRootLogin /d;/^PasswordAuthentication /d;/^KbdInteractiveAuthentication /d' \
+    /etc/ssh/sshd_config
+
+cat >> /etc/ssh/sshd_config << "EOF"
+PermitRootLogin no
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+EOF
 
 # --- block 4 --------------------------------------------------
 #   ctx: without typing in your password, first create ~/.ssh/id_rsa and ~/.ssh/id_rsa.pub with

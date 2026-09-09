@@ -131,6 +131,36 @@ iptables -A INPUT -i wg+ -s 10.0.0.0/24 -p tcp --dport 80 -m conntrack --ctstate
 # every dropped packet, which on an internet-facing host is a constant stream
 # of scan/noise traffic; not wanted here, dropped without a paper trail).
 
+# ---------------------------------------------------------------------------------
+# IPv6: blocked entirely. Operator request 2026-09-09.
+#
+# The book's script never touches ip6tables, which left all three v6 chains at policy
+# ACCEPT with zero rules -- an unfiltered stack sitting behind a filtered one. It was
+# bounded only by this machine having no global v6 address (`ip -6 addr show scope
+# global` empty, link-local fe80 only), but sshd does listen on [::]:22, so on a hostile
+# LAN it was reachable over link-local with nothing in front of it, and the day a router
+# handed out a prefix it would have become globally reachable.
+#
+# Nothing here uses v6: the WireGuard endpoint is v4, tailscale runs v4 here (its
+# ip6tables chains were absent entirely), and no service needs it. So this is a full
+# block rather than a v4-style mirror -- no ICMPv6, no neighbour discovery, no router
+# advertisements, which also means no v6 address will ever be configured.
+ip6tables -P INPUT   DROP
+ip6tables -P FORWARD DROP
+ip6tables -P OUTPUT  DROP
+
+ip6tables -F
+ip6tables -X
+ip6tables -Z
+
+# The one exception, and it is not a compromise of the above: ::1. Software that resolves
+# `localhost` gets ::1 first on this box, and DROP has no error to report, so a dropped
+# loopback connection is a hang until the client times out and retries 127.0.0.1 -- not a
+# clean failure. Blocking off-box v6 is the point; making local sockets time out is not.
+# Drop these two lines if ::1 should die too.
+ip6tables -A INPUT  -i lo -j ACCEPT
+ip6tables -A OUTPUT -o lo -j ACCEPT
+
 # End /etc/systemd/scripts/iptables
 EOF
 chmod 700 /etc/systemd/scripts/iptables
