@@ -605,36 +605,99 @@ Firefox's BLFS page has you write the book's shared Google Location Service key 
 writes the same key into `/etc/geoclue/conf.d/90-lfs-google.conf` as the `[wifi]` source
 URL. Both landed correctly on `laptop` (the key is verifiable after the fact in
 `omni.ja`'s `modules/AppConstants.sys.mjs`), and geolocation still failed on every
-request, because as of 2026-09-08 Google answers that key with
+request, because Google answers that key with
 
     403 PERMISSION_DENIED: You must enable Billing on the Google Cloud Project
 
-So on any machine built from BLFS 13.0, both the browser-level and the OS-level
-geolocation providers are wired to a service that refuses them, and the symptom is a
-`GeolocationPositionError` code 2 that looks exactly like a missing dependency. Building
-GeoClue is not the fix it appears to be: it reaches the same dead endpoint.
+Verified 2026-09-08, and verified again the same day against the current development
+book, r13.1-84, which still ships the identical key on both pages. So on any machine
+built from BLFS 13.0, both the browser-level and the OS-level geolocation providers are
+wired to a service that refuses them, and the symptom is a `GeolocationPositionError`
+code 2 that looks exactly like a missing dependency.
 
-Two follow-on facts worth knowing before spending build time on this:
+**Building GeoClue is the fix -- but only if you drop the book's config block.**
+GeoClue-2.8.0's own compile-time default for that same `[wifi]` url is already
+`https://api.beacondb.net/v1/geolocate` (`meson_options.txt`, `default-wifi-url`),
+keyless and public-domain. beaconDB is the Ichnaea-compatible successor to the Mozilla
+Location Service that Mozilla shut down in June 2024, and pointing GeoClue at it is what
+Gentoo, Fedora, NixOS, Guix and Void all do. The book's `90-lfs-google.conf` *overrides*
+that working default with a dead endpoint, so writing the file is strictly worse than
+skipping it. `recipes/blfs-overrides.json` drops the block for every host.
 
-- **beaconDB** is the keyless successor to the retired Mozilla Location Service and
-  speaks the same geolocate API, but coverage is regional. Handed 11 APs scanned off
-  `laptop`'s own radio it matched none of them and answered `"fallback":"ipf"` with
-  25 km accuracy. Test it with a real scan *before* building `libsoup-3` + GeoClue for
-  wifi trilateration, or the two builds buy nothing.
+Three things that cost time on the way there, none of them host-specific:
+
+- **beaconDB coverage is regional, and "no coverage" looks like an answer.** It never
+  errors; it falls back to IP and says so. Handed 12 APs scanned off `laptop`'s own
+  radio it matched none and returned `{"accuracy":25000,"fallback":"ipf"}` 16.6 km away.
+  Fedora's own writeup says to check the beaconDB map before switching. Test it with a
+  real scan before assuming a built GeoClue will be accurate -- one `curl` against
+  `api.beacondb.net/v1/geolocate` with a scanned AP list answers it in seconds.
+- **GeoClue does not rank its sources and hand out the best one.** It hands out whichever
+  answers first and updates later. With `[wifi]`/`[ip]` enabled alongside a
+  `/etc/geolocation` static position, `where-am-i` showed the 25 km GeoIP fix first and
+  the 30 m static fix about two minutes later -- and a `getCurrentPosition()` caller
+  takes the first and stops. `geoclue(5)` says to disable the other sources when using
+  the static one; it means it. This is invisible unless you watch more than the first
+  fix.
+- **The book names Google; GeoClue's own config names three providers.** Stock
+  `/etc/geoclue/geoclue.conf` documents beaconDB (the compiled-in default), Positon, and
+  Google, with commented URLs for each. Positon ships an upstream key in that file, usable
+  where the service is non-commercial (their wording, quoted in the config, names Fedora,
+  Debian and Ubuntu as fine and RHEL/SLE as not). On `laptop` beaconDB had no wifi data and
+  Positon knew every AP in range, returning a 21 m trilaterated fix where beaconDB fell
+  back to IP at 25 km. Coverage is per-provider *and* per-location, so try more than one
+  before concluding that keyless geolocation is a dead end -- and read GeoClue's own config
+  file rather than the book's page for what the options are.
+- **Probe a geolocation service with the payload the real client sends, or you will get a
+  false negative.** A `curl` of Positon carrying only `macAddress` and `signalStrength`
+  returned `{"raw":[],"fallback":"ipf"}`, indistinguishable from a total miss. GeoClue also
+  sends `ssid`, and with SSIDs the same six APs all resolved. That one omitted field was
+  the difference between "no coverage, go buy a GPS" and a working 21 m fix. The cheap
+  check is to let the daemon make the request and read its log -- geoclue with
+  `G_MESSAGES_DEBUG=all` prints the full URL and the response body. (Provider-specific, not
+  protocol-wide: beaconDB returned the identical IP fallback with and without SSIDs.)
+- **Turn `[ip]` off once `[wifi]` actually works.** They run concurrently and GeoClue emits
+  whichever returns first. IP answers in ~200 ms, a wifi query takes ~4.5 s, so
+  `getCurrentPosition()` takes the coarse guess and stops -- Firefox's first callback was
+  `acc=5000` while the 21 m fix arrived only on the third `watchPosition` update. Disabling
+  `[ip]` makes the real fix the first answer, at the cost of returning nothing at all when
+  no APs are in range.
+- **An app being `allowed=true` in `geoclue.conf` does not bypass the agent.** GeoClue's
+  `Start()` parks any request for 5 s waiting for an authorization agent to register; on
+  expiry it completes the request only if the `[agent]` whitelist is *empty*, and
+  otherwise fails with `ACCESS_DENIED "'<app>' disallowed, no agent for UID <n>"`
+  (`src/gclue-service-client.c`). Stock `geoclue.conf` whitelists five agents, so the deny
+  branch is the default one. GNOME Shell, Phosh and elementary embed an agent; a bare
+  wlroots compositor does not, and geoclue's own
+  `/etc/xdg/autostart/geoclue-demo-agent.desktop` only helps if something processes XDG
+  autostart. On such a session, start `geoclue-2.0/demos/agent` yourself -- a systemd
+  `--user` unit does it without depending on the compositor's config. The symptom
+  otherwise is a bare `getCurrentPosition` timeout with nothing in the journal, which
+  looks like a missing provider rather than a refused authorization.
+- **GeoClue's `vapi` option is a hard boolean, not a feature.** It defaults to `true` and
+  `libgeoclue/meson.build:94` passes it straight into
+  `find_program('vapigen', required: get_option('vapi'))`, so a missing Vala fails the
+  configure step outright rather than skipping the binding -- unlike libsoup3, which
+  builds without Vala and says nothing. `-D vapi=false` if Vala is not in the build.
+  Same shape as the `auto`-feature trap two sections up: read the option's type and its
+  use site, not the book's dependency list.
+
+Two Firefox facts from the same investigation, still true and still worth knowing even
+though `laptop` no longer needs either:
+
+- `geo.provider.network.url` is a pref, not a compile-time constant, and it will fetch
+  any URL including a `data:` URL holding a literal answer, which Firefox parses with the
+  same JSON reader it uses for a real provider. That makes a hardcoded position a
+  one-line change instead of a ~4 h Firefox rebuild -- useful as a stopgap, though a
+  GeoClue static source is the better answer because every application sees it. To set a
+  pref for every profile and every user without owning a profile directory, use
+  autoconfig: `<installdir>/defaults/pref/autoconfig.js` naming `general.config.filename`,
+  plus `general.config.obscure_value = 0` or the cfg is read as ROT-13 and silently
+  ignored -- and the first line of the cfg is *always* skipped, so it must be a comment.
 - The book's mozconfig keeps `--disable-necko-wifi`, so Firefox does no wifi scanning of
-  its own (confirm with `grep -a nsWifiMonitor libxul.so` -- no hits). Even a paid,
-  working key therefore yields IP-level accuracy from Firefox alone; wifi accuracy needs
-  GeoClue to do the scanning, or a Firefox rebuild.
-
-The mechanism that made all of this cheap to fix: **`geo.provider.network.url` is a pref,
-not a compile-time constant**, and it will fetch any URL, including a `data:` URL holding
-a literal answer, which Firefox parses with the same JSON reader it uses for a real
-provider. Nothing above ever required rebuilding Firefox (~4 h on `laptop`). To set a
-pref for every profile and every user without owning a profile directory, use autoconfig:
-`<installdir>/defaults/pref/autoconfig.js` naming `general.config.filename`, plus
-`general.config.obscure_value = 0` or the cfg is read as ROT-13 and silently ignored --
-and the first line of the cfg is *always* skipped, so it must be a comment. Both files
-are deploy-time overlay content, so they belong in the host's `overlay/`, not a manifest.
+  its own (confirm with `grep -a nsWifiMonitor libxul.so` -- no hits). Firefox alone
+  therefore yields IP-level accuracy even from a working provider; wifi accuracy needs
+  GeoClue to do the scanning.
 
 Last, a debugging fact that cost an hour: a page can call `getCurrentPosition`
 successfully while `navigator.permissions.query({name: 'geolocation'})` still answers
@@ -644,9 +707,10 @@ durable grant rejects that state, with a message that reads like the position it
 failed. Check the permission database, not just the API call.
 
 The general rule: **a book recipe that embeds a third-party service credential is a
-liability with a shelf life.** That the feature compiled in is not evidence the feature
-works -- query the service directly (one `curl`, above) before believing it, and before
-building anything downstream of it.
+liability with a shelf life**, and the upstream package often already knows better --
+check its own defaults before adopting the book's configuration block. That the feature
+compiled in is not evidence the feature works: query the service directly (one `curl`,
+above) before believing it, and before building anything downstream of it.
 
 ## Re-running a completed step over its own install *under*-reports its manifest
 

@@ -1,0 +1,53 @@
+# GeoClue authorization agent for `laptop` (2026-09-08).
+#
+# Without this, geolocation is DENIED on this host, not merely unprompted, and
+# the symptom is a plain timeout. GeoClue's Start() path
+# (src/gclue-service-client.c) works like this:
+#
+#   - [firefox] allowed=true in geoclue.conf only means the app is not
+#     *disallowed*. It does not bypass the agent.
+#   - If no agent has registered, Start() parks the request and waits
+#     DEFAULT_AGENT_STARTUP_WAIT_SECS (5).
+#   - On expiry: if the [agent] whitelist is EMPTY the request is completed
+#     anyway ("no point in requiring an agent"); otherwise it fails with
+#     ACCESS_DENIED "'<app>' disallowed, no agent for UID <n>".
+#
+# Stock geoclue.conf whitelists five agents (geoclue-demo-agent, gnome-shell,
+# io.elementary.desktop.agent-geoclue2, sm.puri.Phosh, lipstick), so the list is
+# not empty and the deny branch is the one that runs. Measured here: Firefox from
+# a fresh profile returned "GEO_ERR code=3 Position acquisition timed out" with no
+# agent, and lat=35.463614 lon=-97.336119 acc=30 in 225 ms with one.
+#
+# The desktops on that whitelist embed their own agent -- GNOME Shell, Phosh,
+# elementary. Hyprland does not, and this host runs Hyprland, so the
+# geoclue-demo-agent binary the package already installs has to be started by
+# something. Upstream ships /etc/xdg/autostart/geoclue-demo-agent.desktop for
+# exactly this, but nothing on this host processes XDG autostart: the session
+# starts its programs from explicit hl.exec_cmd() lines in hyprland.lua, which
+# lives in the operator's separate ~/Config dotfiles repo and not here.
+#
+# A systemd --user unit instead, so the whole geolocation stack stays inside
+# this repo's overlay and does not depend on a file in another repository.
+# `loginctl enable-linger john` (2026-09-04) already starts the user manager at
+# boot, so default.target is reached with or without a graphical session.
+#
+# The alternative -- emptying the [agent] whitelist in
+# /etc/geoclue/conf.d/90-laptop.conf to take the "no point in requiring an
+# agent" branch -- works, but costs the full 5 s park on the first request of
+# every client, and drops the authorization design rather than satisfying it.
+
+[Unit]
+Description=GeoClue authorization agent
+Documentation=man:geoclue(5)
+# Not Requires=: geoclue.service is a *system* D-Bus-activated service and is
+# started on demand by the first location request, not by this user unit.
+PartOf=default.target
+
+[Service]
+Type=simple
+ExecStart=/usr/libexec/geoclue-2.0/demos/agent
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=default.target

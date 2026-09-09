@@ -5100,3 +5100,255 @@ exclusion is shared rather than host-specific.
 Both the installed unit and the installed config were diffed against the repo copies and
 match byte for byte.
 
+## 2026-09-08 (continued): GeoClue, and the standard keyless geolocation stack
+
+Operator: "I want to do what other distros are doing." The hardcoded `data:` URL in
+Firefox's autoconfig, from earlier the same day, was Firefox-only and non-standard --
+nothing else on this host could see a location at all. Four packages later this host runs
+the same arrangement Gentoo, Fedora, NixOS, Guix and Void run, with no API key anywhere.
+
+### What was checked before building
+
+Two questions had to be answered first, because a wrong answer to either would have made
+the build pointless.
+
+**Does the free path need a key?** No. GeoClue-2.8.0's own `meson_options.txt` sets
+`default-wifi-url` to `https://api.beacondb.net/v1/geolocate` -- the keyless,
+public-domain MLS successor. The book's `90-lfs-google.conf` overrides that good default
+with the dead Google key. So the fix was to *not* write the book's file, recorded as a
+shared review decision rather than a host one.
+
+**Does beaconDB have data here?** No, re-confirmed with a live scan rather than trusting
+the 2026-09-08 morning result:
+
+    nmcli -t -f BSSID,SIGNAL dev wifi list        -> 12 APs off wlp4s0
+    POST api.beacondb.net/v1/geolocate            ->
+      {"accuracy":25000,"fallback":"ipf","location":{"lat":35.4689,"lng":-97.5195}}
+
+`"fallback":"ipf"` means none of the 12 matched. 16.6 km away, in downtown Oklahoma City.
+So the wifi source was going to be standard, free and wrong, and the real position had to
+come from GeoClue's static source, `/etc/geolocation` -- which the BLFS page itself points
+at ("you can hardcode your location in /etc/geolocation") and `geoclue(5)` documents.
+
+### The build: seq 321-324
+
+    blfs-nghttp2          0.5 min    38 files
+    blfs-glib-networking  0.2 min    75 files
+    blfs-libsoup3         1.0 min   120 files
+    blfs-geoclue2         0.3 min    32 files
+
+Everything else both packages needed was already built and was confirmed live with
+`pkg-config` rather than assumed: GLib-2.86.4, GnuTLS-3.8.13, libpsl, libxml2, JSON-GLib,
+gobject-introspection-1.86.0, gsettings-desktop-schemas, make-ca. All four md5s matched
+the book.
+
+Two host overrides on the GeoClue page, both forced by real failures or by reading the
+build files rather than by preference:
+
+- The three ModemManager switches (`3g-source`, `cdma-source`, `modem-gps-source`). The
+  book leaves them out of the command it shows, but all three default to `true` and
+  `src/meson.build:36` makes `mm-glib` a hard dependency whenever any is on. No modem
+  hardware here either -- no WWAN, no `/dev/ttyUSB*`, no `/dev/ttyACM*`, only the Intel
+  8260.
+- `-D vapi=false`, added after the first attempt died at `ERROR: Program 'vapigen' not
+  found or not executable`. Vala is a Recommended dependency and is deliberately not
+  built: nothing on this host is written in Vala, so a `.vapi` would be generated for no
+  reader at the cost of a 0.5 SBU compiler plus its own Recommended Graphviz. Same call
+  as skipping `vim`'s GTK3 dependency on a headless box. Introspection stays on, so
+  libgeoclue still ships its `.gir` and `.typelib`.
+
+### The part that needed a test, not a reading
+
+With the static file in place and the web sources still enabled, `where-am-i` returned
+*both*:
+
+    Latitude: 35.468900  Longitude: -97.519500  Accuracy: 25000   GeoIP (ichnaea)   15:29:44
+    Latitude: 35.463614  Longitude: -97.336119  Accuracy: 30      Static location   15:31:37
+
+GeoClue does not rank sources and pick the best; it emits whichever answers first and
+updates later. A `getCurrentPosition()` caller takes the first and stops -- Firefox from a
+fresh profile got `lat=35.4689 lon=-97.5195 acc=25000`, the 16.6 km answer. `geoclue(5)`
+warns about exactly this under `[static-source]`. Fixed with a host conf.d drop-in
+disabling `[wifi]` and `[ip]`; one line to reverse if beaconDB ever gains coverage here.
+
+An earlier draft of the comments in that file claimed GeoClue preferred the static source
+on its own, which the two-minute gap above disproves. Corrected in place.
+
+### The second thing that needed a test: nothing was authorized
+
+The verification above was run with `geoclue-2.0/demos/agent` alive in the background,
+started by hand earlier to get `where-am-i` past its own first timeout. Killing it as
+cleanup and re-running the Firefox test turned the result straight back into
+
+    GEO_ERR code=3 Position acquisition timed out
+
+with nothing at all in geoclue's journal about the client. `[firefox] allowed=true` in
+`geoclue.conf` turns out to mean only that the app is not *disallowed*; it does not
+satisfy the agent requirement. `src/gclue-service-client.c` parks every `Start()` for
+`DEFAULT_AGENT_STARTUP_WAIT_SECS` (5) waiting for an agent to register, and on expiry
+completes the request only when the `[agent]` whitelist is empty -- otherwise
+`ACCESS_DENIED "'<app>' disallowed, no agent for UID <n>"`. Stock `geoclue.conf`
+whitelists five agents, so the deny branch is the default, and the failure surfaces to
+the page as an ordinary timeout.
+
+Every desktop on that whitelist embeds its own agent. Hyprland does not. GeoClue ships
+`/etc/xdg/autostart/geoclue-demo-agent.desktop` for this, but nothing here processes XDG
+autostart -- this session starts its programs from explicit `hl.exec_cmd()` lines in
+`hyprland.lua`, which lives in the operator's separate `~/Config` dotfiles repo, not this
+one.
+
+Fixed with a systemd `--user` unit instead, so the whole stack stays inside this repo's
+overlay: `hosts/laptop/overlay/etc/systemd/user/geoclue-agent.service`, enabled, and
+reached at boot because `loginctl enable-linger john` (2026-09-04) already starts the
+user manager without a graphical session. The alternative -- emptying the `[agent]`
+whitelist to take geoclue's own "no point in requiring an agent" branch -- works too, but
+costs the full 5 s park on the first request of every client and abandons the
+authorization design rather than satisfying it.
+
+### End state, verified
+
+With the agent running as an enabled user service, and nothing started by hand:
+
+    systemctl --user is-active geoclue-agent  -> active
+    where-am-i                     -> 35.463614, -97.336119, 30 m, "Static location"
+    Firefox, fresh profile         -> GEO_OK lat=35.463614 lon=-97.336119 acc=30 ms=319
+    watchPosition                  -> WATCH 1 t=319ms, WATCH 2 t=1394ms
+    grep geo.provider <prof>/prefs.js -> 0 hits
+    lfsmaint owns /usr/libexec/geoclue -> geoclue-2.8.0 (BLFS)
+
+No `geo.provider.*` pref is set anywhere any more: `firefox.cfg` keeps only the record of
+why it is empty. `/etc/geoclue/conf.d/` contains no Google key and no key of any kind.
+
+Four files are deploy-time overlay content, applied by hand as usual:
+
+    hosts/laptop/overlay/etc/geolocation
+    hosts/laptop/overlay/etc/geoclue/conf.d/90-laptop.conf
+    hosts/laptop/overlay/etc/systemd/user/geoclue-agent.service
+    hosts/laptop/overlay/usr/lib/firefox/firefox.cfg          (rewritten)
+    hosts/laptop/overlay/usr/lib/firefox/defaults/pref/autoconfig.js   (unchanged)
+
+The unit needs `systemctl --user daemon-reload && systemctl --user enable --now
+geoclue-agent.service` after it is copied; the other three take effect on their own.
+
+The coordinates now live in two places -- `/etc/geolocation` and nothing else, since the
+Firefox cfg no longer states a position. Editing the position is a one-line change to
+`/etc/geolocation`; GeoClue monitors the file and picks it up without a restart.
+
+The four remaining "Source 'X' is enabled in configuration, but Geoclue is compiled
+without it" warnings at daemon start are cosmetic and cannot be silenced from conf.d:
+`gclue-config.c` runs the source loaders while reading `/etc/geoclue/geoclue.conf`
+(line 625) and only merges conf.d afterwards (line 658).
+
+### Not addressed
+
+This does not resolve the GeoComply-protected site that started the morning's work. That
+site runs `cdn.geocomply.com/319/gc-html5.js` and correlates the browser position with IP
+and device signals server-side; a position GeoClue reads out of a local file is not
+corroborated by anything, whatever service supplies it. What did change is that this host
+now has a real location service that every application can use, on the same footing as
+any other distro.
+
+### Same day, later: dropped the static source -- autodetect, like every other distro
+
+Operator, after the stack was working: "setup geolocation like it would be on other
+distros, IE i assume they wouldn't hardcode, theyd autodetect." Correct -- no distro
+ships an `/etc/geolocation`. Removed, with the accuracy cost understood and accepted:
+
+    rm /etc/geolocation /etc/geoclue/conf.d/90-laptop.conf
+
+That leaves the stock configuration and nothing else. `/etc/geoclue/conf.d/` is empty,
+`[wifi]` and `[ip]` are back at their upstream defaults, and the wifi url is still
+GeoClue's own compiled-in `https://api.beacondb.net/v1/geolocate`. No conf.d file is
+needed to get there, which is the point: upstream's defaults already are the distro
+setup.
+
+Measured immediately after:
+
+    where-am-i              -> 35.468900, -97.519500, 25000 m, "GeoIP (ichnaea)"
+                               then the same values as "ipf fallback (from WiFi data)"
+    Firefox, fresh profile  -> GEO_OK lat=35.4689 lon=-97.5195 acc=25000 ms=256
+    watchPosition           -> 3 updates in 2.8 s, all the same position
+
+So geolocation now works, autodetects, needs no key, and is 16.6 km off -- beaconDB has
+no wifi data for this area and falls back to IP. That is the same answer a stock Gentoo
+or Fedora laptop would give at this address.
+
+The `geoclue-agent.service` user unit stays: it is not about the position source, it is
+what makes GeoClue authorize any request at all on a compositor with no built-in agent.
+
+If the exact position is ever wanted back, `/etc/geolocation` was four lines (latitude,
+longitude, altitude, accuracy radius; `#` starts a comment, format in `geoclue(5)`):
+
+    35.463614
+    -97.336119
+    390
+    30
+
+and the other sources have to be turned off alongside it -- `[wifi] enable=false` and
+`[ip] enable=false` in a conf.d drop-in -- because GeoClue emits whichever source answers
+first, not the most accurate one, and a `getCurrentPosition()` caller keeps the first fix.
+That was measured here: with both enabled, the 25 km GeoIP fix arrived about two minutes
+before the 30 m static one, and Firefox took the GeoIP one.
+
+The durable fix for the accuracy, rather than a hardcoded answer, is to give beaconDB
+coverage for this area -- it takes public submissions, and it is the same database every
+other distro is querying.
+
+### Same day, resolved: Positon has wifi coverage here -- a real 21 m fix, keyless
+
+The conclusion two sections up -- "there is no free, keyless, autodetecting path to
+Google-grade accuracy at this address" -- was wrong, and the thing that disproved it was
+in GeoClue's own stock config the whole time.
+
+`/etc/geoclue/geoclue.conf` documents three alternatives to its beaconDB default, one of
+which is Positon, complete with a key upstream ships for non-commercial use. The BLFS
+GeoClue page mentions none of them; it only offers Google.
+
+The reason it looked like a dead end at first: a raw `curl` probe of Positon returned
+`{"raw":[],"accuracy":5000,"fallback":"ipf"}`, indistinguishable from beaconDB. That probe
+sent `macAddress` and `signalStrength` only. **GeoClue also sends the SSID**, and with
+SSIDs included Positon knows every one of this laptop's own access points:
+
+    54:af:97:62:70:19  Awesomeness  -60  ->  35.457710,-97.321269  acc 26
+    54:af:97:62:70:18  Awesomeness  -69  ->  35.457704,-97.321214  acc 23
+    5c:a6:e6:fa:07:c0  Awesomeness  -73  ->  35.457653,-97.321263  acc 24
+    54:af:97:1d:a9:68  Awesomeness  -74  ->  35.457877,-97.321155  acc 49
+    5c:a6:e6:fa:07:c1  Awesomeness  -79  ->  35.457691,-97.321185  acc 21
+    54:af:97:1d:a9:69  Awesomeness  -83  ->  35.457683,-97.321193  acc 25
+
+Trilaterated: **35.457720, -97.321219 at 21 m, no `fallback` field**. A genuine wifi fix,
+the kind the dead Google key used to buy, with no key of ours and no billing account.
+
+Comparison of everything tried at this address, same scan, same day:
+
+    beaconDB (default)      35.468900,-97.519500   claimed 25000 m   ipf fallback
+    Positon, [ip] source    35.460300,-97.338700   claimed  5000 m   ipf fallback
+    Positon, [wifi] source  35.457720,-97.321219   claimed    21 m   real wifi fix
+
+`[ip]` is now disabled. It was not merely redundant: GeoClue starts both sources and emits
+whichever returns first, the IP source answers in ~200 ms and the wifi query takes ~4.5 s,
+so `getCurrentPosition()` took the 5000 m guess and stopped. Measured -- Firefox's first
+callback was `lat=35.4603 acc=5000`, and the 21 m fix only arrived on the third
+`watchPosition` update. With `[ip]` off:
+
+    where-am-i             -> 35.457717, -97.321224, 21 m, "WiFi"
+    Firefox, fresh profile -> GEO_OK lat=35.457717 lon=-97.321218 acc=21 ms=3302
+
+3.3 s instead of 244 ms, which is the cost of waiting for a real answer instead of a
+guess. The trade recorded in the conf.d file: with no APs in range there is now no
+position at all rather than a coarse one.
+
+Configuration is one host file, `hosts/laptop/overlay/etc/geoclue/conf.d/90-laptop.conf`.
+Still no Google key anywhere, and the book's `90-lfs-google.conf` is still never written.
+
+### Open question for the operator
+
+The wifi fix puts this laptop at 35.457720, -97.321219, and six of its own APs agree
+within 21-49 m of each other. That is **1.5 km** from the position hardcoded into
+`/etc/geolocation` and `firefox.cfg` earlier today (35.463614, -97.336119), and 427 m from
+the position hardcoded before that (35.461479, -97.320247).
+
+Both hardcoded values were operator-supplied. If the wifi fix is the correct one, the
+second hardcoded value was 1.5 km off -- which on its own would explain a geofencing
+service rejecting it this morning, independently of the accuracy question. Worth
+confirming which is right before drawing any conclusion from the earlier failures.

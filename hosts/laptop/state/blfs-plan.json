@@ -4688,5 +4688,61 @@
     "blocks": 1,
     "enabled": 1,
     "disabled": 0
+  },
+  {
+    "seq": 321,
+    "order": "blfs.321",
+    "name": "blfs-nghttp2",
+    "chapter": "blfs",
+    "page": "nghttp2",
+    "title": "nghttp2-1.68.0",
+    "context": "chroot",
+    "tarball": "nghttp2-1.68.0.tar.xz",
+    "manifest": true,
+    "blocks": 2,
+    "enabled": 2,
+    "disabled": 0
+  },
+  {
+    "seq": 322,
+    "order": "blfs.322",
+    "name": "blfs-glib-networking",
+    "chapter": "blfs",
+    "page": "glib-networking",
+    "title": "glib-networking-2.80.1",
+    "context": "chroot",
+    "tarball": "glib-networking-2.80.1.tar.xz",
+    "manifest": true,
+    "blocks": 2,
+    "enabled": 2,
+    "disabled": 0
+  },
+  {
+    "seq": 323,
+    "order": "blfs.323",
+    "name": "blfs-libsoup3",
+    "chapter": "blfs",
+    "page": "libsoup3",
+    "title": "libsoup-3.6.6",
+    "context": "chroot",
+    "tarball": "libsoup-3.6.6.tar.xz",
+    "manifest": true,
+    "blocks": 4,
+    "enabled": 4,
+    "disabled": 0
+  },
+  {
+    "seq": 324,
+    "order": "blfs.324",
+    "name": "blfs-geoclue2",
+    "chapter": "blfs",
+    "page": "geoclue2",
+    "title": "GeoClue-2.8.0",
+    "context": "chroot",
+    "tarball": "geoclue-2.8.0.tar.bz2",
+    "manifest": true,
+    "blocks": 3,
+    "enabled": 2,
+    "disabled": 1
   }
 ]

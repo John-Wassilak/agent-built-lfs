@@ -1233,4 +1233,43 @@ PACKAGES = sorted(BASE + [
     # note above records.
     hand(320, "nginx", "nginx-1.30.4.tar.gz", "nginx-1.30.4 (hand-authored, shared recipe)"),
 
+    # Operator-requested (2026-09-08): "do what other distros are doing" for
+    # geolocation. This host had no system location service at all -- Firefox alone
+    # answered from a hardcoded `data:` URL in hosts/laptop/overlay/usr/lib/firefox/
+    # firefox.cfg, which no other application can see. Gentoo, Fedora, NixOS, Guix and
+    # Void all ship GeoClue with its [wifi] source repointed at beaconDB, the keyless
+    # public-domain successor to the Mozilla Location Service that Mozilla shut down in
+    # June 2024. That is the target state here: the daemon on the system bus, a
+    # keyless backend, and location available to any application rather than one
+    # browser.
+    #
+    # BLFS's own GeoClue page instead writes the book's shared Google Location Service
+    # key into /etc/geoclue/conf.d/90-lfs-google.conf, and that key is dead -- Google
+    # answers it "403 PERMISSION_DENIED: You must enable Billing on the Google Cloud
+    # Project" (re-verified 2026-09-08). A host override replaces that block; see
+    # hosts/laptop/blfs-overrides.json for the decision and its reason.
+    #
+    # Accuracy expectation, measured before building rather than after: beaconDB has no
+    # wifi coverage at this address. Handed 12 APs scanned live off wlp4s0 it matched
+    # none and answered from its IP fallback -- {"accuracy":25000,"fallback":"ipf",
+    # "location":{"lat":35.4689,"lng":-97.5195}}, 16.6 km from the real position. So
+    # the wifi source is standard and free but wrong here, and GeoClue's own static
+    # source (/etc/geolocation, geoclue(5), referenced by the BLFS page itself) carries
+    # the real position instead. Both are configured: the static file answers today,
+    # the wifi source starts working on its own if beaconDB ever gains coverage here.
+    #
+    # Four packages, in dependency order. Everything else libsoup3 and GeoClue need was
+    # already built and was confirmed live (pkg-config), not assumed: GLib-2.86.4,
+    # GnuTLS-3.8.13, libpsl-0.21.5, libxml2-2.15.1, JSON-GLib-1.10.8,
+    # gobject-introspection-1.86.0, gsettings-desktop-schemas, make-ca.
+    #
+    # Vala is a Recommended dependency of both libsoup3 and GeoClue and is NOT built.
+    # It generates .vapi bindings for Vala programs; nothing in this host's 400+ steps
+    # is written in Vala, so the standing "Recommended gets installed" policy is
+    # applied the same way `vim`'s GTK3 GUI dependency was -- checked against what the
+    # machine is, and the skip recorded rather than left silent.
+    book(321, "nghttp2", "basicnet/nghttp2.html", "nghttp2-1.68.0.tar.xz"),
+    book(322, "glib-networking", "basicnet/glib-networking.html", "glib-networking-2.80.1.tar.xz"),
+    book(323, "libsoup3", "basicnet/libsoup3.html", "libsoup-3.6.6.tar.xz"),
+    book(324, "geoclue2", "basicnet/geoclue2.html", "geoclue-2.8.0.tar.bz2"),
 ], key=lambda p: p["seq"])

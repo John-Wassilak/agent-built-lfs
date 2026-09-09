@@ -593,5 +593,10 @@ blfs-sshpass	native	4.9	0
 blfs-nginx	native	43.1	0
 blfs-nginx	native	43.9	0
 blfs-nginx	native	47.1	0
+blfs-nghttp2	native	32.0	0
+blfs-glib-networking	native	11.6	0
+blfs-libsoup3	native	60.2	0
+blfs-geoclue2	native	3.0	1
+blfs-geoclue2	native	16.7	0
 blfs-nginx	native	53.9	0
 blfs-nginx	native	45.8	0

@@ -517,5 +517,9 @@ blfs-sshpass
 blfs-nginx
 blfs-nginx
 blfs-nginx
+blfs-nghttp2
+blfs-glib-networking
+blfs-libsoup3
+blfs-geoclue2
 blfs-nginx
 blfs-nginx
