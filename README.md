@@ -146,6 +146,11 @@ whole record worthless. It has happened once.
   config. Also where the agent got it wrong, the more useful half.
 - **`hosts/server/BUILD-REPORT.md`** -- the build as it happened, dated, Wayland dead end
   and detours included.
+- **`BOOK-PATCHES.md`** -- the findings that turned out to be defects in the *book*
+  rather than in this project, ranked for submission upstream: a Google API key the book
+  spends on two pages that has been dead since before this build started, a package the
+  book configures so it can load no images at all, and ten pages whose printed command
+  hard-fails on a dependency they call optional. Nothing submitted yet.
 - **`CLAUDE.md`** -- the rules a session follows here. Mostly: never edit a generated file
   in place; record the reason where it will be found.
 

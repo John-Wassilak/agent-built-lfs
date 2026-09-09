@@ -17,7 +17,7 @@ GPL-compatible, so anyone who wants to build GPL work on this harness still can.
     hosts/<name>/           host.toml, packages.py, kernel-config.sh, overlay/,
                             state/, manifests/, and the per-host documentation
     hosts/*/recipes/*.sh and recipes/*.sh whose header says HAND-AUTHORED
-    README.md CLAUDE.md PRACTICES.md
+    README.md CLAUDE.md PRACTICES.md BOOK-PATCHES.md
     hosts/*/BUILD-REPORT.md hosts/*/BOOTSTRAP.md hosts/*/*-PLAN.md
 
 The `reason` fields in `recipes/*-overrides.json` and `hosts/*/*-overrides.json` are

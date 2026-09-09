@@ -5352,3 +5352,40 @@ Both hardcoded values were operator-supplied. If the wifi fix is the correct one
 second hardcoded value was 1.5 km off -- which on its own would explain a geofencing
 service rejecting it this morning, independently of the accuracy question. Worth
 confirming which is right before drawing any conclusion from the earlier failures.
+
+### 2026-09-09: the geolocation work committed, and one stale comment fixed
+
+Session close for the nginx + GeoClue run. Both landed as two commits, split by topic
+rather than by file, so the six files that carry both stories (`PRACTICES.md`, this
+report, `packages.py`, `state/blfs-plan.json`, `state/completed`, `state/timings.tsv`)
+each contribute only their nginx half to the first:
+
+    6607a76  laptop: nginx 1.30.4 (seq 320) -- hand-authored, pre-LFS Gentoo config
+             reviewed and carried forward
+    a5480f0  laptop: GeoClue (seq 321-324) -- keyless geolocation, Firefox's hardcoded
+             position removed
+
+One correction found while reviewing before the commit. The rationale header in
+`overlay/usr/lib/firefox/firefox.cfg` was written at 16:01, before the Positon switch at
+21:54, and still claimed `/etc/geoclue/conf.d/` was empty and that beaconDB was answering
+16.6 km away. It described a state that had not existed for six hours. Rewritten to the
+real end state -- Positon, 21 m, `[ip]` disabled, and why. No functional change: the file
+has had no geo prefs in it since the GeoClue build, and this was its comment block only.
+
+Consequence worth remembering at deploy time: the live `/usr/lib/firefox/firefox.cfg` is
+now one revision behind the overlay, by exactly those comments. Harmless until the next
+hand-apply of `overlay/`, which will reconcile it.
+
+Verified at commit time rather than assumed: `geoclue.service` and the
+`geoclue-agent.service` user unit both active, `/etc/geoclue/conf.d/90-laptop.conf`
+byte-identical to the overlay copy, no `/etc/geolocation`, nginx enabled and active on
+1.30.4, and `bin/extract-blfs.py --check` reporting 339 steps with zero drift.
+
+Still open, unchanged from the section above: the wifi fix (35.457720, -97.321219) is
+1.5 km from the coordinates supplied by hand on 2026-09-08 and 427 m from the pair before
+that. Nobody has said which is right.
+
+Spun out of this build, not part of it: `BOOK-PATCHES.md` at the repo root collects the
+findings from this host's builds that are defects in the *book* rather than in this
+project -- the dead Google key first among them -- ranked for submission upstream, with
+the method for re-verifying each. Nothing has been submitted.
