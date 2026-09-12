@@ -5561,3 +5561,150 @@ to BLFS 13.1 with 314 uncommitted files, and the operator is handling it separat
 
 `~/Scripts/firewall.sh check` now verifies 14 sysctls, three v4 policies, five v4 rules,
 three v6 policies, two v6 rules and ShieldsUp against the running kernel. Exit 0.
+## 2026-09-12 -- Nextcloud desktop client (seq 326-333), and eight dependencies
+
+Operator asked for "the nextcloud client ... the thing that sits in the system tray and
+syncs directories". That is `/usr/bin/nextcloud`, 34.0.3, and it cost nine steps because
+BLFS carries no page for it and three of its hard dependencies are invisible from any
+dependency list.
+
+| seq | package | build | manifest |
+|-----|---------|-------|----------|
+| 326 | qt5compat 6.10.2 | 2.9 min | 130 |
+| 327 | qtwebsockets 6.10.2 | 1.4 min | 65 |
+| 328 | extra-cmake-modules 6.23.0 | 0.1 min | 132 |
+| 328.5 | qttools 6.10.2 | 5.3 min | 162 |
+| 329 | karchive 6.23.0 | 0.8 min | 80 |
+| 330 | qtkeychain 0.15.0 | 0.5 min | 15 |
+| 331 | libp11 0.4.21 | 0.3 min | 15 |
+| 332 | kdsingleapplication 1.2.1 | 0.2 min | 18 |
+| 333 | nextcloud-desktop 34.0.3 | 16.7 min | 1075 |
+
+28 minutes and 1692 files in total. Disk went from 20.3 GB free to 20.3 GB free -- the
+whole thing is smaller than the rounding.
+
+### The dependencies that no dependency list would have told you about
+
+All three were found by reading the 34.0.3 CMakeLists files, not its documentation.
+
+- **Qt6 WebSockets and Qt6 Core5Compat.** Both are among the 35 modules `-skip`ped by
+  this host's own qt6 override (seq 199), which was written for Quickshell/
+  DankMaterialShell and is right for them. `src/libsync/CMakeLists.txt` links both
+  PUBLIC. WebSockets would have stopped the build at configure time. Core5Compat is
+  worse: 12 QML files including `src/gui/tray/MainWindow.qml` do `import
+  Qt5Compat.GraphicalEffects`, so the failure would not have appeared until the tray
+  window -- the exact thing the operator asked for -- declined to render at run time.
+- **libp11 (OpenSC).** The top-level CMakeLists has `pkg_check_modules(OPENSC-LIBP11
+  libp11 REQUIRED ...)` unconditionally inside `if(BUILD_CLIENT)`. It backs keeping the
+  end-to-end-encryption key on a PKCS#11 hardware token, and is REQUIRED whether or not
+  anyone owns one.
+- **rsvg-convert**, which was already here from librsvg (seq 91) and so cost nothing.
+  `cmake/modules/GenerateIconsUtils.cmake` does `find_program(SVG_CONVERTER NAMES
+  inkscape rsvg-convert REQUIRED)` and rasterises every state icon at configure time. On
+  a host without librsvg this is a FATAL_ERROR before a single object file compiles.
+
+### Three decisions taken before building
+
+Each because the cheap path and the book-faithful path diverged, and each the operator's
+call rather than the session's:
+
+- **Qt modules standalone, not a qt6 rebuild.** qt5compat and qtwebsockets were built
+  from Qt's own per-module 6.10.2 tarballs against the installed `/opt/qt6`, using
+  `$QT6DIR/bin/qt-cmake`. The alternative was re-running seq 199 with two fewer `-skip`
+  flags: a full rebuild of the 1.3 GB everywhere tarball, hours of it, re-linking the Qt
+  the running desktop shell depends on. 15 MB of source against 1.3 GB, and 4.3 minutes
+  against an afternoon.
+- **KArchive alone, not BLFS's KF6 page.** `kde/frameworks6.html` builds all ~60
+  frameworks (its own estimate: 3.0 GB, 12 SBU at parallelism=8) and its Required list --
+  breeze-icons, docbook-xml, docbook-xsl-nons, libcanberra, lmdb, qca, libqrencode,
+  plasma-wayland-protocols, PyYAML, URI -- is almost entirely unbuilt here and entirely
+  unneeded by KArchive. Installed to `/opt/kf6`, where the full page would put it, so
+  building that page later replaces this rather than colliding with it. A lone KArchive
+  in `/usr` would have shadowed the real one for both cmake and ld.so.
+- **English-only, no qttools.** Reversed the same day -- see below.
+
+### Three things found live
+
+**KArchive forced qttools back into the plan.** The translations decision above lasted
+about an hour. KArchive failed at configure with `Failed to find required Qt component
+"LinguistTools"`: it calls ECM's `ecm_install_po_files_as_qm(poqm)` unconditionally, ECM's
+own function only returns early when the po directory is absent, and the 6.23.0 tarball
+ships `poqm/` with 70-odd languages. There is no cmake option to turn it off. The
+alternative -- a sed deleting that one line -- would have preserved the operator's
+original choice at the cost of hand-editing upstream source to drop a feature, which is
+the kind of undocumented deviation the override mechanism exists to make unnecessary. So
+qttools went in at 328.5, and the client got its translations after all.
+
+**qttools does not self-disable its GUI tools.** The first attempt passed no feature
+flags, on the assumption that Designer and Assistant would fall away for want of optional
+dependencies the way qdoc does for want of libclang. The build log disproved that within
+two minutes: it was compiling Qt Widgets Designer and a vendored litehtml (gumbo parser
+and all) for Assistant's help viewer. Both of their CONDITIONs in `configure.cmake` are
+satisfied here. Stopped before it installed anything and restarted with nine explicit
+`QT_FEATURE_*=OFF` flags -- 165 ninja steps instead of 734. `QT_FEATURE_linguist` stays
+ON deliberately: `src/linguist/CMakeLists.txt` opens with `if(NOT QT_FEATURE_linguist)
+return()`, which gates lrelease, lupdate, lconvert AND the Qt6LinguistTools package
+itself, not just the GUI.
+
+**`nextcloud --version` core-dumped at the end of a successful install**, which looked
+much worse in the log than it was. The GUI binary constructs a QApplication even for
+`--version` -- its own output line `Using Qt platform plugin 'wayland'` is the giveaway --
+so under the driver's `sudo env -i` context, with no DISPLAY, no WAYLAND_DISPLAY and no
+XDG_RUNTIME_DIR, it aborts. The same binary run as the desktop user reports 34.0.3
+correctly. The recipe's verification line now uses `nextcloudcmd`, the headless half of
+the same build, which prints the identical version block in exactly that empty root
+environment.
+
+### Numbering: 325 is a gap on purpose
+
+The new steps start at 326. `packages.py` had nothing at 325 -- but yesterday's oama
+entry did, and it was removed the same day (above). The entry being gone from the file
+does not make the number free. Caught only because this report still records it, which is
+the argument for writing these down.
+
+### Verification
+
+- Version and provenance line up end to end: the client reports `Nextcloud version
+  34.0.3` and `Git revision 7563f574a87883f8aa4c42454f795dc9a9c56ca8`, which is the
+  commit named in the PGP-signed v34.0.3 tag that verifies against Matthieu Gallien's key
+  (fetched from keys.openpgp.org by fingerprint, a different origin from the tarball).
+  No `daily` suffix -- `MIRALL_VERSION_SUFFIX` defaults to that string and would
+  otherwise have put `34.0.3daily` in the About box and in the User-Agent sent to the
+  server.
+- **The tray import resolves.** `QT_QPA_PLATFORM=offscreen qml` on a file importing
+  `Qt5Compat.GraphicalEffects` exits 0; the same test with a deliberately bogus
+  `Qt5Compat.NoSuchModule` exits 2 with `Did not load any objects`. So the test
+  discriminates, and the module is genuinely there.
+- **The tray host is live.** `org.kde.StatusNotifierWatcher` is owned by `qs`
+  (Quickshell, the DankMaterialShell bar) with Slack and tailscale already registered, so
+  the client's StatusNotifierItem has somewhere to land.
+- `lfsmaint db` rebuilt; `lfsmaint owns` resolves `/usr/bin/nextcloud`,
+  `/opt/kf6/lib/libKF6Archive.so.6.23.0` and `/opt/qt6/bin/lrelease`.
+- Both extractors report zero drift.
+
+### Optional dependencies deliberately absent, and what each costs
+
+Each was checked to be genuinely optional in the source (guarded by `if(..._FOUND)`),
+not merely absent from a README. From the build's own feature summary:
+
+- **KF6DBusAddons, KF6GuiAddons** -- would need the full frameworks page.
+- **KF6KIO** -- a Dolphin overlay plugin. There is no Dolphin, Nautilus, Nemo or Caja
+  anywhere in this repo's package lists, which is also why
+  `BUILD_SHELL_INTEGRATION_NAUTILUS=OFF` is passed: ON installs `syncstate.py` into
+  three file-manager extension directories that do not exist here.
+- **libcloudproviders** -- a GNOME Files integration.
+- **libcanberra** -- the incoming-call ringtone. The build says so itself: "libcanberra
+  not found; notification sounds will be silent on this build". Call notifications still
+  appear, silently. One BLFS page away if that matters.
+- **BUILD_UPDATER=OFF** (upstream default ON) -- it polls updates.nextcloud.org and
+  offers a prebuilt binary, which on a system whose package database is `lfsmaint` is at
+  best a dead end and at worst installs a file no manifest knows about.
+
+### Not done
+
+The client is installed but **not configured and not running**. Connecting an account,
+choosing sync folders, and enabling the user unit
+(`systemctl --user enable --now com.nextcloud.desktopclient.nextcloud.service`, installed
+at `/usr/lib/systemd/user/`) are the operator's, on the operator's desktop. gnome-keyring
+(seq 250) is already here and providing the Secret Service, so qtkeychain has somewhere
+to put the password rather than prompting every start.

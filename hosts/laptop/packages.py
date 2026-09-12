@@ -1272,4 +1272,89 @@ PACKAGES = sorted(BASE + [
     book(322, "glib-networking", "basicnet/glib-networking.html", "glib-networking-2.80.1.tar.xz"),
     book(323, "libsoup3", "basicnet/libsoup3.html", "libsoup-3.6.6.tar.xz"),
     book(324, "geoclue2", "basicnet/geoclue2.html", "geoclue-2.8.0.tar.bz2"),
+
+    # Operator-requested (2026-09-12): "I need the nextcloud client installed, the thing
+    # that sits in the system tray and syncs directories" -- the Nextcloud desktop
+    # client, 34.0.3. BLFS 13.0-systemd has no Nextcloud page of any kind (`grep -ril
+    # nextcloud book/` returns nothing), so the client itself is a hand() entry; two of
+    # its eight new dependencies do have real book pages and are book() entries.
+    #
+    # The dependency set was read out of the 34.0.3 CMakeLists files, not out of a
+    # packaging README, and three of the eight are invisible from any dependency list:
+    #
+    #   Qt6 Core5Compat / Qt5Compat.GraphicalEffects and Qt6 WebSockets. Both are among
+    #   the 35 modules `-skip`ped by this host's own qt6 override (seq 199), which was
+    #   written for Quickshell/DankMaterialShell and is right for them -- neither imports
+    #   any of this. libnextcloudsync links Qt::WebSockets and Qt::Core5Compat, and 12
+    #   QML files including src/gui/tray/MainWindow.qml import
+    #   Qt5Compat.GraphicalEffects, i.e. the tray window the operator actually asked for
+    #   is the part that needs it. The WebSockets gap stops the build at configure time;
+    #   the GraphicalEffects gap would not surface until the tray failed to render.
+    #
+    #   libp11 (OpenSC). The top-level CMakeLists has, unconditionally inside
+    #   `if(BUILD_CLIENT)`, `pkg_check_modules(OPENSC-LIBP11 libp11 REQUIRED ...)`. It
+    #   backs keeping the end-to-end-encryption key on a hardware PKCS#11 token, and is
+    #   REQUIRED whether or not anyone owns one.
+    #
+    #   rsvg-convert. Not a new step -- already here from librsvg (seq 91) -- but
+    #   cmake/modules/GenerateIconsUtils.cmake does find_program(SVG_CONVERTER NAMES
+    #   inkscape rsvg-convert REQUIRED) and rasterises every state icon at configure
+    #   time. On a host without librsvg this would be a ninth step, and the failure
+    #   would be a FATAL_ERROR before a single object file.
+    #
+    # Three operator decisions were taken before building (2026-09-12), each because the
+    # cheap path and the book-faithful path diverged:
+    #
+    #   Qt modules: build qt5compat and qtwebsockets STANDALONE from Qt's own
+    #   per-module 6.10.2 tarballs against the installed /opt/qt6, rather than re-running
+    #   seq 199 with two fewer `-skip` flags. The latter is a full rebuild of the 1.3 GB
+    #   everywhere tarball -- hours, and it re-links the Qt the running desktop shell
+    #   depends on. Qt supports the standalone build directly and installs the wrapper
+    #   for it ($QT6DIR/bin/qt-cmake). 15 MB of source against 1.3 GB.
+    #
+    #   KArchive: build that ONE framework rather than BLFS's kde/frameworks6.html,
+    #   which builds all ~60 (its own estimate: 3.0 GB, 12 SBU at parallelism=8) and
+    #   whose Required list -- breeze-icons, docbook-xml, docbook-xsl-nons, libcanberra,
+    #   lmdb, qca, libqrencode, plasma-wayland-protocols, PyYAML, URI -- is almost
+    #   entirely unbuilt here and entirely unneeded by KArchive. It installs to
+    #   /opt/kf6, which is where the full page would put it, so building that page later
+    #   replaces this rather than colliding with it; see recipes/blfs-karchive.sh.
+    #
+    #   Translations: skip qttools (the source of `lrelease`), so the UI is English-only.
+    #   The client guards this with `if(Qt6LinguistTools_FOUND)` and loses only the .qm
+    #   files. REVERSED THE SAME DAY, by a fact found live rather than by a change of
+    #   mind: KArchive calls ECM's ecm_install_po_files_as_qm(poqm) unconditionally and
+    #   failed at configure time with "Failed to find required Qt component
+    #   LinguistTools". qttools is a hard dependency of the chain even though it is an
+    #   optional one of the client, so it is built at seq 328.5 -- and the client
+    #   therefore gets its ~60 .qm files after all. See recipes/blfs-qttools.sh for the
+    #   full sequence and for the sed-out-the-line alternative that was rejected.
+    #
+    # Numbering starts at 326, not 325. 325 is a gap on purpose: oama-0.22.0 held it on
+    # 2026-09-11, was installed, failed to authenticate against Exchange Online and was
+    # removed the same day along with its packages.py entry -- see BUILD-REPORT.md. The
+    # entry being gone from this file does not make the number free; CLAUDE.md's rule is
+    # that a number, once spent, stays spent. Caught here only because BUILD-REPORT.md
+    # still records it, which is the point of writing it down.
+    #
+    # Not promoted into packages/base.py: BASE is the closure of a workable LFS system
+    # and does not include a desktop sync client, and adding steps there would inject
+    # never-run steps into `server`'s live --resume queue -- the same hazard the seq-14.5
+    # note above records. Every recipe is nonetheless SHARED rather than host-scoped:
+    # none of the eight names a device, a label, a GPU, a /boot path or a sync
+    # directory, and which server and folders to sync is per-user run-time state in
+    # ~/.config/Nextcloud, not build-time configuration. Dependency order throughout.
+    hand(326, "qt5compat", "qt5compat-everywhere-src-6.10.2.tar.xz", "Qt 6.10.2 qt5compat module (hand-authored, shared recipe)"),
+    hand(327, "qtwebsockets", "qtwebsockets-everywhere-src-6.10.2.tar.xz", "Qt 6.10.2 qtwebsockets module (hand-authored, shared recipe)"),
+    book(328, "extra-cmake-modules", "kde/extra-cmake-modules.html", "extra-cmake-modules-6.23.0.tar.xz"),
+    # 328.5, not 334: this was added after seq 329-333 were already numbered and three of
+    # them had been built, and it has to run BEFORE karchive rather than after
+    # nextcloud-desktop. Same interleaving case as adduser-john at 14.5 and xorg-env at
+    # 17.5; the list is sorted by seq, so the fraction is the build order.
+    hand(328.5, "qttools", "qttools-everywhere-src-6.10.2.tar.xz", "Qt 6.10.2 qttools module (hand-authored, shared recipe)"),
+    hand(329, "karchive", "karchive-6.23.0.tar.xz", "KArchive-6.23.0 (hand-authored, shared recipe)"),
+    book(330, "qtkeychain", "kde/qtkeychain.html", "qtkeychain-0.15.0.tar.gz"),
+    hand(331, "libp11", "libp11-0.4.21.tar.gz", "libp11-0.4.21 (hand-authored, shared recipe)"),
+    hand(332, "kdsingleapplication", "kdsingleapplication-1.2.1.tar.gz", "KDSingleApplication-1.2.1 (hand-authored, shared recipe)"),
+    hand(333, "nextcloud-desktop", "nextcloud-desktop-34.0.3.tar.gz", "Nextcloud desktop client 34.0.3 (hand-authored, shared recipe)"),
 ], key=lambda p: p["seq"])

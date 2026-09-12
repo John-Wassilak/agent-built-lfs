@@ -600,3 +600,13 @@ blfs-geoclue2	native	3.0	1
 blfs-geoclue2	native	16.7	0
 blfs-nginx	native	53.9	0
 blfs-nginx	native	45.8	0
+blfs-qt5compat	native	173.6	0
+blfs-qtwebsockets	native	81.2	0
+blfs-extra-cmake-modules	native	4.7	0
+blfs-karchive	native	5.1	1
+blfs-qttools	native	319.7	0
+blfs-karchive	native	50.6	0
+blfs-qtkeychain	native	33.0	0
+blfs-libp11	native	16.3	0
+blfs-kdsingleapplication	native	9.7	0
+blfs-nextcloud-desktop	native	1004.8	0

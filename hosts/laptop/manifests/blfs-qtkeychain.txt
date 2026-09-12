@@ -1,0 +1,15 @@
+/opt/qt6/include/qt6keychain/keychain.h
+/opt/qt6/include/qt6keychain/qkeychain_export.h
+/opt/qt6/lib/cmake/Qt6Keychain/Qt6KeychainConfig.cmake
+/opt/qt6/lib/cmake/Qt6Keychain/Qt6KeychainConfigVersion.cmake
+/opt/qt6/lib/cmake/Qt6Keychain/Qt6KeychainLibraryDepends-release.cmake
+/opt/qt6/lib/cmake/Qt6Keychain/Qt6KeychainLibraryDepends.cmake
+/opt/qt6/lib/libqt6keychain.so
+/opt/qt6/lib/libqt6keychain.so.0.15.0
+/opt/qt6/lib/libqt6keychain.so.1
+/opt/qt6/mkspecs/modules/qt_Qt6Keychain.pri
+/opt/qt6/share/qt6keychain/translations/qtkeychain_de.qm
+/opt/qt6/share/qt6keychain/translations/qtkeychain_fr.qm
+/opt/qt6/share/qt6keychain/translations/qtkeychain_ro.qm
+/opt/qt6/share/qt6keychain/translations/qtkeychain_ru.qm
+/opt/qt6/share/qt6keychain/translations/qtkeychain_zh.qm

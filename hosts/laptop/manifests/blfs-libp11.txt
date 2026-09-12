@@ -1,0 +1,15 @@
+/usr/include/libp11.h
+/usr/include/p11_err.h
+/usr/include/p11_ver.h
+/usr/lib/engines-3/libpkcs11.so
+/usr/lib/engines-3/pkcs11.la
+/usr/lib/engines-3/pkcs11.so
+/usr/lib/libp11.la
+/usr/lib/libp11.so
+/usr/lib/libp11.so.3
+/usr/lib/libp11.so.3.10.0
+/usr/lib/ossl-modules/libpkcs11.so
+/usr/lib/ossl-modules/pkcs11prov.la
+/usr/lib/ossl-modules/pkcs11prov.so
+/usr/lib/pkgconfig/libp11.pc
+/usr/share/doc/libp11/NEWS

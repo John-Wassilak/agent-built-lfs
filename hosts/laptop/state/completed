@@ -523,3 +523,12 @@ blfs-libsoup3
 blfs-geoclue2
 blfs-nginx
 blfs-nginx
+blfs-qt5compat
+blfs-qtwebsockets
+blfs-extra-cmake-modules
+blfs-qttools
+blfs-karchive
+blfs-qtkeychain
+blfs-libp11
+blfs-kdsingleapplication
+blfs-nextcloud-desktop
