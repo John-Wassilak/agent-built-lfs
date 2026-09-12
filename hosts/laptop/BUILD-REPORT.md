@@ -5700,11 +5700,73 @@ not merely absent from a README. From the build's own feature summary:
   offers a prebuilt binary, which on a system whose package database is `lfsmaint` is at
   best a dead end and at worst installs a file no manifest knows about.
 
-### Not done
+### Configured the same day from the pre-LFS Gentoo home
 
-The client is installed but **not configured and not running**. Connecting an account,
-choosing sync folders, and enabling the user unit
-(`systemctl --user enable --now com.nextcloud.desktopclient.nextcloud.service`, installed
-at `/usr/lib/systemd/user/`) are the operator's, on the operator's desktop. gnome-keyring
-(seq 250) is already here and providing the Secret Service, so qtkeychain has somewhere
-to put the password rather than prompting every start.
+The client was installed with nothing configured, then set up from `~/old_home` at the
+operator's request. Worth recording because the shape of it is specific to this machine,
+and a future session would otherwise re-derive it wrong.
+
+**Nothing needed re-downloading.** `nvme0n1p3`, the LUKS volume, was never touched by the
+deploy, so both sync trees and both journal databases survived intact, last synced
+2026-09-01 20:21:
+
+| local | remote | size | journal |
+|---|---|---|---|
+| `/mnt/crypt/john/nextcloud/` | `/backup` | 24 GB | `.sync_e95fe9670a71.db` |
+| `/mnt/crypt/john/cadence-running/` | `/cadence_running` | 800 MB | `.sync_1563644f2601.db` |
+
+Account `john` at `https://cloud.wassilak.com`, server 33.0.6, checked live against
+`/status.php`. `~/old_home/.config/Nextcloud/nextcloud.cfg` was copied to
+`~/.config/Nextcloud/` rather than re-running the wizard: it reproduces both folder
+pairings and their `journalPath`s exactly, so the client reconciles against the existing
+trees instead of treating them as new.
+
+**The wizard's default would have been destructive.** `~/Nextcloud` is on `/`, 21 GB free,
+against a 24 GB remote -- it would have downloaded for an hour and then filled the root
+filesystem. And `~/.password-store` is a symlink into
+`/mnt/crypt/john/nextcloud/password-store/`, so the sync tree is load-bearing for `pass`
+(seq 222). This is not a folder whose location is a preference.
+
+**Autostart is a Hyprland `exec_cmd`, not the installed systemd user unit.** The unit at
+`/usr/lib/systemd/user/com.nextcloud.desktopclient.nextcloud.service` is
+`WantedBy=graphical.target`, and this session never reaches it: Hyprland starts from
+`getty@tty2` and the user manager only gets to `default.target` (`systemctl --user
+is-active graphical.target` reads `inactive`). `systemctl --user enable` would write the
+symlink and it would never fire. The line went into `~/.config/hypr/hyprland.lua`'s
+`hyprland.start` hook beside `tailscale systray`, after `dms run` so DankMaterialShell has
+claimed `org.kde.StatusNotifierWatcher` first.
+
+**It is guarded on the mount, and that guard is the point:**
+
+```lua
+hl.exec_cmd("bash -c 'mountpoint -q /mnt/crypt && exec nextcloud --background'")
+```
+
+There is no `fstab` or `crypttab` entry for the LUKS volume -- it is unlocked and mounted
+by hand -- so at login it is usually not mounted yet. Starting the client against a
+missing or empty sync root is the one way this setup loses data, and upstream's own
+default does not stop it: `promptDeleteAllFiles` defaults to **false** in
+`ConfigFile::promptDeleteFiles()`, which makes `displayDialog` false in
+`SyncEngine::handleMassDeletion()`, which then returns false and lets the deletions
+propagate with no prompt at all. Not starting is the safe failure.
+
+`promptDeleteAllFiles=true` was set in the restored config at the operator's request, as a
+second line of defence for the hand-launch path the guard cannot cover. With it on the
+prompt fires when every file would be deleted, or when the deletion count exceeds
+`deleteFilesThreshold` -- absent from the config, so upstream's default of 100. The prompt
+is GUI-only (`handleMassDeletion()` also checks `!_syncOptions.isCmd()`), so
+`nextcloudcmd` is unprotected either way.
+
+Nothing carried over from the old `sync-exclude.lst`: diffed against the 34.0.3 list this
+build installed at `/etc/Nextcloud/sync-exclude.lst`, the old file is a strict subset --
+an older stock copy with no local edits. The old `~/.config/autostart/Nextcloud.desktop`
+is dead here too, since nothing reads XDG autostart under this session, though it ran
+`nextcloud --background`, the same command the Hyprland line uses.
+
+gnome-keyring (seq 250) already owns `org.freedesktop.secrets`, so the password persists
+after one re-entry. The old keyring at `~/old_home/.local/share/keyrings/` was left alone:
+the current keyring is live with its own contents, and merging them is more risk than
+retyping one password.
+
+Still the operator's: the first sync itself. `/mnt/crypt` is at 95%, 9.3 GB free, so
+whatever accumulated on the server since 2026-09-01 has to fit in that.
