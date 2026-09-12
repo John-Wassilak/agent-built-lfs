@@ -810,6 +810,39 @@ on `server` (or writes the sysctl by hand there), `server` still accepts redirec
 every interface. A shared-layer fix reaches a built machine only when something applies
 it.
 
+## Killing `lfsbuild` does not kill the build, and the orphan installs without a manifest
+
+Found on `laptop`, 2026-09-12, building qttools. An external supervisor killed the
+foreground `lfsbuild` invocation for memory pressure. That did not stop the build: the
+recipe runs as a `sudo` child, and killing the driver only reparented it to init, where
+it carried on compiling as root. `ps -o ppid= -p <recipe pid>` read `1`, which is the
+tell.
+
+Left alone it would have finished, and that is the damaging part rather than a lucky
+escape. The recipe's own `cmake --install` would have run, putting a few hundred files on
+the system; but the driver that was going to run the `find -cnewer /tmp/.lfsbuild-stamp`
+manifest capture, mark the step complete and clean the source tree was gone. The result
+is the one state this project has no way to repair after the fact: installed files that
+no manifest owns, on a system whose only package database is `lfsmaint`, whose answers
+are only as good as the manifests. `lfsmaint owns` would have said nothing about them and
+nothing would have looked wrong.
+
+Two practices follow.
+
+- **After any interrupted step, check for survivors before doing anything else.** `ps -e
+  -o pid,ppid,args | grep <srcdir>`. If the recipe is still running, kill it, remove the
+  source tree under `$SOURCES` and re-run the step from the driver. A few minutes of
+  rebuild is much cheaper than an unowned install, and re-running is safe: the recipe
+  reinstalls over itself and the manifest is captured properly the second time.
+- **Detach long builds from whatever is supervising the session.** `setsid nohup
+  bin/lfsbuild ... &` puts the driver in its own session, so a kill aimed at the
+  foreground command cannot decapitate it and leave the build headless. The driver then
+  lives long enough to write the manifest even if the thing that launched it goes away.
+
+Note the asymmetry with the abort case above: there, the recipe died and the driver's
+cleanup was skipped. Here the driver died and the recipe kept going. Both end with the
+step's bookkeeping unwritten, and the manifest is the half that cannot be reconstructed.
+
 ## Standing policies
 
 - **BLFS Recommended dependencies get installed, not just Required** -- but checked
