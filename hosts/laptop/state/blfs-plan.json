@@ -4870,5 +4870,33 @@
     "blocks": 1,
     "enabled": 1,
     "disabled": 0
+  },
+  {
+    "seq": 334,
+    "order": "blfs.334",
+    "name": "blfs-imagemagick",
+    "chapter": "blfs",
+    "page": "imagemagick",
+    "title": "ImageMagick-7.1.2-13",
+    "context": "chroot",
+    "tarball": "ImageMagick-7.1.2-13.tar.xz",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
+  },
+  {
+    "seq": 335,
+    "order": "blfs.335",
+    "name": "blfs-zbar",
+    "chapter": "blfs",
+    "page": "zbar",
+    "title": "zbar-0.23.93 (hand-authored, shared recipe)",
+    "context": "chroot",
+    "tarball": "zbar-0.23.93.tar.gz",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
   }
 ]

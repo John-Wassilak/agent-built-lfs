@@ -532,3 +532,5 @@ blfs-qtkeychain
 blfs-libp11
 blfs-kdsingleapplication
 blfs-nextcloud-desktop
+blfs-imagemagick
+blfs-zbar

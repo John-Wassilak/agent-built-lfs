@@ -610,3 +610,5 @@ blfs-qtkeychain	native	33.0	0
 blfs-libp11	native	16.3	0
 blfs-kdsingleapplication	native	9.7	0
 blfs-nextcloud-desktop	native	1004.8	0
+blfs-imagemagick	native	333.1	0
+blfs-zbar	native	52.2	0

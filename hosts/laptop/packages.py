@@ -1357,4 +1357,64 @@ PACKAGES = sorted(BASE + [
     hand(331, "libp11", "libp11-0.4.21.tar.gz", "libp11-0.4.21 (hand-authored, shared recipe)"),
     hand(332, "kdsingleapplication", "kdsingleapplication-1.2.1.tar.gz", "KDSingleApplication-1.2.1 (hand-authored, shared recipe)"),
     hand(333, "nextcloud-desktop", "nextcloud-desktop-34.0.3.tar.gz", "Nextcloud desktop client 34.0.3 (hand-authored, shared recipe)"),
+
+    # --- zbarimg (operator request, 2026-09-15) --------------------------------
+    #
+    # Asked for by name: `zbarimg`, the command-line barcode/QR decoder. It is one
+    # binary out of the zbar package, and it is NOT built unconditionally -- zbar's
+    # own Makefile.am:49 wraps `include $(srcdir)/zbarimg/Makefile.am.inc` in
+    # `if HAVE_MAGICK`, and configure.ac:446 prints "image scanning disabled --
+    # zbarimg will *not* be built" when no Magick is found. zbarimg.c does all its
+    # image loading through MagickWand; libzbar itself only ever sees a raw Y800
+    # buffer. So the request for zbarimg is really a request for two steps.
+    #
+    # imagemagick (334) is the Magick half. zbar's configure takes either
+    # ImageMagick (MagickWand >= 6.2.6) or GraphicsMagick (GraphicsMagickWand);
+    # ImageMagick is the one BLFS carries a page for, and GraphicsMagick would have
+    # had to be hand-authored for no gain. Its only
+    # Recommended dependency is Xorg Libraries, already installed here (libX11 at
+    # seq 46, /usr/lib/pkgconfig/x11.pc present). Everything else on that page is
+    # Optional and autodetected: libpng, libjpeg-turbo, libtiff, libwebp, lcms2,
+    # libjxl, librsvg, pango and freetype are all already built on this host, so
+    # the delegate set zbarimg can actually read comes out wide without adding a
+    # single step. Ghostscript is not installed, so EPS/PS/PDF input is out --
+    # irrelevant for scanning a QR code out of a PNG or a phone screenshot.
+    #
+    # The book's primary download URL (imagemagick.org/archive/releases/) 404s for
+    # 7.1.2-13 -- imagemagick.org rotates its release directory, which the BLFS page
+    # says in its own Note and is why it names ftp.osuosl.org/pub/blfs/
+    # conglomeration/ImageMagick/ as the fallback. Fetched from there; md5 is
+    # a28a5d65a58fce9c24e8cf4b47cb5c5c, the book's own sum, byte for byte. Not a
+    # book defect -- the book documents this exact failure and its workaround -- so
+    # no BOOK-PATCHES.md entry.
+    #
+    # Shared, not host-scoped, per CLAUDE.md's test: neither step names a device, a
+    # LABEL, a GPU, a /boot path or a codec. Not promoted into packages/base.py
+    # either -- a barcode decoder is not part of "an LFS system you can work on",
+    # and adding it there would inject a never-run step into server's live --resume
+    # queue, the same hazard the seq-14.5 note above records.
+    #
+    # hand(334), NOT book(334), even though general/imagemagick.html is a real book
+    # page and the recipe is that page's commands verbatim. server already builds
+    # this exact package -- hand(226, "imagemagick", ...) in hosts/server/packages.py,
+    # built 2026-08-26 because awesome's configure hard-requires `convert` -- against
+    # the SHARED recipes/blfs-imagemagick.sh, whose comment block carries that
+    # rationale plus the download-URL finding. A book() entry here made
+    # extract-blfs.py the owner of that filename and it rewrote the file on the next
+    # run, discarding every one of those comments. Nothing warned: --check reported
+    # zero drift before and after, because a hand() recipe belonging to another host
+    # is not in this host's plan and is never compared. Caught by reading `git diff`
+    # before committing, which is not a control.
+    #
+    # So the two hosts now declare it identically, which is the only self-consistent
+    # answer while the shared file is hand-authored: one recipe file cannot be both
+    # extractor-owned and hand-owned. The alternative -- converting server's entry to
+    # book() as well, letting the extractor own the file, and moving its two
+    # paragraphs into hosts/server/BUILD-REPORT.md -- is the better end state, since
+    # it puts the recipe back under --check where a hand() file is never verified.
+    # Not done here: it edits another machine's plan for a step that machine has
+    # already built, and that is the operator's call, not a side effect of installing
+    # zbarimg on this one.
+    hand(334, "imagemagick", "ImageMagick-7.1.2-13.tar.xz", "ImageMagick-7.1.2-13"),
+    hand(335, "zbar", "zbar-0.23.93.tar.gz", "zbar-0.23.93 (hand-authored, shared recipe)"),
 ], key=lambda p: p["seq"])

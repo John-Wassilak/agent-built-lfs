@@ -5770,3 +5770,104 @@ retyping one password.
 
 Still the operator's: the first sync itself. `/mnt/crypt` is at 95%, 9.3 GB free, so
 whatever accumulated on the server since 2026-09-01 has to fit in that.
+
+## 2026-09-15 -- zbarimg (seq 334-335), and what the manifest sweep was really catching
+
+Operator asked for `zbarimg`. Two steps, because one binary out of zbar is conditional on
+a package that was not installed here.
+
+**`zbarimg` is not built unless a Magick is present.** zbar's `Makefile.am:49` wraps
+`include $(srcdir)/zbarimg/Makefile.am.inc` in `if HAVE_MAGICK`, and `zbarimg.c` does all
+its file loading through MagickWand -- `libzbar` itself only ever receives a raw Y800
+buffer. configure takes ImageMagick (`MagickWand >= 6.2.6`) or GraphicsMagick; BLFS 13.0
+carries a page for the first and none for the second. Both are `hand()` entries here, seq
+334 and 335 -- see below for why ImageMagick is not a `book()` step despite having a book
+page. zbar has no BLFS page at all: `grep -ril zbar book/` returns exactly one file,
+`multimedia/gst10-plugins-bad.html`, where it is a `-D zbar=enabled` switch.
+
+**The silent-success trap, and the two flags that close it.** With configure's defaults
+(`with_imagemagick="check"`, `with_graphicsmagick="check"`) a host with neither installed
+does not fail. It takes the `test "x$with_graphicsmagick" = "xcheck"` branch at
+`configure.ac:446`, prints "ImageMagick/GraphicsMagick not detected. Several features will
+be disabled", and builds cleanly. The step goes green, the manifest looks plausible, and
+the one binary the package was added for does not exist. `--with-imagemagick` alone does
+not close it either -- `with_graphicsmagick` is still `"check"`, so the same branch still
+catches it. Only pinning both (`--with-imagemagick --without-graphicsmagick`) leaves the
+`AC_MSG_FAILURE` at the end of that chain reachable. The recipe also asserts
+`test -x /usr/bin/zbarimg` after install rather than trusting `make install`'s exit
+status.
+
+**`--without-dbus` is a deliberate narrowing.** dbus is built here (seq 101), so
+configure's `"check"` would have enabled it. `zbarimg.c:320` initialises `int dbus = 1`
+and calls `zbar_processor_request_dbus()` at line 419 -- emission is **on by default**,
+`--nodbus` is opt-out -- and `img_scanner.c:764` is `dbus_bus_get(DBUS_BUS_SYSTEM, &err)`.
+The **system** bus. Every payload zbarimg decodes would be broadcast where any local user
+can read it, and QR codes routinely carry wifi PSKs and OTP enrolment secrets. The dbus
+build also installs `dbus/org.linuxtv.Zbar.conf` into `/etc/dbus-1/system.d`
+(`Makefile.am:91-92`), whose policy is `<allow own="org.linuxtv.Zbar"/>` in
+`context="default"`. Building without it removes the code path and the policy file rather
+than relying on remembering a flag; the recipe asserts the file is absent afterwards.
+
+`--without-python/gtk/qt/java` pin bindings configure would otherwise decide from whatever
+happens to be installed -- python3 and `gtk+-3.0.pc` are both present and `auto` would
+have built both. `--disable-doc` is explicit rather than incidental: xmlto is not
+installed, so configure already auto-disables docs at `configure.ac:190`, and pinning it
+means adding xmlto later for some other reason cannot silently change this package's file
+list. There is therefore no `zbarimg(1)`; `zbarimg --help` covers the usage. Video is left
+at its default, so `zbarcam` is built too -- one `.c` file against the already-built
+libzbar, and this machine has `/usr/include/linux/videodev2.h` and a webcam. libv4l2 is
+not installed, so configure warns and uses the raw V4L2 API.
+
+The book's primary ImageMagick URL 404s for 7.1.2-13; imagemagick.org rotates its release
+directory, which the BLFS page says in its own Note, naming `ftp.osuosl.org/pub/blfs/
+conglomeration/ImageMagick/` as the fallback. Fetched there, md5
+`a28a5d65a58fce9c24e8cf4b47cb5c5c`, the book's own sum. Not a book defect -- the book
+documents the failure and the workaround -- so no `BOOK-PATCHES.md` entry. Not a new
+finding either: `server` hit the identical 404 on 2026-08-26 and wrote it into
+`recipes/blfs-imagemagick.sh`'s comment block, which is where this session should have
+read it before rediscovering it. Still live nearly three weeks on.
+
+Built: ImageMagick 7.1.2-13 Q16-HDRI in 5.6 min, 810 files, 258 formats registered with
+PNG/JPEG/WEBP/TIFF/SVG all live off already-installed delegates (no Ghostscript, so no
+EPS/PS/PDF input). zbar 0.23.93 in 0.9 min, 26 files. configure's own summary confirms
+every flag landed: `Dbus --with-dbus=no`, `ImageMagick --with-imagemagick=yes`,
+Python/GTK/Qt/Java all `no`. `ldd /usr/bin/zbarimg` shows libMagickWand and no libdbus.
+Verified against zbar's own `examples/`: `QR-Code:https://github.com/mchehab/zbar`,
+`EAN-13:9789876543217`, `CODE-128`, `CODE-39` all decode. `qr-code-inverted.png` returns
+rc=4 -- zbar scans dark-on-light only and has no invert switch, which ImageMagick now
+solves on the same box: `magick in.png -negate out.png && zbarimg out.png` decodes it.
+
+### A book() entry silently overwrote another host's hand-authored recipe
+
+`server` has built ImageMagick since 2026-08-26 -- `hand(226, "imagemagick", ...)`, because
+awesome's configure hard-requires `convert` -- against the **shared**
+`recipes/blfs-imagemagick.sh`, whose comment block carries that rationale and the
+download-URL finding above. Adding this host's step as `book(334, "imagemagick",
+"general/imagemagick.html", ...)` made `extract-blfs.py` the owner of that same filename,
+and the next extraction rewrote the file, discarding every one of those comments.
+
+Nothing caught it. `extract-blfs.py --check` reported zero drift immediately before and
+immediately after, for both hosts, because a `hand()` recipe belonging to another host is
+not in this host's plan and is never compared -- and the file it clobbered was, by that
+point, exactly what the extractor would generate. The commands were functionally identical
+(same flags; the generated version adds `&&` between configure and make), so the build that
+ran was correct. What was lost was the record, which is the part that is supposed to
+survive re-extraction. It was caught by reading `git diff` before committing. That is not a
+control.
+
+Resolved by declaring both hosts identically: `hand(334, "imagemagick",
+"ImageMagick-7.1.2-13.tar.xz", "ImageMagick-7.1.2-13")` here, matching server's `hand(226,
+...)` byte for byte in form, with the recipe restored from git and a note appended for this
+host. One recipe file cannot be both extractor-owned and hand-owned, so the two
+declarations have to agree.
+
+**The better end state is the opposite one, and it was not taken here.** Converting
+server's entry to `book()` as well would put the file back under `--check`, where a
+`hand()` recipe is never verified at all, and move its two paragraphs to
+`hosts/server/BUILD-REPORT.md` where CLAUDE.md says a build's narrative belongs. That edits
+another machine's plan for a step it has already built, which is the operator's call.
+
+The tooling gap is separate and worth fixing regardless: `extract-blfs.py` should refuse to
+write a recipe that any host declares as `hand()`, rather than silently winning. It has
+every packages.py it needs to know.
+
