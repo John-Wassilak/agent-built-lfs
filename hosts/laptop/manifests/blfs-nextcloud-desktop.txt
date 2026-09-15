@@ -1072,4 +1072,3 @@
 /usr/share/nextcloud/i18n/client_zh_CN.qm
 /usr/share/nextcloud/i18n/client_zh_HK.qm
 /usr/share/nextcloud/i18n/client_zh_TW.qm
-/var/lib/NetworkManager/internal-518a9767-cc1d-337e-aff6-3bea504c8aae-eth0.lease

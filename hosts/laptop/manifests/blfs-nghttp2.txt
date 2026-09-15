@@ -30,9 +30,3 @@
 /usr/share/man/man1/nghttpd.1
 /usr/share/man/man1/nghttpx.1
 /usr/share/nginx/html/50x.html
-/var/lib/bluetooth/44:85:00:11:35:9F/74:45:CE:46:55:24/info
-/var/lib/upower/history-charge-JLab_JBuds_Sport_ANC_4-EC:9A:0C:F1:FC:7C.dat
-/var/lib/upower/history-rate-JLab_JBuds_Sport_ANC_4-EC:9A:0C:F1:FC:7C.dat
-/var/lib/upower/history-time-empty-JLab_JBuds_Sport_ANC_4-EC:9A:0C:F1:FC:7C.dat
-/var/lib/upower/history-time-full-JLab_JBuds_Sport_ANC_4-EC:9A:0C:F1:FC:7C.dat
-/var/lib/upower/history-voltage-JLab_JBuds_Sport_ANC_4-EC:9A:0C:F1:FC:7C.dat

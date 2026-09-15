@@ -4371,4 +4371,3 @@
 /usr/share/man/man1/emacsclient.1.gz
 /usr/share/man/man1/etags.1.gz
 /usr/share/metainfo/emacs.metainfo.xml
-/var/lib/NetworkManager/internal-518a9767-cc1d-337e-aff6-3bea504c8aae-eth0.lease

@@ -30,9 +30,3 @@
 /usr/lib/firefox/vaapitest
 /usr/share/applications/firefox.desktop
 /usr/share/pixmaps/firefox.png
-/var/lib/NetworkManager/internal-518a9767-cc1d-337e-aff6-3bea504c8aae-eth0.lease
-/var/lib/upower/history-charge-00HW029-52-2075.dat
-/var/lib/upower/history-rate-00HW029-52-2075.dat
-/var/lib/upower/history-time-empty-00HW029-52-2075.dat
-/var/lib/upower/history-time-full-00HW029-52-2075.dat
-/var/lib/upower/history-voltage-00HW029-52-2075.dat

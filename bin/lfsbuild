@@ -111,6 +111,30 @@ MANIFEST_NOISE = "|".join([
     # Same category as systemd's clock/random-seed and tor's DataDirectory above:
     # service runtime state, not package-installed content.
     r"^/var/lib/upower/",
+    # tailscaled's state directory: the rotating tailscaled.log{1,2}.txt, the DERP map
+    # cache, and tailscaled.state (which holds the node key). Unlike tor and upower
+    # above, NO recipe here starts this daemon -- tailscaled has simply been running
+    # since the host joined the tailnet (commit 13560d2), so it is not the installing
+    # step that pulls its state in, it is any step that happens to build while the
+    # daemon rotates a log. Found 2026-09-15 on laptop, where blfs-zbar's 28-file
+    # manifest claimed two tailscaled.log*.txt files; blfs-imagemagick, blfs-matugen,
+    # blfs-gnome-keyring and blfs-dankmaterialshell had claimed the same paths, and
+    # tailscaled.state, earlier. Service runtime state, not package content -- same
+    # category as the two above.
+    r"^/var/lib/tailscale/",
+    # NetworkManager's DHCP leases and bluez's pairing records, found by the same
+    # 2026-09-15 audit (`grep -h '^/var/lib/' hosts/laptop/manifests/*.txt | sort |
+    # uniq -c`, which is the check worth re-running on any native host). Five
+    # manifests -- firefox, qt6, emacs, libreoffice, nextcloud-desktop -- each
+    # claimed the same internal-<uuid>-eth0.lease, renewed on the DHCP timer; and
+    # blfs-nghttp2 claimed /var/lib/bluetooth/<adapter>/<device>/info, a bluez link
+    # key written when a headset paired mid-build. Same category again. The three
+    # /var/lib paths that are NOT noise and must stay claimable are
+    # systemd/catalog/database (ch08-systemd builds it), nss_db/Makefile (installed
+    # by glibc) and dbus/machine-id (created by ch08-dbus) -- all created by the very
+    # step that owns them, which is the line between the two cases.
+    r"^/var/lib/NetworkManager/",
+    r"^/var/lib/bluetooth/",
 ])
 
 # Steps the driver handles specially rather than executing verbatim.

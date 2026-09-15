@@ -110,6 +110,3 @@
 /usr/share/locale/zh_TW/LC_MESSAGES/gnome-keyring.mo
 /usr/share/p11-kit/modules/gnome-keyring.module
 /usr/share/xdg-desktop-portal/portals/gnome-keyring.portal
-/var/lib/tailscale/tailscaled.log1.txt
-/var/lib/tailscale/tailscaled.log2.txt
-/var/lib/tailscale/tailscaled.state

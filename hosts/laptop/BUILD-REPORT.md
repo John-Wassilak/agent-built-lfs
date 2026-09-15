@@ -5871,3 +5871,31 @@ The tooling gap is separate and worth fixing regardless: `extract-blfs.py` shoul
 write a recipe that any host declares as `hand()`, rather than silently winning. It has
 every packages.py it needs to know.
 
+### The manifest sweep was claiming other daemons' runtime state
+
+`blfs-zbar`'s 28-file manifest listed two `/var/lib/tailscale/tailscaled.log*.txt`.
+Nothing about zbar touches tailscale. This is the fourth instance of the pattern
+`PRACTICES.md` records for tor and upower, but with a difference worth recording: no
+recipe here starts `tailscaled`: it has been running since this host joined the tailnet
+(commit 13560d2), and it rotated a log inside the step's stamp window. On a native host
+every already-running service is a standing source of manifest noise, not just the one the
+current recipe enables.
+
+Auditing rather than reacting -- `grep -h '^/var/lib/' hosts/laptop/manifests/*.txt | sort
+| uniq -c` -- found four contaminants at once:
+
+- `/var/lib/tailscale/` -- logs and `tailscaled.state` across `blfs-zbar`,
+  `blfs-imagemagick`, `blfs-matugen`, `blfs-gnome-keyring`, `blfs-dankmaterialshell`.
+- `/var/lib/NetworkManager/` -- the same `internal-<uuid>-eth0.lease`, renewed on the DHCP
+  timer, claimed by `blfs-firefox`, `blfs-qt6`, `blfs-emacs`, `blfs-libreoffice` and
+  `blfs-nextcloud-desktop`.
+- `/var/lib/bluetooth/<adapter>/<device>/info` -- a bluez link key, in `blfs-nghttp2`,
+  from a headset that paired mid-build.
+- `/var/lib/upower/` -- 25 history files still in `blfs-firefox`, `blfs-jq`,
+  `blfs-libreoffice`, `blfs-nghttp2` and `blfs-qt6`, captured before the upower exclusion
+  was added on 2026-09-08 and never backfilled.
+
+All four patterns are now in `bin/lfsbuild`'s `MANIFEST_NOISE` and the manifests are
+scrubbed. Three `/var/lib` paths survived the audit and should: `systemd/catalog/database`,
+`nss_db/Makefile` and `dbus/machine-id`, each created by the very step that claims it.
+`server`'s manifests are clean of all four.

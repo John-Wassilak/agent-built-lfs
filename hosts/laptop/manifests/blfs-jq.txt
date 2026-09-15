@@ -12,8 +12,3 @@
 /usr/share/doc/jq/NEWS.md
 /usr/share/doc/jq/README.md
 /usr/share/man/man1/jq.1
-/var/lib/upower/history-charge-00HW029-52-2075.dat
-/var/lib/upower/history-rate-00HW029-52-2075.dat
-/var/lib/upower/history-time-empty-00HW029-52-2075.dat
-/var/lib/upower/history-time-full-00HW029-52-2075.dat
-/var/lib/upower/history-voltage-00HW029-52-2075.dat

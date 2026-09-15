@@ -10261,9 +10261,3 @@
 /opt/qt6/share/qt6/wayland/protocols/xdg-toplevel-icon/REUSE.toml
 /opt/qt6/share/qt6/wayland/protocols/xdg-toplevel-icon/qt_attribution.json
 /opt/qt6/share/qt6/wayland/protocols/xdg-toplevel-icon/xdg-toplevel-icon-v1.xml
-/var/lib/NetworkManager/internal-518a9767-cc1d-337e-aff6-3bea504c8aae-eth0.lease
-/var/lib/upower/history-charge-00HW029-52-2075.dat
-/var/lib/upower/history-rate-00HW029-52-2075.dat
-/var/lib/upower/history-time-empty-00HW029-52-2075.dat
-/var/lib/upower/history-time-full-00HW029-52-2075.dat
-/var/lib/upower/history-voltage-00HW029-52-2075.dat

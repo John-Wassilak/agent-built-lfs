@@ -598,6 +598,29 @@ change, or the package's file list is wrong the first time it is captured and st
 Directories themselves are already excluded (`! -type d`), so only the contents need
 naming.
 
+**The daemon does not have to be one the build started.** Fourth variant, found
+2026-09-15 on `laptop` while installing an unrelated package: `blfs-zbar`'s 28-file
+manifest claimed two `/var/lib/tailscale/tailscaled.log*.txt`. Nothing about zbar touches
+tailscale. `tailscaled` has simply been running since the host joined the tailnet, and it
+rotated a log inside that step's stamp window. The sweep is a `find -cnewer` over `/var`
+with no idea which process wrote what, so on a native host *every already-running
+service* is a standing source of manifest noise, not just the one the current recipe
+enables. That makes it worth auditing rather than only reacting to:
+
+    grep -h '^/var/lib/' hosts/<h>/manifests/*.txt | sort | uniq -c
+
+On `laptop` that one line found four contaminants at once -- tailscale's logs and node
+state across five manifests, a NetworkManager DHCP lease claimed by five more, a bluez
+link key from a headset that paired during `blfs-nghttp2`, and 25 leftover upower history
+files in manifests captured before the upower exclusion existed and never backfilled. All
+four are now in `MANIFEST_NOISE` and the manifests are scrubbed.
+
+The same audit is what shows where the line is. Three `/var/lib` paths survived it and
+should: `systemd/catalog/database`, `nss_db/Makefile` and `dbus/machine-id`. Each is
+created by the very step that claims it, which is the test -- **a file under a service's
+state directory belongs to the package only if the installing step is what wrote it**,
+not merely if the daemon happened to be running.
+
 ## The book's Google Location Service key is dead, and BLFS spends it twice
 
 Firefox's BLFS page has you write the book's shared Google Location Service key into a
