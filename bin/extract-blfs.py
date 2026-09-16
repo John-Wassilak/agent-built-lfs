@@ -19,7 +19,8 @@ list into recipes and a plan:
   hand(...) steps   no BLFS page covers them (a proprietary driver, a Go program, a font
                     tarball). Their recipe is a hand-authored file already in the tree;
                     this script only checks it exists and puts it in the plan. It never
-                    writes a hand-authored recipe, so editing one is safe.
+                    writes a hand-authored recipe, so editing one is safe -- and that
+                    holds across machines, not just within one: see hand_owned_shared().
 
 Reuses the LFS extractor's page parser and classifier, so BLFS packages get the same
 treatment as book chapters.
@@ -34,6 +35,11 @@ which means someone edited the recipe by hand and the edit is not captured anywh
 regeneration would silently throw that edit away, so the fix is either to record the
 edit as a review decision in blfs-overrides.json, or to make the step a hand() entry
 whose recipe this script does not own.
+
+Note that --check reports drift on stderr while the step list goes to stdout. Piping the
+run through `tail` can reorder the two, because stdout block-buffers when it is not a
+terminal and stderr does not -- the drift block then appears ABOVE the summary line
+instead of below it. Read the exit status, not the last few lines.
 """
 
 import argparse
@@ -125,6 +131,41 @@ def render(step, page_path, parsed, decisions, queue):
     return "\n".join(lines) + "\n", n_on
 
 
+def hand_owned_shared():
+    """Steps that some host declares hand() and whose recipe is the SHARED one.
+
+    Returns {step: [host, ...]}. These files belong to a human, and this script must
+    never write them -- not even when a different host declares the same package as a
+    book() step, which is the case this exists for.
+
+    recipes/ is shared by every machine while packages.py is per-machine, so the two can
+    disagree: `server` declares hand(226, "imagemagick", ...) and owns the comments in
+    recipes/blfs-imagemagick.sh, and a book(334, "imagemagick", "general/imagemagick.html",
+    ...) added to `laptop` made this script the owner of that same filename and rewrite it
+    (2026-09-15). Nothing in the per-host view could see the conflict, because the other
+    host's entry is not in this host's plan. Only reading every packages.py can.
+
+    A hand() step whose recipe is host-scoped (hosts/<h>/recipes/<step>.sh exists) is not
+    included: that file is unreachable from any other machine, so the shared path is free.
+    """
+    owners = {}
+    for name in lfshost.known():
+        try:
+            h = lfshost.Host(name)
+            pkgs = lfshost.packages(h)
+        except Exception as exc:
+            print(f"warning: cannot read hosts/{name}/packages.py ({exc}) -- its "
+                  f"hand-authored recipes are NOT protected in this run", file=sys.stderr)
+            continue
+        for p in pkgs:
+            if p["html"]:
+                continue
+            step = f"blfs-{p['name']}"
+            if not lfshost.recipe_is_host(h, step):
+                owners.setdefault(step, []).append(name)
+    return owners
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     lfshost.add_host_arg(ap)
@@ -143,6 +184,7 @@ def main():
     shared_dec = lfshost.overrides(host, OVERRIDES_FILE, layer="shared")
     merged_dec = lfshost.overrides(host, OVERRIDES_FILE, layer="merged")
     host_pages = lfshost.host_override_pages(host, OVERRIDES_FILE)
+    hand_owned = hand_owned_shared()
 
     plan, queue, problems, drift, new = [], [], [], [], []
     print(f"host {host.name}: {len(packages)} steps")
@@ -151,6 +193,15 @@ def main():
         step = f"blfs-{p['name']}"
 
         if p["html"]:
+            if step in hand_owned:
+                others = ", ".join(f"'{h}'" for h in hand_owned[step])
+                problems.append(
+                    f"{step}: declared book() here, but {others} declare(s) it hand() "
+                    f"and its recipe is the shared recipes/{step}.sh. Generating it "
+                    f"would overwrite a hand-authored file. Declare it hand() here too, "
+                    f"or convert the other host(s) to book() and move the recipe's "
+                    f"comments into that host's BUILD-REPORT.md.")
+                continue
             path = os.path.join(BOOK, p["html"])
             if not os.path.exists(path):
                 problems.append(f"{step}: no book page at book/blfs-13.0/{p['html']}")

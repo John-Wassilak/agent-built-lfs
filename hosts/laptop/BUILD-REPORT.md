@@ -5899,3 +5899,25 @@ All four patterns are now in `bin/lfsbuild`'s `MANIFEST_NOISE` and the manifests
 scrubbed. Three `/var/lib` paths survived the audit and should: `systemd/catalog/database`,
 `nss_db/Makefile` and `dbus/machine-id`, each created by the very step that claims it.
 `server`'s manifests are clean of all four.
+
+### Follow-up, same day: the guard was built, and it found fifteen more
+
+`extract-blfs.py` now refuses to write any recipe another host declares `hand()`
+(`hand_owned_shared()`, which reads every `packages.py` rather than only this host's).
+Running it turned the ImageMagick incident above into a count: **16** packages were
+declared `hand()` by `server` and `book()` here against the same shared file. ImageMagick
+was the only one caught before the damage; the other 15 had already lost their
+`# rationale:` comments to earlier extraction runs on this host, plus shell-quoting
+hardening on `glad`, `nspr`, `nss` and `firefox`. Recovered and written up in
+`hosts/server/BUILD-REPORT.md`; the quoting is now four `replace` decisions in
+`recipes/blfs-overrides.json`.
+
+One correction to the entry above, which claimed `--check` reported zero drift. It did not.
+Re-running the collision deliberately, `--check` exits 1 and prints
+`1 book step(s) DRIFTED -- regenerating would discard a hand edit: blfs-imagemagick`. The
+reason this session missed it is worth more than the original claim: **drift goes to
+stderr, the step list goes to stdout, and piping the run through `tail` reorders them**,
+because stdout block-buffers when it is not a terminal and stderr does not. The drift block
+lands *above* the "--check: N steps would be planned" summary instead of below it, so
+`extract-blfs.py --check 2>&1 | tail -8` showed a clean-looking tail on a run that had
+already failed. Read the exit status. That note is now in the script's own docstring.
