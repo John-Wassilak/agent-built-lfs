@@ -63,7 +63,7 @@
     "page": "openssh",
     "title": "OpenSSH-10.2p1",
     "context": "chroot",
-    "tarball": "openssh-10.2p1.tar.gz",
+    "tarball": "openssh-10.5p1.tar.gz",
     "manifest": true,
     "blocks": 8,
     "enabled": 4,
@@ -2119,12 +2119,12 @@
     "name": "blfs-glad",
     "chapter": "blfs",
     "page": "glad",
-    "title": "Glad-2.0.8 (hand-authored)",
+    "title": "Glad-2.0.8",
     "context": "chroot",
     "tarball": "glad-2.0.8.tar.gz",
     "manifest": true,
-    "blocks": 1,
-    "enabled": 1,
+    "blocks": 2,
+    "enabled": 2,
     "disabled": 0
   },
   {
@@ -2133,12 +2133,12 @@
     "name": "blfs-libplacebo",
     "chapter": "blfs",
     "page": "libplacebo",
-    "title": "libplacebo-7.360.0 (hand-authored)",
+    "title": "libplacebo-7.360.0",
     "context": "chroot",
     "tarball": "libplacebo-7.360.0.tar.gz",
     "manifest": true,
-    "blocks": 1,
-    "enabled": 1,
+    "blocks": 2,
+    "enabled": 2,
     "disabled": 0
   },
   {
@@ -2175,12 +2175,12 @@
     "name": "blfs-luajit",
     "chapter": "blfs",
     "page": "luajit",
-    "title": "luajit-20260213 (hand-authored)",
+    "title": "luajit-20260213",
     "context": "chroot",
     "tarball": "luajit-20260213.tar.xz",
     "manifest": true,
-    "blocks": 1,
-    "enabled": 1,
+    "blocks": 2,
+    "enabled": 2,
     "disabled": 0
   },
   {
@@ -2189,12 +2189,12 @@
     "name": "blfs-uchardet",
     "chapter": "blfs",
     "page": "uchardet",
-    "title": "uchardet-0.0.8 (hand-authored)",
+    "title": "Uchardet-0.0.8",
     "context": "chroot",
     "tarball": "uchardet-0.0.8.tar.xz",
     "manifest": true,
-    "blocks": 1,
-    "enabled": 1,
+    "blocks": 2,
+    "enabled": 2,
     "disabled": 0
   },
   {
@@ -2231,12 +2231,12 @@
     "name": "blfs-nspr",
     "chapter": "blfs",
     "page": "nspr",
-    "title": "NSPR-4.38.2 (hand-authored)",
+    "title": "NSPR-4.38.2",
     "context": "chroot",
     "tarball": "nspr-4.38.2.tar.gz",
     "manifest": true,
-    "blocks": 1,
-    "enabled": 1,
+    "blocks": 2,
+    "enabled": 2,
     "disabled": 0
   },
   {
@@ -2245,13 +2245,13 @@
     "name": "blfs-nss",
     "chapter": "blfs",
     "page": "nss",
-    "title": "NSS-3.120.1 (hand-authored)",
+    "title": "NSS-3.120.1",
     "context": "chroot",
     "tarball": "nss-3.120.1.tar.gz",
     "manifest": true,
-    "blocks": 1,
-    "enabled": 1,
-    "disabled": 0
+    "blocks": 4,
+    "enabled": 2,
+    "disabled": 2
   },
   {
     "seq": 187,
@@ -2259,12 +2259,12 @@
     "name": "blfs-libarchive",
     "chapter": "blfs",
     "page": "libarchive",
-    "title": "libarchive-3.8.5 (hand-authored)",
+    "title": "libarchive-3.8.5",
     "context": "chroot",
     "tarball": "libarchive-3.8.5.tar.xz",
     "manifest": true,
-    "blocks": 1,
-    "enabled": 1,
+    "blocks": 3,
+    "enabled": 3,
     "disabled": 0
   },
   {
@@ -2273,13 +2273,13 @@
     "name": "blfs-libnotify",
     "chapter": "blfs",
     "page": "libnotify",
-    "title": "libnotify-0.8.8 (hand-authored)",
+    "title": "libnotify-0.8.8",
     "context": "chroot",
     "tarball": "libnotify-0.8.8.tar.xz",
     "manifest": true,
-    "blocks": 1,
-    "enabled": 1,
-    "disabled": 0
+    "blocks": 3,
+    "enabled": 2,
+    "disabled": 1
   },
   {
     "seq": 189,
@@ -2287,12 +2287,12 @@
     "name": "blfs-startup-notification",
     "chapter": "blfs",
     "page": "startup-notification",
-    "title": "startup-notification-0.12 (hand-authored)",
+    "title": "startup-notification-0.12",
     "context": "chroot",
     "tarball": "startup-notification-0.12.tar.gz",
     "manifest": true,
-    "blocks": 1,
-    "enabled": 1,
+    "blocks": 2,
+    "enabled": 2,
     "disabled": 0
   },
   {
@@ -2301,13 +2301,13 @@
     "name": "blfs-libevent",
     "chapter": "blfs",
     "page": "libevent",
-    "title": "libevent-2.1.12 (hand-authored)",
+    "title": "libevent-2.1.12",
     "context": "chroot",
     "tarball": "libevent-2.1.12-stable.tar.gz",
     "manifest": true,
-    "blocks": 1,
-    "enabled": 1,
-    "disabled": 0
+    "blocks": 5,
+    "enabled": 3,
+    "disabled": 2
   },
   {
     "seq": 191,
@@ -2329,12 +2329,12 @@
     "name": "blfs-firefox",
     "chapter": "blfs",
     "page": "firefox",
-    "title": "Firefox-140.8.0esr (hand-authored)",
+    "title": "Firefox-140.8.0esr",
     "context": "chroot",
     "tarball": "firefox-140.8.0esr.source.tar.xz",
     "manifest": true,
-    "blocks": 1,
-    "enabled": 1,
+    "blocks": 11,
+    "enabled": 11,
     "disabled": 0
   },
   {
@@ -2473,8 +2473,8 @@
     "context": "chroot",
     "tarball": "hicolor-icon-theme-0.18.tar.xz",
     "manifest": true,
-    "blocks": 1,
-    "enabled": 1,
+    "blocks": 2,
+    "enabled": 2,
     "disabled": 0
   },
   {
@@ -2487,8 +2487,8 @@
     "context": "chroot",
     "tarball": "usbutils-019.tar.xz",
     "manifest": true,
-    "blocks": 1,
-    "enabled": 1,
+    "blocks": 2,
+    "enabled": 2,
     "disabled": 0
   },
   {
@@ -2515,8 +2515,8 @@
     "context": "chroot",
     "tarball": "SPIRV-LLVM-Translator-21.1.4.tar.gz",
     "manifest": true,
-    "blocks": 1,
-    "enabled": 1,
+    "blocks": 2,
+    "enabled": 2,
     "disabled": 0
   },
   {
@@ -2529,8 +2529,8 @@
     "context": "chroot",
     "tarball": "libclc-21.1.8.src.tar.xz",
     "manifest": true,
-    "blocks": 1,
-    "enabled": 1,
+    "blocks": 2,
+    "enabled": 2,
     "disabled": 0
   },
   {

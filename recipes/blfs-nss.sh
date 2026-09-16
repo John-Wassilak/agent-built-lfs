@@ -21,7 +21,7 @@ make BUILD_OPT=1                      \
   ZLIB_LIBS=-lz                       \
   NSS_ENABLE_WERROR=0                 \
   NSS_USE_SYSTEM_SQLITE=1             \
-  $([ $(uname -m) = x86_64 ] && echo USE_64=1)
+  $([ "$(uname -m)" = x86_64 ] && echo USE_64=1)
 
 # --- block 1 --------------------------------------------------
 #   ctx: To run the tests, execute the following commands:

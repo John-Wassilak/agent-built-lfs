@@ -16,9 +16,9 @@ patch -Np1 -i ../firefox-140.8.0esr-ffmpeg-8.0.patch
 # --- block 1 --------------------------------------------------
 #   ctx: Fix building this package with glibc-2.43 and adapt the checksums:
 GLSL_PTHREAD="third_party/rust/glslopt/glsl-optimizer/include/c11/threads_posix.h"
-OLDSHA=`sha256sum $GLSL_PTHREAD | awk '{ print $1 }'` &&
+OLDSHA=$(sha256sum "$GLSL_PTHREAD" | awk '{ print $1 }') &&
 patch -Np1 -i ../firefox-140.8.0esr-glibc-2.43.patch &&
-NEWSHA=`sha256sum $GLSL_PTHREAD | awk '{ print $1 }'` &&
+NEWSHA=$(sha256sum "$GLSL_PTHREAD" | awk '{ print $1 }') &&
 sed "s/$OLDSHA/$NEWSHA/" \
   -i third_party/rust/glslopt/.cargo-checksum.json
 

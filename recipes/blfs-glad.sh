@@ -11,7 +11,7 @@ set -e
 #   ctx: MB Estimated build time: less than 0.1 SBU Glad Dependencies Optional (required to run
 #   ctx: the tests) pytest-9.0.2, rustc-1.93.1, Xorg Libraries, glfw, and WINE Installation of
 #   ctx: Glad Install Glad by running the following commands:
-pip3 wheel -w dist --no-build-isolation --no-deps --no-cache-dir $PWD
+pip3 wheel -w dist --no-build-isolation --no-deps --no-cache-dir "$PWD"
 
 # --- block 1 --------------------------------------------------
 #   ctx: This package comes with a test suite, but it cannot be run without installing the

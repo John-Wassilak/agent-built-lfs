@@ -3098,3 +3098,60 @@ with an unlink in a `finally`.
 The three other fixed `/tmp` paths in the driver (`/tmp/.lfsbuild-stamp`,
 `/tmp/manifest.<name>.txt`) are written from inside the build script as
 root, so root owns them and the same trap does not apply.
+
+## 2026-09-15 -- 15 recipes converted hand() -> book(), and the rationale they had lost
+
+Not a build. A record repair, found from `laptop` while installing an unrelated package.
+
+`recipes/` is shared by every machine; `packages.py` is per-machine. The two can disagree,
+and nothing checked that they didn't. This host declared 15 packages `hand()` against
+shared recipes it owned the comments in. `laptop` declared the same 15 `book()`, which made
+`bin/extract-blfs.py` the owner of those filenames -- so every extraction run on `laptop`
+rewrote them from the book and discarded this host's comments. Silently: the per-host view
+cannot see the conflict, because the other host's entry is not in this host's plan.
+
+The build steps survived. Comparing each lost version against what is on disk now, ignoring
+`&&` chaining and whitespace, 10 of 15 are exactly equivalent and two (`libnotify`,
+`firefox`) gained content from review decisions recorded later. What was lost:
+
+- every one of the 15 `# rationale:` blocks, recovered verbatim below;
+- a trailing `echo "### version"` verification line on most of them;
+- shell-quoting hardening on `glad`, `nspr`, `nss` and `firefox`, where someone had
+  quoted the book's bare `$PWD`, `$(uname -m)` and `$GLSL_PTHREAD` and re-extraction put
+  the book's unquoted form back. That is now four `replace` decisions in
+  `recipes/blfs-overrides.json` -- the mechanism that should have held it in the first
+  place, since a decision survives re-extraction and a comment in a generated file does
+  not. Each carries a warning that a `replace` pins the whole block and will mask a book
+  change to it.
+
+Resolved by converting this host's 15 entries to `book()`, which is what the files on disk
+already were. Content-neutral: `--check` reported zero drift on both hosts before and after
+the conversion, and the only recipe bytes that moved are the four quoting fixes above. The
+`seq` numbers are unchanged, so build order is untouched. The alternative -- converting
+`laptop`'s 15 to `hand()` -- would have put 15 book pages permanently outside `--check`.
+
+Regenerating this host's plan also picked up one unrelated pending change: `blfs-openssh`'s
+tarball moves from `openssh-10.2p1.tar.gz` to `10.5p1`, the advisory-driven bump recorded in
+`packages/base.py` on 2026-09-05 whose plan was never regenerated here. Consistent with that
+entry's own note that it "records the new target" rather than rebuilding the running sshd.
+
+`bin/extract-blfs.py` now refuses to write any recipe that another host declares `hand()`,
+so this class cannot recur -- see `hand_owned_shared()`.
+
+### The recovered rationale
+
+- **`blfs-spirv-llvm-translator`** (from `9891a6d`): Built 2026-08-26 -- not needed until now (only required as a libclc dependency, which in turn is only required for Mesa's NVK Vulkan driver, enabled this session -- see blfs-mesa.sh, blfs-libclc.sh).
+- **`blfs-libclc`** (from `9891a6d`): Built 2026-08-26 -- required by Mesa's NVK Vulkan driver build (meson hard-requires libclc once -D vulkan-drivers includes nouveau, for built-in function lowering), enabled this session. Depends on spirv-llvm-translator (built just before this).
+- **`blfs-glad`** (from `61282fd`): rationale: Required by libplacebo (tier 13). Python package built as a wheel and installed with pip3, per the book's exact commands.
+- **`blfs-libplacebo`** (from `61282fd`): rationale: Required by mpv (tier 14), optional HDR/color-space dep for ffmpeg (tier 13, not enabled there -- ffmpeg's book recipe doesn't flag it on by default and this project follows the book's documented command as-is). Required: Glad (built just before this in the same batch). Recommended: Glslang, Vulkan-Loader (both already built, tier 1/4).
+- **`blfs-luajit`** (from `61282fd`): rationale: Recommended dependency of mpv (tier 14) -- distinct from the lua5.4 (libinput, tier 8) and lua5.5 (Hyprland, tier 10) builds already on this system; luajit installs under its own soname/pkg-config name and doesn't collide with either.
+- **`blfs-uchardet`** (from `61282fd`): rationale: Recommended dependency of mpv (tier 14). Required: CMake (already built, tier 1).
+- **`blfs-libnotify`** (from `cd98ac9`): rationale: Firefox Required dependency. Required: gdk-pixbuf (already built, tier 6). meson.build gates its GTK4 dependency behind get_option('tests') (`required: get_option('tests')`), which defaults to true -- the book's own recipe doesn't disable it, so the first pass failed on a real "Dependency gtk4 not found" configure error even though the book only lists GTK4 as needed for tests. Not worth building an entire second GTK toolkit (GTK4, plus its own new deps: graphene, ISO Codes, PyGObject) for one test suite this project doesn't run anyway -- same "book leaves an optional test/doc dependency on by default" pattern as pango/gdk-pixbuf/json-c/popt in earlier tiers. Fixed with -D tests=false.
+- **`blfs-libarchive`** (from `cd98ac9`): rationale: Firefox Required dependency. No Required deps of its own (libxml2/lzo/nettle all Optional, skipped -- none of them add anything Firefox needs from libarchive specifically).
+- **`blfs-startup-notification`** (from `cd98ac9`): rationale: Firefox Required dependency. Required: Xorg Libraries, xcb-util (both already built, tiers 5/10).
+- **`blfs-nspr`** (from `cd98ac9`): rationale: Required by NSS (next in this tier), itself a Firefox Recommended dependency (--with-system-nss/nspr in the book's mozconfig).
+- **`blfs-nss`** (from `cd98ac9`): rationale: Firefox Recommended dependency (--with-system-nss/nspr in the book's mozconfig). Required: NSPR (just built, previous step in this tier). Recommended: p11-kit (already built, tier 6). USE_SYSTEM_ZLIB and NSS_USE_SYSTEM_SQLITE both rely on zlib/sqlite already present from the base LFS build (ch08). Tests skipped (needs network + a long run, no verification value here -- same policy as every other test suite in this project).
+- **`blfs-libevent`** (from `cd98ac9`): rationale: Firefox Recommended dependency (--with-system-libevent in the book's mozconfig). No dependencies of its own beyond what's already present. Tests/API docs skipped (Doxygen not installed, no verification value here -- same policy as every other test suite in this project).
+- **`blfs-firefox`** (from `cd98ac9`): rationale: Required: Cbindgen, GTK3, libnotify, libarchive, LLVM+clang, nodejs, PulseAudio, startup-notification (all built by this point in tier 15). Recommended: dav1d, ICU, libaom, libevent, libvpx, libwebp, nasm, nss (all built). The Google API key below is the placeholder key the book itself documents for exactly this purpose, not a private credential. Largest single build in this whole project alongside LLVM (13 SBU estimated); expect this to take a while.
+- **`blfs-usbutils`** (from `942b746`): rationale: Operator-requested (lsusb). Required: libusb (tier 12). Recommended: hwdata (tier 2, already provides usb.ids).
+- **`blfs-hicolor-icon-theme`** (from `a9858e8`): rationale: Base fallback icon theme -- found missing while debugging wofi: "Could not find the icon 'gvim'. The 'hicolor' theme was not found either." Referenced by name in every .desktop-consuming app on this system.
