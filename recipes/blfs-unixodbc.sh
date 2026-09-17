@@ -1,6 +1,6 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the BLFS 13.0-systemd book.
-# source : book/blfs-13.0/general/unixodbc.html
+# CANDIDATE recipe extracted from the BLFS 13.1-systemd book.
+# source : book/blfs-13.1/general/unixodbc.html
 # title  : unixODBC-2.3.14
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 set -e
