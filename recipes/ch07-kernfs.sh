@@ -1,7 +1,7 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter07/kernfs.html
-# title  : 7.3. Preparing Virtual Kernel File Systems
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter07/kernfs.html
+# title  : 7.3 Preparing Virtual Kernel File Systems
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
@@ -23,7 +23,7 @@ mkdir -pv $LFS/{dev,proc,sys,run}
 mount -v --bind /dev $LFS/dev
 
 # --- block 2 --------------------------------------------------
-#   ctx: 7.3.2. Mounting Virtual Kernel File Systems Now mount the remaining virtual kernel file
+#   ctx: 7.3.2 Mounting Virtual Kernel File Systems Now mount the remaining virtual kernel file
 #   ctx: systems:
 mount -vt devpts devpts -o gid=5,mode=0620 $LFS/dev/pts
 mount -vt proc proc $LFS/proc

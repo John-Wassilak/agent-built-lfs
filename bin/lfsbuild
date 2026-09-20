@@ -20,6 +20,8 @@ is needed, and from elsewhere --host names the machine whose tree you are buildi
   lfsbuild --from ch06-m4 [--to X]   run a range
   lfsbuild --resume                  run everything not yet completed
   lfsbuild --dry-run ...             print the generated script, run nothing
+  lfsbuild --book slfs --resume      run a different book's plan (default: lfs;
+                                     --blfs is a deprecated alias for --book blfs)
 
 Two execution modes, detected automatically and printed by --status:
 
@@ -304,6 +306,15 @@ def build_script(step, srcdir):
     recipe_marker = f"LFSBUILD_RECIPE_{name.upper().replace('-', '_')}_EOF"
     L += [
         "# --- recipe (run as a child process; see comment above) ---",
+        # Native mode and every chroot step after ch07-creatingdirs already has a real
+        # /tmp; a fresh chroot build reaches this line for ch07-creatingdirs itself
+        # before that step's own recipe has created /tmp -- staging into a directory
+        # that does not exist yet, silently. Found 2026-09-07 on the first from-scratch
+        # chroot build attempted since this staging mechanism was added (2026-08-31,
+        # laptop): every prior use of this code path ran either natively (always has
+        # /tmp) or in chroot after creatingdirs (also always has /tmp by then), so the
+        # gap was never exercised. Idempotent no-op wherever /tmp already exists.
+        "mkdir -p /tmp",
         f"cat > /tmp/.lfsbuild-recipe.{name}.sh << '{recipe_marker}'",
         recipe,
         recipe_marker,
@@ -638,9 +649,11 @@ def main():
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--force", action="store_true", help="re-run even if completed")
     ap.add_argument("--blfs", action="store_true",
-                    help="use this host's BLFS plan instead of its LFS plan")
-    ap.add_argument("--plan", help="explicit plan file (default: this host's LFS plan, "
-                                   "or its BLFS plan with --blfs)")
+                    help="deprecated alias for --book blfs")
+    ap.add_argument("--book", choices=["lfs", "blfs", "slfs", "glfs"], default=None,
+                    help="which book's plan to run (default: lfs, or blfs with --blfs)")
+    ap.add_argument("--plan", help="explicit plan file (default: this host's plan for "
+                                   "--book, LFS's own if neither --book nor --blfs is given)")
     ap.add_argument("--native", dest="mode", action="store_const", const="native",
                     help="run against this running system (no chroot)")
     ap.add_argument("--chroot", dest="mode", action="store_const", const="chroot",
@@ -653,7 +666,9 @@ def main():
     configure_host(a.host)
     configure_mode(a.mode, a.sources)
 
-    plan = load_plan(a.plan or (HOST.blfs_plan if a.blfs else HOST.plan))
+    book = a.book or ("blfs" if a.blfs else "lfs")
+    plan_attr = {"lfs": "plan", "blfs": "blfs_plan", "slfs": "slfs_plan", "glfs": "glfs_plan"}[book]
+    plan = load_plan(a.plan or getattr(HOST, plan_attr))
     done = completed()
 
     if a.status:
@@ -702,7 +717,7 @@ def main():
             print(f"\nSTOPPED at {s['name']}")
             sys.exit(1)
     print("\nall selected steps complete")
-    cmd_status(load_plan(a.plan))
+    cmd_status(plan)
 
 
 if __name__ == "__main__":

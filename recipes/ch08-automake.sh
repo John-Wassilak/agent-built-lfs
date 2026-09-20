@@ -1,7 +1,7 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter08/automake.html
-# title  : 8.48. Automake-1.18.1
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter08/automake.html
+# title  : 8.48 Automake-1.18.1
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
@@ -9,7 +9,7 @@ set -e
 # --- block 0 --------------------------------------------------
 #   ctx: The Automake package contains programs for generating Makefiles for use with Autoconf.
 #   ctx: Approximate build time: less than 0.1 SBU (about 1.1 SBU with tests) Required disk
-#   ctx: space: 123 MB 8.48.1. Installation of Automake Prepare Automake for compilation:
+#   ctx: space: 124 MB 8.48.1 Installation of Automake Prepare Automake for compilation:
 ./configure --prefix=/usr --docdir=/usr/share/doc/automake-1.18.1
 
 # --- block 1 --------------------------------------------------

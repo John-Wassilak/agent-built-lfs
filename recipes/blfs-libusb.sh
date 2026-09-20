@@ -1,7 +1,7 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the BLFS 13.0-systemd book.
-# source : book/blfs-13.0/general/libusb.html
-# title  : libusb-1.0.29
+# CANDIDATE recipe extracted from the BLFS 13.1-systemd book.
+# source : book/blfs-13.1/general/libusb.html
+# title  : libusb-1.0.30
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 set -e
 
@@ -21,14 +21,16 @@ make
 # popd
 
 # --- block 2 --------------------------------------------------
-#   ctx: This package does not come with a test suite. Now, as the root user:
+#   ctx: If you wish to run the tests, ensure that you have the umockdev-0.19.8 package installed
+#   ctx: and then add the --enable-tests-build switch to configure. After doing this, issue make
+#   ctx: check to run the tests. Now, as the root user:
 make install
 
 # --- block 3 --------------------------------------------------
 #   ctx: If you built the API documentation, install it using the following commands as the root
 #   ctx: user:
 #   REVIEWED [drop]: Installs the doxygen docs from block 1, which was dropped.
-# install -v -d -m755 /usr/share/doc/libusb-1.0.29/apidocs &&
+# install -v -d -m755 /usr/share/doc/libusb-1.0.30/apidocs &&
 # install -v -m644    doc/api-1.0/* \
-#                     /usr/share/doc/libusb-1.0.29/apidocs
+#                     /usr/share/doc/libusb-1.0.30/apidocs
 

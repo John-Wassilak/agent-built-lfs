@@ -42,6 +42,32 @@
       "action": "replace",
       "cmd": "cat << EOF > bootstrap.toml\nchange-id = 148795\n\n[llvm]\n# When using the system installed copy of LLVM, prefer the shared libraries\nlink-shared = true\n# If building the shipped LLVM source, only enable the x86 target\n# instead of all the targets supported by LLVM.\ntargets = \"X86\"\n\n[build]\ndescription = \"for BLFS 13.0\"\ndocs = false\nlocked-deps = true\ntools = [\"cargo\", \"clippy\", \"rustdoc\", \"rustfmt\", \"src\"]\n\n[install]\nprefix = \"/opt/rustc-1.93.1\"\ndocdir = \"share/doc/rustc-1.93.1\"\n\n[rust]\nchannel = \"stable\"\nlto = \"thin\"\ncodegen-units = 1\nllvm-bitcode-linker = false\n\n[target.x86_64-unknown-linux-gnu]\nllvm-config = \"/usr/bin/llvm-config\"\n\n[target.i686-unknown-linux-gnu]\nllvm-config = \"/usr/bin/llvm-config\"\nEOF",
       "reason": "server's own recipe (recipes/blfs-rust.sh, shared) omits [llvm] link-shared/the llvm-config target lines -- correct for server at the time, which had deliberately skipped building a standalone LLVM and let Rust bundle its own copy (tier 6 decision, HYPRLAND-PLAN.md: 'avoiding a separate multi-hour, multi-GB LLVM build'). laptop already paid that cost for mesa's libclc dependency (llvm-21.1.8, built with -D LLVM_LINK_LLVM_DYLIB=ON specifically so it could be reused, 2026-08-30/31) -- this is the book's own documented config for exactly that situation (LLVM listed as a present Recommended dependency), not a customization: linking the already-built shared LLVM instead of compiling a second bundled copy inside Rust's own build."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "Full Rust test suite (./x.py test) -- extremely long even by this build's standards, and test suites have been skipped throughout this entire project. This host is still pinned to BLFS 13.0 (host.toml [books].blfs); recipes/blfs-overrides.json's block 3 was repurposed for a new 13.1-only fake-git prep step during server's 2026-09-07 bump, which does not exist at this index in the 13.0 text this host still reads -- at 13.0's block 3 this is the actual './x.py test --verbose --no-fail-fast | tee rustc-testlog' invocation, and dropping it is the same intended outcome as the shared decision, just restated with the correct reason for this host's book version. Remove once this host also bumps to 13.1."
+    },
+    "4": {
+      "action": "drop",
+      "reason": "Summarizes results from the test suite in block 3, which is not run. This host is still on BLFS 13.0; the shared file's block 4 was reindexed to describe the test invocation itself (moved 3->4 for 13.1's new fake-git block) -- at 13.0's block 4 this is still the result-summary grep/awk line, so the practical effect (drop) is the same, restated with the correct reason for this host's book version. Remove once this host also bumps to 13.1."
+    },
+    "5": {
+      "action": "enable",
+      "reason": "Neutralizes the shared block 5 'drop' decision -- that index describes the test-result summary line after server's 2026-09-07 BLFS 13.1 bump reindexed it there (from 4). This host is still on BLFS 13.0, where block 5 is './x.py install', the actual install step -- without this override it would inherit the shared 'drop' and Rust would never get installed. Enabling it restores the default classify() would give it anyway (a plain, non-admonition, non-test command). Remove once this host also bumps to 13.1."
+    },
+    "6": {
+      "action": "replace",
+      "cmd": "rm -fv /opt/rustc-1.93.1/share/doc/rustc-1.93.1/*.old   &&\ninstall -vm644 README.md                                \\\n               /opt/rustc-1.93.1/share/doc/rustc-1.93.1 &&\n\ninstall -vdm755 /usr/share/zsh/site-functions      &&\nln -sfv /opt/rustc/share/zsh/site-functions/_cargo \\\n        /usr/share/zsh/site-functions",
+      "reason": "Dropped the final 'mv /etc/bash_completion.d/cargo ...' line -- bash-completion is not installed, so /etc/bash_completion.d does not exist and the mv would fail. This host's own copy of the pre-13.1 decision at its correct 13.0 index (recipes/blfs-overrides.json moved this to index 7 for server's 2026-09-07 bump and updated the version strings to 1.97.1; this host is still on BLFS 13.0 / Rustc-1.93.1). Remove once this host also bumps to 13.1."
+    },
+    "7": {
+      "action": "enable",
+      "reason": "Neutralizes the shared block 7 'replace' decision (the rm+install cleanup step, reindexed there from 6 for server's 2026-09-07 BLFS 13.1 bump, version strings updated to 1.97.1). This host is still on BLFS 13.0, where block 7 is 'unset LIB{SSH2,SQLITE3}_SYS_USE_PKG_CONFIG' -- without this override it would inherit the reindexed cleanup commands in the wrong place. Enabling it restores the default classify() would give it anyway (a plain command). Remove once this host also bumps to 13.1."
+    },
+    "9": {
+      "action": "replace",
+      "cmd": "# Not sourced here: pathprepend (defined in /etc/profile) only exists in a\n# login shell, which this non-interactive batch build never is. The written\n# /etc/profile.d/rustc.sh is still correct for real interactive sessions;\n# this just gets rustc/cargo onto PATH for the rest of *this* build script.\nexport PATH=\"/opt/rustc/bin:$PATH\"",
+      "reason": "The book's `source /etc/profile.d/rustc.sh` calls pathprepend, a function /etc/profile defines for login shells -- not available to this project's non-interactive batch builds. This host's own copy of the pre-13.1 decision at its correct 13.0 index (recipes/blfs-overrides.json moved this to index 10 for server's 2026-09-07 bump; this host is still on BLFS 13.0 where it is index 9). Remove once this host also bumps to 13.1."
     }
   },
   "blfs-mesa": {
@@ -145,6 +171,65 @@
       "action": "replace",
       "cmd": "./configure --prefix=/usr --with-xpm=ifavailable --with-pgtk &&\nmake",
       "reason": "Operator-requested feature-parity audit (2026-09-05): adds `--with-pgtk`, Emacs's own native-Wayland GTK backend (`configure --help`: \"use GTK to support window systems other than X\"; confirmed present in this Emacs-30.2 source's real configure script, not assumed). Not documented anywhere on BLFS's own postlfs/emacs.html page at all -- same category of gap as Firefox's undocumented mozconfig flags elsewhere in this file -- so the book-extracted candidate recipe never had a chance to include it. Without this flag, Emacs can only run via XWayland regardless of any other package on this host being Wayland-capable; confirmed live via `hyprctl clients` showing `xwayland: true` on every open Emacs window and `system-configuration-features` listing GTK3/X11 but no PGTK. GTK3's own Wayland backend (seq 134) long predates Emacs (seq 182), so this was available the whole time and was simply never requested until now."
+    }
+  },
+  "blfs-nodejs": {
+    "0": {
+      "action": "enable",
+      "reason": "Neutralizes the shared block 0 'replace' decision (the configure-line fix, reindexed there from 1 for server's BLFS 13.1 bump). At this host's still-13.0 index 0 this is the node-v22.22.0-python_build_fix patch -- enabling it restores the default classify() would give it anyway (a plain command). This host is still pinned to BLFS 13.0 (host.toml [books].blfs) -- this entry restores/neutralizes the pre-13.1 decision at its correct 13.0 index. Remove once this host also bumps to 13.1."
+    },
+    "1": {
+      "action": "replace",
+      "cmd": "./configure --prefix=/usr    \\\n            --shared-openssl \\\n            --shared-zlib &&\nmake",
+      "reason": "The book's configure line passes --shared-brotli, --shared-cares, --shared-libuv, --shared-nghttp2 and --with-intl=system-icu, because BLFS assumes you installed those 'recommended' dependencies. We deliberately did not: Node bundles all of them, and using the bundled copies keeps the dependency closure to the one package Node actually requires (which). Configure would fail outright looking for the missing system libraries. --shared-openssl and --shared-zlib are kept because LFS provides both (OpenSSL 3.6.1, zlib 1.3.2), so Node benefits from system security updates rather than carrying its own copy. This host's own copy of the pre-13.1 decision at its correct 13.0 index. This host is still pinned to BLFS 13.0 (host.toml [books].blfs) -- this entry restores/neutralizes the pre-13.1 decision at its correct 13.0 index. Remove once this host also bumps to 13.1."
+    }
+  },
+  "blfs-sudo": {
+    "2": {
+      "action": "replace",
+      "cmd": "cat > /etc/sudoers.d/00-sudo << \"EOF\"\nDefaults secure_path=\"/usr/sbin:/usr/bin\"\n%wheel ALL=(ALL) ALL\nEOF\nchmod 440 /etc/sudoers.d/00-sudo\nusermod -aG wheel john",
+      "reason": "Book's suggested common config as-is (wheel group gets full sudo after entering their own password), plus adding john to wheel -- he's the one human non-root account on this box, and granting sudo through wheel membership is the whole point of the book's suggested config here rather than editing sudoers directly. chmod 440 matches how sudoers.d files ship (root-only read, no write). This host's own copy of the pre-13.1 decision at its correct 13.0 index (also overwrites the shared file's reindexed, unrelated block-3 entry for this host). This host is still pinned to BLFS 13.0 (host.toml [books].blfs) -- this entry restores/neutralizes the pre-13.1 decision at its correct 13.0 index. Remove once this host also bumps to 13.1."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "PAM config for sudo. Linux-PAM is not part of this LFS 13.0 build (Shadow was built without it, confirmed when reviewing blfs-openssh) -- sudo was not built with --without-pam disabled explicitly, but configure auto-detects PAM's absence and skips it, so /etc/pam.d/sudo would configure a subsystem that isn't wired into anything. This host's own copy of the pre-13.1 decision at its correct 13.0 index (also overwrites the shared file's reindexed, unrelated block-4 entry for this host). This host is still pinned to BLFS 13.0 (host.toml [books].blfs) -- this entry restores/neutralizes the pre-13.1 decision at its correct 13.0 index. Remove once this host also bumps to 13.1."
+    }
+  },
+  "blfs-glib2": {
+    "2": {
+      "action": "enable",
+      "reason": "Neutralizes the shared block 2 'replace' decision (the meson-setup fix, reindexed there from 3). At this host's still-13.0 index 2 this is the glib-2.86.4-upstream_fixes patch -- enabling it restores the default classify() would give it anyway (a plain command). This host is still pinned to BLFS 13.0 (host.toml [books].blfs) -- this entry restores/neutralizes the pre-13.1 decision at its correct 13.0 index. Remove once this host also bumps to 13.1."
+    },
+    "3": {
+      "action": "replace",
+      "cmd": "mkdir build &&\ncd    build &&\n\nmeson setup ..                  \\\n      --prefix=/usr             \\\n      --buildtype=release       \\\n      -D introspection=disabled \\\n      -D glib_debug=disabled    \\\n      -D man-pages=disabled     \\\n      -D sysprof=disabled       &&\nninja",
+      "reason": "man-pages=enabled needs rst2man (from docutils), which was deliberately skipped as glib2's own Recommended dep (one-level policy -- docs generation, not needed for anything else in this build). Flag flipped to match that decision instead of leaving a contradiction between the skipped dependency and a flag that requires it. This host's own copy of the pre-13.1 decision at its correct 13.0 index. This host is still pinned to BLFS 13.0 (host.toml [books].blfs) -- this entry restores/neutralizes the pre-13.1 decision at its correct 13.0 index. Remove once this host also bumps to 13.1."
+    },
+    "7": {
+      "action": "enable",
+      "reason": "Neutralizes the shared block 7 'drop' decision (the optional HTML-doc build, reindexed there from 8). At this host's still-13.0 index 7 this is 'meson configure -D introspection=enabled', a required reconfigure step -- enabling it restores the default classify() would give it anyway (a plain command); dropping it here would have silently disabled introspection support. This host is still pinned to BLFS 13.0 (host.toml [books].blfs) -- this entry restores/neutralizes the pre-13.1 decision at its correct 13.0 index. Remove once this host also bumps to 13.1."
+    },
+    "8": {
+      "action": "drop",
+      "reason": "Builds HTML documentation (-D documentation=true), needs rst2html5 (from docutils). Same root cause as block 3's man-pages fix -- docutils deliberately skipped, one-level policy. Block 9's final 'ninja install' still runs and installs the introspection-enabled build from block 7. This host's own copy of the pre-13.1 decision at its correct 13.0 index. This host is still pinned to BLFS 13.0 (host.toml [books].blfs) -- this entry restores/neutralizes the pre-13.1 decision at its correct 13.0 index. Remove once this host also bumps to 13.1."
+    }
+  },
+  "blfs-json-c": {
+    "1": {
+      "action": "enable",
+      "reason": "Neutralizes the shared block 1 'drop' decision (the optional doxygen docs step, reindexed there from 2). At this host's still-13.0 index 1 this is 'mkdir build', a required step -- enabling it restores the default classify() would give it anyway (a plain command); dropping it here would have broken the whole build. This host is still pinned to BLFS 13.0 (host.toml [books].blfs) -- this entry restores/neutralizes the pre-13.1 decision at its correct 13.0 index. Remove once this host also bumps to 13.1."
+    },
+    "2": {
+      "action": "drop",
+      "reason": "Optional doxygen docs, not installed. This host's own copy of the pre-13.1 decision at its correct 13.0 index. This host is still pinned to BLFS 13.0 (host.toml [books].blfs) -- this entry restores/neutralizes the pre-13.1 decision at its correct 13.0 index. Remove once this host also bumps to 13.1."
+    },
+    "3": {
+      "action": "enable",
+      "reason": "Neutralizes the shared block 3 'drop' decision (installing the doxygen docs, reindexed there from 4). At this host's still-13.0 index 3 this is 'make install', the actual package install step -- enabling it restores the default classify() would give it anyway (a plain command); dropping it here would mean json-c never gets installed. This host is still pinned to BLFS 13.0 (host.toml [books].blfs) -- this entry restores/neutralizes the pre-13.1 decision at its correct 13.0 index. Remove once this host also bumps to 13.1."
+    },
+    "4": {
+      "action": "drop",
+      "reason": "Installs the doxygen docs from block 2, which was dropped. This host's own copy of the pre-13.1 decision at its correct 13.0 index. This host is still pinned to BLFS 13.0 (host.toml [books].blfs) -- this entry restores/neutralizes the pre-13.1 decision at its correct 13.0 index. Remove once this host also bumps to 13.1."
     }
   }
 }

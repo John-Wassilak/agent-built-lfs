@@ -1,0 +1,2 @@
+/usr/bin/xauth
+/usr/share/man/man1/xauth.1

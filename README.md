@@ -5,8 +5,9 @@ by an agent. Claude Code reads the book, turns each page into a recipe, records 
 decision for every command it disables or rewrites, and drives the build. The system calls
 itself `claude-managed` in `/etc/os-release`, hence the name.
 
-`server` is live: i5-2500K, GTX 770 on NVIDIA 470.xx, X11 and awesome, 133 LFS steps, 218
-BLFS packages, self-hosting. `laptop` is scaffolded.
+`server` is live: i5-2500K, GTX 770 on NVIDIA 470.xx, X11 and awesome, 134 LFS steps, 219
+BLFS packages, self-hosting, on LFS/BLFS 13.1-systemd. `laptop` is scaffolded, still on
+13.0 pending its own bump (`hosts/laptop/CLAUDE.md`).
 
 ## Things to know
 
@@ -86,22 +87,37 @@ still yours.
 
 ### Getting the books
 
-`book/` is not tracked: upstream content, same release for every machine. Nothing that
-reads it works until it is in place, and the extractors say so rather than failing
-silently.
+`book/` is not tracked: upstream content, fetched per host at whatever version that
+host's `host.toml` `[books]` table pins. Nothing that reads it works until it is in
+place, and the extractors say so rather than failing silently.
 
-Built against **LFS 13.0-systemd** and **BLFS 13.0-systemd** (recorded as `book` in each
-`host.toml`). Fetch the chunked HTML for both from linuxfromscratch.org -- for BLFS,
-`linuxfromscratch.org/blfs/downloads/13.0-systemd/`, the path its own wget-list uses --
-and unpack to:
+Four book families now, onboarded 2026-09-07 (`server` uses all four; `laptop` still
+LFS/BLFS only, pending its own bump -- see `hosts/laptop/CLAUDE.md`):
 
-    book/13.0/           chunked LFS book: chapter04/ ... chapter11/, prologue/
-    book/blfs-13.0/      chunked BLFS book: general/, postlfs/, x/, basicnet/, ...
-    book/md5sums         the LFS source checksums
-    book/wget-list-systemd
+- **LFS**/**BLFS** -- the base system and its extensions, as before. `server` is on
+  **13.1-systemd**; fetch the chunked HTML from `linuxfromscratch.org/lfs/downloads/
+  13.1-systemd/` (a single `LFS-BOOK-13.1.tar.xz`) and `linuxfromscratch.org/blfs/
+  downloads/13.1-systemd/` (`blfs-book-13.1-systemd-html.tar.xz`), unpacking to:
 
-The extractors read only the HTML; `md5sums` and `wget-list-systemd` are for
-`build-plan.py` and `fetch-sources.sh`.
+      book/13.1/           chunked LFS book: chapter04/ ... chapter11/, prologue/
+      book/blfs-13.1/      chunked BLFS book: general/, postlfs/, x/, basicnet/, ...
+
+  (older pins, e.g. `book/13.0/` and `book/blfs-13.0/` for `laptop`, stay in place
+  alongside -- each host reads only the directory its own `[books]` pin names.)
+
+- **SLFS** (Supplemental LFS) and **GLFS** (Gaming LFS) -- this project's preferred
+  source over an Arch/AUR build reference, wherever one of them actually covers a
+  package (htop, the Hyprland ecosystem, libglvnd, Xorg's individual library/font/
+  input-device closet, and more -- BLFS itself doesn't carry these). Neither ships a
+  downloadable pre-built chunked-HTML archive the way LFS/BLFS do; their pages are
+  fetched one at a time from `linuxfromscratch.org/slfs/view/<ver>/<path>` and
+  `.../glfs/view/<ver>/<path>` into `book/slfs-<ver>/<path>` and `book/glfs-<ver>/<path>`
+  as each referenced package needs one -- there is no full mirror to unpack. Both
+  currently at **13.1**, tracking the same LFS/BLFS base.
+
+The extractors read only the HTML; `book/<ver>/md5sums` and
+`book/<ver>/wget-list-systemd` are for `build-plan.py` and `fetch-sources.sh` (both
+resolve the version from `--host`, same as the extractors).
 
 ### Generating the recipes
 
@@ -111,18 +127,27 @@ hand-copied, so a new book release is a re-run rather than a transcription job:
 ```sh
 bin/extract-recipes.py             # LFS book HTML  -> recipes/
 bin/extract-blfs.py                # BLFS book HTML -> recipes/, + the build plan
+bin/extract-slfs.py                # SLFS book HTML -> recipes/, + the build plan
+bin/extract-glfs.py                # GLFS book HTML -> recipes/, + the build plan
 bin/build-plan.py                  # -> hosts/<host>/state/plan.json
 ```
 
-The decisions live outside the generated recipes, in `recipes/*-overrides.json` -- 178 of
-them, each with a `reason` citing the book. That separation lets the book be re-read from
-scratch without losing a judgment call.
+`extract-slfs.py`/`extract-glfs.py` only ever read the pages a host's `packages.py`
+actually references (`slfs()`/`glfs()` entries in `packages/base.py`'s sense) -- there is
+no whole-book walk for either, since neither ships a full mirror to walk (see "Getting
+the books" above).
+
+The decisions live outside the generated recipes, in `recipes/*-overrides.json` -- one
+file per book family, each with a `reason` citing the book. That separation lets the book
+be re-read from scratch without losing a judgment call.
 
 `--check` keeps it honest:
 
 ```sh
 bin/extract-recipes.py --check     # zero drift is the expected state
 bin/extract-blfs.py --check
+bin/extract-slfs.py --check
+bin/extract-glfs.py --check
 ```
 
 It re-derives every recipe from the book plus the decisions and flags any that differ, so a

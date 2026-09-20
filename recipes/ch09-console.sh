@@ -1,7 +1,7 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter09/console.html
-# title  : 9.6. Configuring the Linux Console
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter09/console.html
+# title  : 9.6 Configuring the Linux Console
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e

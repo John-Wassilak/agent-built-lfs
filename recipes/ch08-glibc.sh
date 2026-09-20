@@ -1,27 +1,28 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter08/glibc.html
-# title  : 8.5. Glibc-2.43
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter08/glibc.html
+# title  : 8.5 Glibc-2.44
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
 
 # --- block 0 --------------------------------------------------
-#   ctx: ing and closing files, reading and writing files, string handling, pattern matching,
-#   ctx: arithmetic, and so on. Approximate build time: 12 SBU Required disk space: 3.5 GB 8.5.1.
+#   ctx: ning and closing files, reading and writing files, string handling, pattern matching,
+#   ctx: arithmetic, and so on. Approximate build time: 11 SBU Required disk space: 3.7 GB 8.5.1
 #   ctx: Installation of Glibc Some of the Glibc programs use the non-FHS compliant /var/db
 #   ctx: directory to store their runtime data. Apply the following patch to make such programs
 #   ctx: store their runtime data in the FHS-compliant locations:
 patch -Np1 -i ../glibc-fhs-1.patch
 
 # --- block 1 --------------------------------------------------
+#   ctx: Fix an issue causing the tanh(3) function to crash on some old x86_64 processors, and to
+#   ctx: fix installing with multiple make jobs:
+patch -Np1 -i ../glibc-2.44-upstream_fixes-1.patch
+
+# --- block 2 --------------------------------------------------
 #   ctx: The Glibc documentation recommends building Glibc in a dedicated build directory:
 mkdir -v build
 cd       build
-
-# --- block 2 --------------------------------------------------
-#   ctx: Ensure that the ldconfig and sln utilities will be installed into /usr/sbin:
-echo "rootsbindir=/usr/sbin" > configparms
 
 # --- block 3 --------------------------------------------------
 #   ctx: Prepare Glibc for compilation:
@@ -30,7 +31,7 @@ echo "rootsbindir=/usr/sbin" > configparms
              --disable-nscd                  \
              libc_cv_slibdir=/usr/lib        \
              --enable-stack-protector=strong \
-             --enable-kernel=5.4
+             --enable-kernel=5.10
 
 # --- block 4 --------------------------------------------------
 #   ctx: ack smashing attacks. Note that Glibc always explicitly overrides the default of GCC, so
@@ -60,11 +61,11 @@ echo "### TESTSUITE ch08-glibc block 5 exit=$__rc (non-fatal, compare against bo
 # grep "Timed out" $(find -name \*.out)
 
 # --- block 7 --------------------------------------------------
-#   ctx: -multi will re-run nss/tst-nss-files-hosts-multi with ten times the original timeout.
-#   ctx: Additionally, some tests may fail with a relatively old CPU model (for example
-#   ctx: elf/tst-cpu-features-cpuinfo) or host kernel version (for example
-#   ctx: stdlib/tst-arc4random-thread). Though it is a harmless message, the install stage of
-#   ctx: Glibc will complain about the absence of /etc/ld.so.conf. Prevent this warning with:
+#   ctx: ts-multi with ten times the original timeout. Additionally, some tests may fail with a
+#   ctx: relatively old CPU model (for example elf/tst-cpu-features-cpuinfo) or host kernel
+#   ctx: version (for example stdlib/tst-arc4random-thread), or with a host kernel newer than
+#   ctx: 7.1.8. Though it is a harmless message, the install stage of Glibc will complain about
+#   ctx: the absence of /etc/ld.so.conf. Prevent this warning with:
 touch /etc/ld.so.conf
 
 # --- block 8 --------------------------------------------------
@@ -74,7 +75,7 @@ sed '/test-installation/s@$(PERL)@echo not running@' -i ../Makefile
 
 # --- block 9 --------------------------------------------------
 #   ctx: u need a newer Glibc. If upgrading on a LFS system prior to 12.0 (exclusive), install
-#   ctx: Libxcrypt following Section 8.28, “Libxcrypt-4.5.2.” In addition to a normal Libxcrypt
+#   ctx: Libxcrypt following Section 8.29, “Libxcrypt-4.5.2.” In addition to a normal Libxcrypt
 #   ctx: installation, you MUST follow the note in Libxcrypt section to install libcrypt.so.1*
 #   ctx: (replacing libcrypt.so.1 from the prior Glibc installation). If upgrading on a LFS
 #   ctx: system prior to 12.1 (exclusive), remove the nscd program:
@@ -88,9 +89,9 @@ sed '/test-installation/s@$(PERL)@echo not running@' -i ../Makefile
 # systemctl disable --now nscd
 
 # --- block 11 --------------------------------------------------
-#   ctx: ng Section 10.3, “Linux-6.18.10.” Upgrade the kernel API headers if it's older than 5.4
-#   ctx: (check the current version with cat /usr/include/linux/version.h) or if you want to
-#   ctx: upgrade it anyway, following Section 5.4, “Linux-6.18.10 API Headers” (but removing $LFS
+#   ctx: owing Section 10.3, “Linux-7.1.8.” Upgrade the kernel API headers if it's older than
+#   ctx: 5.10 (check the current version with cat /usr/include/linux/version.h) or if you want to
+#   ctx: upgrade it anyway, following Section 5.4, “Linux-7.1.8 API Headers” (but removing $LFS
 #   ctx: from the cp command). Perform a DESTDIR installation and upgrade the Glibc shared
 #   ctx: libraries on the system using one single install command:
 #   REVIEWED [drop]: DESTDIR procedure for upgrading Glibc on a running system. Not applicable to a fresh build.
@@ -161,15 +162,15 @@ localedef -i zh_TW -f UTF-8 zh_TW.UTF-8
 
 # --- block 16 --------------------------------------------------
 #   ctx: In addition, install the locale for your own country, language and character set.
-#   ctx: Alternatively, install all the locales listed in the glibc-2.43/localedata/SUPPORTED
+#   ctx: Alternatively, install all the locales listed in the glibc-2.44/localedata/SUPPORTED
 #   ctx: file (it includes every locale listed above and many more) at once with the following
 #   ctx: time-consuming command:
 make localedata/install-locales
 
 # --- block 17 --------------------------------------------------
-#   ctx: internationalized domain names. This is a run time dependency. If this capability is
-#   ctx: needed, the instructions for installing libidn2 are in the BLFS libidn2 page. 8.5.2.
-#   ctx: Configuring Glibc 8.5.2.1. Adding nsswitch.conf The /etc/nsswitch.conf file needs to be
+#   ctx: g internationalized domain names. This is a run time dependency. If this capability is
+#   ctx: needed, the instructions for installing libidn2 are in the BLFS libidn2 page. 8.5.2
+#   ctx: Configuring Glibc 8.5.2.1 Adding nsswitch.conf The /etc/nsswitch.conf file needs to be
 #   ctx: created because the Glibc defaults do not work well in a networked environment. Create a
 #   ctx: new file /etc/nsswitch.conf by running the following:
 cat > /etc/nsswitch.conf << "EOF"
@@ -191,8 +192,8 @@ rpc: files
 EOF
 
 # --- block 18 --------------------------------------------------
-#   ctx: 8.5.2.2. Adding Time Zone Data Install and set up the time zone data with the following:
-tar -xf ../../tzdata2025c.tar.gz
+#   ctx: 8.5.2.2 Adding Time Zone Data Install and set up the time zone data with the following:
+tar -xf ../../tzdata2026c.tar.gz
 
 ZONEINFO=/usr/share/zoneinfo
 mkdir -pv $ZONEINFO/{posix,right}

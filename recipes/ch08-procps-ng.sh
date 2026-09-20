@@ -1,17 +1,17 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter08/procps-ng.html
-# title  : 8.81. Procps-ng-4.0.6
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter08/procps-ng.html
+# title  : 8.80 Procps-ng-4.0.7
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
 
 # --- block 0 --------------------------------------------------
 #   ctx: The Procps-ng package contains programs for monitoring processes. Approximate build
-#   ctx: time: 0.1 SBU Required disk space: 28 MB 8.81.1. Installation of Procps-ng Prepare
+#   ctx: time: 0.1 SBU Required disk space: 28 MB 8.80.1 Installation of Procps-ng Prepare
 #   ctx: Procps-ng for compilation:
 ./configure --prefix=/usr                           \
-            --docdir=/usr/share/doc/procps-ng-4.0.6 \
+            --docdir=/usr/share/doc/procps-ng-4.0.7 \
             --disable-static                        \
             --disable-kill                          \
             --enable-watch8bit                      \

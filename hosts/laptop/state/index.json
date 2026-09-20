@@ -607,7 +607,7 @@
     "blocks": 22,
     "enabled": 22,
     "disabled": 0,
-    "reviewed": 1
+    "reviewed": 2
   },
   {
     "name": "ch08-gdbm",
@@ -1077,7 +1077,7 @@
     "blocks": 10,
     "enabled": 10,
     "disabled": 0,
-    "reviewed": 1
+    "reviewed": 2
   },
   {
     "name": "ch08-sqlite",

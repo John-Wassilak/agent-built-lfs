@@ -1,15 +1,15 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter08/file.html
-# title  : 8.11. File-5.46
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter08/file.html
+# title  : 8.11 File-5.48
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
 
 # --- block 0 --------------------------------------------------
 #   ctx: The File package contains a utility for determining the type of a given file or files.
-#   ctx: Approximate build time: less than 0.1 SBU Required disk space: 19 MB 8.11.1.
-#   ctx: Installation of File Prepare File for compilation:
+#   ctx: Approximate build time: less than 0.1 SBU Required disk space: 21 MB 8.11.1 Installation
+#   ctx: of File Prepare File for compilation:
 ./configure --prefix=/usr
 
 # --- block 1 --------------------------------------------------

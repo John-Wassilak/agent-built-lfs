@@ -1,19 +1,17 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter08/shadow.html
-# title  : 8.29. Shadow-4.19.3
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter08/shadow.html
+# title  : 8.30 Shadow-4.20.2
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
 
 # --- block 0 --------------------------------------------------
-#   ctx: rce the use of strong passwords, install and configure Linux-PAM first. Then install and
-#   ctx: configure shadow with the PAM support. Finally install libpwquality and configure PAM to
-#   ctx: use it. Disable the installation of the groups program and its man pages, as Coreutils
-#   ctx: provides a better version. Also, prevent the installation of manual pages that were
-#   ctx: already installed in Section 8.3, “Man-pages-6.17”:
-sed -i 's/groups$(EXEEXT) //' src/Makefile.in
-find man -name Makefile.in -exec sed -i 's/groups\.1 / /'   {} \;
+#   ctx: low the BLFS instructions instead of this page to build, rebuild, upgrade shadow. Note
+#   ctx: If you would like to enforce the use of strong passwords, install and configure
+#   ctx: Linux-PAM first. Then install and configure shadow with the PAM support. Finally install
+#   ctx: libpwquality and configure PAM to use it. Prevent the installation of manual pages that
+#   ctx: were already installed in Section 8.3, “Man-pages-6.18”:
 find man -name Makefile.in -exec sed -i 's/getspnam\.3 / /' {} \;
 find man -name Makefile.in -exec sed -i 's/passwd\.5 / /'   {} \;
 
@@ -23,9 +21,9 @@ find man -name Makefile.in -exec sed -i 's/passwd\.5 / /'   {} \;
 #   ctx: PATH, since they are simply symlinks to their counterparts in /usr. Warning Including
 #   ctx: /bin and/or /sbin in the PATH variable may cause some BLFS packages fail to build, so
 #   ctx: don't do that in the .bashrc file or anywhere else.
-sed -e 's:#ENCRYPT_METHOD DES:ENCRYPT_METHOD YESCRYPT:' \
-    -e 's:/var/spool/mail:/var/mail:'                   \
-    -e '/PATH=/{s@/sbin:@@;s@/bin:@@}'                  \
+sed -e 's:#ENCRYPT_METHOD SHA512:ENCRYPT_METHOD YESCRYPT:' \
+    -e 's:/var/spool/mail:/var/mail:'                      \
+    -e '/PATH=/{s@/sbin:@@;s@/bin:@@}'                     \
     -i etc/login.defs
 
 # --- block 2 --------------------------------------------------
@@ -52,15 +50,14 @@ make exec_prefix=/usr install
 make -C man install-man
 
 # --- block 5 --------------------------------------------------
+#   ctx: 8.30.2 Configuring Shadow This package contains utilities to add, modify, and delete
+#   ctx: users and groups; set and change their passwords; and perform other administrative
 #   ctx: tasks. For a full explanation of what password shadowing means, see the doc/HOWTO file
-#   ctx: within the unpacked source tree. If you use Shadow support, keep in mind that programs
-#   ctx: which need to verify passwords (display managers, FTP programs, pop3 daemons, etc.) must
-#   ctx: be Shadow-compliant. That is, they must be able to work with shadowed passwords. To
-#   ctx: enable shadowed passwords, run the following command:
+#   ctx: within the unpacked source tree. Enable shadowed passwords:
 pwconv
 
 # --- block 6 --------------------------------------------------
-#   ctx: To enable shadowed group passwords, run:
+#   ctx: Enable shadowed group passwords as well:
 grpconv
 
 # --- block 7 --------------------------------------------------
@@ -81,7 +78,14 @@ useradd -D --gid 999
 sed -i '/MAIL/s/yes/no/' /etc/default/useradd
 
 # --- block 9 --------------------------------------------------
-#   ctx: 8.29.3. Setting the Root Password Choose a password for user root and set it by running:
+#   ctx: Finally, create the empty /etc/subuid and /etc/subgid files:
+touch /etc/sub{u,g}id
+
+# --- block 10 --------------------------------------------------
+#   ctx: The content of those files will be automatically updated by some utilities provided by
+#   ctx: Shadow to allocate subordinate user and group IDs. Read the man pages subuid(5) and
+#   ctx: subgid(5) for the details about the subordinate IDs. 8.30.3 Setting the Root Password
+#   ctx: Choose a password for user root and set it by running:
 echo "root:lfs-changeme" | chpasswd
 echo "### ROOT PASSWORD set non-interactively to: lfs-changeme -- CHANGE ON FIRST BOOT"
 

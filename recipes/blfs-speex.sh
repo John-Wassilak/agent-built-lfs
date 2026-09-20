@@ -1,6 +1,6 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the BLFS 13.0-systemd book.
-# source : book/blfs-13.0/multimedia/speex.html
+# CANDIDATE recipe extracted from the BLFS 13.1-systemd book.
+# source : book/blfs-13.1/multimedia/speex.html
 # title  : Speex-1.2.1
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 set -e
@@ -8,7 +8,7 @@ set -e
 # --- block 0 --------------------------------------------------
 #   ctx: -1.2.1.tar.gz Download MD5 sum: e6eb5ddef743a362c8018f260b91dca5 Download size: 904 KB
 #   ctx: Estimated disk space required: 5.5 MB Estimated build time: less than 0.1 SBU Speex
-#   ctx: Dependencies Required libogg-1.3.6 Optional Valgrind-3.26.0 Installation of Speex This
+#   ctx: Dependencies Required libogg-1.3.6 Optional Valgrind-3.27.1 Installation of Speex This
 #   ctx: package consists of two separate tarballs. They need to be extracted and built
 #   ctx: independently. Install Speex by running the following commands:
 ./configure --prefix=/usr    \

@@ -1,14 +1,14 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter08/flex.html
-# title  : 8.16. Flex-2.6.4
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter08/flex.html
+# title  : 8.16 Flex-2.6.4
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
 
 # --- block 0 --------------------------------------------------
 #   ctx: The Flex package contains a utility for generating programs that recognize patterns in
-#   ctx: text. Approximate build time: 0.1 SBU Required disk space: 33 MB 8.16.1. Installation of
+#   ctx: text. Approximate build time: 0.1 SBU Required disk space: 33 MB 8.16.1 Installation of
 #   ctx: Flex Prepare Flex for compilation:
 ./configure --prefix=/usr    \
             --disable-static \

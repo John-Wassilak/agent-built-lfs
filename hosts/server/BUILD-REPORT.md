@@ -3098,3 +3098,445 @@ with an unlink in a `finally`.
 The three other fixed `/tmp` paths in the driver (`/tmp/.lfsbuild-stamp`,
 `/tmp/manifest.<name>.txt`) are written from inside the build script as
 root, so root owns them and the same trap does not apply.
+
+## LFS/BLFS 13.0 -> 13.1 bump, and onboarding SLFS/GLFS as book sources (2026-09-07)
+
+Both LFS and BLFS released 13.1-systemd within days of each other (2026-09-01 and
+2026-09-03), and the upstream LFS project turned out to publish two more book families
+this project had never used: SLFS (Supplemental LFS) and GLFS (Gaming LFS), both also
+just released their own 13.1 tracking the same LFS/BLFS base. Between them they cover a
+number of packages this repo had been sourcing as hand-authored recipes referencing
+Arch Linux's official packaging (this project's standing "two-tier" policy) purely
+because no BLFS 13.0 page covered them -- htop and libglvnd are the two confirmed
+concrete cases; the Xorg library/font/input-device closet (libXi, libXtst, libSM,
+libICE, xtrans, and others, currently hand-authored on this host) and the Hyprland
+ecosystem (laptop-only) look like further candidates in GLFS's "Basic X11 Software"
+chapter and SLFS's Hyprland chapter respectively, not yet individually verified.
+
+This entry covers the tooling generalization and the version bump itself. Per-package
+migration off Arch/AUR sourcing onto SLFS/GLFS book pages is separate, ongoing work
+(see below for the one proof-of-concept done so far).
+
+### Tooling: book families are no longer a single global pin
+
+`host.toml` gained a `[books]` table (`lfs`, `slfs`, `glfs`; `blfs` defaults from `lfs`)
+replacing the old scalar `book = "13.0"` key, so a version is now a per-host, per-family
+fact rather than one constant every tool hardcoded. `bin/lfshost.py`'s `Host` class
+reads it with a back-compat fallback to the old key. `bin/booklib.py` is new: the
+page-parsing/classification/rendering machinery that used to live only in
+`extract-recipes.py` (and was imported by `extract-blfs.py` via `importlib`) is now
+shared by all four extractors, parameterized by family and by the host's own pinned
+version (`BOOK_DIR`/`book_root()`). `packages/base.py`'s `book()` factory gained a
+`family` kwarg (default `"blfs"`, so none of the ~480 existing call sites needed
+editing) plus `slfs()`/`glfs()` sugar wrappers. New `bin/extract-slfs.py` and
+`bin/extract-glfs.py`, new `recipes/slfs-overrides.json` and `recipes/glfs-overrides.json`
+(kept separate from `blfs-overrides.json` rather than merged, so each family's version-
+bump churn stays out of the others' diffs).
+
+One real, checked-not-guessed finding from onboarding SLFS/GLFS: neither ships a
+downloadable pre-built chunked-HTML archive the way LFS/BLFS do (confirmed: no
+`/slfs/downloads/<ver>/` or `/glfs/downloads/<ver>/` path exists) -- their book source is
+GitHub DocBook XML that has to be built, or the project's own already-rendered
+`linuxfromscratch.org/<family>/view/<ver>/<page>.html` pages, fetched one at a time. This
+project takes the latter (matches this project's existing "book/ is fetched content,
+not authored" convention, just fetched per-page instead of as one archive). Their
+markup was spot-checked directly against real pages (`slfs/view/13.1/wm/hyprland.html`,
+`glfs/view/13.1/core/libglvnd.html`) before trusting `bin/booklib.py`'s parser on them:
+`<pre class="userinput">`/`<pre class="root">` match LFS/BLFS exactly, but admonitions
+are a bare class (`class="note"`) rather than `"admon note"` -- confirmed this never
+happens the other way around in the current LFS 13.1/BLFS 13.1 text (grepped both book
+trees for every admonition-word class combination), so broadening the admonition check
+in `booklib.classify()`'s `_admon()` to match either convention is a strict superset
+with zero effect on existing LFS/BLFS recipes.
+
+### The 13.0 -> 13.1 review
+
+Fetched `book/13.1` and `book/blfs-13.1` from the same downloads-directory convention as
+13.0. Ran `--check` against the new text with the (then-unmodified) old overrides, then
+diffed old vs. new block content directly rather than trusting `--check`'s page-level
+verdict alone -- `--check` flags a page as drifted the moment its *header* differs
+(the book-version string is stamped in every recipe's comment), which is true of all 134
+LFS pages and most of the 219 BLFS `book()` steps regardless of whether any actual
+command changed. Stripping the header and comparing bodies isolated the pages with a
+real content difference: 113 of 134 LFS pages, 109 of ~90 BLFS `book()` steps (most of
+that is prose/ctx-comment reflow from GCC 16.2/Glibc 2.44/&c., not new instructions).
+
+Of those, 14 LFS pages and 15 BLFS pages had an actual **block-count** change --
+insertions, removals, or reordering, the case that can silently misapply an existing
+override to the wrong command. Read each one directly against the real book HTML
+(not inferred from the count). Two were real safety bugs, not cosmetic:
+
+- **`ch08-shadow`**: the override replacing the book's interactive `passwd root` (which
+  would hang the driver) was at block 9. LFS 13.1 inserted a new `touch
+  /etc/sub{u,g}id` block immediately before it, moving `passwd root` to block 10.
+  Left unfixed, the interactive prompt would have run un-replaced.
+- **`ch10-kernel`** (this host's own override): the `cp -v` replacements for the kernel
+  image/System.map/config hardcoded the literal string `6.18.10-lfs-13.0-systemd` in
+  their replacement commands. Left unfixed, the new 7.1.8 kernel would install under the
+  *old* filename while `ch10-grub`'s menu entry points at the new one -- would not boot.
+
+`ch08-gcc`'s "critical test suite, non-fatal" decision also needed reindexing (a
+superseded GCC-16.2-obsoleted workaround block was dropped upstream, shifting the real
+test invocation two positions earlier) -- not a safety bug (worst case the test suite
+silently stops running, doesn't run something wrong), but still wrong if left. Five more
+BLFS pages (`blfs-nodejs`, `blfs-sudo`, `blfs-glib2`, `blfs-rust`, `blfs-json-c`) needed
+the same class of reindex. `blfs-rust`'s in particular was worth getting right: one of
+the shifted indices, left unfixed, would have **dropped the actual `./x.py install`
+step** (misapplying a decision meant for an unrelated test-summary line) -- Rust would
+silently stop getting installed on any host that re-ran this recipe.
+
+LFS 13.1 also added UEFI-target GRUB builds (`ch08-grub`, two full extra
+configure/build/install passes) and a UEFI boot-entry sequence (`ch10-grub`) plus a
+`/boot/efi` fstab line (`ch10-fstab`) that this host has no use for -- BIOS/MBR on `sdb`,
+no ESP. All dropped as host overrides (two new host recipes, `ch08-grub`/`ch10-grub`,
+alongside the existing `ch10-fstab`/`ch10-kernel`), not the shared file: true of this
+host's boot mode, not of LFS in general.
+
+Two LFS chapter08 pages this host never had a decision for at all
+(`intltool`, `xml-parser`) were dropped from the book entirely in 13.1, replaced by two
+new pages (`mpdecimal`, split across ch07/ch08) and one moved-up page (`zlib`, now also
+built in ch07). Checked for dangling references first (grep across every `packages.py`
+and override file) -- nothing depended on either, so no further action needed beyond
+letting the extractors and `build-plan.py` pick up the new/removed pages automatically
+(neither is packages.py-driven; LFS chapter steps come from the book's own page set).
+`bin/build-plan.py` needed one fix of its own here: its `MD5` path was hardcoded to
+`book/md5sums` (a stale top-level copy from the original 13.0 setup) rather than
+resolved per host/version -- fixed to read `book/<pinned-ver>/md5sums` via
+`booklib.book_root()`, matching the extractors. `bin/fetch-sources.sh` had the same
+defect (hardcoded `$ROOT/book`, explicitly documented as "shared, takes no --host") and
+got the same fix, now `--host`-aware.
+
+Also swept every *unchanged*-block-count page for a subtler failure mode: same index,
+different content (the book reordered or swapped a same-shaped block without changing
+the total count). Found 3 on the LFS side and 13 on the BLFS side -- all cosmetic
+(version strings in patch/tarball filenames, or a book-recommended command rephrased to
+the same effect, e.g. `ch09-systemd-custom`'s `ln -sfv /dev/null .../tmp.mount` becoming
+`systemctl mask tmp.mount`), none changing which action was correct. Updated the three
+LFS reason texts that quoted specific command wording; left the 13 BLFS ones alone
+(none were `replace` actions with version strings baked into a `cmd` field, so nothing
+was actually stale enough to need editing).
+
+### A gap this staggered rollout exposed: the shared recipe tree assumes one global book version
+
+`recipes/*.sh` (the machine-neutral candidate tree) is written by whichever host's
+extraction last ran, using *that host's* pinned book version -- there is no version
+scoping. Running `laptop`'s (still-13.0) extraction for real, after editing the shared
+overrides to 13.1-shaped indices, silently regenerated the shared `ch08-shadow.sh` with
+the *un-replaced* interactive `passwd root` back in it (13.0 text + a decision now keyed
+for 13.1's block 10, which doesn't exist in 13.0's 10-block page). Caught by direct
+inspection, not by tooling -- `--check` cannot catch this class of bug, since the file
+it just wrote is exactly what its own logic says it should be.
+
+Fixed for the pages this bump actually touched: `hosts/laptop/review-overrides.json`
+and `hosts/laptop/blfs-overrides.json` now carry compat entries for every reindexed page
+(`ch08-gcc`, `blfs-nodejs`, `blfs-sudo`, `blfs-glib2`, `blfs-rust`, `blfs-json-c`),
+restoring the pre-bump decision at its correct 13.0 index and neutralizing (via an
+explicit `enable`) whatever the reindexed shared entry would otherwise contribute at a
+colliding index -- each tagged "Remove once this host also bumps to 13.1" in its own
+`reason`. `ch08-shadow` needed no compat entry: this host already had its own override
+for that page for an unrelated reason (locking root's password rather than setting one),
+which wins over the shared file's stale entry regardless. Re-ran `server`'s real
+extraction last (after laptop's) specifically so the shared tree's final on-disk state
+reflects 13.1, matching the now-13.1-shaped shared overrides.
+
+The remaining ~240 pages laptop has no host-specific copy for were *not* individually
+re-verified against 13.1 text -- out of scope for this bump. `hosts/laptop/CLAUDE.md` now
+carries an explicit warning: do not run `lfsbuild --host laptop --only <step> --force`
+for any such step without first checking whether its page changed between 13.0 and
+13.1. The clean fix is laptop's own eventual bump; a better structural fix -- version-
+scoping `recipes/` itself so two hosts on different book versions never share one
+candidate file -- was identified but not implemented, flagged for whenever a third host
+or another cross-version gap makes it worth the redesign.
+
+### A second book-wide bug this staggered rollout exposed, caught before it could do damage
+
+Found 2026-09-07 while actually driving a fresh `server-rebuild` chroot build (see below):
+`bin/build-plan.py` derives LFS step order from each page's book section number
+(`"8.30. GCC-15.2.0"` -> `(8, 30)`), via a regex requiring a literal period after the
+second number. LFS 13.1 dropped that trailing period site-wide (`"8.30 GCC-16.2.0"`,
+no period) -- so the regex silently failed to match on **every one of the 134 LFS
+pages**, falling back to `(chapter, 999)` for all of them and reducing the entire
+plan to alphabetical-by-filename order within each chapter. `--list --chapter 04`
+caught it: `ch04-addinguser` (which `chown`s directories into existence) sorted ahead
+of `ch04-creatingminlayout` (which creates them) -- a guaranteed failure on the very
+first chroot step, on a comparison that was pure luck to check first. Nothing else
+flags this class of bug: `extract-recipes.py --check` only verifies recipe *text*
+against the book, not step *order*; `build-plan.py` itself reported success
+("all package steps matched a tarball") because tarball-matching is independent of
+section-order parsing.
+
+Fixed by anchoring the regex on the digit/non-digit boundary (`\b`) instead of a
+literal period, which matches both the 13.0 and 13.1 title formats. Verified by
+checking all 134 steps are strictly monotonically ordered by `(chapter, section)`,
+not just spot-checking chapter 4. Regenerated `plan.json` for `server`,
+`server-rebuild`, and `laptop` (laptop is still on 13.0 text, where the old regex
+already matched correctly -- confirmed its order is unchanged by the fix).
+
+### Verification
+
+`bin/extract-recipes.py --host server --check` and `bin/extract-blfs.py --host server
+--check` both report zero drift against the regenerated 13.1-based tree. `bin/build-plan.py
+--host server` reports all 134 steps matched a tarball (111 package builds, 23
+procedures) with no unmatched entries. `laptop`'s own `--check` runs report zero drift
+for every page it has a host-specific copy of; the ~240 pages it doesn't were not
+re-verified (see above). None of this touched the live, already-built system -- no
+`lfsbuild --only <step> --force` was run. Actually rebuilding any already-installed
+package against the new recipes is separate, later work via the existing
+`--only <step> --force` maintenance path.
+
+### Proof of concept: two packages moved off the Arch/AUR two-tier fallback
+
+Confirmed the SLFS/GLFS tooling end-to-end, not just the extraction machinery in
+isolation, by migrating two of this host's hand-authored, Arch-PKGBUILD-referenced
+recipes onto real book pages: `htop` (`hand()` -> `slfs()`, `general/htop.html`) and
+`libglvnd` (`hand()` -> `glfs()`, `core/libglvnd.html`). Both book recipes turned out
+simpler than the hand-authored ones they replace -- htop's SLFS page needs no special
+configure flags at all (the superseded recipe's `--enable-capabilities`/
+`--enable-unicode` are htop's own defaults; `--enable-sensors`/`--enable-delayacct`/
+`--enable-openvz`/`--enable-vserver` were either deliberately skipped or dead flags
+already), and libglvnd's GLFS page is a plain patch+meson+ninja build. libglvnd's page
+also builds a second, 32-bit/multilib copy (GLFS assumes a multilib toolchain this
+project has never built) -- dropped via a new `recipes/glfs-overrides.json` entry,
+in the shared file since it is true of any non-multilib LFS box, not specific to this
+host's GPU or CPU.
+
+Installed `htop`/`libglvnd` are unaffected -- this only changes what a future rebuild
+sources from, per the existing `--only <step> --force` path. One real mistake made and
+caught during this: the superseded `recipes/blfs-htop.sh`/`recipes/blfs-libglvnd.sh`
+were deleted as part of the migration, which broke `laptop` -- its own, separate
+`packages.py` still has `hand()` entries under the same two names, and its extraction
+started reporting "hand-authored, but no recipe" for both. Restored from git; the
+lesson (worth remembering for the next such migration) is that a shared hand-authored
+recipe file can't be deleted just because *one* host stopped referencing it -- check
+every host's `packages.py` for the same step name first.
+
+Remaining candidates identified but not yet migrated (this host's own Xorg library
+closet -- `libXi`, `libXtst`, `libSM`, `libICE`, `libxfont2`, `libXkbfile`, `libfontenc`,
+`libXrandr`, `xshmfence`, `xxf86vm`, `xtrans`, currently hand-authored against Arch
+PKGBUILDs -- GLFS's "Basic X11 Software" chapter looks like it covers these
+individually, not yet verified page-by-page) and `pass`/`pass-otp`/`oath-toolkit`/the
+legacy `nvidia-470xx` driver and its VDPAU-family dependents (checked: genuinely absent
+from both SLFS and GLFS's coverage -- `nvidia-470xx` because GLFS's NVIDIA chapter
+targets the current r610/r580 branches, not this card's Kepler-era legacy branch --
+these stay hand-authored, Arch-referenced, correctly). `bin/lfsbuild`'s plan selection
+was a boolean `--blfs` flag when this was written; generalized 2026-09-08 to `--book
+{lfs,blfs,slfs,glfs}` (`--blfs` kept as a deprecated alias) while setting up the
+`server-rebuild` chroot build below, so `htop`/`libglvnd` can now actually be driven
+from their `slfs-plan.json`/`glfs-plan.json` once there's reason to rebuild them.
+
+## Fresh LFS 13.1 chroot build, `server-rebuild` (started 2026-09-07)
+
+A genuine from-scratch LFS/BLFS 13.1 build, at `/mnt/lfs`, tracked under a new
+`hosts/server-rebuild/` (packages.py/overrides/recipes/kernel-config.sh/overlay all
+symlinked back to `hosts/server/`; only `state/`/`manifests`/`logs` are real and
+independent -- see that host's own `host.toml` for why it isn't just `hosts/server/`
+itself: that directory's `state/completed` already has this machine's real,
+already-deployed 13.0 history, which a resumed build into an empty new tree must not
+either read as "already done" or overwrite). Same operator intent as the original
+2026-08-25 build: get a complete tree, archive it, deploy to a USB, boot it -- this
+time redone from the 13.1 book onto this exact hardware's own history, not from Gentoo.
+
+Sources fetched fresh from the pinned 13.1 wget-list. Upstream was rough going: both
+`ftpmirror.gnu.org` (its redirector) and `ftp.gnu.org`/`download.savannah.gnu.org`
+(the real GNU/Savannah hosts themselves) returned sustained 502/504/timeout errors for
+roughly the first hour of this session, affecting ~30 of 94 sources. `mirrors.kernel.org/
+gnu/` proved a reliable stand-in for the real `ftp.gnu.org` releases (confirmed live,
+not assumed); `download-mirror.savannah.gnu.org` (note: "download-**mirror**", a
+distinct host from the primary "download.savannah.gnu.org" that was down) covered the
+four Savannah-only packages (`acl`, `attr`, `libpipeline`, `man-db`) mirrors.kernel.org
+doesn't carry. All 94 sources eventually verified against `book/13.1/md5sums`.
+
+This attempt surfaced several real, previously-latent bugs -- previously latent
+specifically because nothing had driven a genuine from-scratch chroot build since this
+tooling's various incremental fixes were made against already-running (native-mode)
+systems:
+
+- **`build-plan.py`'s section-order regex silently broke on every LFS 13.1 page.**
+  Covered above (13.0->13.1 bump section) -- caught here for real, via
+  `ch04-addinguser` sorting ahead of `ch04-creatingminlayout`, before any step ran.
+- **`/mnt/lfs/sources` needs `chmod a+wt`, matching the book's own Chapter 2
+  instruction**, which this session's setup skipped. Without it, the unprivileged
+  `lfs` user (owns none of chapters 5-6) can list but not write there --
+  `ch05-binutils-pass1`'s unpack failed with `tar: ...: Cannot mkdir: Permission
+  denied` on literally every entry; the visible tail of a 60,000-line log happened to
+  end mid-alphabet on `.../zlib/*` files, which looked at first like a corrupt archive
+  (it wasn't -- checksum matched, and the tarball's directory-less-but-has-files-under-
+  it entries are normal, unrelated to the real cause).
+- **The 2026-08-31 "stage recipe as a child process into `/tmp`" fix (this file, GCC
+  test-suite-adjacent section above) has a chicken-and-egg gap for exactly one step**:
+  `ch07-creatingdirs`, the chroot-context step that *creates* `/tmp` in the first
+  place. Every other use of that staging path -- native mode, or any chroot step after
+  this one -- already has a real `/tmp` to stage into; this is the one place in the
+  whole plan that doesn't yet. Fixed with an unconditional, idempotent `mkdir -p /tmp`
+  immediately before the staging `cat >`.
+- **`build-plan.py`'s `EXACT_TARBALL` table (tcl, libelf, flit-core, expect --
+  filenames irregular enough that stem-matching can't find them) hardcoded exact
+  13.0-era filenames** (`tcl8.6.17-src.tar.gz`, `elfutils-0.194.tar.bz2`,
+  `flit_core-3.12.0.tar.gz`), all three bumped by 13.1. Fixing them naively (just
+  updating the three strings) reintroduced the exact same class of bug the LFS/BLFS
+  13.1 bump already taught this session to watch for: `laptop` (still on 13.0) got
+  silently regenerated with the *new* filenames, which don't exist in its own
+  `md5sums`. Real fix: `EXACT_TARBALL` now holds a regex per irregular package,
+  matched against each host's own loaded tarball list, so the right version resolves
+  per host/book-pin with no table edit needed on the next bump either.
+- **`ch08-perl`'s `TEST_JOBS=$(nproc) make test_harness` hangs indefinitely** (three of
+  Perl's own IPv6 network tests -- `t/nntp_ipv6.t`, `t/pop3_ipv6.t`, `t/smtp_ipv6.t` --
+  block forever on a `connect()` with no local network stack yet in the chroot). First
+  found on `laptop` 2026-08-30, deliberately left host-only pending a second host
+  reproducing it (its own reason field said so). `server-rebuild` reproduced it
+  identically 2026-09-08 (caught at ~30 minutes stuck, not left to run -- laptop's own
+  incident ran ~17.5 hours before someone noticed). Promoted to the shared
+  `recipes/review-overrides.json` per that standing instruction; removed from
+  `hosts/laptop/review-overrides.json` as now-redundant. Confirmed both hosts'
+  `--check` stay clean after the promotion.
+
+`ch08-gcc`'s test suite ran ~4 hours (vs. 226 minutes for GCC 15.2.0 in the original
+2026-08-25 build) -- GCC 16.2.0 plus the full `libstdc++` conformance suite, on the
+same hardware; not investigated further since it finished and nothing else pointed at
+a real regression. Build otherwise resumed cleanly step-by-step through each fix above,
+each caught by `lfsbuild`'s own preflight/failure reporting rather than corrupting
+anything -- the resumable, one-step-at-a-time design held up under real, unanticipated
+failure the way it's meant to.
+
+## Full BLFS 13.1 build to completion, `server-rebuild` (2026-09-08/09)
+
+All 221 BLFS steps completed against the fresh LFS 13.1 chroot above -- same package
+set as the original native 13.0 build (X11+awesome, NVIDIA 470.xx, VDPAU/NVENC media
+stack, Firefox, PipeWire, ops tooling). ~24 buildtime hours end to end, almost entirely
+real fixes, not waiting -- the live system never surfaced most of these because it was
+built incrementally, out of any single consistent order, over weeks; a genuine one-pass
+fresh build is a different, much stricter test than "does `--only <step> --force` work
+against an already-mostly-built system."
+
+**The dominant bug class, by far: execution order follows `packages.py`'s file-text
+order, not `seq`.** `bin/lfsbuild`/`bin/booklib.py` have no sort-by-seq anywhere
+(confirmed via `grep -n "\.sort\|sorted(" bin/lfsbuild bin/booklib.py`) -- a fact this
+project has always been technically aware of, but never mattered until a fresh build
+had to get every ordering right in one pass instead of letting an operator build things
+whenever, across months. Real dependency chains discovered this way and fixed by
+physically relocating the entry to a fractional seq just before its first consumer
+(never renumbering/reusing the original, per `CLAUDE.md`): `xtrans`/`libx11`/`libxext`/
+`libxrender`/`libxrandr` (needed by `vulkan-loader`), `libxshmfence`/`libxxf86vm`/
+`libglvnd` (needed by `mesa`), `libssh2`/`rust`/`llvm`/`rust-bindgen`/`cbindgen`/`mako`/
+`pyyaml`/`spirv-llvm-translator`/`libclc`/`wayland`/`wayland-protocols` (also `mesa` --
+its meson.build turned out to need a surprising amount once real LLVM+Clang existed),
+`libjpeg-turbo` (`gdk-pixbuf`), `libevdev` (`libwacom`), `libxfixes`/`libxi`/`libxtst`
+(`at-spi2-core`), `libice`/`libsm` (`pulseaudio`), `libxcursor`/`libxscrnsaver` (`sdl3`),
+`libxdamage` (`firefox`), `libxpresent` (`mpv`), `libvdpau` (`ffmpeg`), `claude-code`
+(needs `adduser-john` to have run first). Two of these were *new* packages, not just
+reordered: `rust-bindgen` and `mako` had never been in `packages.py` at all despite
+being genuinely required (mako's own recipe file already existed, just never wired in)
+-- installed ad hoc on the live system at some point, outside the tracked build.
+
+**Second-most-common: this chroot has no working `/etc/resolv.conf` by default.**
+Every recipe that shells out to a package manager expecting live internet (cargo/
+crates.io, `go build`/proxy.golang.org, npm, bare `git clone`/`curl` for un-tarballed
+sources) needed the same fix, applied via a `trap`-guarded temporary
+`/etc/resolv.conf` pointing at real public resolvers: `rust-bindgen`, `mesa` (a
+`syn` crate fetched by its own NAK/Rust component via meson's cargo-wrap
+subprojects), `attrs`, `linux-firmware-rtl-nic`, `intel-microcode`, `alacritty`,
+`xcb-util-xrm`, `nvidia-470xx`, `rofi`, `openbao`, `opentofu`. This pattern was
+already established (`blfs-rust.sh`, `blfs-claude-code.sh`) before this build; it just
+needed applying to every *other* recipe with the same real need, one real failure at
+a time.
+
+**Real, standalone bugs, not ordering or network -- the interesting ones:**
+- **`blfs-sdl3`'s shared override had its two blocks backwards.** It dropped the
+  *real* `ninja install` (mislabeled "optional test build") and kept the *actual*
+  optional test-suite build enabled. The step "succeeded" for months while installing
+  nothing -- caught only because `sdl2-compat` (the very next package) failed outright
+  on missing headers. Swapped which block is dropped.
+- **`blfs-pipewire`'s shared recipe had a laptop-only decision baked in.**
+  `-D bluez5=enabled` (added 2026-09-04, "operator-requested Bluetooth audio" per its
+  own header) is real and correct for `laptop` (which builds bluez/sbc specifically
+  for it) but contradicts `server`'s own, earlier, separately-documented decision
+  (2026-08-26: no BlueZ, no current use for it). Gave `server` its own recipe fork
+  with `bluez5=disabled`; left the shared file alone.
+- **`blfs-mesa`'s host override was missing the book's own `mkdir build && cd build`
+  prefix.** Never exercised before because whatever the live system did around this
+  block predates the override's current text. Without it, meson ran from the source
+  directory with a bare `..` argument and inferred a nonsensical parent-directory
+  build tree: "Build directory /sources cannot be a parent of source directory
+  /sources/mesa-26.1.7."
+- **`util-macros` silently installed to `/usr/local` instead of `/usr`.** It ran
+  during this build's very first, still-broken pass (before the `xorg-env`
+  seq-ordering fix landed) with `$XORG_PREFIX` unset, so autotools fell back to its
+  own default prefix and exited 0 -- no error, because nothing else needed its output
+  *yet*. Stayed marked complete through every later `--resume` (reordering only helps
+  steps that haven't run yet) until `xcb-util-xrm`, all the way at the end of the
+  build, finally needed the aclocal macro it never installed to the searched path.
+  Force-rebuilt once `xorg-env` had actually run first; stale `/usr/local` copies
+  removed.
+- **`libpng`'s optional APNG patch (needed for Firefox's `--with-system-png`) was
+  never actually applied**, for the same reason as util-macros above but sneakier:
+  `zcat ../libpng-1.6.58-apng.patch.gz | patch -p1` with the `.patch.gz` missing --
+  `zcat`'s failure is masked by the pipe (bash reports the last command's exit
+  status), and empty stdin makes `patch` a silent no-op. libpng "succeeded" and
+  nobody could tell from the log. Fetched the patch (md5 verified against the book's
+  own published sum), force-rebuilt.
+- **NVIDIA's own `conftest.sh` only detects kernel API shape by grepping
+  `Module.symvers`**, which a `modules_prepare`-only kbuild tree (this recipe's
+  original design, reusing `ch10-kernel`'s already-cleaned-up tree was never an
+  option) never populates. With it missing, `nv-caps.c`'s close_fd()/`__close_fd()`/
+  `sys_close()` version probe silently picked the oldest, actually-removed fallback:
+  "implicit declaration of function 'sys_close'". Confirmed via direct kernel source
+  inspection that `close_fd()` really is exported. Fixed at the root, not the symptom:
+  added a real full kernel build (same config as the running kernel) before NVIDIA's
+  own build, so `Module.symvers` is accurate for every conftest check, not just this
+  one. Also needed `IGNORE_MISSING_MODULE_SYMVERS=1` (NVIDIA's own documented escape
+  hatch, no longer strictly a lie once the file is real) and a `rm -rf` of its own
+  `$WORK` directory before starting (a hand() step with `tarball=""` has no generic
+  unpack-then-cleanup, so a stale extracted `.run` payload from the previous failed
+  attempt blocked `--extract-only` on retry).
+- **`xorg-server`'s SHA1 backend picked `libnettle` on `auto`, and nettle-4.0 (the
+  book's own documented, correct version) genuinely does not ship the unified
+  `nettle/sha.h` xorg-server's code expects** -- only `sha1.h`/`sha2.h`/`sha3.h`
+  separately, confirmed against the real tarball contents. A real upstream
+  xorg-server/nettle version mismatch, not a project bug. `libgcrypt` is also a
+  Required dependency of this page and has a complete, working branch in the same
+  source file -- forced `-D sha1=libgcrypt` rather than patch nettle.
+- **`cbindgen-0.29.4` (the book's current version) generates C++ enum sentinels
+  cbindgen-0.29.2 doesn't**, breaking Firefox's `webrender_ffi_generated.h`: "use of
+  undeclared identifier 'COUNT'". `laptop` (still on 13.0 books, cbindgen-0.29.2) has
+  already built this exact Firefox version successfully -- confirmed proven-working
+  pairing. Pinned `server` to a hand-authored 0.29.2, host-specific (mesa, already
+  built against 0.29.4, is unaffected -- cbindgen is build-time-only).
+- **Firefox's `--enable-rust-simd` (pure performance optimization) doesn't compile
+  against Rust-1.97.1**: `core::simd::Mask` lost the `.select()` method the vendored
+  `encoding_rs` crate calls, an upstream Rust portable-SIMD API break between this and
+  laptop's still-working Rust-1.93.1. Dropped the option in a host-specific fork of
+  the Firefox mozconfig rather than chase the API churn.
+- **Two tool-level gaps in `bin/lfsbuild` itself, both "the generic driver assumes
+  every tarball is `tar`-openable, or every hand() step's own scratch directory is
+  either brand new or its own responsibility to clean."** `lfsmaint-1.0.tar.gz` (this
+  project's own package) had no top-level wrapping directory at all -- every entry was
+  `./something` -- so `srcdir_of()`'s "first non-`.` top-level path" heuristic found
+  nothing and raised `RuntimeError`. Repackaged with a proper `lfsmaint-1.0/` wrapper.
+  `JetBrainsMono-2.304.zip` is upstream's only ship format and `tar -tf`/`tar -xf`
+  can't read PKZIP at all -- `laptop` had already solved this by repackaging as
+  `.tar.gz` (its own manifest confirms it); matched that exact convention rather than
+  adding zip support to the tool for one package.
+- **`redshift`'s tarball was GitHub's auto-generated git-tag source archive, not the
+  real uploaded release asset** -- the former has no generated `configure` at all, and
+  regenerating it via the shipped `bootstrap` script needs `intltool`, which needs
+  Perl's `XML::Parser` CPAN module (no CPAN tooling exists anywhere in this project).
+  The real release tarball at the equivalent `releases/download/vX/` URL already
+  carries a pre-generated `configure` -- but even that one still shells out directly
+  to `intltool-update --version` unconditionally (not gated by `--disable-nls`, which
+  is a separate, independent check) and then `AC_PATH_PROG`-checks for
+  `intltool-merge`/`intltool-extract` too. Since `--disable-nls` means none of the
+  three are ever actually invoked for real translation work afterward, stubbed all
+  three (same class of fix as `blfs-rust`'s own `fake-git`).
+- **`openbao`'s `make dev` shells out to git for a version string**, and an extracted
+  tarball is not a checkout: "fatal: not a git repository". A throwaway `git init` +
+  one commit is enough; the embedded version string is cosmetic (`bao version`
+  output), not functional.
+
+Not yet done, deliberately out of scope for this session: applying `overlay/boot/
+grub.cfg` to the built tree (hand-maintained, applied at deploy time per
+`BOOTSTRAP.md` -- its kernel-version reference was updated 6.18.10-13.0 ->
+7.1.8-13.1 while investigating the `intel-microcode` step above, but applying it is
+part of the operator's own USB-imaging step, not this build). No installed package
+differs functionally from the original native 13.0 build's package *set* -- only
+sourcing (book vs. Arch reference where a book page now exists) and the version bump
+itself.

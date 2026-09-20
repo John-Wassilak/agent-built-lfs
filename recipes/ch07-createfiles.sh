@@ -1,7 +1,7 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter07/createfiles.html
-# title  : 7.6. Creating Essential Files and Symlinks
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter07/createfiles.html
+# title  : 7.6 Creating Essential Files and Symlinks
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e

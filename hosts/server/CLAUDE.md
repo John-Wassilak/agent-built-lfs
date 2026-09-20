@@ -1,8 +1,9 @@
 # `server`
 
-The machine this repo was written on, and the one it now runs on: LFS 13.0-systemd,
-self-hosting. `host.toml`'s `[hardware]` has the current facts; `BUILD-REPORT.md` is the
-full narrative, ~3,000 lines and appended to in date order.
+The machine this repo was written on, and the one it now runs on: LFS/BLFS 13.1-systemd
+(bumped from 13.0 2026-09-07 -- see `BUILD-REPORT.md`), self-hosting. `host.toml`'s
+`[hardware]` has the current facts; `BUILD-REPORT.md` is the full narrative, ~3,000
+lines and appended to in date order.
 
 Things worth knowing before changing anything here:
 
@@ -26,7 +27,11 @@ Things worth knowing before changing anything here:
 - **Kernel config is `kernel-config.sh`**, which sources `bin/kernel-config-base.sh` and
   adds only this box's hardware: nouveau's DRM module and the HDA codecs. Generic options
   belong in the base, where the laptop gets them too.
-- **Ten recipes live in `recipes/` here** rather than the shared tree, because they are
-  bound to this GPU or this CPU: the NVIDIA driver, nv-codec-headers, libvdpau,
+- **Twelve recipes live in `hosts/server/recipes/` here** rather than the shared tree.
+  Ten are bound to this GPU or this CPU: the NVIDIA driver, nv-codec-headers, libvdpau,
   vdpauinfo, intel-microcode, mesa (nouveau + glvnd), ffmpeg (NVENC/VDPAU), mpv (VDPAU),
-  and the two `ch10-*` recipes generated from this host's overrides.
+  and the two `ch10-*` recipes generated from this host's overrides. Two more
+  (`ch08-grub`, `ch10-grub`) were added 2026-09-07 during the LFS 13.1 bump: LFS 13.1
+  added UEFI-target GRUB builds and boot-entry steps this host doesn't need (BIOS/MBR
+  only) -- bound to this host's boot mode, not its GPU/CPU, but the same "device/boot
+  path" test from root `CLAUDE.md` still puts them here.

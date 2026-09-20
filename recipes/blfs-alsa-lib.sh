@@ -1,7 +1,7 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the BLFS 13.0-systemd book.
-# source : book/blfs-13.0/multimedia/alsa-lib.html
-# title  : alsa-lib-1.2.15.3
+# CANDIDATE recipe extracted from the BLFS 13.1-systemd book.
+# source : book/blfs-13.1/multimedia/alsa-lib.html
+# title  : alsa-lib-1.2.16.1
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 set -e
 
@@ -23,14 +23,14 @@ make
 #   ctx: To test the results, issue: make check. Now, as the root user, install the package and
 #   ctx: recommended configuration files:
 make install &&
-tar -C /usr/share/alsa --strip-components=1 -xf ../alsa-ucm-conf-1.2.15.3.tar.bz2
+tar -C /usr/share/alsa --strip-components=1 -xf ../alsa-ucm-conf-1.2.16.1.tar.bz2
 
 # --- block 3 --------------------------------------------------
 #   ctx: To install the API documentation, run the following command as the root user:
 #   REVIEWED [drop]: Installs the doxygen docs from block 1, which was dropped.
-# install -v -d -m755 /usr/share/doc/alsa-lib-1.2.15.3/html/search &&
+# install -v -d -m755 /usr/share/doc/alsa-lib-1.2.16.1/html/search &&
 # install -v -m644 doc/doxygen/html/*.* \
-#                 /usr/share/doc/alsa-lib-1.2.15.3/html &&
+#                 /usr/share/doc/alsa-lib-1.2.16.1/html &&
 # install -v -m644 doc/doxygen/html/search/* \
-#                 /usr/share/doc/alsa-lib-1.2.15.3/html/search
+#                 /usr/share/doc/alsa-lib-1.2.16.1/html/search
 

@@ -1,16 +1,16 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter07/Python.html
-# title  : 7.10. Python-3.14.3
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter07/Python.html
+# title  : 7.12 Python-3.14.7
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
 
 # --- block 0 --------------------------------------------------
-#   ctx: cripts, prototyping large programs, and developing entire applications. Python is an
-#   ctx: interpreted computer language. Approximate build time: 0.5 SBU Required disk space: 592
-#   ctx: MB 7.10.1. Installation of Python Note There are two package files whose name starts
-#   ctx: with the “python” prefix. The one to extract from is Python-3.14.3.tar.xz (notice the
+#   ctx: scripts, prototyping large programs, and developing entire applications. Python is an
+#   ctx: interpreted computer language. Approximate build time: 0.5 SBU Required disk space: 603
+#   ctx: MB 7.12.1 Installation of Python Note There are two package files whose name starts with
+#   ctx: the “python” prefix. The one to extract from is Python-3.14.7.tar.xz (notice the
 #   ctx: uppercase first letter). Prepare Python for compilation:
 ./configure --prefix=/usr       \
             --enable-shared     \

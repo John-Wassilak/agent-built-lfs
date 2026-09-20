@@ -17,6 +17,15 @@
 # was built -- the actual target is NVIDIA's own nvidia_drv.so (already
 # installed, see blfs-nvidia-470xx.sh), for VDPAU decode via the
 # proprietary driver's EGLStreams-incompatible-with-Hyprland path.
+#
+# -D sha1=libgcrypt added 2026-09-09: meson's default `auto` picked libnettle, whose
+# xsha1.c branch #includes <nettle/sha.h> -- a header nettle-4.0 (the book's own
+# documented version, confirmed against its real tarball contents) does not ship at
+# all, only sha1.h/sha2.h/sha3.h separately. A real upstream xorg-server/nettle version
+# mismatch, not a packaging bug on this project's end. libgcrypt-1.12.2 is also a
+# Required dependency of this page and xsha1.c has a complete, working libgcrypt
+# branch (`#include <gcrypt.h>`) -- forcing that implementation avoids the missing
+# header entirely rather than patching around it.
 set -e
 
 mkdir build &&
@@ -26,6 +35,7 @@ meson setup ..              \
       --prefix=$XORG_PREFIX \
       --localstatedir=/var  \
       -D glamor=true        \
+      -D sha1=libgcrypt     \
       -D xkb_output_dir=/var/lib/xkb &&
 ninja
 

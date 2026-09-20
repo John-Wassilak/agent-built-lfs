@@ -1,7 +1,7 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter08/sqlite.html
-# title  : 8.52. Sqlite-3510200
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter08/sqlite.html
+# title  : 8.52 Sqlite-3530400
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
@@ -9,8 +9,8 @@ set -e
 # --- block 0 --------------------------------------------------
 #   ctx: The Sqlite package is a software library that implements a self-contained, serverless,
 #   ctx: zero-configuration, transactional SQL database engine. Approximate build time: 0.4 SBU
-#   ctx: Required disk space: 124 MB 8.52.1. Installation of Sqlite Unpack the documentation:
-tar -xf ../sqlite-doc-3510200.tar.xz
+#   ctx: Required disk space: 128 MB 8.52.1 Installation of Sqlite Unpack the documentation:
+python3 -m zipfile -e ../sqlite-doc-3530400.zip .
 
 # --- block 1 --------------------------------------------------
 #   ctx: Prepare Sqlite for compilation with:
@@ -39,6 +39,5 @@ make install
 
 # --- block 4 --------------------------------------------------
 #   ctx: If desired, install the documentation:
-install -v -m755 -d /usr/share/doc/sqlite-3.51.2
-cp -v -R sqlite-doc-3510200/* /usr/share/doc/sqlite-3.51.2
+cp -v -R sqlite-doc-3530400 -T /usr/share/doc/sqlite-3.53.4
 

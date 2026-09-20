@@ -955,8 +955,8 @@
     "title": "8.44. Perl-5.42.0",
     "context": "chroot",
     "tarball": "perl-5.42.0.tar.xz",
-    "enabled": 5,
-    "disabled": 0,
+    "enabled": 4,
+    "disabled": 1,
     "seq": 80
   },
   {

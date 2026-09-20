@@ -1,7 +1,7 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the BLFS 13.0-systemd book.
-# source : book/blfs-13.0/postlfs/lvm2.html
-# title  : LVM2-2.03.38
+# CANDIDATE recipe extracted from the BLFS 13.1-systemd book.
+# source : book/blfs-13.1/postlfs/lvm2.html
+# title  : LVM2-2.03.42
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 set -e
 

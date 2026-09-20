@@ -1,16 +1,16 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the BLFS 13.0-systemd book.
-# source : book/blfs-13.0/multimedia/pulseaudio.html
+# CANDIDATE recipe extracted from the BLFS 13.1-systemd book.
+# source : book/blfs-13.1/multimedia/pulseaudio.html
 # title  : PulseAudio-17.0
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 set -e
 
 # --- block 0 --------------------------------------------------
-#   ctx: , GLib-2.86.4, Speex-1.2.1 and Xorg Libraries Optional Avahi-0.8, BlueZ-5.86,
-#   ctx: Doxygen-1.16.1 (for documentation), fftw-3.3.10, gst-plugins-base-1.28.1, GTK-3.24.51,
-#   ctx: libsamplerate-0.2.2, SBC-2.2 (Bluetooth support), Valgrind-3.26.0, check (for testing),
-#   ctx: JACK, libasyncns, LIRC, ORC, soxr, TDB, and WebRTC AudioProcessing Installation of
-#   ctx: PulseAudio Install PulseAudio by running the following commands:
+#   ctx: TC AudioProcessing Installation of PulseAudio Note If you intend to use pipewire-1.6.8
+#   ctx: as the sound system instead of PulseAudio, you can pass the -D daemon=false option to
+#   ctx: only build the support libraries of this package. If so, those libraries will require
+#   ctx: Wireplumber-0.5.15 installed and pipewire-pulse.socket enabled to be really functional.
+#   ctx: Install PulseAudio by running the following commands:
 mkdir build &&
 cd    build &&
 
@@ -19,6 +19,7 @@ meson setup --prefix=/usr       \
             -D database=gdbm    \
             -D doxygen=false    \
             -D bluez5=disabled  \
+            -D man=false        \
             -D tests=false      \
             ..                  &&
 ninja

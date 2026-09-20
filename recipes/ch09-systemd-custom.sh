@@ -1,15 +1,15 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter09/systemd-custom.html
-# title  : 9.10. Systemd Usage and Configuration
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter09/systemd-custom.html
+# title  : 9.10 Systemd Usage and Configuration
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
 
 # --- block 0 --------------------------------------------------
-#   ctx: ttings indicated. This file is where the log level may be changed as well as some basic
+#   ctx: ettings indicated. This file is where the log level may be changed as well as some basic
 #   ctx: logging settings. See the systemd-system.conf(5) manual page for details on each
-#   ctx: configuration option. 9.10.2. Disabling Screen Clearing at Boot Time The normal behavior
+#   ctx: configuration option. 9.10.2 Disabling Screen Clearing at Boot Time The normal behavior
 #   ctx: for systemd is to clear the screen at the end of the boot sequence. If desired, this
 #   ctx: behavior may be changed by running the following command:
 mkdir -pv /etc/systemd/system/getty@tty1.service.d
@@ -21,10 +21,10 @@ EOF
 
 # --- block 1 --------------------------------------------------
 #   ctx: The boot messages can always be reviewed by using the journalctl -b command as the root
-#   ctx: user. 9.10.3. Disabling tmpfs for /tmp By default, /tmp is created as a tmpfs. If this
-#   ctx: is not desired, it can be overridden by executing the following command:
-#   REVIEWED [drop]: Masks tmp.mount to disable tmpfs for /tmp. Book: 'By default /tmp is created as a tmpfs. If this is not desired...'. We want tmpfs on /tmp -- it avoids write wear on the USB target. The book also warns this symlink makes the system unusable if a separate /tmp partition is used.
-# ln -sfv /dev/null /etc/systemd/system/tmp.mount
+#   ctx: user. 9.10.3 Disabling tmpfs for /tmp By default, /tmp is created as a tmpfs. If this is
+#   ctx: not desired, it can be overridden by executing the following command:
+#   REVIEWED [drop]: Disables tmp.mount so tmpfs stays the default for /tmp (avoids write wear on the USB target). Book: 'By default /tmp is created as a tmpfs. If this is not desired...'. Also warns this makes the system unusable if a separate /tmp partition is used. Command text updated for the 2026-09-07 LFS 13.1 bump: the book now recommends `systemctl mask tmp.mount` instead of the old `ln -sfv /dev/null .../tmp.mount` symlink hack -- same outcome (tmp.mount disabled), same reason to drop it (we want the opposite outcome).
+# systemctl mask tmp.mount
 
 # --- block 2 --------------------------------------------------
 #   ctx: es type v which in turn references type d (directory). This then creates the specified
@@ -37,7 +37,7 @@ EOF
 # cp /usr/lib/tmpfiles.d/tmp.conf /etc/tmpfiles.d
 
 # --- block 3 --------------------------------------------------
-#   ctx: 9.10.5. Overriding Default Services Behavior The parameters of a unit can be overridden
+#   ctx: 9.10.5 Overriding Default Services Behavior The parameters of a unit can be overridden
 #   ctx: by creating a directory and a configuration file in /etc/systemd/system. For example:
 #   REVIEWED [drop]: Book's illustration of unit overriding ('For example:') for a service literally named foobar. Would create /etc/systemd/system/foobar.service.d/ for a service that does not exist.
 # mkdir -pv /etc/systemd/system/foobar.service.d

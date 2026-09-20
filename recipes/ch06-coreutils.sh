@@ -1,20 +1,19 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter06/coreutils.html
-# title  : 6.5. Coreutils-9.10
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter06/coreutils.html
+# title  : 6.5 Coreutils-9.11
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
 
 # --- block 0 --------------------------------------------------
 #   ctx: The Coreutils package contains the basic utility programs needed by every operating
-#   ctx: system. Approximate build time: 0.3 SBU Required disk space: 185 MB 6.5.1. Installation
+#   ctx: system. Approximate build time: 0.3 SBU Required disk space: 193 MB 6.5.1 Installation
 #   ctx: of Coreutils Prepare Coreutils for compilation:
 ./configure --prefix=/usr                     \
             --host=$LFS_TGT                   \
             --build=$(build-aux/config.guess) \
-            --enable-install-program=hostname \
-            --enable-no-install-program=kill,uptime
+            --enable-install-program=hostname
 
 # --- block 1 --------------------------------------------------
 #   ctx: The meaning of the configure options: --enable-install-program=hostname This enables the

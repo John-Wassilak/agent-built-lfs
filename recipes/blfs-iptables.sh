@@ -1,7 +1,7 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the BLFS 13.0-systemd book.
-# source : book/blfs-13.0/postlfs/iptables.html
-# title  : iptables-1.8.12
+# CANDIDATE recipe extracted from the BLFS 13.1-systemd book.
+# source : book/blfs-13.1/postlfs/iptables.html
+# title  : iptables-1.8.13
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 set -e
 

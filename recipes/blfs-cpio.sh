@@ -1,6 +1,6 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the BLFS 13.0-systemd book.
-# source : book/blfs-13.0/general/cpio.html
+# CANDIDATE recipe extracted from the BLFS 13.1-systemd book.
+# source : book/blfs-13.1/general/cpio.html
 # title  : cpio-2.15
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 set -e
@@ -9,7 +9,7 @@ set -e
 #   ctx: Package Information Download (HTTP): https://ftpmirror.gnu.org/cpio/cpio-2.15.tar.bz2
 #   ctx: Download MD5 sum: 3394d444ca1905ea56c94b628b706a0b Download size: 1.6 MB Estimated disk
 #   ctx: space required: 21 MB (with tests and docs) Estimated build time: 0.3 SBU (with tests
-#   ctx: and docs) CPIO Dependencies Optional texlive-20250308 (or install-tl-unx) Installation
+#   ctx: and docs) CPIO Dependencies Optional texlive-20260301 (or install-tl-unx) Installation
 #   ctx: of cpio Add a workaround for an issue shown by gcc15:
 sed -e "/^extern int (\*xstat)/s/()/(const char * restrict,  struct stat * restrict)/" \
     -i src/extern.h
@@ -27,7 +27,7 @@ makeinfo --html --no-split -o doc/cpio.html doc/cpio.texi &&
 makeinfo --plaintext       -o doc/cpio.txt  doc/cpio.texi
 
 # --- block 2 --------------------------------------------------
-#   ctx: If you have texlive-20250308 installed and wish to create PDF or Postscript
+#   ctx: If you have texlive-20260301 installed and wish to create PDF or Postscript
 #   ctx: documentation, issue one or both of the following commands:
 #   REVIEWED [drop]: 'make -C doc pdf && make -C doc ps', gated on 'If you have texlive-20250308 installed'. texlive is not installed.
 # make -C doc pdf &&

@@ -13,6 +13,17 @@
 # this.
 set -e
 
+# DNS fix added 2026-09-09 (fresh chroot build): this chroot has no working
+# /etc/resolv.conf by default, same class of issue as blfs-rust/blfs-attrs/blfs-
+# nvidia-470xx and others -- the curl fetches below need it.
+_restore_resolv() {
+    rm -f /etc/resolv.conf
+    ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
+}
+trap _restore_resolv EXIT
+rm -f /etc/resolv.conf
+printf 'nameserver 1.1.1.1\nnameserver 8.8.8.8\n' > /etc/resolv.conf
+
 curl -fsSL "https://gitlab.freedesktop.org/api/v4/projects/xorg%2Futil%2Fxcb-util-m4/repository/files/xcb_util_common.m4/raw?ref=master" -o m4/xcb_util_common.m4
 curl -fsSL "https://gitlab.freedesktop.org/api/v4/projects/xorg%2Futil%2Fxcb-util-m4/repository/files/xcb_util_m4_with_include_path.m4/raw?ref=master" -o m4/xcb_util_m4_with_include_path.m4
 curl -fsSL "https://gitlab.freedesktop.org/api/v4/projects/xorg%2Futil%2Fxcb-util-m4/repository/files/ax_compare_version.m4/raw?ref=master" -o m4/ax_compare_version.m4

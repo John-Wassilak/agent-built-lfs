@@ -1,7 +1,7 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter04/creatingminlayout.html
-# title  : 4.2. Creating a Limited Directory Layout in the LFS Filesystem
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter04/creatingminlayout.html
+# title  : 4.2 Creating a Limited Directory Layout in the LFS Filesystem
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e

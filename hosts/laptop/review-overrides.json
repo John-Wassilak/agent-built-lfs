@@ -12,12 +12,6 @@
       "reason": "Book appends -j$(nproc) (4 threads on this CPU). host.toml caps build.jobs at 2 deliberately -- this is the daily driver, and the operator wants headroom to keep using it during a build (see host.toml's own comment). The chroot/root-host contexts already get -j2 from lfsbuild's own exec_argv reading HOST.jobs; this is the one context (the real lfs-user shell that builds the temporary toolchain in chapters 5-6) where the book's own dotfile is the only source of MAKEFLAGS, so it has to carry the same cap explicitly."
     }
   },
-  "ch08-perl": {
-    "3": {
-      "action": "drop",
-      "reason": "TEST_JOBS=$(nproc) make test_harness hung indefinitely, not just slowly -- confirmed 2026-08-30 at ~17.5 hours stuck, ps showing three of Perl's own network tests still running (t/nntp_ipv6.t, t/pop3_ipv6.t, t/smtp_ipv6.t) plus a <defunct> zombie child never reaped. These open real IPv6 sockets; at this point in the book the chroot has no configured network stack at all (that's a BLFS-era concern), so connect() calls that would fail fast on a normal system instead sit forever with no local timeout. Not in the shared file because it's unconfirmed whether server's chroot hit the same thing or just got lucky on timing/environment -- if a second host reproduces this, promote it to recipes/review-overrides.json instead. Dropping the whole test_harness run rather than excluding just the three files: Perl's own test harness has no book-documented flag for excluding individual .t files short of deleting them from the source tree by hand, and this project already treats most Chapter 8 test suites as optional (see the 46-entry testsuite review queue) rather than a correctness gate."
-    }
-  },
   "ch08-shadow": {
     "9": {
       "action": "replace",
@@ -81,6 +75,16 @@
       "action": "replace",
       "cmd": "cat > /etc/fstab << \"EOF\"\n# file system   mount-point    type      options             dump  fsck\n#                                                                  order\n\nLABEL=LFSROOT   /              ext4      defaults            1     1\nLABEL=LFSSWAP   swap           swap      pri=1               0     0\n\nproc            /proc          proc      nosuid,noexec,nodev 0     0\nsysfs           /sys           sysfs     nosuid,noexec,nodev 0     0\ndevtmpfs        /dev           devtmpfs  mode=0755,nosuid    0     0\ndevpts          /dev/pts       devpts    gid=5,mode=620      0     0\ntmpfs           /run           tmpfs     defaults            0     0\ntmpfs           /dev/shm       tmpfs     nosuid,nodev        0     0\ncgroup2         /sys/fs/cgroup cgroup2   nosuid,noexec,nodev 0     0\nEOF",
       "reason": "Same shape as server's ch10-fstab (book's template uses /dev/<xxx>/<yyy> placeholders, replaced with LABEL= so the tree is not bound to a device node that will not exist until deploy time). Deploy target is the existing nvme0n1p1/nvme0n1p2 pair, reformatted at deploy time with these exact labels -- see BOOTSTRAP.md and bin/lfs-archive's own --live restore instructions, reused here for a --tree image. No new swap partition needed: nvme0n1p2 is already a bare swap partition, just needs `mkswap -L LFSSWAP` re-run at deploy time. `devtmpfs` moved ahead of `devpts` 2026-09-03: this custom block (proc/sysfs/devpts/etc -- not from the book, which only lists the two device-node lines) had devpts before devtmpfs, and laptop's first post-boot audit caught `findmnt --verify` flagging it as a real ordering error (/dev/pts depends on /dev existing first). Not book-mandated either way, so fixed rather than left. Same defect exists in server's identical block, not yet fixed there."
+    }
+  },
+  "ch08-gcc": {
+    "5": {
+      "action": "enable",
+      "reason": "Neutralizes the shared 'test' decision at recipes/review-overrides.json's ch08-gcc block 5 -- that index was reindexed 7->5 for server's 2026-09-07 LFS 13.1 bump (a superseded workaround block dropped upstream in GCC 16.2 shifts the test invocation two positions earlier). This host is still pinned to LFS 13.0 (host.toml [books].lfs) where block 5 is plain 'ulimit -s -H unlimited', not the test invocation -- enabling it here just restores the default classify() would give it anyway (a plain command), overriding the otherwise-inherited (and wrong-for-13.0) test-runner wrapping. Remove this once this host also bumps to 13.1."
+    },
+    "7": {
+      "action": "test",
+      "reason": "Book: GCC test suite is critical. Runs as the unprivileged tester user created in ch07-createfiles. Enabled non-fatal so documented failures do not abort the build. This host's own copy of the pre-13.1 decision (recipes/review-overrides.json moved this to index 5 for server's 13.1 bump; this host is still on LFS 13.0, where the test invocation is at index 7). Remove once this host also bumps to 13.1."
     }
   }
 }

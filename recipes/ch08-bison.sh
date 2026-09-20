@@ -1,14 +1,14 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter08/bison.html
-# title  : 8.35. Bison-3.8.2
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter08/bison.html
+# title  : 8.37 Bison-3.8.2
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
 
 # --- block 0 --------------------------------------------------
 #   ctx: The Bison package contains a parser generator. Approximate build time: 2.1 SBU Required
-#   ctx: disk space: 63 MB 8.35.1. Installation of Bison Prepare Bison for compilation:
+#   ctx: disk space: 63 MB 8.37.1 Installation of Bison Prepare Bison for compilation:
 ./configure --prefix=/usr --docdir=/usr/share/doc/bison-3.8.2
 
 # --- block 1 --------------------------------------------------

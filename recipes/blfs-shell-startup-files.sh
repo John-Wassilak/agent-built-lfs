@@ -1,6 +1,6 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the BLFS 13.0-systemd book.
-# source : book/blfs-13.0/postlfs/profile.html
+# CANDIDATE recipe extracted from the BLFS 13.1-systemd book.
+# source : book/blfs-13.1/postlfs/profile.html
 # title  : The Bash Shell Startup Files
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 set -e

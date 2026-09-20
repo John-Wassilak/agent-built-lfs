@@ -1,14 +1,14 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter06/file.html
-# title  : 6.7. File-5.46
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter06/file.html
+# title  : 6.7 File-5.48
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
 
 # --- block 0 --------------------------------------------------
 #   ctx: The File package contains a utility for determining the type of a given file or files.
-#   ctx: Approximate build time: 0.1 SBU Required disk space: 43 MB 6.7.1. Installation of File
+#   ctx: Approximate build time: 0.1 SBU Required disk space: 46 MB 6.7.1 Installation of File
 #   ctx: The file command on the build host needs to be the same version as the one we are
 #   ctx: building in order to create the signature file. Run the following commands to make a
 #   ctx: temporary copy of the file command:

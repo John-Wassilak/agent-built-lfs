@@ -1,6 +1,6 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the BLFS 13.0-systemd book.
-# source : book/blfs-13.0/x/xcb-proto.html
+# CANDIDATE recipe extracted from the BLFS 13.1-systemd book.
+# source : book/blfs-13.1/x/xcb-proto.html
 # title  : xcb-proto-1.17.0
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 set -e
@@ -9,7 +9,7 @@ set -e
 #   ctx: /xcb-proto-1.17.0.tar.xz Download MD5 sum: c415553d2ee1a8cea43c3234a079b53f Download
 #   ctx: size: 152 KB Estimated disk space required: 1.3 MB Estimated build time: less than 0.1
 #   ctx: SBU xcb-proto Dependencies Recommended Xorg build environment (needed for the
-#   ctx: instructions below) Optional libxml2-2.15.1 (required to run the tests) Installation of
+#   ctx: instructions below) Optional libxml2-2.15.3 (required to run the tests) Installation of
 #   ctx: xcb-proto Install xcb-proto by running the following commands:
 PYTHON=python3 ./configure $XORG_CONFIG
 

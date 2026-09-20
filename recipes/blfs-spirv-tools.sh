@@ -1,15 +1,15 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the BLFS 13.0-systemd book.
-# source : book/blfs-13.0/general/spirv-tools.html
-# title  : SPIRV-Tools-1.4.341.0
+# CANDIDATE recipe extracted from the BLFS 13.1-systemd book.
+# source : book/blfs-13.1/general/spirv-tools.html
+# title  : SPIRV-Tools-1.4.357.0
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 set -e
 
 # --- block 0 --------------------------------------------------
-#   ctx: ive/vulkan-sdk-1.4.341.0/SPIRV-Tools-vulkan-sdk-1.4.341.0.tar.gz Download MD5 sum:
-#   ctx: a5f6164b806514cf7a0fc333b50b5e6d Download size: 3.3 MB Estimated disk space required: 63
+#   ctx: ive/vulkan-sdk-1.4.357.0/SPIRV-Tools-vulkan-sdk-1.4.357.0.tar.gz Download MD5 sum:
+#   ctx: c357eec1e33bc95e650aa4c8efdd3b13 Download size: 3.4 MB Estimated disk space required: 80
 #   ctx: MB Estimated build time: 0.6 SBU (with tests; both using parallelism=8) SPIRV-Tools
-#   ctx: Dependencies Required CMake-4.2.3 and SPIRV-Headers-1.4.341.0 Installation of
+#   ctx: Dependencies Required CMake-4.4.2 and SPIRV-Headers-1.4.357.0 Installation of
 #   ctx: SPIRV-Tools Install SPIRV-Tools by running the following commands:
 mkdir build &&
 cd    build &&

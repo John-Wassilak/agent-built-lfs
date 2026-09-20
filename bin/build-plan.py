@@ -26,8 +26,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lfshost  # noqa: E402
-
-MD5 = f"{lfshost.ROOT}/book/md5sums"
+import booklib  # noqa: E402
 
 # Pages that are procedures, not package builds: no tarball, no unpack, no cleanup.
 NO_PACKAGE = {
@@ -59,11 +58,20 @@ TARBALL_OVERRIDE = {
 }
 
 # Tarballs whose filename defies stem matching entirely (verified against md5sums).
+# Patterns, not fixed filenames: a hardcoded exact string (the original shape of this
+# table) goes stale silently on every version bump -- found 2026-09-07 building LFS
+# 13.1, where "tcl": "tcl8.6.17-src.tar.gz" no longer existed (13.1 ships 8.6.18) and,
+# worse, blindly regenerating it as "tcl8.6.18-src.tar.gz" without checking against the
+# *host's own* md5sums silently broke `laptop` (still on 13.0, still needs 8.6.17) the
+# first time this table was "fixed" for server. match_tarball() below searches each
+# host's own loaded `tarballs` list against these patterns instead of returning a fixed
+# string, so the right version is picked up per host/book-version with no edits needed
+# here as long as the naming *shape* itself doesn't change.
 EXACT_TARBALL = {
-    "flit-core": "flit_core-3.12.0.tar.gz",   # underscore, not hyphen
-    "libelf": "elfutils-0.194.tar.bz2",       # libelf ships inside elfutils
-    "tcl": "tcl8.6.17-src.tar.gz",            # no separator before the version
-    "expect": "expect5.45.4.tar.gz",          # no separator before the version
+    "flit-core": re.compile(r"^flit_core-[\d.]+\.tar\.gz$"),   # underscore, not hyphen
+    "libelf": re.compile(r"^elfutils-[\d.]+\.tar\.bz2$"),      # libelf ships inside elfutils
+    "tcl": re.compile(r"^tcl[\d.]+-src\.tar\.gz$"),            # no separator before the version
+    "expect": re.compile(r"^expect[\d.]+\.tar\.gz$"),          # no separator before the version
 }
 
 # Pre-chroot ch07 procedures run as root on the host, not inside the chroot.
@@ -74,7 +82,7 @@ CH07_HOST = {"ch07-changingowner", "ch07-kernfs", "ch07-chroot"}
 CH04_ROOT = {"ch04-creatingminlayout", "ch04-addinguser"}
 
 
-def load_tarballs(MD5=MD5):
+def load_tarballs(MD5):
     names = []
     for line in open(MD5):
         parts = line.split()
@@ -85,7 +93,8 @@ def load_tarballs(MD5=MD5):
 
 def match_tarball(page, title, tarballs):
     if page in EXACT_TARBALL:
-        return EXACT_TARBALL[page]
+        cands = [t for t in tarballs if EXACT_TARBALL[page].match(t)]
+        return cands[0] if len(cands) == 1 else (sorted(cands)[0] if cands else None)
     stem = TARBALL_OVERRIDE.get(page, page)
     # Version from the title, e.g. "8.30. GCC-15.2.0" -> 15.2.0
     m = re.match(r"\s*[\d.]+\.\s*(.+?)\s*(?:-\s*Pass\s*\d)?\s*$", title or "")
@@ -117,6 +126,7 @@ def main():
     lfshost.add_host_arg(ap)
     args = ap.parse_args()
     host = lfshost.resolve(args.host)
+    MD5 = os.path.join(booklib.book_root(lfshost.ROOT, host, "lfs"), "md5sums")
 
     index_path = os.path.join(host.state, "index.json")
     if not os.path.exists(index_path):
@@ -129,13 +139,21 @@ def main():
     if not idx:
         sys.exit(f"{os.path.relpath(index_path, lfshost.ROOT)} is empty -- re-run "
                  f"extract-recipes.py --host {host.name} first.")
-    tarballs = load_tarballs()
+    tarballs = load_tarballs(MD5)
 
     rows = []
     unmatched = []
     for e in idx:
         name, page, chap, title = e["name"], e["page"], e["chapter"], e["title"] or ""
-        m = re.match(r"\s*(\d+)\.(\d+)\.", title)
+        # LFS 13.1 dropped the trailing period after a sect1 title's section number
+        # ("4.2 Creating..." vs 13.0's "4.2. Creating...") -- \b anchors on the digit/
+        # non-digit boundary either way, so this matches both book generations. Confirmed
+        # 2026-09-07: with the old \.-terminated pattern, every 13.1 title failed to
+        # match, silently falling back to (chap, 999) for every single step and reducing
+        # the whole plan to alphabetical-by-filename order within each chapter --
+        # caught before any step ran, via ch04-addinguser sorting ahead of
+        # ch04-creatingminlayout (chown on directories that don't exist yet).
+        m = re.match(r"\s*(\d+)\.(\d+)\b", title)
         order = (int(m.group(1)), int(m.group(2))) if m else (int(chap), 999)
 
         if name in CH04_ROOT:

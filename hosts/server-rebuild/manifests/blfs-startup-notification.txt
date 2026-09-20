@@ -1,0 +1,12 @@
+/usr/include/startup-notification-1.0/libsn/sn-common.h
+/usr/include/startup-notification-1.0/libsn/sn.h
+/usr/include/startup-notification-1.0/libsn/sn-launchee.h
+/usr/include/startup-notification-1.0/libsn/sn-launcher.h
+/usr/include/startup-notification-1.0/libsn/sn-monitor.h
+/usr/include/startup-notification-1.0/libsn/sn-util.h
+/usr/lib/libstartup-notification-1.la
+/usr/lib/libstartup-notification-1.so
+/usr/lib/libstartup-notification-1.so.0
+/usr/lib/libstartup-notification-1.so.0.0.0
+/usr/lib/pkgconfig/libstartup-notification-1.0.pc
+/usr/share/doc/startup-notification-0.12/startup-notification.txt

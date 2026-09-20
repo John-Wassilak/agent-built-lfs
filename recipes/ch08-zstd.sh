@@ -1,7 +1,7 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter08/zstd.html
-# title  : 8.10. Zstd-1.5.7
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter08/zstd.html
+# title  : 8.10 Zstd-1.5.7
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
@@ -9,7 +9,7 @@ set -e
 # --- block 0 --------------------------------------------------
 #   ctx: Zstandard is a real-time compression algorithm, providing high compression ratios. It
 #   ctx: offers a very wide range of compression / speed trade-offs, while being backed by a very
-#   ctx: fast decoder. Approximate build time: 0.4 SBU Required disk space: 86 MB 8.10.1.
+#   ctx: fast decoder. Approximate build time: 0.4 SBU Required disk space: 88 MB 8.10.1
 #   ctx: Installation of Zstd Compile the package:
 make prefix=/usr
 

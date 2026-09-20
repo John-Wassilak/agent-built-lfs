@@ -1,0 +1,2 @@
+/usr/bin/xsel
+/usr/share/man/man1/xsel.1x

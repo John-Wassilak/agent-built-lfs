@@ -1,0 +1,22 @@
+{
+  "_comment": [
+    "Review decisions for the GLFS subset, applied by bin/extract-glfs.py.",
+    "Same contract as recipes/review-overrides.json: drop / replace / enable / defer.",
+    "GLFS has no downloadable pre-built chunked HTML (unlike LFS/BLFS) -- pages are",
+    "fetched one at a time from linuxfromscratch.org's own view/<ver>/ path into",
+    "book/glfs-<ver>/ as each package needs one. Markup differs from LFS/BLFS in one",
+    "way, checked directly against real pages: GLFS marks an admonition with a bare",
+    "class (e.g. class=\"note\") rather than \"admon note\", and marks root-only commands",
+    "with <pre class=\"root\">, same as BLFS -- both handled by bin/booklib.py."
+  ],
+  "glfs-libglvnd": {
+    "3": {
+      "action": "drop",
+      "reason": "Rebuilds libglvnd for 32-bit/multilib (--cross-file=lib32), a GLFS/MLFS prerequisite this project does not build for any host (no multilib toolchain -- GLFS's own multilib setup is out of scope, this project only takes individual GLFS pages as book sources for a plain 64-bit LFS/BLFS system). True of any non-multilib LFS box, not host-specific."
+    },
+    "4": {
+      "action": "drop",
+      "reason": "Installs the 32-bit build from block 3, which is dropped."
+    }
+  }
+}

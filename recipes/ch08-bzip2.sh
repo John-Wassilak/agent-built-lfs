@@ -1,7 +1,7 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter08/bzip2.html
-# title  : 8.7. Bzip2-1.0.8
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter08/bzip2.html
+# title  : 8.7 Bzip2-1.0.8
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
@@ -10,7 +10,7 @@ set -e
 #   ctx: The Bzip2 package contains programs for compressing and decompressing files. Compressing
 #   ctx: text files with bzip2 yields a much better compression percentage than with the
 #   ctx: traditional gzip. Approximate build time: less than 0.1 SBU Required disk space: 7.3 MB
-#   ctx: 8.7.1. Installation of Bzip2 Apply a patch that will install the documentation for this
+#   ctx: 8.7.1 Installation of Bzip2 Apply a patch that will install the documentation for this
 #   ctx: package:
 patch -Np1 -i ../bzip2-1.0.8-install_docs-1.patch
 

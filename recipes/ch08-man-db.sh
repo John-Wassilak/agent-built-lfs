@@ -1,14 +1,14 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter08/man-db.html
-# title  : 8.80. Man-DB-2.13.1
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter08/man-db.html
+# title  : 8.79 Man-DB-2.13.1
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
 
 # --- block 0 --------------------------------------------------
 #   ctx: The Man-DB package contains programs for finding and viewing man pages. Approximate
-#   ctx: build time: 0.3 SBU Required disk space: 44 MB 8.80.1. Installation of Man-DB Prepare
+#   ctx: build time: 0.3 SBU Required disk space: 44 MB 8.79.1 Installation of Man-DB Prepare
 #   ctx: Man-DB for compilation:
 ./configure --prefix=/usr                         \
             --docdir=/usr/share/doc/man-db-2.13.1 \

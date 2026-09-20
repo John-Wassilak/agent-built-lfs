@@ -1,18 +1,18 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter08/coreutils.html
-# title  : 8.61. Coreutils-9.10
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter08/coreutils.html
+# title  : 8.61 Coreutils-9.11
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
 
 # --- block 0 --------------------------------------------------
 #   ctx: The Coreutils package contains the basic utility programs needed by every operating
-#   ctx: system. Approximate build time: 1.2 SBU Required disk space: 188 MB 8.61.1. Installation
+#   ctx: system. Approximate build time: 1.2 SBU Required disk space: 194 MB 8.61.1 Installation
 #   ctx: of Coreutils POSIX requires that programs from Coreutils recognize character boundaries
 #   ctx: correctly even in multibyte locales. The following patch fixes this non-compliance and
 #   ctx: other internationalization-related bugs.
-patch -Np1 -i ../coreutils-9.10-i18n-1.patch
+patch -Np1 -i ../coreutils-9.11-i18n-1.patch
 
 # --- block 1 --------------------------------------------------
 #   ctx: Note Many bugs have been found in this patch. When reporting new bugs to the Coreutils

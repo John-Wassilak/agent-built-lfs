@@ -1,15 +1,15 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the BLFS 13.0-systemd book.
-# source : book/blfs-13.0/x/gdk-pixbuf.html
-# title  : gdk-pixbuf-2.44.5
+# CANDIDATE recipe extracted from the BLFS 13.1-systemd book.
+# source : book/blfs-13.1/x/gdk-pixbuf.html
+# title  : gdk-pixbuf-2.44.7
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 set -e
 
 # --- block 0 --------------------------------------------------
-#   ctx: its recommended dependencies, and rebuild gdk-pixbuf again) Optional Gi-DocGen-2026.1
-#   ctx: (to generate documentation), libavif-1.3.0 (runtime, deprecated), libjpeg-turbo-3.1.3
-#   ctx: (deprecated), libjxl-0.11.2 (runtime, deprecated), libpng-1.6.55 (deprecated),
-#   ctx: librsvg-2.61.4 (runtime, deprecated), and libtiff-4.7.1 (deprecated) Installation of Gdk
+#   ctx: ll its recommended dependencies, and rebuild gdk-pixbuf again) Optional Gi-DocGen-2026.1
+#   ctx: (to generate documentation), libavif-1.4.2 (runtime, deprecated), libjpeg-turbo-3.2.0
+#   ctx: (deprecated), libjxl-0.12.0 (runtime, deprecated), libpng-1.6.58 (deprecated),
+#   ctx: librsvg-2.62.3 (runtime, deprecated), and tiff-4.7.2 (deprecated) Installation of Gdk
 #   ctx: Pixbuf Install Gdk Pixbuf by running the following commands:
 mkdir build &&
 cd    build &&
@@ -31,7 +31,7 @@ ninja
 #   ctx: If you have Gi-DocGen-2026.1 installed and wish to build the API documentation for this
 #   ctx: package, issue:
 #   REVIEWED [drop]: gtk_doc=true needs Gi-DocGen, not installed.
-# sed "/docs_dir =/s@\$@ / 'gdk-pixbuf-2.44.5'@" -i ../docs/meson.build &&
+# sed "/docs_dir =/s@\$@ / 'gdk-pixbuf-2.44.7'@" -i ../docs/meson.build &&
 # meson configure -D gtk_doc=true                                        &&
 # ninja
 

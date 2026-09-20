@@ -1,14 +1,14 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter08/binutils.html
-# title  : 8.21. Binutils-2.46.0
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter08/binutils.html
+# title  : 8.22 Binutils-2.47
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
 
 # --- block 0 --------------------------------------------------
 #   ctx: The Binutils package contains a linker, an assembler, and other tools for handling
-#   ctx: object files. Approximate build time: 1.7 SBU Required disk space: 835 MB 8.21.1.
+#   ctx: object files. Approximate build time: 1.7 SBU Required disk space: 817 MB 8.22.1
 #   ctx: Installation of Binutils The Binutils documentation recommends building Binutils in a
 #   ctx: dedicated build directory:
 mkdir -v build
@@ -25,13 +25,15 @@ cd       build
              --enable-64-bit-bfd \
              --enable-new-dtags  \
              --with-system-zlib  \
+             --with-lib-path=/usr/lib \
              --enable-default-hash-style=gnu
 
 # --- block 2 --------------------------------------------------
-#   ctx: The meaning of the new configure parameters: --enable-ld=default Build the original bfd
-#   ctx: linker and install it as both ld (the default linker) and ld.bfd. --enable-plugins
-#   ctx: Enables plugin support for the linker. --with-system-zlib Use the installed zlib library
-#   ctx: instead of building the included version. Compile the package:
+#   ctx: . By default it searches several directories that do not exist on LFS besides /usr/lib,
+#   ctx: especially the /usr/lib64 directory that we deliberately avoid. In the case where
+#   ctx: /usr/lib64 has been mistakenly created and populated with some libraries, making ld not
+#   ctx: search the path can highlight the issue earlier with a failure to find those libraries
+#   ctx: at build time instead of run time. Compile the package:
 make tooldir=/usr
 
 # --- block 3 --------------------------------------------------

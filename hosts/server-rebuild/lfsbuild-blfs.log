@@ -1,0 +1,17 @@
+running 3 step(s), 4 jobs
+
+  RUN   251 blfs-opentofu                [chroot] src=opentofu-1.12.6
+        OK  3.1 min   manifest: 61758 files
+  RUN   252 blfs-rsync                   [chroot] src=rsync-3.4.1
+        OK  0.6 min   manifest: 5 files
+  RUN   253 blfs-bash-completion         [chroot] src=bash-completion-2.18.0
+        OK  0.1 min   manifest: 1110 files
+
+all selected steps complete
+host     : server-rebuild   arch=x86_64  jobs=4
+mode     : chroot   tree=/mnt/lfs  sources=/mnt/lfs/sources
+completed: 221/221
+next     : -- all steps complete --
+free     : 47.1 GB on /mnt/lfs
+vkfs     : /dev=up, /dev/pts=up, /proc=up, /sys=up, /run=up
+buildtime: 23.70 h so far

@@ -1,14 +1,14 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter08/markupsafe.html
-# title  : 8.76. MarkupSafe-3.0.3
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter08/markupsafe.html
+# title  : 8.75 MarkupSafe-3.0.3
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
 
 # --- block 0 --------------------------------------------------
 #   ctx: MarkupSafe is a Python module that implements an XML/HTML/XHTML Markup safe string.
-#   ctx: Approximate build time: less than 0.1 SBU Required disk space: 692 KB 8.76.1.
+#   ctx: Approximate build time: less than 0.1 SBU Required disk space: 696 KB 8.75.1
 #   ctx: Installation of MarkupSafe Compile MarkupSafe with the following command:
 pip3 wheel -w dist --no-cache-dir --no-build-isolation --no-deps $PWD
 

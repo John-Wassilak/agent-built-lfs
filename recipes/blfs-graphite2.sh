@@ -1,12 +1,12 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the BLFS 13.0-systemd book.
-# source : book/blfs-13.0/general/graphite2.html
+# CANDIDATE recipe extracted from the BLFS 13.1-systemd book.
+# source : book/blfs-13.1/general/graphite2.html
 # title  : Graphite2-1.3.14
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 set -e
 
 # --- block 0 --------------------------------------------------
-#   ctx: 1.16.1, texlive-20250308 (or install-tl-unx), and dblatex (for PDF docs) To execute the
+#   ctx: 1.18.0, texlive-20260301 (or install-tl-unx), and dblatex (for PDF docs) To execute the
 #   ctx: test suite you will need FontTools (Python 3 module), otherwise, the "cmp" tests fail.
 #   ctx: Optional (at runtime) You will need at least one suitable graphite font for the package
 #   ctx: to be useful. Installation of Graphite2 Some tests fail if FontTools (Python 3 module)
@@ -21,7 +21,7 @@ sed -i 's/PythonInterp/Python3/' CMakeLists.txt          &&
 find . -name CMakeLists.txt | xargs sed -i 's/VERSION 2.8.0 FATAL_ERROR/VERSION 4.0.0/'
 
 # --- block 2 --------------------------------------------------
-#   ctx: Now fix a problem when building with gcc-15:
+#   ctx: Now fix a problem when building with gcc-15 or newer:
 sed -i '/Font.h/i #include <cstdint>' tests/featuremap/featuremaptest.cpp
 
 # --- block 3 --------------------------------------------------

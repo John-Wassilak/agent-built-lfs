@@ -1,16 +1,16 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the BLFS 13.0-systemd book.
-# source : book/blfs-13.0/postlfs/make-ca.html
+# CANDIDATE recipe extracted from the BLFS 13.1-systemd book.
+# source : book/blfs-13.1/postlfs/make-ca.html
 # title  : make-ca-1.16.1
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 set -e
 
 # --- block 0 --------------------------------------------------
-#   ctx: following instructions to generate certificate stores from trust anchors, and each time
-#   ctx: make-ca is run) Optional (runtime) nss-3.120.1 (to generate a shared NSSDB) Installation
-#   ctx: of make-ca and Generation of the CA-certificates stores At first, remove the -t option
-#   ctx: from the mktemp commands in the script. This option is deprecated and it can cause
-#   ctx: unwanted effects if TMPDIR is set in the environment:
+#   ctx: e following instructions to generate certificate stores from trust anchors, and each
+#   ctx: time make-ca is run) Optional (runtime) nss-3.126 (to generate a shared NSSDB)
+#   ctx: Installation of make-ca and Generation of the CA-certificates stores At first, remove
+#   ctx: the -t option from the mktemp commands in the script. This option is deprecated and it
+#   ctx: can cause unwanted effects if TMPDIR is set in the environment:
 sed '/mktemp/s/-t //' -i make-ca
 
 # --- block 1 --------------------------------------------------

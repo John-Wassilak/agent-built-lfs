@@ -174,10 +174,10 @@
     }
   },
   "blfs-nodejs": {
-    "1": {
+    "0": {
       "action": "replace",
       "cmd": "./configure --prefix=/usr    \\\n            --shared-openssl \\\n            --shared-zlib &&\nmake",
-      "reason": "The book's configure line passes --shared-brotli, --shared-cares, --shared-libuv, --shared-nghttp2 and --with-intl=system-icu, because BLFS assumes you installed those 'recommended' dependencies. We deliberately did not: Node bundles all of them, and using the bundled copies keeps the dependency closure to the one package Node actually requires (which). Configure would fail outright looking for the missing system libraries. --shared-openssl and --shared-zlib are kept because LFS provides both (OpenSSL 3.6.1, zlib 1.3.2), so Node benefits from system security updates rather than carrying its own copy."
+      "reason": "The book's configure line passes --shared-brotli, --shared-cares, --shared-libuv, --shared-nghttp2 and --with-intl=system-icu, because BLFS assumes you installed those 'recommended' dependencies. We deliberately did not: Node bundles all of them, and using the bundled copies keeps the dependency closure to the one package Node actually requires (which). Configure would fail outright looking for the missing system libraries. --shared-openssl and --shared-zlib are kept because LFS provides both (OpenSSL 3.6.1, zlib 1.3.2), so Node benefits from system security updates rather than carrying its own copy. Reindexed for the 2026-09-07 BLFS 13.1 bump (server; see book/blfs-13.1 vs book/blfs-13.0). Old index 1 -> 0: the book dropped the node-v22.22.0-python_build_fix patch block (upstream in Node 24), which shifts the configure line one position earlier."
     }
   },
   "blfs-git": {
@@ -204,6 +204,16 @@
     "8": {
       "action": "drop",
       "reason": "Reorganises the HTML doc tree that block 7 would have unpacked. With block 7 dropped the paths do not exist and the mv commands would fail."
+    },
+    "0": {
+      "action": "replace",
+      "cmd": "NO_RUST=1 ./configure --prefix=/usr                   \\\n            --with-gitconfig=/etc/gitconfig \\\n            --with-python=python3           \\\n            --with-libpcre2                 &&\nNO_RUST=1 make",
+      "reason": "New in Git 2.55.0 (2026-09-08 BLFS resync): git now has a Rust component (libgitcore) that hard-fails the build with 'cargo: command not found' -- rustc/cargo aren't installed yet at this point in the plan (BASE's git step runs long before the much-later Rust tier). The book's own git.html documents NO_RUST=1 as the environment variable to pass when rustc-1.97.1 is not installed, exactly this situation."
+    },
+    "3": {
+      "action": "replace",
+      "cmd": "NO_RUST=1 make perllibdir=/usr/lib/perl5/5.44/site_perl install",
+      "reason": "Same NO_RUST=1 requirement as block 0's configure/make -- the install target also probes for the Rust component's build output."
     }
   },
   "blfs-cpio": {
@@ -239,14 +249,14 @@
     }
   },
   "blfs-sudo": {
-    "2": {
-      "action": "replace",
-      "cmd": "cat > /etc/sudoers.d/00-sudo << \"EOF\"\nDefaults secure_path=\"/usr/sbin:/usr/bin\"\n%wheel ALL=(ALL) ALL\nEOF\nchmod 440 /etc/sudoers.d/00-sudo\nusermod -aG wheel john",
-      "reason": "Book's suggested common config as-is (wheel group gets full sudo after entering their own password), plus adding john to wheel -- he's the one human non-root account on this box, and granting sudo through wheel membership is the whole point of the book's suggested config here rather than editing sudoers directly. chmod 440 matches how sudoers.d files ship (root-only read, no write)."
-    },
     "3": {
+      "action": "replace",
+      "cmd": "cat > /etc/sudoers.d/00-sudo << \"EOF\"\nDefaults secure_path=\"/usr/sbin:/usr/bin\"\n%wheel ALL=(ALL) ALL\nEOF\nchmod 440 /etc/sudoers.d/00-sudo\nid john >/dev/null 2>&1 && usermod -aG wheel john || echo \"### john not created yet (blfs-adduser-john, seq 177, adds wheel membership directly at creation instead)\"",
+      "reason": "Book's suggested common config as-is (wheel group gets full sudo after entering their own password), plus adding john to wheel -- he's the one human non-root account on this box, and granting sudo through wheel membership is the whole point of the book's suggested config here rather than editing sudoers directly. chmod 440 matches how sudoers.d files ship (root-only read, no write). Reindexed for the 2026-09-07 BLFS 13.1 bump (server; see book/blfs-13.1 vs book/blfs-13.0). Old index 2 -> 3: the book added a new ASN1_STRING_length sed-fix block at the start of the page, shifting everything after it by one. Updated 2026-09-08: guarded the usermod with an existence check -- this host's adduser-john step (seq 177) runs long after this one, so on a fresh build john does not exist yet when this step runs. adduser-john's own useradd now adds -G wheel directly, so the end state is correct regardless of order; this just stops a fresh build failing outright on 'usermod: user john does not exist'."
+    },
+    "4": {
       "action": "drop",
-      "reason": "PAM config for sudo. Linux-PAM is not part of this LFS 13.0 build (Shadow was built without it, confirmed when reviewing blfs-openssh) -- sudo was not built with --without-pam disabled explicitly, but configure auto-detects PAM's absence and skips it, so /etc/pam.d/sudo would configure a subsystem that isn't wired into anything."
+      "reason": "PAM config for sudo. Linux-PAM is not part of this LFS 13.0 build (Shadow was built without it, confirmed when reviewing blfs-openssh) -- sudo was not built with --without-pam disabled explicitly, but configure auto-detects PAM's absence and skips it, so /etc/pam.d/sudo would configure a subsystem that isn't wired into anything. Reindexed for the 2026-09-07 BLFS 13.1 bump (server; see book/blfs-13.1 vs book/blfs-13.0). Old index 3 -> 4 (same cause as block 3's reindex)."
     }
   },
   "blfs-iptables": {
@@ -269,14 +279,14 @@
       "action": "enable",
       "reason": "Guards itself with 'if [ -e /usr/include/glib-2.0 ]' -- no-op on this fresh install, no prior glib. Flagged only because it sits in the book's upgrade-warning admonition."
     },
-    "3": {
+    "2": {
       "action": "replace",
       "cmd": "mkdir build &&\ncd    build &&\n\nmeson setup ..                  \\\n      --prefix=/usr             \\\n      --buildtype=release       \\\n      -D introspection=disabled \\\n      -D glib_debug=disabled    \\\n      -D man-pages=disabled     \\\n      -D sysprof=disabled       &&\nninja",
-      "reason": "man-pages=enabled needs rst2man (from docutils), which was deliberately skipped as glib2's own Recommended dep (one-level policy -- docs generation, not needed for anything else in this build). Flag flipped to match that decision instead of leaving a contradiction between the skipped dependency and a flag that requires it."
+      "reason": "man-pages=enabled needs rst2man (from docutils), which was deliberately skipped as glib2's own Recommended dep (one-level policy -- docs generation, not needed for anything else in this build). Flag flipped to match that decision instead of leaving a contradiction between the skipped dependency and a flag that requires it. Reindexed for the 2026-09-07 BLFS 13.1 bump (server; see book/blfs-13.1 vs book/blfs-13.0). Old index 3 -> 2: the book dropped the glib-2.86.4-upstream_fixes patch block (not needed for GLib 2.88.3), shifting everything after it one position earlier."
     },
-    "8": {
+    "7": {
       "action": "drop",
-      "reason": "Builds HTML documentation (-D documentation=true), needs rst2html5 (from docutils). Same root cause as block 3's man-pages fix -- docutils deliberately skipped, one-level policy. Block 9's final 'ninja install' still runs and installs the introspection-enabled build from block 7."
+      "reason": "Builds HTML documentation (-D documentation=true), needs rst2html5 (from docutils). Same root cause as block 3's man-pages fix -- docutils deliberately skipped, one-level policy. Block 9's final 'ninja install' still runs and installs the introspection-enabled build from block 7. Reindexed for the 2026-09-07 BLFS 13.1 bump (server; see book/blfs-13.1 vs book/blfs-13.0). Old index 8 -> 7 (same cause as block 2's reindex)."
     }
   },
   "blfs-icu": {
@@ -345,8 +355,8 @@
   "blfs-rust": {
     "1": {
       "action": "replace",
-      "cmd": "cat << EOF > bootstrap.toml\n# See bootstrap.toml.example for more possible options,\n# and see src/bootstrap/defaults/bootstrap.dist.toml for a few options\n# automatically set when building from a release tarball\n# (unfortunately, we have to override many of them).\n\n# Tell x.py that the editors have reviewed the content of this file\n# and updated it to follow the major changes of the building system,\n# so x.py will not warn users to review that information.\nchange-id = 148795\n\n[llvm]\n# If building the shipped LLVM source, only enable the x86 target\n# instead of all the targets supported by LLVM.\ntargets = \"X86\"\n\n[build]\ndescription = \"for BLFS 13.0\"\n\n# Omit the documentation to save time and space (the default is to build them).\ndocs = false\n\n# Do not look for new versions of the dependencies online.\nlocked-deps = true\n\n# Only install these extended tools. Cargo, clippy, rustdoc, and rustfmt\n# are installed by a default rustup installation, and rust-src is needed\n# to build the Rust code in Linux kernel (in case you need such a kernel\n# feature).\ntools = [\"cargo\", \"clippy\", \"rustdoc\", \"rustfmt\", \"src\"]\n\n[install]\nprefix = \"/opt/rustc-1.93.1\"\ndocdir = \"share/doc/rustc-1.93.1\"\n\n[rust]\nchannel = \"stable\"\n\n# Enable the same optimizations as the official upstream build.\nlto = \"thin\"\ncodegen-units = 1\n\n# Don't build llvm-bitcode-linker which is only useful for the NVPTX\n# backend that we don't enable.\nllvm-bitcode-linker = false\nEOF",
-      "reason": "Removed '[llvm] link-shared = true' and both [target.*] llvm-config entries. Those are exactly the section the book says to omit when building against Rust's own shipped LLVM instead of a system one (its own words: 'This whole section should be omitted if you wish to build against the shipped llvm') -- decided with the operator to skip building LLVM as its own package (4.7GB, hours) rather than build it standalone just to satisfy this recommended link."
+      "cmd": "cat << EOF > bootstrap.toml\n# See bootstrap.toml.example for more possible options,\n# and see src/bootstrap/defaults/bootstrap.dist.toml for a few options\n# automatically set when building from a release tarball\n# (unfortunately, we have to override many of them).\n\n# Tell x.py that the editors have reviewed the content of this file\n# and updated it to follow the major changes of the building system,\n# so x.py will not warn users to review that information.\nchange-id = 154587\n\n[llvm]\n# If building the shipped LLVM source, only enable the x86 target\n# instead of all the targets supported by LLVM.\ntargets = \"X86\"\n\n[build]\ndescription = \"for BLFS 13.1\"\n\n# Omit the documentation to save time and space (the default is to build them).\ndocs = false\n\n# Only install these extended tools. Cargo, clippy, rustdoc, and rustfmt\n# are installed by a default rustup installation, and rust-src is needed\n# to build the Rust code in Linux kernel (in case you need such a kernel\n# feature).\ntools = [\"cargo\", \"clippy\", \"rustdoc\", \"rustfmt\", \"src\"]\n\n[install]\nprefix = \"/opt/rustc-1.97.1\"\ndocdir = \"share/doc/rustc-1.97.1\"\n\n[rust]\nchannel = \"stable\"\n\n# Enable the same optimizations as the official upstream build.\nlto = \"thin\"\ncodegen-units = 1\n\n# Don't build llvm-bitcode-linker which is only useful for the NVPTX\n# backend that we don't enable.\nllvm-bitcode-linker = false\nEOF",
+      "reason": "Removed '[llvm] link-shared = true' and both [target.*] llvm-config entries. Those are exactly the section the book says to omit when building against Rust's own shipped LLVM instead of a system one (its own words: 'This whole section should be omitted if you wish to build against the shipped llvm') -- decided with the operator to skip building LLVM as its own package (4.7GB, hours) rather than build it standalone just to satisfy this recommended link. Updated for the 2026-09-07 BLFS 13.1 bump: version strings 1.93.1->1.97.1, change-id 148795->154587 (the book's own watermark for this x.py schema revision), description 'for BLFS 13.1', and dropped 'locked-deps = true' -- the 13.1 book removed that line from its own recommended bootstrap.toml entirely, so it is dropped here too rather than left pointing at an option this x.py may no longer recognize."
     },
     "2": {
       "action": "replace",
@@ -355,21 +365,25 @@
     },
     "3": {
       "action": "drop",
-      "reason": "Full Rust test suite (./x.py test) -- extremely long even by this build's standards, and test suites have been skipped throughout this entire project."
+      "reason": "New in BLFS 13.1 (2026-09-07 bump): 'mkdir fake-git && ln -sv /usr/bin/false fake-git/git', a workaround so the Rust test suite doesn't make real git calls. Only exists to support block 4's './x.py test', which is dropped (see block 4's reason) -- test suites have been skipped throughout this project, so this test-only prep step has nothing to prepare for."
     },
     "4": {
       "action": "drop",
-      "reason": "Summarizes results from the test suite in block 3, which is not run."
+      "reason": "Full Rust test suite (./x.py test) -- extremely long even by this build's standards, and test suites have been skipped throughout this entire project. Reindexed 3->4 for the 2026-09-07 BLFS 13.1 bump: the book inserted the new fake-git block (block 3) immediately before this one and also dropped --verbose in favor of --no-fail-fast alone -- confirmed by reading book/blfs-13.1/general/rust.html directly."
     },
-    "6": {
+    "5": {
+      "action": "drop",
+      "reason": "Summarizes results from the test suite in block 4, which is not run. Reindexed 4->5 for the 2026-09-07 BLFS 13.1 bump (see block 4's reason)."
+    },
+    "7": {
       "action": "replace",
-      "cmd": "rm -fv /opt/rustc-1.93.1/share/doc/rustc-1.93.1/*.old   &&\ninstall -vm644 README.md                                \\\n               /opt/rustc-1.93.1/share/doc/rustc-1.93.1 &&\n\ninstall -vdm755 /usr/share/zsh/site-functions      &&\nln -sfv /opt/rustc/share/zsh/site-functions/_cargo \\\n        /usr/share/zsh/site-functions",
-      "reason": "Dropped the final 'mv /etc/bash_completion.d/cargo ...' line -- bash-completion is not installed, so /etc/bash_completion.d does not exist and the mv would fail. The zsh completion symlink is kept even though zsh is not installed either -- it is just a dangling convenience file, costs nothing, and works if zsh is ever added."
+      "cmd": "rm -fv /opt/rustc-1.97.1/share/doc/rustc-1.97.1/*.old   &&\ninstall -vm644 README.md                                \\\n               /opt/rustc-1.97.1/share/doc/rustc-1.97.1 &&\n\ninstall -vdm755 /usr/share/zsh/site-functions      &&\nln -sfv /opt/rustc/share/zsh/site-functions/_cargo \\\n        /usr/share/zsh/site-functions",
+      "reason": "Dropped the final 'mv /etc/bash_completion.d/cargo ...' line -- bash-completion is not installed, so /etc/bash_completion.d does not exist and the mv would fail. The zsh completion symlink is kept even though zsh is not installed either -- it is just a dangling convenience file, costs nothing, and works if zsh is ever added. Reindexed 6->7 and version strings updated to 1.97.1 for the 2026-09-07 BLFS 13.1 bump -- the book's own reindex here comes from the new fake-git/test blocks inserted earlier on the page, not from any change to this step itself."
     },
-    "9": {
+    "10": {
       "action": "replace",
       "cmd": "# Not sourced here: pathprepend (defined in /etc/profile) only exists in a\n# login shell, which this non-interactive batch build never is. The written\n# /etc/profile.d/rustc.sh is still correct for real interactive sessions;\n# this just gets rustc/cargo onto PATH for the rest of *this* build script.\nexport PATH=\"/opt/rustc/bin:$PATH\"",
-      "reason": "The book's `source /etc/profile.d/rustc.sh` calls pathprepend, a function /etc/profile defines for login shells. Running this recipe via `ssh host bash script.sh` (as this whole project's live BLFS builds do) is never a login shell, so the function does not exist and the source line dies with 'command not found' -- discovered when it took down the entire batch script with set -e immediately after Rust itself finished successfully. Direct PATH export achieves the same effect for the packages built later in the same script (cargo-c, cbindgen)."
+      "reason": "The book's `source /etc/profile.d/rustc.sh` calls pathprepend, a function /etc/profile defines for login shells. Running this recipe via `ssh host bash script.sh` (as this whole project's live BLFS builds do) is never a login shell, so the function does not exist and the source line dies with 'command not found' -- discovered when it took down the entire batch script with set -e immediately after Rust itself finished successfully. Direct PATH export achieves the same effect for the packages built later in the same script (cargo-c, cbindgen). Reindexed 9->10 for the 2026-09-07 BLFS 13.1 bump (same cause as block 7's reindex -- two new blocks inserted earlier on the page)."
     }
   },
   "blfs-librsvg": {
@@ -508,13 +522,13 @@
     }
   },
   "blfs-json-c": {
-    "2": {
+    "1": {
       "action": "drop",
-      "reason": "Optional doxygen docs, not installed."
+      "reason": "Optional doxygen docs, not installed. Reindexed for the 2026-09-07 BLFS 13.1 bump (server; see book/blfs-13.1 vs book/blfs-13.0). Old index 2 -> 1: the book dropped the 'sed VERSION 2.8->4.0 CMakeLists.txt' block (no longer needed in json-c 0.19), shifting everything after it one position earlier."
     },
-    "4": {
+    "3": {
       "action": "drop",
-      "reason": "Installs the doxygen docs from block 2, which was dropped."
+      "reason": "Installs the doxygen docs from block 2, which was dropped. Reindexed for the 2026-09-07 BLFS 13.1 bump (server; see book/blfs-13.1 vs book/blfs-13.0). Old index 4 -> 3 (same cause as block 1's reindex)."
     }
   },
   "blfs-popt": {
@@ -624,8 +638,12 @@
   },
   "blfs-sdl3": {
     "2": {
+      "action": "enable",
+      "reason": "Fix 2026-09-08: this block is the REAL install step for the main SDL3 library built in block 1 (\"Now, as the root user: ninja install\", immediately following the main cmake/ninja build) -- not the optional test build, which is actually block 3 (\"Testing SDL3 If you want to build the tests...\", its own separate build-tests directory). The previous drop here (reason: \"Optional test build, not wanted\") was simply a misread of which block was which; without this library ever being installed, sdl2-compat (the very next package) failed outright: \"Cannot find SDL3 headers\"."
+    },
+    "3": {
       "action": "drop",
-      "reason": "Optional test build, not wanted."
+      "reason": "This is the actual optional test build (separate build-tests directory, SDL_TESTS=ON/SDL_INSTALL_TESTS=ON) -- test suites have been skipped throughout this project. Previously left enabled by the same mix-up that wrongly dropped block 2 above instead of this one."
     }
   },
   "blfs-mesa": {
@@ -763,6 +781,20 @@
       "action": "replace",
       "cmd": "mkdir build &&\ncd    build &&\n\nmeson setup --prefix=/usr --buildtype=release -D wallpaper=disabled .. &&\nninja",
       "reason": "Real failure (2026-09-07, laptop): '../src/meson.build:24:17: ERROR: Dependency \"gnome-desktop-3.0\" not found, tried pkgconfig and cmake'. The book's own Command Explanations give exactly this fix -- '-D wallpaper=disabled: Use this option if you have not installed the recommended dependency gnome-desktop-44.5' -- and gnome-desktop is not in this build. Worth recording why the flag is not optional despite the option being declared 'auto': src/meson.build guards the wallpaper portal with get_option('wallpaper').allowed(), which is true for an auto feature (allowed() only means 'not disabled'), and then calls dependency('gnome-desktop-3.0') with required defaulting to true. So an 'auto' feature here hard-errors on a missing dependency instead of degrading, and only an explicit 'disabled' avoids it. True of any host building this page without gnome-desktop, not host-specific."
+    }
+  },
+  "blfs-rust-bindgen": {
+    "0": {
+      "action": "replace",
+      "cmd": "_restore_resolv() {\n    rm -f /etc/resolv.conf\n    ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf\n}\ntrap _restore_resolv EXIT\nrm -f /etc/resolv.conf\nprintf 'nameserver 1.1.1.1\\nnameserver 8.8.8.8\\n' > /etc/resolv.conf\n\ncargo build --release",
+      "reason": "Same DNS fix as blfs-cbindgen/blfs-rust -- the book note says \"An Internet connection is needed for building this package\" (cargo fetching crates.io dependencies, confirmed via a real failure: cargo could not resolve index.crates.io against the chroot's default resolv.conf symlink)."
+    }
+  },
+  "blfs-pulseaudio": {
+    "0": {
+      "action": "replace",
+      "cmd": "mkdir build &&\ncd    build &&\n\nmeson setup --prefix=/usr       \\\n            --buildtype=release \\\n            -D database=gdbm    \\\n            -D doxygen=false    \\\n            -D bluez5=disabled  \\\n            -D man=false        \\\n            -D tests=false      \\\n            ..                  &&\nninja",
+      "reason": "man=false added: the book itself documents this option (\"Use this option if you have not installed [XML::Parser]\") -- discovered via a real failure, ninja aborting man-page generation with \"Cant locate XML/Parser.pm\". XML::Parser is a Perl CPAN module, not a BLFS/distro package; this project has skipped comparable optional-docs dependencies throughout (doxygen/graphviz elsewhere) rather than add a CPAN package manager to the stack for one man-page generator."
     }
   }
 }

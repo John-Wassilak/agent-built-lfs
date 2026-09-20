@@ -1,18 +1,19 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter06/bash.html
-# title  : 6.4. Bash-5.3
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter06/bash.html
+# title  : 6.4 Bash-5.3
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
 
 # --- block 0 --------------------------------------------------
 #   ctx: The Bash package contains the Bourne-Again Shell. Approximate build time: 0.2 SBU
-#   ctx: Required disk space: 72 MB 6.4.1. Installation of Bash Prepare Bash for compilation:
+#   ctx: Required disk space: 73 MB 6.4.1 Installation of Bash Prepare Bash for compilation:
 ./configure --prefix=/usr                      \
             --build=$(sh support/config.guess) \
             --host=$LFS_TGT                    \
-            --without-bash-malloc
+            --without-bash-malloc              \
+            --docdir=/usr/share/doc/bash-5.3
 
 # --- block 1 --------------------------------------------------
 #   ctx: The meaning of the configure options: --without-bash-malloc This option turns off the

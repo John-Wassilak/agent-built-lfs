@@ -22,6 +22,17 @@ set -e
 export HOME="${HOME:-/root}"
 export PATH="/opt/go/bin:$PATH"
 
+# DNS fix added 2026-09-09 (fresh chroot build): `go build` needs to fetch module
+# dependencies from proxy.golang.org -- this chroot has no working /etc/resolv.conf
+# by default, same class of issue as blfs-openbao/blfs-rust/blfs-rofi and others.
+_restore_resolv() {
+    rm -f /etc/resolv.conf
+    ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
+}
+trap _restore_resolv EXIT
+rm -f /etc/resolv.conf
+printf 'nameserver 1.1.1.1\nnameserver 8.8.8.8\n' > /etc/resolv.conf
+
 go build -tags http2legacy -ldflags "-X main.version=v1.12.6" -o tofu ./cmd/tofu
 
 install -v -m755 tofu /usr/bin/tofu

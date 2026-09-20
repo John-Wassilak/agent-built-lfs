@@ -1,0 +1,15 @@
+/usr/bin/rsvg-convert
+/usr/include/librsvg-2.0/librsvg/rsvg-cairo.h
+/usr/include/librsvg-2.0/librsvg/rsvg-features.h
+/usr/include/librsvg-2.0/librsvg/rsvg.h
+/usr/include/librsvg-2.0/librsvg/rsvg-pixbuf.h
+/usr/include/librsvg-2.0/librsvg/rsvg-version.h
+/usr/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache
+/usr/lib/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader_svg.so
+/usr/lib/girepository-1.0/Rsvg-2.0.typelib
+/usr/lib/librsvg-2.so
+/usr/lib/librsvg-2.so.2
+/usr/lib/librsvg-2.so.2.62.3
+/usr/lib/pkgconfig/librsvg-2.0.pc
+/usr/share/gir-1.0/Rsvg-2.0.gir
+/usr/share/thumbnailers/librsvg.thumbnailer

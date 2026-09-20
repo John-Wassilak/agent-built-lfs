@@ -1,7 +1,7 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the BLFS 13.0-systemd book.
-# source : book/blfs-13.0/x/vulkan-loader.html
-# title  : Vulkan-Loader-1.4.341.0
+# CANDIDATE recipe extracted from the BLFS 13.1-systemd book.
+# source : book/blfs-13.1/x/vulkan-loader.html
+# title  : Vulkan-Loader-1.4.357.0
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 set -e
 
@@ -9,7 +9,7 @@ set -e
 #   ctx: r some tests of this package. The system certificate store may need to be set up with
 #   ctx: make-ca-1.16.1 before testing this package. Installation of Vulkan-Loader Note If this
 #   ctx: package is being installed on a system where Mesa has already been installed previously,
-#   ctx: please rebuild Mesa-25.3.5 after this package to install Vulkan graphics drivers.
+#   ctx: please rebuild Mesa-26.1.7 after this package to install Vulkan graphics drivers.
 #   ctx: Install Vulkan-Loader by running the following commands:
 mkdir build &&
 cd    build &&
@@ -21,7 +21,7 @@ cmake -D CMAKE_INSTALL_PREFIX=/usr   \
 ninja
 
 # --- block 1 --------------------------------------------------
-#   ctx: To run the test suite, issue (note that the command will use git-2.53.0 to download a
+#   ctx: To run the test suite, issue (note that the command will use git-2.55.0 to download a
 #   ctx: copy of GoogleTest for building the test suite):
 #   REVIEWED [drop]: The optional test-suite block, not auto-flagged by the testsuite classifier (it's a cmake reconfigure + 'ninja test', not the usual 'make check'/'make test' shape). Unlike a flaky/environment-dependent hang, this one is unconditionally network-dependent on any offline build: 'cmake -D UPDATE_DEPS=ON' makes the loader's own CMakeLists shell out to scripts/update_deps.py, which git-clones a private copy of Vulkan-Headers from GitHub regardless of the system copy already installed (this book's own dependency list lists Vulkan-Headers as Required and expects it built first). Confirmed failing 2026-08-30 (laptop): 'Failed to run ["git", "clone", ...] ... Could not run update_deps.py'. True of any host building this page in an offline chroot, not laptop-specific -- shared rather than a host override.
 # sed "s/'git', 'clone'/&, '--depth=1', '-b', self.commit/" \
