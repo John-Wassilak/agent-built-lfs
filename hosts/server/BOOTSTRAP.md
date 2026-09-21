@@ -1,10 +1,14 @@
 # Bootstrapping `server`
 
-**Status: deploy pending.** Unlike `laptop`'s, this is not a from-nothing bootstrap --
-`server` has been a live LFS machine since 2026-08-25. What is outstanding is a
-*re-image*: replacing the running, incrementally-grown 13.0 root with the from-scratch
-13.1 tree built in `hosts/server-rebuild/`, via a bootable USB, because you cannot
-overwrite `/` while it is mounted as `/`.
+**Status: imaged 2026-09-21, not yet booted.** Steps 1-5 ran to completion that day
+(`BUILD-REPORT.md` has the narrative and the measurements); step 6, first boot and the
+bookkeeping that follows it, is what remains. The text below is the procedure, corrected
+in three places by having been run.
+
+Unlike `laptop`'s, this was not a from-nothing bootstrap -- `server` has been a live LFS
+machine since 2026-08-25. It is a *re-image*: the running, incrementally-grown 13.0 root
+replaced by the from-scratch 13.1 tree built in `hosts/server-rebuild/`, done via a
+bootable USB because you cannot overwrite `/` while it is mounted as `/`.
 
 The original 2026-08-25 bootstrap (build to a tree, tar it, USB, extract onto `/dev/sdb`)
 is recorded in `BUILD-REPORT.md` under "USB deployment" and "Permanent-drive deployment".
@@ -95,7 +99,7 @@ Populate it:
 
 ```sh
 mount /dev/sdc1 /mnt/usb
-rsync -aHAX --numeric-owner --info=progress2 \
+rsync -aHAX --numeric-ids --info=progress2 \
       --exclude='/proc/*' --exclude='/sys/*' --exclude='/dev/*' --exclude='/run/*' \
       --exclude='/tmp/*' --exclude='/root/.cache/*' \
       /mnt/lfs/ /mnt/usb/
@@ -199,7 +203,7 @@ there is no repartition step and the PARTUUIDs stay `c2cd0612-01`/`-02`.
 mkfs.ext4 -L LFSROOT -O ^metadata_csum,^metadata_csum_seed,^orphan_file /dev/sdb2
 mkswap    -L LFSSWAP /dev/sdb1
 mkdir -p /mnt/target && mount /dev/sdb2 /mnt/target
-rsync -aHAX --numeric-owner --delete --info=progress2 \
+rsync -aHAX --numeric-ids --delete --info=progress2 \
       --exclude='/proc/*' --exclude='/sys/*' --exclude='/dev/*' --exclude='/run/*' \
       --exclude='/tmp/*' --exclude='/mnt/*' --exclude='/root/deploy/*' \
       / /mnt/target/
@@ -207,8 +211,16 @@ rsync -aHAX --numeric-owner --delete --info=progress2 \
 
 The `-O` exclusions apply here for the same GRUB reason as the stick. `--exclude=/mnt/*`
 keeps the target's own mountpoint out of its own copy. `--exclude=/root/deploy/*` leaves
-the deploy payload on the stick where it belongs -- the repo's real home on the target is
-`/home/john/agent-built-lfs`, which comes across with `/home`.
+the deploy payload on the stick where it belongs.
+
+**But that leaves the target with no repo at all, and no home.** The sentence this
+replaces said the repo "comes across with `/home`" -- it does not. The stick was
+populated from `/mnt/lfs`, the fresh chroot build, whose `/home/john` is the eight
+skeleton dotfiles `ch08-shadow` created and nothing else. `john`'s real home, the repo
+among it, only ever existed on the 13.0 root this step reformats. So either copy it off
+before the wipe (2026-09-21 did: `/mnt/big_disk/backups/home-john-<date>/`, an rsync
+`--link-dest` snapshot against the previous backup, so only the delta is written), or
+accept a bare `/home/john` and re-clone the repo from GitHub afterwards.
 
 Note the fs-UUID `mkfs.ext4` just generated (`blkid /dev/sdb2`). It will **not** be
 `4ed155bc-…` any more, and step 5's `grub.cfg` needs the new one.
@@ -221,8 +233,14 @@ In order, all against `/mnt/target`:
 
        LABEL=LFSROOT   /      ext4   defaults   1  1
        LABEL=LFSSWAP   swap   swap   pri=1      0  0
+       UUID=ca21e228-7677-4ab3-ba4b-ddf066164c80  /mnt/big_drive  ext4  defaults  0  2
 
    The labels were just written by step 4's `mkfs`/`mkswap`, so this needs no device node.
+   The third line is not stick-specific and is easy to lose: it is the 13.0 root's own
+   entry for `sda2`, the data disk, and nothing else mounts it -- `host.toml`'s
+   `[hardware] data` records it but no tool reads that. Copy it from the old root's
+   `/etc/fstab` before the wipe, or from
+   `/mnt/big_disk/backups/lfs-13.0-final-20260921/etc-var-lfsmaint.tar.zst` after.
 2. **Apply the overlay.** Nothing does this for you. `overlay/` first, then
    `hosts/server/overlay/` on top -- host wins on any collision, which is the whole point
    of the split. `overlay/units/*` (`cpufreq-governor.service`,

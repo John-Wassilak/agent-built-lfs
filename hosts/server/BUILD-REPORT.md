@@ -3682,3 +3682,113 @@ is currently generated from 13.1 because `server` regenerated it while `laptop` 
 Confirmed pre-existing by re-running with the change stashed: same 131. `server`'s
 extraction touched no shared recipe. `laptop` cannot run an honest `--check` until it
 bumps or the tree gets version-scoped.
+
+## Re-image onto `/dev/sdb`, driven over SSH from the booted stick (2026-09-21)
+
+`BOOTSTRAP.md`'s procedure, run end to end from `laptop` over SSH to the stick
+(`server-local`, root login, `sshd` already up as that document promises). The machine
+was booted from `sdc1` throughout; `findmnt -no SOURCE /` was checked before every
+destructive step, and `mkfs` ran only after all four PARTUUIDs matched the table in
+`BOOTSTRAP.md`.
+
+### What the stick actually is, and what the backups are not
+
+Worth stating because the two are easy to confuse from the operator's seat: the OS being
+installed is **the stick itself** -- `/etc/lfs-release` `13.1-systemd`,
+`/boot/vmlinuz-7.1.8-lfs-13.1-systemd`. `/mnt/big_disk` is `sda2`, a **Gentoo** root, and
+its `backups/` holds `lfs-live-20260827.tar.zst` (the *13.0* root, 12 days older than the
+rebuild), `home-john-20260919/` and the untracked-payload directory. Nothing under
+`backups/` is the 13.1 image, and installing from there would have re-installed 13.0.
+
+### Backed up before the wipe
+
+`/dev/sdb2` held the live 13.0 root, `john`'s 38G home and `/mnt/lfs`. Written to
+`/mnt/big_disk/backups/lfs-13.0-final-20260921/`, 762M in total:
+
+    etc-var-lfsmaint.tar.zst  7.5M   /etc (SSH host keys, wireguard/wg0.conf) + 13.0 package db
+    var-lib.tar.zst           4.0M   tailscale, openbao, nvidia, sshd, sudo, nss_db state
+    root-no-caches.tar.zst    787M   /root, incl. build-nvidia-470xx
+
+plus `home-john-20260921/`, an rsync `--link-dest` snapshot against the Sep-19 backup --
+38G apparent, delta-only on disk. `/mnt/lfs` was deliberately not archived: the stick and
+the new target are both copies of it.
+
+The first attempt at the `/root` tarball included `/root/go` (4.3G module cache),
+`.cargo` and `.cache` and was still running after six minutes; narrowed to the
+non-reproducible content it finished in under one. Killing it taught a second lesson:
+`pkill -f predeploy-backup.sh` matched the *SSH command line carrying that script's text*
+and killed the session running it, leaving the `tar` child orphaned but alive. Kill by
+PID over a link where your own command line is part of the process table.
+
+### Two defects in BOOTSTRAP.md, both found by running it
+
+- **`rsync --numeric-owner` does not exist.** That is tar's spelling; rsync 3.4.1 exits 1
+  with `unknown option` before transferring anything. The flag is `--numeric-ids`. Both
+  occurrences in the document were wrong, so step 1 and step 4 would both have failed on
+  first use. Fixed.
+- **The repo does not "come across with `/home`".** The stick was populated from
+  `/mnt/lfs`, whose `/home/john` is the eight skeleton dotfiles `ch08-shadow` writes.
+  `john`'s real home -- the repo, `Scripts/`, everything -- existed only on the root being
+  reformatted. Following step 4 literally leaves the target with no repo and no home.
+  Fixed, with the snapshot-before-wipe recorded as the way out.
+
+A third, smaller: step 5's `fstab` drops the 13.0 root's `/mnt/big_drive` line, and
+nothing else mounts `sda2`. Restored from the old fstab and added to the document.
+
+### The deploy
+
+    mkfs.ext4 -F -L LFSROOT -O ^metadata_csum,^metadata_csum_seed,^orphan_file /dev/sdb2
+    mkswap -L LFSSWAP /dev/sdb1
+
+New fs-UUID `cb1db9c1-245d-47f2-8628-1d87d9430777` (the old `4ed155bc-…` is gone, as the
+document warns). Then, measured:
+
+    image   stick -> sdb2   6.8G   ~12.7 MB/s   ~10 min   (USB read is the bottleneck)
+    home    sda2  -> sdb2    38G   70-140 MB/s  ~7 min
+    target after both        45G used of 130G
+
+Fixups, in this order -- home first, overlay second, so the repo's canonical dotfiles win
+over the restored ones:
+
+1. `/etc/fstab` to the target's `LABEL=` identity, plus the `/mnt/big_drive` line.
+2. `/etc/lfs-release`, `/etc/lsb-release`, `/etc/os-release` written with the 13.1
+   strings. This closes `BOOTSTRAP.md`'s first open item -- the built tree's copies still
+   said 13.0, because the recipe ran months before the override was corrected.
+3. `/etc/hostname` `lfs` -> `server` (the second open item).
+4. Overlay applied, `overlay/` then `hosts/server/overlay/`, from a fresh clone of `main`
+   at `9bdce05` rather than the Sep-19 payload under `/root/deploy` -- that payload
+   predates this week's grub.cfg and os-release fixes. `chown` limited to the four paths
+   the overlay writes, so it cannot disturb the restored home's ownership.
+5. `grub.cfg` from `hosts/server/overlay/boot/grub.cfg` with `search --set=root --fs-uuid`
+   rewritten to the new UUID; `root=PARTUUID=c2cd0612-02` unchanged, no `rootwait` (that
+   is the stick's line), `grub-script-check` clean, and both of this host's load-bearing
+   cmdline arguments verified present: `snd_hda_intel.probe_mask=0x1FF,0x1FF` and
+   `modprobe.blacklist=nouveau`.
+6. `machine-id` truncated, `grub-install --target=i386-pc --recheck /dev/sdb` from a
+   chroot on the target: "Installation finished. No error reported."
+   `cpufreq-governor.service` enabled (`lfsmaint-check.timer` was already enabled in the
+   tree).
+
+`lfsmaint --root /mnt/target db --host server-rebuild` rebuilt the package database the
+13.1 tree never had: **331 packages (219 BLFS, 112 LFS), 108,536 files.** `e2fsck -f -n
+/dev/sdb2` clean afterwards.
+
+### Open, after this session
+
+- **Not rebooted.** The stick is still the running system; the target has never been
+  booted, so every check in `BOOTSTRAP.md` step 6 is outstanding -- including the NVIDIA
+  out-of-tree modules, which that section names as the thing most likely to be wrong.
+- **`lfsmaint`'s `BOOK_RELEASE` is hardcoded `"13.0"`** (`bin/lfsmaint:47`). It stamps the
+  database's `meta` table and seeds the advisory fetch, so the freshly built database on a
+  13.1 system reports `book release : 13.0` and would pull 13.0 advisories. The constant
+  cannot simply be bumped -- `laptop` is genuinely still 13.0 -- so the fix is to derive it
+  from the root being operated on (`<root>/etc/lfs-release`) with the constant as
+  fallback. Not done here.
+- **Live-system identity was preserved but not restored.** SSH host keys, `wireguard/
+  wg0.conf`, tailscale and openbao state are in the pre-wipe tarballs and were left out of
+  the target on purpose: they are credentials, and carrying them onto a fresh image is the
+  operator's call, not a deploy step. The new system will generate its own SSH host keys
+  on first boot.
+- The state move `hosts/server-rebuild/state/completed` -> `hosts/server/state/completed`,
+  `host.toml`'s `[hardware] kernel` (still `6.18.10`), and the native `--check` runs are
+  all step-6 work, after a successful boot.
