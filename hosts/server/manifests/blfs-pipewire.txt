@@ -1,6 +1,4 @@
 /etc/security/limits.d/25-pw-rlimits.conf
-/root/kbuild/kernel-config.sh
-/root/kbuild/kernel-rebuild.sh
 /usr/bin/pipewire
 /usr/bin/pipewire-aes67
 /usr/bin/pipewire-avb

@@ -598,6 +598,39 @@ change, or the package's file list is wrong the first time it is captured and st
 Directories themselves are already excluded (`! -type d`), so only the contents need
 naming.
 
+## The manifest noise filter cuts both ways
+
+`bin/lfsbuild`'s manifest sweep is `find -cnewer` over `MANIFEST_ROOTS`, minus a
+`MANIFEST_NOISE` regex for churn that every step touches. Two failures live at opposite
+ends of that filter, and both were found in the same pass (2026-09-21, `server`).
+
+**Too loose.** Language toolchains cache under `/root` in places that are neither
+dotfiles nor named `build`: go's module cache at `/root/go/pkg/mod`, and
+`blfs-nvidia-470xx`'s full kernel build at `/root/kbuild`. Three manifests recorded
+275,000 phantom files -- `blfs-openbao` claimed 106,094 installed files when it installs
+four. `lfsmaint owns` answered with the Go module cache. `/sources` was left out of
+`MANIFEST_ROOTS` from the start for exactly this reason; the same swamping walked in
+through `/root` instead. Rule of thumb: any step that fetches dependencies at build time
+needs its cache location checked against the filter before its manifest is trusted.
+
+**Too tight, and worse because it is silent.** The filter excludes `^/var/log/` and
+`^/root/\.` as churn, which is right for almost every step and wrong for the two whose
+deliverable *is* that path: `blfs-fix-varlog` installs `/var/log/{btmp,faillog,lastlog,
+wtmp}` and `blfs-skel-vimrc-and-root` installs `/root/.bashrc` and friends. Re-captured
+today both would record an empty manifest and report success. Their current manifests are
+correct only because they were captured before those rules existed.
+
+The general shape: a global "this is not package content" rule is a statement about most
+steps, not all of them, and a manifest that comes back empty is indistinguishable from a
+step that installed nothing. Neither `--check` nor the build catches it. The structural
+fix is a per-step exemption rather than more global regex tuning -- not implemented,
+because narrowing the global rules readmits churn everywhere else. Until then, treat an
+empty or implausibly large manifest as a bug in the filter, not a fact about the package.
+
+Corollary for repair: do not fix historical manifests by re-running the current
+`MANIFEST_NOISE` over them. That deletes those two steps' real content along with the
+junk. Filter for the specific pollution instead.
+
 ## Standing policies
 
 - **BLFS Recommended dependencies get installed, not just Required** -- but checked

@@ -1,6 +1,3 @@
-/root/.cache/g-ir-scanner/88c1f96029db40e7d0074b17f937aefcc2d8d840
-/root/.cache/g-ir-scanner/d7ab2f832c935e55de82428ef68d5b4a4691cc75
-/root/.cache/g-ir-scanner/e69e62ec81e495ef6e7241311b845bf9b987905d
 /usr/bin/pango-list
 /usr/bin/pango-segmentation
 /usr/bin/pango-view

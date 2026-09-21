@@ -1,5 +1,4 @@
 /etc/xdg/autostart/at-spi-dbus-bus.desktop
-/root/.cache/g-ir-scanner/6521f860d6cdcd95aa10ea3313a467d9abea965d
 /usr/include/at-spi-2.0/atspi/atspi-enum-types.h
 /usr/include/at-spi-2.0/atspi/atspi-version.h
 /usr/include/atk-1.0/atk/atk-enum-types.h

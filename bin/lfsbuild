@@ -98,6 +98,16 @@ MANIFEST_NOISE = "|".join([
     r"^/etc/ssh/ssh_host_",
     r"^/root/\.",
     r"^/root/build",
+    # Language-toolchain caches and out-of-tree build dirs under /root. Same category as
+    # /sources, which MANIFEST_ROOTS already leaves out for the same reason: builds
+    # happen there. These slipped through because they are neither dotfiles nor named
+    # "build" -- go's module cache is /root/go/pkg/mod, and blfs-nvidia-470xx's full
+    # kernel build (added for a real Module.symvers) lands in /root/kbuild. Together they
+    # put 275,000 phantom files into three manifests. /root/go/bin is deliberately NOT
+    # excluded: `go install` puts real binaries there, and /root/go/bin/bao is openbao's
+    # only installed executable.
+    r"^/root/go/pkg/",
+    r"^/root/kbuild/",
     # tor's DataDirectory: the consensus/microdescriptor cache, the state file, the
     # lock and the entry-guard record, all written by the daemon the moment
     # blfs-tor's own recipe starts it (2026-09-07, laptop). Same category as
