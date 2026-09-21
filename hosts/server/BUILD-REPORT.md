@@ -3802,3 +3802,148 @@ over the restored ones:
 - The state move `hosts/server-rebuild/state/completed` -> `hosts/server/state/completed`,
   `host.toml`'s `[hardware] kernel` (still `6.18.10`), and the native `--check` runs are
   all step-6 work, after a successful boot.
+
+## First boot on the re-imaged root, and `/lfs-audit` (2026-09-21)
+
+The target from `BOOTSTRAP.md` is now the running system: `server`, booted off `sdb2`,
+kernel `7.1.8-lfs-13.1-systemd`, NVIDIA `470.256.02` loaded, SSH in as `john` working.
+Step 6's outstanding checks are closed below. Raw findings, section by section, are in
+`hosts/server/state/audit-2026-09-21.md`; this entry is the narrative and what changed.
+
+### awesome would not start, and X was not the reason
+
+`startx` returned straight to the console. `/var/log/Xorg.0.log` ruled out the obvious
+suspects immediately: the NVIDIA driver bound, found the Acer V193W on DFP-1, validated
+`1440x900`, set the mode, and the server then exited **0** -- which is what X does when
+its window manager quits, not what it does when it fails. The two `(EE) NVIDIA(GPU-1):
+Failed to initialize the NVIDIA graphics device!` lines are about a second GPU screen the
+driver probes for under PRIME and are not fatal; screen 0 came up after them.
+
+Reproduced headlessly under `Xvfb :9` to get awesome's own stderr, which `startx` had
+been eating:
+
+```
+/usr/share/lua/5.4/lgi/ffi.lua:87: bad argument #1 to 'fromarray' (lgi.record expected, got table)
+  lgi/override/cairo.lua:55 -> gears/color.lua:54 -> ~/.config/awesome/rc.lua:16
+error: gears/color.lua:132: attempt to call a nil value (field 'create_rgba')
+awesome: main:866: couldn't find any rc file
+```
+
+`ffi.lua`'s `load_enum()` reads `GEnumClass.values` with `core.record.fromarray()`, which
+needs that field to marshal as a raw C array pointer. Current GLib (2.88.3 here) annotates
+it `(array length=n_values)` in `GObject-2.0.gir` -- confirmed by reading the `.gir`
+directly, `<array length="3" ...>`, with `GFlagsClass.values` annotated the same way at
+`length="2"`. gobject-introspection therefore describes it as a typed array and lgi hands
+back a 1-based Lua table. Verified live rather than assumed: `enum_class.values` is a
+`table`, `#values == 43 == n_values`, `values[1].value_nick == "success"`.
+
+`lgi/override/cairo.lua` is the first caller -- 26 cairo enums at `require` time -- so the
+whole cairo binding dies on import and everything downstream with it. awesome reaches
+`gears.color`, finds `cairo.Pattern.create_rgba` missing, and exits before drawing.
+
+Same shape as the `lua_resume` bug this recipe already carries: a real upstream defect in
+a package with no release since 0.9.2 (2020), against a dependency that moved. Patched in
+`recipes/blfs-lua-lgi.sh` as patch (2) -- read `values` once, index it as a table when
+that is what it is, fall through to `fromarray()` otherwise, so the recipe still builds
+against an older glib. Verified by applying the recipe's own patch block to a pristine
+`ffi.lua` and running awesome against it on `LUA_PATH`: it came up silent and stayed up,
+where before it had exited instantly.
+
+Rebuilding lgi was not possible and was not needed. `/sources` does not exist on the
+re-imaged root and `lgi-0.9.2.tar.gz` is not on the machine; `ffi.lua` is pure Lua
+installed verbatim from the source tree, so patching it in place is byte-identical to what
+`make -C lgi install` would have written.
+
+### What else the audit turned up
+
+- **`grub.cfg` was searching for a filesystem that does not exist.** `search --set=root
+  --fs-uuid 4ed155bc-...` is `sdb2`'s *pre-re-image* fs-UUID, the one `BOOTSTRAP.md`'s disk
+  table records. Step 4's `mkfs.ext4` minted a new one (`cb1db9c1-...`) and this line was
+  never updated, in the live file or the overlay. It has booted anyway only because a
+  failed `search` leaves `$root` at the partition GRUB loaded from. Switched to `--label
+  LFSROOT` rather than the new UUID: a re-image re-mkfs's this partition every time and
+  step 5 sets the label back by hand, so the label is the identifier that survives the
+  procedure that broke this one. The `root=PARTUUID=` on the kernel line is *correct* and
+  untouched -- there is no initramfs, and `BOOTSTRAP.md` already explains why a filesystem
+  identifier cannot work there.
+- **`lfsmaint`'s hardcoded `BOOK_RELEASE`** is fixed, the way the last entry proposed:
+  `<root>/etc/lfs-release` first (it describes the tree `--root` actually points at, which
+  need not be the release the resolving host pins), then `host.toml [books]`, then the
+  constant for the `/usr/sbin` copy with no repo. `book_release("/")` now returns `13.1`.
+- **`lfsmaint advisories` could not run unprivileged at all** -- `PermissionError` writing
+  `/var/lib/lfsmaint/advisories-13.0.json` *after* a successful fetch. Cache path now falls
+  back to the caller's own `~/.cache/lfsmaint`, and a failed cache write warns instead of
+  aborting. 211 advisories fetched as `john`, 89 naming installed packages.
+- **`lfsmaint verify` was reporting four files as missing that are simply unreadable.**
+  It used `os.path.lexists`, which returns `False` both for a file that is gone and for one
+  the process may not `stat` -- so every recorded path under `/root`, `/etc/sudoers.d` and
+  `/var/lib/nvidia` looked deleted to an unprivileged run. Now probes with `os.lstat` and
+  separates `EACCES` into its own bucket that says to re-run as root.
+- **The other ten "missing" files were both real and both explainable**, and are now
+  accounted for rather than silently tolerated:
+  - eight under `/usr/share/doc/dbus/`, recorded by `ch08-dbus`, which BLFS's own dbus page
+    later renames wholesale to `/usr/share/doc/dbus-1.16.2/` (`blfs-dbus.sh` block 3, `mv -v
+    /usr/share/doc/dbus{,-1.16.2}`). Every file is on disk under the versioned name.
+    Handled generically, since "rename the documentation directory to make it versioned" is
+    a recurring BLFS step, not a dbus quirk.
+  - `/etc/xdg/autostart/pulseaudio.desktop` and `/etc/xdg/Xwayland-session.d/00-pulseaudio-x11`,
+    deleted on purpose by `blfs-wireplumber.sh` because pipewire replaces them. Added to
+    `EXPECTED_GONE`.
+
+  `lfsmaint verify` now ends with *nothing unexplained* across all 108,536 recorded files.
+- **`/etc/fstab` listed `/dev/pts` before `/dev`** -- the only error `findmnt --verify`
+  reports on this host. Harmless under systemd, which orders mounts by dependency, but
+  there is no reason to ship an fstab its own checker rejects. Fixed in
+  `hosts/server/review-overrides.json`'s `ch10-fstab` block 0 and regenerated;
+  `extract-recipes.py --check` is back to zero drift.
+- **awesome installed its system-wide default config to `/usr/etc/xdg/awesome/rc.lua`** --
+  `CMAKE_INSTALL_PREFIX=/usr` with SYSCONFDIR left at `${prefix}/etc`. Non-FHS, and the
+  path `AWESOME_DEFAULT_CONF` is compiled against, so it is the real fallback for any user
+  without `~/.config/awesome/rc.lua`. `-D SYSCONFDIR=/etc` added to the recipe; on the live
+  system the file moves to `/etc/xdg/awesome/` with a symlink left behind, because the
+  binary's baked-in path cannot change without a rebuild.
+- **`host.toml`'s `[hardware] kernel`** was still `6.18.10`; now `7.1.8`. That was on the
+  last entry's own step-6 list.
+
+### Two things deliberately left alone, now written down
+
+- **The Broadcom BCM4321 (`14e4:4329`, PCI `05:00.0`) stays unbound.** `CONFIG_SSB` and
+  `CONFIG_B43` are both unset, so there is no candidate module, and `b43` cannot associate
+  without a blob cut out of Broadcom's proprietary driver by `b43-fwcutter`. Against that:
+  nothing here needs wireless, the onboard r8169 is this machine's network, and a kernel
+  rebuild orphans the out-of-tree NVIDIA modules -- which has already caused one silent
+  breakage on this host. This is the third time the card has been noticed and the first
+  time a decision was recorded; it is in `kernel-config.sh` now, next to the options it
+  would need, so the next session finds it where it would look.
+- **`vmscape: Vulnerable` has nothing to set.** Kernel 7.1.8 carries no
+  `CONFIG_MITIGATION_VMSCAPE` symbol at all, and VMSCAPE is a guest-to-host attack: it
+  needs the machine to be running VMs. This kernel has `# CONFIG_KVM is not set` and only
+  `CONFIG_KVM_GUEST`, so there is no surface. Microcode is current (`0x2f`,
+  `old_microcode: Not affected`) -- unlike `laptop`'s still-open finding, this is not a
+  missing microcode initrd. Recorded in `kernel-config.sh`; revisit if KVM is ever enabled.
+
+### Clean
+
+Zero failed units, and all five of this project's own units enabled *and* active. No
+zombies, no duplicate long-running command lines, no process running a `(deleted)`
+executable. 21 SUID/SGID binaries, every one attributable. No world-writable directory
+without a sticky bit; the only world-writable files are `uv`'s own `.lock` files under
+`/home/john`. Governor `schedutil` on all four cores at 3.40 of 3.70 GHz -- no repeat of
+the userspace-governor regression. GPU on `nvidia`, not an llvmpipe fallback. Both disks
+rotational, both on `mq-deadline`. Boot 15.9s, of which 6.4s is
+`systemd-networkd-wait-online`. Audio is still the HDMI codec only, exactly as
+`host.toml` records.
+
+### Open, after this session
+
+- **`hosts/server/manifests/` still describes the 13.0 install.** The running root is the
+  tree built in `hosts/server-rebuild/`, so that is the manifest set that matches it (304
+  files; `ch08-dbus.txt` has 59 lines there against 35 in `hosts/server/`), and the
+  database has to be rebuilt with `--manifests hosts/server-rebuild/manifests` to be
+  accurate. Folding `server-rebuild` into `server` is the real fix and is a structural
+  change, not an audit finding -- left for its own session.
+- **`extract-blfs.py --check` would create 14 new recipes** under `recipes/blfs-13.1/`
+  (`blfs-nss`, `blfs-libarchive`, `blfs-luajit` and 11 others). Not drift -- nothing is
+  out of date -- but the 13.1 tree is incomplete relative to the plan. Untouched here.
+- **`/usr/share/doc/dbus-1.16.2` vs `ch08-dbus`'s manifest** is worked around in `verify`,
+  not fixed at the source. The honest fix is for the rename to update the manifest.

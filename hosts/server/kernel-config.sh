@@ -53,4 +53,33 @@ $K --module  SND_HDA_CODEC_REALTEK
 $K --module  SND_HDA_CODEC_HDMI
 $K --module  SND_HDA_GENERIC
 
+# --- deliberately NOT enabled, recorded 2026-09-21 (/lfs-audit) ------------
+# Broadcom BCM4321 802.11b/g/n (Netgear WN311B, PCI 05:00.0, 14e4:4329). The
+# only device on this machine's bus with no driver bound -- `lspci -k` shows
+# no "Kernel driver in use" and no candidate module, because CONFIG_SSB and
+# CONFIG_B43 are both unset (confirmed in /boot/config-7.1.8). Left that way
+# on purpose, and written down here because BUILD-REPORT.md has now noticed it
+# twice (2026-08-27 and this audit) without either time leaving a decision
+# behind:
+#   - the onboard Realtek r8169 is this machine's network, wired, and works;
+#     nothing here needs wireless.
+#   - b43 cannot associate on firmware alone -- it needs a blob cut out of
+#     Broadcom's proprietary driver with b43-fwcutter, which is a new package
+#     and a non-redistributable download.
+#   - enabling it means a kernel rebuild, and a kernel rebuild orphans the
+#     out-of-tree NVIDIA 470.xx modules until they are rebuilt against the new
+#     /lib/modules/<ver>/ path. That has already caused one silent breakage on
+#     this host.
+# Three real costs against a card nothing uses. Enable CONFIG_SSB + CONFIG_B43
+# here and add a b43-fwcutter hand() entry to packages.py if that ever changes.
+#
+# vmscape: /sys/devices/system/cpu/vulnerabilities/vmscape reads "Vulnerable"
+# on this i5-2500K and there is nothing to set. Kernel 7.1.8 carries no
+# CONFIG_MITIGATION_VMSCAPE symbol at all (grepped the whole config), and
+# VMSCAPE is a guest-to-host attack: it needs the machine to be running VMs.
+# `# CONFIG_KVM is not set` here -- only CONFIG_KVM_GUEST, which is the other
+# direction -- so this host cannot host a guest and the attack has no surface.
+# Microcode is current (0x2f; `old_microcode: Not affected`), unlike laptop's
+# still-open finding. Revisit if KVM is ever enabled on this box.
+
 kernel_config_finish

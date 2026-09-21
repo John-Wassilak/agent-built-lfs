@@ -32,4 +32,4 @@ audio     = "GK104 HDMI codec only, force-probed with snd_hda_intel.probe_mask=0
 root      = "LABEL=LFSROOT (sdb2, ext4), swap LABEL=LFSSWAP (sdb1)"
 data      = "sda2 ext4 mounted at /mnt/big_drive, not part of the LFS install"
 boot      = "GRUB (BIOS/MBR) on sdb, no initramfs except the microcode one"
-kernel     = "6.18.10, boot path built in, schedutil governor"
+kernel     = "7.1.8, boot path built in, schedutil governor"

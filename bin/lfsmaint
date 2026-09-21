@@ -36,6 +36,7 @@ Every other subcommand reads only the target tree and needs none of it.
 """
 
 import argparse
+import glob
 import json
 import os
 import re
@@ -44,7 +45,12 @@ import sys
 import urllib.parse
 import urllib.request
 
-BOOK_RELEASE = "13.0"
+# Last-resort release, for an installed copy with no repo beside it, no <root>/etc/
+# lfs-release and no release recorded in the database. Everything else goes through
+# book_release(). Hardcoding one release here was a real bug: server moved to 13.1 on
+# 2026-09-07 and this kept stamping 13.0 into the database and querying the 13.0
+# advisory feed for a 13.1 system (found by /lfs-audit, 2026-09-21).
+FALLBACK_RELEASE = "13.0"
 ADVISORY_URL = "https://www.linuxfromscratch.org/advisories/index.php"
 UA = "lfsmaint/1.0 (LFS maintenance tooling)"
 
@@ -155,6 +161,33 @@ def connect(root, create=False):
     return con
 
 
+def book_release(root="/", host_name=None):
+    """The LFS/BLFS release of the tree being operated on.
+
+    <root>/etc/lfs-release first: it is written by ch11-theend into the tree itself, so it
+    describes whatever --root actually points at -- which is the thing being verified,
+    and need not be the release the resolving host pins. hosts/<h>/host.toml [books] next,
+    for a tree that has not reached ch11 yet. FALLBACK_RELEASE last, for the copy installed
+    at /usr/sbin with no repo beside it (same late-import constraint as host_defaults).
+    """
+    try:
+        with open(os.path.join(root, "etc/lfs-release")) as f:
+            # "13.1-systemd" -> "13.1"; the advisory application keys on the number.
+            rel = f.read().strip().split("-")[0]
+        if re.match(r"^\d+\.\d+", rel):
+            return rel
+    except OSError:
+        pass
+    here = os.path.dirname(os.path.abspath(__file__))
+    if here not in sys.path:
+        sys.path.insert(0, here)
+    try:
+        import lfshost
+        return lfshost.resolve(host_name).books["lfs"]
+    except Exception:
+        return FALLBACK_RELEASE
+
+
 def host_defaults(a):
     """Fill in --plan/--manifests/--timings from the resolved host when not given.
 
@@ -239,7 +272,8 @@ def cmd_db(a):
         npkg += 1
         nfile += len(files)
 
-    con.execute("INSERT OR REPLACE INTO meta VALUES ('book_release',?)", (BOOK_RELEASE,))
+    con.execute("INSERT OR REPLACE INTO meta VALUES ('book_release',?)",
+                (book_release(a.root, getattr(a, "host", None)),))
     con.commit()
     print(f"database: {db_path(a.root)}")
     print(f"packages: {npkg}   files: {nfile}")
@@ -322,7 +356,47 @@ EXPECTED_GONE = [
      "shared info index, rewritten by whichever package installs last"),
     (re.compile(r"/charset\.alias$"),
      "shared file, overwritten between packages"),
+    (re.compile(r"^/etc/xdg/(autostart/pulseaudio\.desktop|"
+                r"Xwayland-session\.d/00-pulseaudio-x11)$"),
+     "removed on purpose by blfs-wireplumber: pipewire replaces pulseaudio's autostart"),
 ]
+
+
+def probe(path):
+    """'present', 'missing' or 'unreadable' for one recorded path.
+
+    os.path.lexists() collapses the last two: it returns False both for a file that is
+    gone and for one this process may not stat, which turns any unprivileged `verify`
+    into a pile of false "missing" hits for /root, /etc/sudoers.d and friends.
+    """
+    try:
+        os.lstat(path)
+        return "present"
+    except (FileNotFoundError, NotADirectoryError):
+        return "missing"
+    except OSError:
+        return "unreadable"
+
+
+def versioned_docdir(root, path):
+    """The BLFS "rename the documentation directory to make it versioned" step.
+
+    Several BLFS pages end with `mv /usr/share/doc/<pkg>{,-<version>}`, which moves a
+    directory an *earlier* package's manifest already recorded by its unversioned name.
+    LFS's own chapter-8 dbus is manifested at /usr/share/doc/dbus/, and BLFS's dbus page
+    renames that whole tree to /usr/share/doc/dbus-1.16.2/ -- every file still on disk,
+    every recorded path stale. Returns the path it was renamed to, or None.
+    """
+    m = re.match(r"^(/usr/share/doc/)([^/]+)(/.+)$", path)
+    if not m:
+        return None
+    head, pkg, rest = m.groups()
+    if re.search(r"-\d", pkg):          # already versioned; not this case
+        return None
+    for cand in sorted(glob.glob(os.path.join(root, f"{head}{pkg}-*".lstrip("/")))):
+        if os.path.lexists(cand + rest):
+            return cand + rest
+    return None
 
 
 def explain_gone(path):
@@ -341,10 +415,15 @@ def cmd_verify(a):
         args = (f"%{a.pkg}%",)
     unexplained = {}
     explained = {}
+    unreadable = []
     total = 0
     for name, ver, path in con.execute(q, args):
         total += 1
-        if os.path.lexists(os.path.join(a.root, path.lstrip("/"))):
+        state = probe(os.path.join(a.root, path.lstrip("/")))
+        if state == "present":
+            continue
+        if state == "unreadable":
+            unreadable.append(path)
             continue
         # A manifest records the path a package installed, at install time -- a
         # later hygiene pass (gzip -9 on man/info pages) can rename that exact
@@ -357,6 +436,12 @@ def cmd_verify(a):
             explained.setdefault("compressed after install (path+'.gz' exists)",
                                   []).append(path)
             continue
+        moved = versioned_docdir(a.root, path)
+        if moved:
+            explained.setdefault(
+                "renamed by a BLFS versioned-docdir step (/usr/share/doc/<pkg>"
+                " -> <pkg>-<version>)", []).append(path)
+            continue
         why = explain_gone(path)
         if why:
             explained.setdefault(why, []).append(path)
@@ -364,6 +449,14 @@ def cmd_verify(a):
             unexplained.setdefault(f"{name}-{ver}", []).append(path)
 
     print(f"checked {total} recorded files under {a.root}")
+    if unreadable:
+        print(f"\n{len(unreadable)} recorded file(s) could not be checked -- this "
+              f"process may not stat them.\n  Re-run as root for a complete answer. "
+              f"First few:")
+        for pth in unreadable[:5]:
+            print(f"    {pth}")
+        if len(unreadable) > 5:
+            print(f"    ... and {len(unreadable)-5} more")
     nex = sum(len(v) for v in explained.values())
     if nex:
         print(f"\n{nex} missing but accounted for:")
@@ -438,20 +531,40 @@ def fetch_advisories(release, cache, offline=False):
             out.append({"id": cells[0], "package": cells[1],
                         "date": cells[2], "severity": cells[3]})
     if out:
-        os.makedirs(os.path.dirname(cache), exist_ok=True)
-        json.dump(out, open(cache, "w"), indent=1)
+        try:
+            os.makedirs(os.path.dirname(cache), exist_ok=True)
+            with open(cache, "w") as f:
+                json.dump(out, f, indent=1)
+        except OSError as e:
+            print(f"warning: could not cache advisories at {cache}: {e}",
+                  file=sys.stderr)
     return out
 
 
 SEV_ORDER = {"Critical": 0, "High": 1, "Medium": 2, "Low": 3}
 
 
+def advisory_cache(root, release):
+    """Where to cache the advisory list.
+
+    /var/lib/lfsmaint under the target tree when this process can write there, so every
+    user on the machine shares one cache. Otherwise the caller's own cache directory --
+    an unprivileged `lfsmaint advisories` should still work, just with a private cache.
+    """
+    shared = state_dir(root)
+    target = shared if os.path.isdir(shared) else os.path.dirname(shared)
+    if os.access(target, os.W_OK):
+        return os.path.join(shared, f"advisories-{release}.json")
+    home = os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache")
+    return os.path.join(home, "lfsmaint", f"advisories-{release}.json")
+
+
 def cmd_advisories(a):
     con = connect(a.root)
     release = con.execute(
         "SELECT v FROM meta WHERE k='book_release'").fetchone()
-    release = release[0] if release else BOOK_RELEASE
-    cache = os.path.join(state_dir(a.root), f"advisories-{release}.json")
+    release = release[0] if release else book_release(a.root, getattr(a, "host", None))
+    cache = advisory_cache(a.root, release)
     adv = fetch_advisories(release, cache, a.offline)
 
     installed = {}

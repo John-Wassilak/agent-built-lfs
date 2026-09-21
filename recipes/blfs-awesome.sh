@@ -62,6 +62,14 @@
 #    headers. Added -D CMAKE_C_FLAGS=-fcommon -- the standard,
 #    widely-used fix for building older C codebases against modern
 #    GCC, not a correctness risk.
+#
+# 8. CMAKE_INSTALL_PREFIX=/usr leaves CMake's SYSCONFDIR at
+#    ${prefix}/etc, so awesome installed its system-wide default
+#    config to /usr/etc/xdg/awesome/rc.lua -- non-FHS, and the path
+#    AWESOME_DEFAULT_CONF is compiled against (confirmed with
+#    `strings /usr/bin/awesome`), i.e. the fallback used for any user
+#    with no ~/.config/awesome/rc.lua. Found by /lfs-audit 2026-09-21.
+#    Pinned to /etc explicitly.
 set -e
 
 LUA54_SRC=/root/build-lua54-headers/lua-5.4.9   # built once for blfs-lua5.4.sh's header fix; reused here for its CLI binary
@@ -84,7 +92,8 @@ sed -i 's/add_dependencies(check check-qa check-examples)/add_dependencies(check
 mkdir build
 cd build
 
-cmake -D CMAKE_INSTALL_PREFIX=/usr -D CMAKE_BUILD_TYPE=Release -D GENERATE_DOC=NO \
+cmake -D CMAKE_INSTALL_PREFIX=/usr -D SYSCONFDIR=/etc \
+      -D CMAKE_BUILD_TYPE=Release -D GENERATE_DOC=NO \
       -D CMAKE_POLICY_VERSION_MINIMUM=3.5 \
       -D LUA_INCLUDE_DIR=/usr/include/lua5.4 -D LUA_LIBRARY=/usr/lib/liblua5.4.so \
       -D OVERRIDE_VERSION=v4.3 \
