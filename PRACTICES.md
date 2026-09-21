@@ -833,6 +833,45 @@ on `server` (or writes the sysctl by hand there), `server` still accepts redirec
 every interface. A shared-layer fix reaches a built machine only when something applies
 it.
 
+## A GPU probe that crashes turns into a browser with no GPU, silently
+
+Firefox decides whether to use the GPU by forking `/usr/lib/firefox/glxtest` at startup
+and reading its report back over a pipe. If that child dies, the answer is "no GPU" and
+the whole session runs on software -- software compositing, and WebGL that websites see
+as unaccelerated or missing. There is no error in the UI, nothing in the journal from
+Firefox itself, and no pref written to record it, so a browser in this state looks
+identical to a healthy one until a site refuses to load.
+
+On `laptop` this left Firefox running nine hours with no GPU while `mpv` and Hyprland on
+the same display used it normally. Three `glxtest` SIGSEGVs are on file, each in a
+Firefox launched from a link in Slack; the fault is a read of `0x143` at the entry of
+`pthread_mutex_lock`, a garbage mutex pointer in the forked child. The probe run by hand
+succeeds 200/200 and reports the hardware correctly, which is exactly why it is
+misleading to test it that way and conclude the machine is fine.
+
+The general shapes, both worth having:
+
+- **A working GL stack is not evidence that a given process is using it.** Every
+  layer can check out -- render node present, correct group, driver bound, `glXIsDirect`
+  1, hardware EGL on the X11 platform -- and the application can still be in software.
+  Probe the process, not the stack.
+- **Ask what the process has mapped.** The one-line answer is
+  `grep -cE 'libEGL|libGLX|libgallium|/dri/' /proc/<pid>/maps`, with `ls -l /proc/<pid>/fd
+  | grep dri/` as the confirmation. Zero across every process of an application that
+  should be rendering means software, no matter what the stack tests say. Take a control
+  from something on the same display that is known to use the GPU.
+- **A crash in a forked helper is worth `coredumpctl list` before anything else.** It
+  named the process, the timestamp that matched the parent's start to the second, and the
+  cgroup that revealed the launch path. On a build with `--disable-debug-symbols` and no
+  gdb, the journal's `ip ... in libc.so.6[<offset>,<base>+<size>]` line is still enough:
+  resolve `<offset>` against `readelf -sW` on the library and the faulting function comes
+  out by name.
+- **Where a capability is auto-detected, prefer forcing it once the hardware is
+  measured.** Same lesson as an `auto` meson feature, one layer up: `gfx.webrender.all`,
+  `webgl.force-enabled` and `gfx.x11-egl.force-enabled` make acceleration independent of
+  the probe surviving. Only after measuring the GPU, and only in the host layer -- on a
+  genuinely blocklisted GPU these force a known-bad path.
+
 ## Killing `lfsbuild` does not kill the build, and the orphan installs without a manifest
 
 Found on `laptop`, 2026-09-12, building qttools. An external supervisor killed the

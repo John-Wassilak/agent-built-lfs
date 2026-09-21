@@ -5561,6 +5561,365 @@ to BLFS 13.1 with 314 uncommitted files, and the operator is handling it separat
 
 `~/Scripts/firewall.sh check` now verifies 14 sysctls, three v4 policies, five v4 rules,
 three v6 policies, two v6 rules and ShieldsUp against the running kernel. Exit 0.
+
+## 2026-09-11: a WebGL site refused to load, and Firefox had been running nine hours with no GPU
+
+Reported as a message from a poker site in Firefox: *"You will need to enable graphical
+acceleration/WebGL support from your browser settings and/or upgrade your browser to
+continue playing poker."* The site was right that the browser had no acceleration. It was
+wrong about the cause, and so was the remedy it suggested -- nothing in Firefox's settings
+was off.
+
+### The stack underneath was healthy, and that was worth establishing first
+
+Nothing here is inherited from an earlier report; all of it was measured on the running
+host before Firefox was looked at.
+
+- `/dev/dri/card0` and `renderD128` both present, `john` in `video`, i915 bound, no DRM
+  errors in the journal for this boot beyond one cosmetic `CPU pipe B FIFO underrun` on
+  Sep 07.
+- Mesa 25.3.5, built here with `-D platforms=x11,wayland -D glvnd=enabled`, so both the
+  GLX and the EGL-on-X11 vendor libraries are installed: `libGLX_mesa.so.0`,
+  `libEGL_mesa.so.0`, `/usr/share/glvnd/egl_vendor.d/50_mesa.json`.
+- A hand-written EGL pbuffer probe (surfaceless): `Mesa Intel(R) HD Graphics 520
+  (SKL GT2)`, `4.6 (Compatibility Profile) Mesa 25.3.5`.
+- A hand-written GLX probe against this Xwayland display: `glXIsDirect` = 1, same
+  renderer, same version. Direct hardware GLX, not indirect software.
+- A hand-written EGL probe on the *X11 platform* (not surfaceless): hardware,
+  `OpenGL ES 3.2 Mesa 25.3.5`, `EGL_EXT_image_dma_buf_import` present.
+
+So every path an XWayland client could take was hardware. Firefox is the only thing on
+this host pinned to XWayland -- `GDK_BACKEND=x11`, `MOZ_ENABLE_WAYLAND` empty -- which is
+the still-unresolved item from the 2026-09-05 mozconfig work, and it is *not* the cause
+here: the fresh-instance test below ran on the same XWayland display and got the GPU.
+
+### Firefox's own probe passes when run by hand
+
+`/usr/lib/firefox/glxtest -f 3` is the helper Firefox forks at startup to decide whether
+a GPU exists. Run directly it answers correctly and completely:
+
+```
+PCI_VENDOR_ID 0x8086   PCI_DEVICE_ID 0x1916   DRI_DRIVER iris
+VENDOR Intel           RENDERER Mesa Intel(R) HD Graphics 520 (SKL GT2)
+VERSION 4.6 (Compatibility Profile) Mesa 25.3.5
+DRM_RENDERDEVICE /dev/dri/renderD128     TEST_TYPE EGL
+```
+
+200 consecutive runs, zero failures, with and without `DISPLAY`. `libpci.so.3` is
+installed, so it is not taking its own `libpci missing` path either. Worth recording that
+the report is *stunted* (92 bytes instead of 272) when `DISPLAY` is unset and only
+`WAYLAND_DISPLAY` is available -- not what happened here, but it is the shape a
+Wayland-native Firefox would have to deal with.
+
+### What was actually wrong: no Mesa in the browser at all
+
+The measurement that ended the search, and the one worth reaching for first next time:
+
+```
+# every one of the 21 live Firefox processes
+pid 1147934 type=parent glmaps=0
+... all 21 ...  glmaps=0
+```
+
+Not one of them had `libEGL`, `libGLX`, `libgallium` or anything under `/usr/lib/dri/`
+mapped, and none held an fd on `/dev/dri/*`. Controls taken in the same minute: `mpv` had
+`libEGL`, `libgbm`, `iHD_drv_video.so` and an open `renderD128`; Hyprland had `libEGL`,
+`libEGL_mesa`, `libgallium`, `libgbm`. So the browser was compositing in software and had
+been since it started, while everything else on the machine used the GPU.
+
+A Firefox started fresh on the same display, same profile directory layout, mapped
+`libEGL_mesa`, `libGLX_mesa` and `libgallium-25.3.5.so` immediately and reported
+hardware WebGL 1 and 2 -- real rendering verified by clearing to green and reading the
+pixel back `[0,255,0,255]`, and `failIfMajorPerformanceCaveat: true` succeeding, which
+Firefox only allows on hardware.
+
+### Cause: the probe SEGV'd at startup, and Firefox failed silently
+
+```
+Sep 10 15:39:10 laptop kernel: glxtest[1147944]: segfault at 143 ip 00007f078455b3e0
+    sp 00007ffe1599f328 error 4 in libc.so.6[943e0,7f07844eb000+161000]
+Sep 10 15:39:10 laptop systemd-coredump[1147952]: Process 1147944 (glxtest) of user 1000
+    dumped core.
+```
+
+Firefox's parent (pid 1147934) started at `Thu Sep 10 15:39:10` -- the same second. The
+probe died, Firefox got no GPU information, and it ran for the next nine hours and
+forty-four minutes on software with nothing in the UI to say so and no pref written to
+record it.
+
+Resolving the faulting offset by hand, since this build has `--disable-debug-symbols` and
+there is no gdb on the host: libc offset `0x943e0` is exactly the entry of
+`pthread_mutex_lock` (736 bytes, per `readelf -sW`), and `error 4` is a user-mode read of
+the unmapped address `0x143`. That is a garbage mutex pointer in the forked child, not a
+driver fault -- consistent with the probe succeeding 200/200 when it is not being forked
+out of a starting browser.
+
+`coredumpctl` has three of these, and the pattern is the useful part:
+
+| when | pid | cgroup |
+|---|---|---|
+| 2026-09-08 16:16:45 | 870967 | `app-slack-1252.scope` |
+| 2026-09-08 16:18:50 | 871623 | `app-slack-1252.scope` |
+| 2026-09-10 15:39:10 | 1147944 | `app-slack-1252.scope` |
+
+All three in a Firefox launched from a link in Slack, all three invoked as
+`glxtest -f 16`. Not reproducible from a shell under any environment tried (empty env, no
+`DISPLAY`, no `HOME`, no `XDG_RUNTIME_DIR`, no `XAUTHORITY`, 100 runs each). Slack
+rewrites its own `/proc/self/environ`, so the environment it hands a child could not be
+read back to narrow it further. Left as: intermittent, correlated with that launch path,
+not yet root-caused past the bad mutex pointer.
+
+### Fix
+
+Restarting Firefox restores the GPU, which is the immediate answer but not a durable one
+-- the next crash takes it away again just as quietly.
+
+Three prefs take the probe out of the decision, written both to this host's live profile
+`user.js` and to `hosts/laptop/overlay/usr/lib/firefox/firefox.cfg`, each carrying the
+reasoning:
+
+```
+gfx.webrender.all            true
+webgl.force-enabled          true
+gfx.x11-egl.force-enabled    true
+```
+
+Verified after setting them: Mesa still mapped, WebGL 1 and 2 still hardware, readback
+still correct, `failIfMajorPerformanceCaveat` still passing. These are only defensible
+because the GPU was measured good first; on a host with a genuinely blocklisted GPU they
+would force a known-bad path, which is why they are in the host overlay rather than the
+shared one.
+
+### What this does not explain
+
+Whether the site's check was reading the missing acceleration or something else. Its
+message string is in neither `play.globalpoker.com`'s client bundle
+(`poker-client-38.212.0.js`) nor its `i18n/en-38.212.0.json`, and the table hosts that
+would carry it (`poker-table`, `ring-game`, `lobby`) answer 503 without a session, so the
+check itself was never read. Two other things it could legitimately have failed on, both
+still true after this fix:
+
+- **The GPU name Firefox reports is a downgrade.** With the default
+  `webgl.sanitize-unmasked-renderer` = true, `WEBGL_debug_renderer_info` gives
+  `Intel(R) HD Graphics 400, or similar` -- a Braswell Atom part, well below the real
+  Skylake GT2. Setting it false reports the truth,
+  `Mesa Intel(R) HD Graphics 520 (SKL GT2)`. Left at the default: it is a deliberate
+  anti-fingerprinting measure every Firefox user gets, and a site gating on GPU tier is
+  a guess until the check is actually read.
+- **WebGPU cannot be enabled at all in this build.** `dom.webgpu.enabled` exists and
+  flipping it makes `navigator.gpu` appear, but `requestAdapter()` then throws
+  `NotSupportedError: WebGPU is not yet available in Release or late Beta builds`. No
+  pref reaches it; it would need a non-ESR or non-release build. Recorded so the next
+  person does not spend the same hour on it.
+
+### Unrelated, found on the way
+
+- **`hosts/laptop/overlay/usr/lib/firefox/firefox.cfg` was already stale on disk.** The
+  repo copy (2026-09-08 22:46, 3893 bytes) is the Positon revision; the deployed
+  `/usr/lib/firefox/firefox.cfg` (2026-09-08 16:01, 3342 bytes) is the earlier beaconDB
+  one. Comment-only difference, so nothing behaves differently, but it means the overlay
+  has not been re-applied since that work and is worth a pass -- the geoclue `conf.d`
+  file from the same change may be in the same state.
+- **`/usr/lib/dri/iHD_drv_video.so` is 517 MB.** Unstripped, and roughly twenty times the
+  size the rest of the tree would predict. Strip/compress hygiene, an `/lfs-audit` item,
+  not touched here.
+
+### Same day, verified after the restart -- and Firefox is a Wayland client now
+
+The restarted browser has the GPU. Parent pid 1220500, started 01:38:33:
+
+```
+glmaps=25   dri_fd=[dri/renderD128]
+libEGL.so.1  libEGL_mesa.so.0  libGLX.so.0  libGLX_mesa.so.0
+libgallium-25.3.5.so  libgbm.so.1
+```
+
+An open fd on the render node plus `libgbm` is the difference from the broken instance,
+which had neither in any of its 21 processes. No new `glxtest` core for this start.
+
+Two traps in taking this measurement, both worth writing down because the first one
+produced a wrong answer before it produced a right one:
+
+- **The parent's `argv[0]` is bare `firefox`, not the install path.** `pgrep -f
+  '/usr/lib/firefox/firefox'` matches every `-contentproc` child and misses the parent.
+  It happened to work on the broken instance only because that one had been launched from
+  a Slack link and carried the URL in its command line. Match on `comm` (`pgrep -x
+  firefox`) or read the whole list.
+- **Content processes legitimately have no Mesa mapped.** `webgl.out-of-process` is on by
+  default in 140, so WebGL and WebRender live in the parent and children reach GL through
+  it. Zero in a `Web Content` process means nothing; zero in the parent is the finding.
+
+Separately, and not something this work aimed at: this instance is running as a **native
+Wayland client**. `hyprctl clients` reports `xwayland=false` for it, its environment has
+`MOZ_ENABLE_WAYLAND=1` and no `GDK_BACKEND`, and it is on the GPU in that mode.
+
+That contradicts a claim still sitting in this host's `blfs-firefox` override reason from
+2026-09-05: that forcing `GDK_BACKEND=wayland` "still crashes at runtime (`cannot open
+display :0`) ... root cause not yet found". Whatever that was, it does not reproduce now.
+Recorded as an observation, not an explanation -- nothing here identified what changed,
+and the earlier failure was with `GDK_BACKEND=wayland` rather than `MOZ_ENABLE_WAYLAND=1`,
+which are not the same lever. The override reason is annotated rather than rewritten.
+
+### Same day, resolved: why Firefox's graphics stack depended on who launched it
+
+The Wayland observation above has a mundane explanation, and it also explains the X11
+mode the broken instance was running in.
+
+`~/.local/share/applications/firefox.desktop` -- a symlink into the separate `~/Config`
+dotfile repo, `hosts/laptop/applications/firefox.desktop` -- read:
+
+```
+Exec=env GTK_CSD=0 GDK_BACKEND=x11 MOZ_ENABLE_WAYLAND= /usr/lib/firefox/firefox %u
+```
+
+`hyprland.lua` already exports `MOZ_ENABLE_WAYLAND=1` session-wide (line 41, alongside
+`QT_QPA_PLATFORM=wayland` and `SDL_VIDEODRIVER=wayland`), so the session default was
+right the whole time. This file blanked it at exec time and forced XWayland on top.
+
+A copy in `~/.local/share/applications` shadows `/usr/share/applications`, and
+`mimeapps.list` routes every http/https/html association to `firefox.desktop`. So:
+
+- **a link opened from another application** -- Slack, anything through `xdg-open` --
+  resolved to this file and got `GDK_BACKEND=x11`, `MOZ_ENABLE_WAYLAND=` empty;
+- **`firefox` typed in a shell** hit `/usr/bin/firefox` with the session environment
+  intact and came up a native Wayland client.
+
+Same browser, two graphics stacks, decided by who started it. That is why the instance
+found broken this morning was on XWayland (launched from a Slack link) and the one started
+by hand at 01:38 was not. It is also why the 2026-09-05 note about Wayland "crashing at
+runtime" never got resolved -- day-to-day launches could not reach Wayland at all.
+
+Two leftover `userapp-Firefox-*.desktop` entries ("Custom definition for Firefox",
+`NoDisplay=true`, both auto-generated by a GTK open-with dialog on 2026-09-04) forced X11
+the same way. Nothing referenced them; `mimeapps.list` names only `firefox.desktop`.
+
+**Fixed** by pinning Wayland explicitly rather than relying on inheritance, so the answer
+no longer depends on the launcher:
+
+```
+Exec=env MOZ_ENABLE_WAYLAND=1 firefox %u
+```
+
+The rest of the entry was rebuilt from the system file rather than kept minimal, so
+`Icon`, `MimeType` and `StartupWMClass=firefox` survive the shadowing -- the previous user
+copy had dropped all three. `desktop-file-validate` passes (one inherited warning: the
+`Encoding` key the BLFS recipe writes is deprecated). `gio mime x-scheme-handler/https`
+and `text/html` both still resolve to `firefox.desktop`. No `Exec` line anywhere in
+`/usr/share/applications` or `~/.local/share/applications` forces X11 any more.
+
+`GTK_CSD=0` was deliberately not carried over: it belonged with the X11 choice, and under
+Wayland Hyprland draws the border while Firefox handles its own titlebar. The old file and
+both `userapp-*` entries are in `~/.local/share/applications/disabled-2026-09-11/`.
+
+Note this change lives in the `~/Config` repo, not this one -- that is where this host's
+dotfiles are tracked, under the same `hosts/<h>/` split. Uncommitted there.
+
+Nothing to restart: the running browser was already the Wayland one. The fix applies to
+the next cold start from a link.
+
+### 2026-09-11, later: auditing what Firefox actually gets from this GPU
+
+Follow-on to the morning's work, with Firefox now a Wayland client on the GPU. The
+question asked was whether it is fully exploiting the hardware, so each path was measured
+rather than inferred from a pref being set.
+
+#### Method: a structural test, not a CPU-drop test
+
+Every claim below rests on which process holds an fd on `/dev/dri/renderD128` and what it
+has mapped, because that is unambiguous:
+
+- **parent** holding the render node with `libgallium` / `libEGL_mesa` / `libgbm` mapped
+  = hardware WebRender with dmabuf;
+- **`RDD Process`** holding the render node with `iHD_drv_video.so` mapped = hardware
+  video decode.
+
+A CPU number alone cannot distinguish "decoded on the GPU" from "decoded cheaply". Both
+were recorded, and they agree.
+
+Same trap as this morning, hit twice more: child processes carry no `-profile` argument,
+so `pgrep -f "profile <dir>"` returns the parent alone and silently measures a twelfth of
+the browser. Walk the tree from the parent instead. And `pkill -f "<pattern>"` where the
+pattern also appears in the running shell's own command line kills the shell -- two
+commands died with status 144 before that was obvious.
+
+#### What the GPU actually decodes
+
+Enumerated by a small libva program against `/dev/dri/renderD128` (iHD 25.3.4, VA-API
+1.23), not read off a spec sheet:
+
+| profile | decode | encode |
+|---|---|---|
+| H.264 Constrained Baseline / Main / High | yes | yes, incl. low-power |
+| HEVC Main (8-bit) | yes | yes |
+| VP8 | yes | yes |
+| MPEG-2, VC-1 | yes | MPEG-2 only |
+| JPEG | yes | encode-picture |
+| **VP9** | **no** | no |
+| **AV1** | **no** | no |
+| **HEVC Main10 / Main12** | **no** | no |
+
+Skylake GT2 has no VP9 or AV1 decode block. Firefox's own `vaapitest -d
+/dev/dri/renderD128` agrees at the top level (`VAAPI_SUPPORTED TRUE`).
+
+#### Measured cost of that gap
+
+Same source, 1280x720@30, ~3 Mbps each, total CPU across the whole process tree:
+
+| codec | CPU | decode path |
+|---|---|---|
+| H.264 | 28.9% | hardware (RDD holds renderD128) |
+| VP9 | 63.9% | software (2.2x) |
+| AV1 | 73.8% | software (2.6x) |
+
+On two cores, at 720p. An earlier unmatched pair put VP9 at 1 Mbps against H.264 at
+3 Mbps and *still* showed VP9 costing more, so the matched figures above are the
+conservative ones.
+
+#### Changed: push adaptive streaming onto the codec the hardware decodes
+
+```
+media.av1.enabled              false
+media.mediasource.webm.enabled false
+```
+
+Verified by `MediaSource.isTypeSupported` before and after: `webm/vp9`, `webm/vp8`,
+`webm/opus` and every AV1 variant go from true to false, while `mp4/h264`, `mp4/hevc` and
+`mp4/aac` stay true. Deliberately narrow -- plain `<video src="...webm">` still plays VP9,
+VP8 and Opus through the element path (`canPlayType` "probably"); only MediaSource is
+restricted, and `media.webm.enabled` is untouched.
+
+The standard objection is that this caps YouTube at 1080p. It costs nothing here: the two
+attached displays are 1360x768 and 1440x900, both below that already. This is host-specific
+on two counts -- the codec list is this GPU's, and the resolution argument is this desk's.
+A 4K panel or a GPU with a VP9 block should not carry these prefs.
+
+#### Tested and deliberately not changed
+
+- **`gfx.canvas.accelerated`**: a canvas2d benchmark (900 transformed, filled, stroked
+  objects per frame at 1200x700) measured **19.0%** CPU at the shipped default against
+  **20.1%** forced on. No benefit, so no pref. Recorded so it is not "tried" again.
+- **WebGPU**: still unreachable, as established this morning -- `requestAdapter()` throws
+  `NotSupportedError: WebGPU is not yet available in Release or late Beta builds`
+  regardless of `dom.webgpu.enabled`.
+- **`gfx.x11-egl.force-enabled`**: now moot with Firefox on Wayland, kept because it costs
+  nothing and still applies if anything ever falls back to XWayland.
+- **Hardware video *encode*** (H.264, VP8, HEVC Main all present above) is not wired to
+  anything: it would only matter for WebRTC capture, which nothing on this host does yet.
+  Noted as available rather than enabled.
+
+#### End state, verified in one run with all prefs together
+
+```
+parent      renderD128 x5   libEGL_mesa + libgallium + libgbm mapped
+RDD Process renderD128 x6   iHD_drv_video.so mapped
+compositor  xwayland=false
+```
+
+Hardware WebRender, hardware H.264 decode, native Wayland, and WebGL 1/2 on hardware with
+readback verified. The live profile's `user.js` and this host's overlay `firefox.cfg` carry
+the same nine prefs with the reasoning inline. The running browser picks up the codec prefs
+at its next start; the acceleration prefs were already in effect.
+
 ## 2026-09-12 -- Nextcloud desktop client (seq 326-333), and eight dependencies
 
 Operator asked for "the nextcloud client ... the thing that sits in the system tray and
