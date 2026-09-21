@@ -1060,7 +1060,7 @@ firmware only -- display itself still works without it). `host.toml`'s own
 `[hardware]` `wifi` line already said the 8260 "needs iwlwifi-8260 firmware blobs from
 linux-firmware, a BLFS step" -- that step was simply never added to `packages.py`. The
 wired NIC (Intel I219-LM, `e1000e`) is clean in the same dump: driver loads, MAC
-`54:ee:75:9b:1d:af` assigned, renamed `eth0` -> `enp0s31f6` at t=20.6s, no firmware
+`<wifi MAC>` assigned, renamed `eth0` -> `enp0s31f6` at t=20.6s, no firmware
 requested or missing.
 
 **The wired-unreachable symptom traced to `systemd-networkd` and `NetworkManager`
@@ -1267,7 +1267,7 @@ Verified live, not just built: both new kernel version strings report identicall
 `6.18.10`, so `usbnet.ko`/`cdc_ether.ko` were copied straight into the *currently
 running* USB-booted system's own `/lib/modules/6.18.10` and `modprobe cdc_ether`
 loaded clean (no vermagic mismatch). `cdc_ether` bound the dock immediately
-(`eth0`, `00:50:b6:cd:0a:5b`), NetworkManager brought it up, and it pulled a real DHCP
+(`eth0`, `<dock ethernet MAC>`), NetworkManager brought it up, and it pulled a real DHCP
 lease (`192.168.0.210/24`, gateway `192.168.0.1`, working DNS) -- full connectivity
 confirmed before ever rebooting onto the internal disk. Removed the 2.7G kernel build
 scratch (`/sources/linux-6.18.10`, tarball, logs) from `/mnt/target` afterward; it was
@@ -4468,8 +4468,8 @@ directory added in the same change.
     ps -o user -p $MAINPID           tor
     ss -lntp                         LISTEN 127.0.0.1:9050 only (not 0.0.0.0)
     curl -x socks5h://127.0.0.1:9050 https://check.torproject.org/api/ip
-                                     {"IsTor":true,"IP":"192.76.153.253"}
-    curl (same URL, direct)          {"IsTor":false,"IP":"24.254.103.217"}
+                                     {"IsTor":true,"IP":"<a Tor exit node>"}
+    curl (same URL, direct)          {"IsTor":false,"IP":"<this site's WAN address>"}
     lfsmaint owns /usr/bin/tor       tor-0.4.9.11 (BLFS)
 
 `bin/extract-blfs.py --check` reports zero drift at 328 planned steps. No firewall change

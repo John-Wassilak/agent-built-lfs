@@ -108,23 +108,10 @@ cat > /etc/hosts << "EOF"
 ::1        localhost ip6-localhost ip6-loopback
 ff02::1    ip6-allnodes
 ff02::2    ip6-allrouters
-
-# Local
-192.168.0.189   NVR cam
-192.168.0.184   pi-tv
-192.168.0.133   pi-master-tv
-192.168.0.30    pi-router-local
-192.168.0.230   pi-cat
-192.168.0.233   server-local
-
-# wireguard vpn (laptop is 10.0.0.2)
-10.0.0.1        pi-router
-10.0.0.3        android
-10.0.0.4        server
-10.0.0.5        jumpbox
-
-# Remote
-24.254.103.217  pi-router-remote
-185.246.155.65  jumpbox-remote
 EOF
+
+# Site-specific entries are appended from an untracked file, not baked in here.
+if [ -f /sources/hosts.local ]; then
+    cat /sources/hosts.local >> /etc/hosts
+fi
 

@@ -87,3 +87,9 @@ Things worth knowing before changing anything here:
   itself (e.g. `recipes/<family>-<ver>/`) so two hosts on different book versions never
   share one candidate file -- was identified but not implemented; flag it if a third
   host or another cross-version gap appears.
+
+Site data is untracked on purpose. `etc-hosts.local` and `authorized-keys.local` hold this
+machine's LAN/VPN map and its SSH access list; both are gitignored with tracked `.example`
+templates, staged into `/sources` before a build, and read by `ch09-network` and
+`blfs-authorized-keys-john`. They were inline in the tracked recipes until 2026-09-21 --
+do not move them back. The repo is public.

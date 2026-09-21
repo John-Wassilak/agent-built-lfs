@@ -1,0 +1,17 @@
+# Template for hosts/<host>/etc-hosts.local, which is untracked (.gitignore) because a
+# LAN map and WAN addresses do not belong in a public repo. Copy to etc-hosts.local,
+# fill in the real entries, and stage it to /sources/hosts.local before a build -- same
+# convention as kernel-config.sh. ch09-network appends it to the loopback block the book
+# generates; if the file is absent the build still produces a complete, working
+# /etc/hosts, so this is optional.
+
+# Local
+# 192.168.0.10    nas
+# 192.168.0.11    printer
+
+# wireguard vpn (this host is 10.0.0.2)
+# 10.0.0.1        router
+# 10.0.0.4        server
+
+# Remote
+# 203.0.113.10    router-remote
