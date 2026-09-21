@@ -1,7 +1,7 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the BLFS 13.0-systemd book.
-# source : book/blfs-13.0/general/glib2.html
-# title  : GLib-2.86.4
+# CANDIDATE recipe extracted from the BLFS 13.1-systemd book.
+# source : book/blfs-13.1/general/glib2.html
+# title  : GLib-2.88.3
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 set -e
 
@@ -22,10 +22,6 @@ if [ -e /usr/include/glib-2.0 ]; then
 fi
 
 # --- block 2 --------------------------------------------------
-#   ctx: First, fix a memory corruption problem exposed by glibc-2.43:
-patch -Np1 -i ../glib-2.86.4-upstream_fixes-1.patch
-
-# --- block 3 --------------------------------------------------
 #   ctx: Install GLib by running the following commands:
 mkdir build &&
 cd    build &&
@@ -39,14 +35,14 @@ meson setup ..                  \
       -D sysprof=disabled       &&
 ninja
 
-# --- block 4 --------------------------------------------------
+# --- block 3 --------------------------------------------------
 #   ctx: The GLib test suite requires desktop-file-utils for some tests. However,
 #   ctx: desktop-file-utils requires GLib in order to compile; therefore, you must first install
 #   ctx: GLib and then run the test suite. As the root user, install this package for the first
 #   ctx: time to allow building GObject Introspection:
 ninja install
 
-# --- block 5 --------------------------------------------------
+# --- block 4 --------------------------------------------------
 #   ctx: Build GObject Introspection:
 tar xf ../../gobject-introspection-1.86.0.tar.xz &&
 
@@ -54,27 +50,27 @@ meson setup gobject-introspection-1.86.0 gi-build \
             --prefix=/usr --buildtype=release     &&
 ninja -C gi-build
 
-# --- block 6 --------------------------------------------------
+# --- block 5 --------------------------------------------------
 #   ctx: To test the results of GObject Introspection, issue: ninja -C gi-build test. As the root
 #   ctx: user, install GObject Introspection for generating the introspection data of GLib
 #   ctx: libraries (required by various packages using Glib, especially some GNOME packages):
 ninja -C gi-build install
 
-# --- block 7 --------------------------------------------------
+# --- block 6 --------------------------------------------------
 #   ctx: Now generate the introspection data:
 meson configure -D introspection=enabled &&
 ninja
 
-# --- block 8 --------------------------------------------------
+# --- block 7 --------------------------------------------------
 #   ctx: If you have Gi-DocGen-2026.1 installed and wish to build the API documentation for this
 #   ctx: package, issue:
-#   REVIEWED [drop]: Builds HTML documentation (-D documentation=true), needs rst2html5 (from docutils). Same root cause as block 3's man-pages fix -- docutils deliberately skipped, one-level policy. Block 9's final 'ninja install' still runs and installs the introspection-enabled build from block 7.
+#   REVIEWED [drop]: Builds HTML documentation (-D documentation=true), needs rst2html5 (from docutils). Same root cause as block 3's man-pages fix -- docutils deliberately skipped, one-level policy. Block 9's final 'ninja install' still runs and installs the introspection-enabled build from block 7. Reindexed for the 2026-09-07 BLFS 13.1 bump (server; see book/blfs-13.1 vs book/blfs-13.0). Old index 8 -> 7 (same cause as block 2's reindex).
 # sed "/docs_dir =/s|$| / 'glib-' + meson.project_version()|" \
 #     -i ../docs/reference/meson.build                        &&
 # meson configure -D documentation=true                       &&
 # ninja
 
-# --- block 9 --------------------------------------------------
+# --- block 8 --------------------------------------------------
 #   ctx: If the GLIB_LOG_LEVEL environment variable is set, unset it before running the tests.
 #   ctx: Also one file that was created in the first install instruction above needs to be
 #   ctx: writable. As the root user, run chmod a+rw .ninja_log. To test the results, issue:

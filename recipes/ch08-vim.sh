@@ -1,16 +1,16 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter08/vim.html
-# title  : 8.75. Vim-9.2.0078
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter08/vim.html
+# title  : 8.74 Vim-9.2.1025
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
 
 # --- block 0 --------------------------------------------------
-#   ctx: s a powerful text editor. Approximate build time: 3.2 SBU Required disk space: 217 MB
+#   ctx: ns a powerful text editor. Approximate build time: 3.3 SBU Required disk space: 234 MB
 #   ctx: Alternatives to Vim If you prefer another editor—such as Emacs, Joe, or Nano—please
-#   ctx: refer to https://www.linuxfromscratch.org/blfs/view/13.0-systemd/postlfs/editors.html
-#   ctx: for suggested installation instructions. 8.75.1. Installation of Vim First, change the
+#   ctx: refer to https://www.linuxfromscratch.org/blfs/view/13.1-systemd/postlfs/editors.html
+#   ctx: for suggested installation instructions. 8.74.1 Installation of Vim First, change the
 #   ctx: default location of the vimrc configuration file to /etc:
 echo '#define SYS_VIMRC_FILE "/etc/vimrc"' >> src/feature.h
 
@@ -35,11 +35,11 @@ sed '/test_plugin_glvs/d' -i src/testdir/Make_all.mak
 #    &> vim-test.log
 
 # --- block 5 --------------------------------------------------
-#   ctx: terminal (especially while we are overriding the TERM variable to satisfy some
-#   ctx: assumptions of the test suite). The problem can be avoided by redirecting the output to
-#   ctx: a log file as shown above. A successful test will result in the words ALL DONE in the
-#   ctx: log file at completion. Two tests, Test_client_server_stopinsert() and
-#   ctx: Test_popup_setbuf(), are known to fail on some systems. Install the package:
+#   ctx: f the current terminal (especially while we are overriding the TERM variable to satisfy
+#   ctx: some assumptions of the test suite). The problem can be avoided by redirecting the
+#   ctx: output to a log file as shown above. A successful test will show FAILED: 0 in the log
+#   ctx: file at completion. Two tests, Test_client_server_stopinsert() and Test_popup_setbuf(),
+#   ctx: are known to fail on some systems. Install the package:
 make install
 
 # --- block 6 --------------------------------------------------
@@ -53,9 +53,9 @@ done
 
 # --- block 7 --------------------------------------------------
 #   ctx: By default, Vim's documentation is installed in /usr/share/vim. The following symlink
-#   ctx: allows the documentation to be accessed via /usr/share/doc/vim-9.2.0078, making it
+#   ctx: allows the documentation to be accessed via /usr/share/doc/vim-9.2.1025, making it
 #   ctx: consistent with the location of documentation for other packages:
-ln -sv ../vim/vim92/doc /usr/share/doc/vim-9.2.0078
+ln -sv ../vim/vim92/doc /usr/share/doc/vim-9.2.1025
 
 # --- block 8 --------------------------------------------------
 #   ctx: in the past. The “nocompatible” setting is included below to highlight the fact that a

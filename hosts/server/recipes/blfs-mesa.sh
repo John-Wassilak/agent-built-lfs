@@ -1,7 +1,7 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the BLFS 13.0-systemd book.
-# source : book/blfs-13.0/x/mesa.html
-# title  : Mesa-25.3.5
+# CANDIDATE recipe extracted from the BLFS 13.1-systemd book.
+# source : book/blfs-13.1/x/mesa.html
+# title  : Mesa-26.1.7
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 set -e
 
@@ -10,7 +10,7 @@ set -e
 #   ctx: your video hardware, you probably need only specific drivers. The first thing you need
 #   ctx: to know is which type of video device you have. In some cases it is built into the CPU.
 #   ctx: In others it is a separate PCI card. In either case you can tell what video hardware you
-#   ctx: have by installing pciutils-3.14.0 and running:
+#   ctx: have by installing pciutils-3.15.0 and running:
 #   REVIEWED [drop]: `lspci | grep VGA`, the book telling a reader to look up their own GPU before choosing drivers. A scripted build already knows: the answer is host.toml's [hardware].gpu, and the driver choice it feeds is block 2's host override. pciutils is also not necessarily installed this early.
 # lspci | grep VGA
 
@@ -21,10 +21,18 @@ set -e
 #   ctx: have downloaded the xdemos patch (needed if testing the Xorg installation per BLFS
 #   ctx: instructions), apply it by running the following command:
 #   REVIEWED [drop]: Applies the optional xdemos patch ('If you have downloaded...'). Not fetched: it only adds demo programs for testing an Xorg install, which nothing here needs.
-# patch -Np1 -i ../mesa-add_xdemos-4.patch
+# patch -Np1 -i ../mesa-add_xdemos-5.patch
 
 # --- block 2 --------------------------------------------------
 #   ctx: Install Mesa by running the following commands:
+_restore_resolv() {
+    rm -f /etc/resolv.conf
+    ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
+}
+trap _restore_resolv EXIT
+rm -f /etc/resolv.conf
+printf 'nameserver 1.1.1.1\nnameserver 8.8.8.8\n' > /etc/resolv.conf
+
 mkdir build &&
 cd    build &&
 
@@ -56,5 +64,5 @@ ninja install
 # --- block 5 --------------------------------------------------
 #   ctx: If desired, install the optional documentation by running the following commands as the
 #   ctx: root user:
-cp -rv ../docs -T /usr/share/doc/mesa-25.3.5
+cp -rv ../docs -T /usr/share/doc/mesa-26.1.7
 

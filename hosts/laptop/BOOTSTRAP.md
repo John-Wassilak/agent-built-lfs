@@ -94,6 +94,32 @@ what it used.
   relevant at deploy time (step 5) since this box boots BIOS/MBR onto the existing
   partition table, not a fresh install.
 
+## 3b. Site-specific files -- staged, never committed
+
+Two inputs carry this site's own data and are deliberately untracked (`.gitignore`),
+because this repo is public. Each has a tracked `.example` template beside it. Both are
+staged into the sources directory before a build, the same way `kernel-config.sh` already
+is, and the recipes read them from there:
+
+| repo file (untracked) | staged to | read by | missing? |
+|---|---|---|---|
+| `hosts/laptop/etc-hosts.local` | `/sources/hosts.local` | `ch09-network` | fine -- loopback-only `/etc/hosts` |
+| `hosts/laptop/authorized-keys.local` | `/sources/authorized-keys.local` | `blfs-authorized-keys-john` | **hard error** |
+
+```sh
+cp hosts/laptop/etc-hosts.local        $LFS/sources/hosts.local
+cp hosts/laptop/authorized-keys.local  $LFS/sources/authorized-keys.local
+```
+
+The asymmetry is deliberate. A missing hosts file costs you some convenience names, so
+the recipe appends it only if present. A missing keys file would produce an empty
+`authorized_keys` while `blfs-openssh` has password authentication disabled -- no SSH
+access at all -- so that recipe exits non-zero instead.
+
+Keeping them in the repo but untracked is what makes them survive across rebuilds: they
+sit next to the host they belong to, and a fresh clone gets the templates rather than
+this machine's network map.
+
 ## 4. Build chapters 4-11
 
 ```

@@ -1,23 +1,23 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter05/gcc-pass1.html
-# title  : 5.3. GCC-15.2.0 - Pass 1
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter05/gcc-pass1.html
+# title  : 5.3 GCC-16.2.0 - Pass 1
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
 
 # --- block 0 --------------------------------------------------
-#   ctx: directories so the GCC build procedures will automatically use them: Note There are
-#   ctx: frequent misunderstandings about this chapter. The procedures are the same as every
-#   ctx: other chapter, as explained earlier (Package build instructions). First, extract the
-#   ctx: gcc-15.2.0 tarball from the sources directory, and then change to the directory created.
+#   ctx: ies so the GCC build procedures will automatically use them: Note There are frequent
+#   ctx: misunderstandings about the instructions here. The procedures are the same as every
+#   ctx: other package, as explained earlier (Package build instructions). First, extract the
+#   ctx: gcc-16.2.0 tarball from the sources directory, and then change to the directory created.
 #   ctx: Only then should you proceed with the instructions below.
 tar -xf ../mpfr-4.2.2.tar.xz
 mv -v mpfr-4.2.2 mpfr
 tar -xf ../gmp-6.3.0.tar.xz
 mv -v gmp-6.3.0 gmp
-tar -xf ../mpc-1.3.1.tar.gz
-mv -v mpc-1.3.1 mpc
+tar -xf ../mpc-1.4.1.tar.xz
+mv -v mpc-1.4.1 mpc
 
 # --- block 1 --------------------------------------------------
 #   ctx: On x86_64 hosts, set the default directory name for 64-bit libraries to “lib”:
@@ -42,12 +42,13 @@ cd       build
 ../configure                  \
     --target=$LFS_TGT         \
     --prefix=$LFS/tools       \
-    --with-glibc-version=2.43 \
+    --with-glibc-version=2.44 \
     --with-sysroot=$LFS       \
     --with-newlib             \
     --without-headers         \
     --enable-default-pie      \
     --enable-default-ssp      \
+    --disable-fixincludes     \
     --disable-nls             \
     --disable-shared          \
     --disable-multilib        \
@@ -73,12 +74,11 @@ make
 make install
 
 # --- block 6 --------------------------------------------------
-#   ctx: he internal header using a command that is identical to what the GCC build system does
-#   ctx: in normal circumstances: Note The command below shows an example of nested command
-#   ctx: substitution using two methods: backquotes and a $() construct. It could be rewritten
-#   ctx: using the same method for both substitutions, but is shown this way to demonstrate how
-#   ctx: they can be mixed. Generally the $() method is preferred.
-cd ..
-cat gcc/limitx.h gcc/glimits.h gcc/limity.h > \
-  `dirname $($LFS_TGT-gcc -print-libgcc-file-name)`/include/limits.h
+#   ctx: imits.h does not exist, so the internal header that has just been installed is a
+#   ctx: partial, self-contained file and does not include the extended features of the system
+#   ctx: header. This is adequate for building Glibc, but the full internal header will be needed
+#   ctx: later. Create a full version of the internal header using a command that is identical to
+#   ctx: what the GCC build system does in normal circumstances:
+cat ../gcc/{limitx,glimits,limity}.h  > \
+  $($LFS_TGT-gcc -print-file-name=include)/limits.h
 

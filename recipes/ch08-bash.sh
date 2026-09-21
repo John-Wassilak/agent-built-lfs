@@ -1,14 +1,14 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter08/bash.html
-# title  : 8.37. Bash-5.3
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter08/bash.html
+# title  : 8.39 Bash-5.3
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
 
 # --- block 0 --------------------------------------------------
-#   ctx: The Bash package contains the Bourne-Again Shell. Approximate build time: 1.5 SBU
-#   ctx: Required disk space: 56 MB 8.37.1. Installation of Bash Prepare Bash for compilation:
+#   ctx: The Bash package contains the Bourne-Again Shell. Approximate build time: 1.4 SBU
+#   ctx: Required disk space: 56 MB 8.39.1 Installation of Bash Prepare Bash for compilation:
 ./configure --prefix=/usr             \
             --without-bash-malloc     \
             --with-installed-readline \

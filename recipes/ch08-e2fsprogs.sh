@@ -1,7 +1,7 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter08/e2fsprogs.html
-# title  : 8.83. E2fsprogs-1.47.3
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter08/e2fsprogs.html
+# title  : 8.82 E2fsprogs-1.47.4
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
@@ -9,7 +9,7 @@ set -e
 # --- block 0 --------------------------------------------------
 #   ctx: The E2fsprogs package contains the utilities for handling the ext2 file system. It also
 #   ctx: supports the ext3 and ext4 journaling file systems. Approximate build time: 2.4 SBU on a
-#   ctx: spinning disk, 0.4 SBU on an SSD Required disk space: 100 MB 8.83.1. Installation of
+#   ctx: spinning disk, 0.4 SBU on an SSD Required disk space: 101 MB 8.82.1 Installation of
 #   ctx: E2fsprogs The E2fsprogs documentation recommends that the package be built in a
 #   ctx: subdirectory of the source tree:
 mkdir -v build

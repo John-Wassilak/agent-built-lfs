@@ -12,6 +12,27 @@ set -e
 export HOME="${HOME:-/root}"
 export PATH="/opt/go/bin:$PATH"
 
+# DNS fix added 2026-09-09 (fresh chroot build): `go build` needs to fetch module
+# dependencies from proxy.golang.org (go.sum entries not already vendored/cached) --
+# this chroot has no working /etc/resolv.conf by default, same class of issue as
+# blfs-rust/blfs-attrs/blfs-rofi and others.
+_restore_resolv() {
+    rm -f /etc/resolv.conf
+    ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
+}
+trap _restore_resolv EXIT
+rm -f /etc/resolv.conf
+printf 'nameserver 1.1.1.1\nnameserver 8.8.8.8\n' > /etc/resolv.conf
+
+# git init added 2026-09-09 (fresh chroot build): `make dev` shells out to git for a
+# build-version string (confirmed via a real failure: "fatal: not a git repository")
+# -- the extracted tarball is a plain source tree, not a checkout. An empty repo with
+# one commit is enough to satisfy whatever git command wants *some* output; the exact
+# version string it embeds is cosmetic (`bao version` output), not functional.
+git init -q
+git -c user.email=build@localhost -c user.name=build add -A
+git -c user.email=build@localhost -c user.name=build commit -q --no-gpg-sign -m "openbao-2.6.2 (unpacked tarball, not a real checkout)"
+
 make dev
 
 install -v -m755 bin/bao /usr/bin/bao

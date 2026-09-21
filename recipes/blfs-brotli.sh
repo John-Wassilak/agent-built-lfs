@@ -1,6 +1,6 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the BLFS 13.0-systemd book.
-# source : book/blfs-13.0/general/brotli.html
+# CANDIDATE recipe extracted from the BLFS 13.1-systemd book.
+# source : book/blfs-13.1/general/brotli.html
 # title  : brotli-1.2.0
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 set -e
@@ -9,7 +9,7 @@ set -e
 #   ctx: ive/v1.2.0/brotli-1.2.0.tar.gz Download MD5 sum: 8fbfae9a5ecbc278ae7f761ecb6d1285
 #   ctx: Download size: 632 KB Estimated disk space required: 33 MB (with python3 bindings)
 #   ctx: Estimated build time: 0.3 SBU (with python3 bindings; parallelism=4) Brotli Dependencies
-#   ctx: Required CMake-4.2.3 Optional pytest-9.0.2 (for testing Python3 bindings) Installation
+#   ctx: Required CMake-4.4.2 Optional pytest-9.1.1 (for testing Python3 bindings) Installation
 #   ctx: of Brotli Install brotli by running the following commands:
 mkdir build &&
 cd    build &&

@@ -67,9 +67,9 @@
     }
   },
   "ch08-gcc": {
-    "7": {
+    "5": {
       "action": "test",
-      "reason": "Book: GCC test suite is critical. Runs as the unprivileged tester user created in ch07-createfiles. Enabled non-fatal so documented failures do not abort the build."
+      "reason": "Book: GCC test suite is critical. Runs as the unprivileged tester user created in ch07-createfiles. Enabled non-fatal so documented failures do not abort the build. Reindexed 7->5 for the LFS 13.1 bump (2026-09-07): the book dropped a superseded 'sed affinity-fmt.c' workaround block and a 'sed /cpython/d plugin.exp' block, both upstream in GCC 16.2, which shifts the test-invocation block (chown/su tester -c \"make -k check\") two positions earlier. Confirmed by reading book/13.1/chapter08/gcc.html directly, not guessed from the count alone."
     }
   },
   "ch08-binutils": {
@@ -90,7 +90,7 @@
     },
     "5": {
       "action": "drop",
-      "reason": "Summarizes gmp-check-log, which is produced only by the `make check | tee gmp-check-log` block. That test suite is not in the critical three, so the log never exists and awk aborts the build."
+      "reason": "Summarizes the make-check test log(s), which exist only when the test suite (dropped below) actually ran. That test suite is not in the critical three, so no log exists and this command would abort the build. Command text updated for the 2026-09-07 LFS 13.1 bump: the book now uses `cat $(find -name '*.log') | grep -c ^PASS` instead of the old `awk ... gmp-check-log` one-liner -- same purpose (summarize the skipped test's results), same reason to drop it."
     }
   },
   "ch08-grub": {
@@ -186,10 +186,10 @@
     }
   },
   "ch08-shadow": {
-    "9": {
+    "10": {
       "action": "replace",
       "cmd": "echo \"root:lfs-changeme\" | chpasswd\necho \"### ROOT PASSWORD set non-interactively to: lfs-changeme -- CHANGE ON FIRST BOOT\"",
-      "reason": "Book runs interactive `passwd root`, which blocks the driver. Set non-interactively instead. A locked/empty root account would leave the booted system unusable, so a known temporary password is set and reported in the final summary."
+      "reason": "Book runs interactive `passwd root`, which blocks the driver. Set non-interactively instead. A locked/empty root account would leave the booted system unusable, so a known temporary password is set and reported in the final summary. Reindexed 9->10 for the LFS 13.1 bump (2026-09-07): the book inserted a new 'touch /etc/sub{u,g}id' block immediately before the passwd step. Confirmed by reading book/13.1/chapter08/shadow.html directly -- without this reindex the replacement would have landed on the wrong block and left the book's interactive `passwd root` to run unreplaced, hanging an unattended build."
     }
   },
   "ch08-vim": {
@@ -275,8 +275,8 @@
   "ch08-stripping": {
     "0": {
       "action": "replace",
-      "cmd": "save_usrlib=\"$(cd /usr/lib; ls ld-linux*[^g])\n             libc.so.6\n             libthread_db.so.1\n             libquadmath.so.0.0.0\n             libstdc++.so.6.0.34\n             libitm.so.1.0.0\n             libatomic.so.1.2.0\"\ncd /usr/lib\nfor LIB in $save_usrlib; do\n    objcopy --only-keep-debug --compress-debug-sections=zstd $LIB $LIB.dbg\n    cp $LIB /tmp/$LIB\n    strip --strip-debug /tmp/$LIB\n    objcopy --add-gnu-debuglink=$LIB.dbg /tmp/$LIB\n    install -vm755 /tmp/$LIB /usr/lib\n    rm /tmp/$LIB\ndone\nonline_usrbin=\"bash find strip\"\nonline_usrlib=\"libbfd-2.46.0.20260210.so\n               libsframe.so.3.0.0\n               libhistory.so.8.3\n               libncursesw.so.6.6\n               libm.so.6\n               libreadline.so.8.3\n               libz.so.1.3.2\n               libzstd.so.1.5.7\n               $(cd /usr/lib; find libnss*.so* -type f)\"\nfor BIN in $online_usrbin; do\n    cp /usr/bin/$BIN /tmp/$BIN\n    strip --strip-debug /tmp/$BIN\n    install -vm755 /tmp/$BIN /usr/bin\n    rm /tmp/$BIN\ndone\nfor LIB in $online_usrlib; do\n    cp /usr/lib/$LIB /tmp/$LIB\n    strip --strip-debug /tmp/$LIB\n    install -vm755 /tmp/$LIB /usr/lib\n    rm /tmp/$LIB\ndone\nfor i in $(find /usr/lib -type f -name \\*.so* ! -name \\*dbg) \\\n         $(find /usr/lib -type f -name \\*.a)                 \\\n         $(find /usr/{bin,sbin,libexec} -type f); do\n    case \"$online_usrbin $online_usrlib $save_usrlib\" in\n        *$(basename $i)* )\n            ;;\n        * ) strip --strip-debug $i || true\n            ;;\n    esac\ndone\nunset BIN LIB save_usrlib online_usrbin online_usrlib",
-      "reason": "Book's own command with `|| true` added to the per-file strip in the final loop. The find pattern *.so* matches GNU ld linker scripts (libc.so, libm.so, libgcc_s.so) and, by glob accident, systemd .socket unit files -- none are ELF, so strip reports 'file format not recognized'. In the interactive shell the book assumes, that is harmless stderr noise and the loop continues; under the driver's set -e it aborts. This preserves the book's actual behaviour."
+      "cmd": "save_usrlib=\"$(cd /usr/lib; ls ld-linux*[^g])\n             libc.so.6\n             libthread_db.so.1\n             libquadmath.so.0.0.0\n             libstdc++.so.6.0.36\n             libitm.so.1.0.0\n             libatomic.so.1.2.0\"\ncd /usr/lib\nfor LIB in $save_usrlib; do\n    objcopy --only-keep-debug --compress-debug-sections=zstd $LIB $LIB.dbg\n    cp $LIB /tmp/$LIB\n    strip --strip-debug /tmp/$LIB\n    objcopy --add-gnu-debuglink=$LIB.dbg /tmp/$LIB\n    install -vm755 /tmp/$LIB /usr/lib\n    rm /tmp/$LIB\ndone\nonline_usrbin=\"bash find strip\"\nonline_usrlib=\"libbfd-2.47.20260726.so\n               libsframe.so.3.0.0\n               libhistory.so.8.3\n               libncursesw.so.6.6\n               libm.so.6\n               libreadline.so.8.3\n               libz.so.1.3.2\n               libzstd.so.1.5.7\n               $(cd /usr/lib; find libnss*.so* -type f)\"\nfor BIN in $online_usrbin; do\n    cp /usr/bin/$BIN /tmp/$BIN\n    strip --strip-debug /tmp/$BIN\n    install -vm755 /tmp/$BIN /usr/bin\n    rm /tmp/$BIN\ndone\nfor LIB in $online_usrlib; do\n    cp /usr/lib/$LIB /tmp/$LIB\n    strip --strip-debug /tmp/$LIB\n    install -vm755 /tmp/$LIB /usr/lib\n    rm /tmp/$LIB\ndone\nfor i in $(find /usr/lib -type f -name \\*.so* ! -name \\*dbg) \\\n         $(find /usr/lib -type f -name \\*.a)                 \\\n         $(find /usr/{bin,sbin,libexec} -type f); do\n    case \"$online_usrbin $online_usrlib $save_usrlib\" in\n        *$(basename $i)* )\n            ;;\n        * ) strip --strip-debug $i || true\n            ;;\n    esac\ndone\nunset BIN LIB save_usrlib online_usrbin online_usrlib",
+      "reason": "Book's own command with `|| true` added to the per-file strip in the final loop. The find pattern *.so* matches GNU ld linker scripts (libc.so, libm.so, libgcc_s.so) and, by glob accident, systemd .socket unit files -- none are ELF, so strip reports 'file format not recognized'. In the interactive shell the book assumes, that is harmless stderr noise and the loop continues; under the driver's set -e it aborts. This preserves the book's actual behaviour. Updated 2026-09-08 for the LFS 13.1 bump: the book's own hardcoded save_usrlib/online_usrlib version numbers (libstdc++.so.6.0.34, libbfd-2.46.0.20260210.so) don't match what this book's own pinned GCC 16.2.0/Binutils 2.47 actually produce (libstdc++.so.6.0.36, libbfd-2.47.20260726.so, confirmed by listing /usr/lib in the built tree) -- an apparent book erratum in stripping.html, not a local build difference. The book's own text anticipates exactly this ('If there is any package whose version is different from the version specified by the book... it may be necessary to update the library file name'). Every other hardcoded version in this list (libsframe, libhistory, libncursesw, libm, libreadline, libz, libzstd, libitm, libatomic, libc, libthread_db, libquadmath) was checked against the real built tree and matches the book exactly -- only these two were stale."
     }
   },
   "ch09-symlinks": {
@@ -318,7 +318,7 @@
   "ch09-systemd-custom": {
     "1": {
       "action": "drop",
-      "reason": "Masks tmp.mount to disable tmpfs for /tmp. Book: 'By default /tmp is created as a tmpfs. If this is not desired...'. We want tmpfs on /tmp -- it avoids write wear on the USB target. The book also warns this symlink makes the system unusable if a separate /tmp partition is used."
+      "reason": "Disables tmp.mount so tmpfs stays the default for /tmp (avoids write wear on the USB target). Book: 'By default /tmp is created as a tmpfs. If this is not desired...'. Also warns this makes the system unusable if a separate /tmp partition is used. Command text updated for the 2026-09-07 LFS 13.1 bump: the book now recommends `systemctl mask tmp.mount` instead of the old `ln -sfv /dev/null .../tmp.mount` symlink hack -- same outcome (tmp.mount disabled), same reason to drop it (we want the opposite outcome)."
     },
     "2": {
       "action": "drop",
@@ -392,7 +392,13 @@
   "ch08-openssl": {
     "2": {
       "action": "drop",
-      "reason": "Test suite outside the critical three (glibc/gcc/binutils), so out of scope per the tests policy. It also cannot run any more: ch08-cleanup deleted the 'tester' account it needs, so a re-run fails with \"chown: invalid user: 'tester'\". These tests did run and pass during the original build, while tester still existed."
+      "reason": "Test suite outside the critical three (glibc/gcc/binutils), so out of scope per the tests policy. It also cannot run any more: ch08-cleanup deleted the 'tester' account it needs, so a re-run fails with \"chown: invalid user: 'tester'\". These tests did run and pass during the original build, while tester still existed. Command text updated for the 2026-09-07 LFS 13.1 bump: the book dropped the `HARNESS_JOBS=$(nproc)` prefix, now just `make test` -- same test suite, same reason to drop it."
+    }
+  },
+  "ch08-perl": {
+    "3": {
+      "action": "drop",
+      "reason": "TEST_JOBS=$(nproc) make test_harness hangs indefinitely, not just slowly. First confirmed 2026-08-30 (laptop) at ~17.5 hours stuck, ps showing three of Perl's own network tests still running (t/nntp_ipv6.t, t/pop3_ipv6.t, t/smtp_ipv6.t) plus a <defunct> zombie child never reaped. These open real IPv6 sockets; at this point in the book the chroot has no configured network stack at all (that's a BLFS-era concern), so connect() calls that would fail fast on a normal system instead sit forever with no local timeout. Promoted here 2026-09-08 after a second host (server-rebuild, fresh LFS 13.1 chroot build) reproduced the identical hang -- confirming this is a book-general issue, not one host's timing/environment, per the note this entry carried when it was laptop-only. Dropping the whole test_harness run rather than excluding just the three files: Perl's own test harness has no book-documented flag for excluding individual .t files short of deleting them from the source tree by hand, and this project already treats most Chapter 8 test suites as optional rather than a correctness gate."
     }
   }
 }

@@ -1,4 +1,3 @@
-/root/.cache/g-ir-scanner/c8b7291c12346e95a87594dc9ac592a4825226ee
 /usr/bin/gdk-pixbuf-csource
 /usr/bin/gdk-pixbuf-pixdata
 /usr/bin/gdk-pixbuf-query-loaders

@@ -1,0 +1,16 @@
+[
+  {
+    "seq": 49.8,
+    "order": "glfs.49.8",
+    "name": "glfs-libglvnd",
+    "chapter": "glfs",
+    "page": "libglvnd",
+    "title": "libglvnd-1.7.0",
+    "context": "chroot",
+    "tarball": "libglvnd-v1.7.0.tar.gz",
+    "manifest": true,
+    "blocks": 5,
+    "enabled": 3,
+    "disabled": 2
+  }
+]

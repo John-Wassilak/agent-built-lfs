@@ -1,15 +1,15 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the BLFS 13.0-systemd book.
-# source : book/blfs-13.0/gnome/gsettings-desktop-schemas.html
-# title  : gsettings-desktop-schemas-49.1
+# CANDIDATE recipe extracted from the BLFS 13.1-systemd book.
+# source : book/blfs-13.1/gnome/gsettings-desktop-schemas.html
+# title  : gsettings-desktop-schemas-50.1
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 set -e
 
 # --- block 0 --------------------------------------------------
-#   ctx: p-schemas/49/gsettings-desktop-schemas-49.1.tar.xz Download MD5 sum:
-#   ctx: 644a8c27506105eef4ae170eb83f7963 Download size: 836 KB Estimated disk space required: 16
+#   ctx: p-schemas/50/gsettings-desktop-schemas-50.1.tar.xz Download MD5 sum:
+#   ctx: b3851a1d2dd684f7ea1a1d032e2a7dfb Download size: 876 KB Estimated disk space required: 17
 #   ctx: MB Estimated build time: less than 0.1 SBU GSettings Desktop Schemas Dependencies
-#   ctx: Required GLib-2.86.4 (with GObject Introspection) Installation of GSettings Desktop
+#   ctx: Required GLib-2.88.3 (with GObject Introspection) Installation of GSettings Desktop
 #   ctx: Schemas Install GSettings Desktop Schemas by running the following commands:
 sed -i -r 's:"(/system):"/org/gnome\1:g' schemas/*.in &&
 

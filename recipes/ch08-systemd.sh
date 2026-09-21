@@ -1,14 +1,14 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter08/systemd.html
-# title  : 8.78. Systemd-259.1
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter08/systemd.html
+# title  : 8.77 Systemd-261.2
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
 
 # --- block 0 --------------------------------------------------
 #   ctx: The systemd package contains programs for controlling the startup, running, and shutdown
-#   ctx: of the system. Approximate build time: 1.1 SBU Required disk space: 349 MB 8.78.1.
+#   ctx: of the system. Approximate build time: 1.2 SBU Required disk space: 396 MB 8.77.1
 #   ctx: Installation of systemd Remove two unneeded groups, render and sgx, from the default
 #   ctx: udev rules:
 sed -e 's/GROUP="render"/GROUP="video"/' \
@@ -37,7 +37,7 @@ meson setup ..                \
       -D nobody-group=nogroup \
       -D sysupdate=disabled   \
       -D ukify=disabled       \
-      -D docdir=/usr/share/doc/systemd-259.1
+      -D docdir=/usr/share/doc/systemd-261.2
 
 # --- block 2 --------------------------------------------------
 #   ctx: ll the systemd-sysupdate tool. It's designed for automatically upgrading binary distros,
@@ -56,16 +56,16 @@ ninja
 echo 'NAME="Linux From Scratch"' > /etc/os-release
 
 # --- block 4 --------------------------------------------------
-#   ctx: One test named systemd:core / test-namespace is known to fail in the LFS chroot
-#   ctx: environment. Some other tests may fail because they depend on various kernel
-#   ctx: configuration options. The test named systemd:test / test-copy may time out due to an
-#   ctx: I/O congestion with a large parallel job number, but it would pass if running alone with
-#   ctx: meson test test-copy. Install the package:
+#   ctx: ll installation: core - systemd:test-namespace, test - systemd:test-chase, and tmpfiles
+#   ctx: - systemd:test-systemd-tmpfiles. Some additional tests may fail because they depend on
+#   ctx: various kernel configuration options. The test named test - systemd:test-copy may time
+#   ctx: out due to I/O congestion with a large parallel job number, but will pass if running
+#   ctx: alone with meson test test-copy. Install the package:
 ninja install
 
 # --- block 5 --------------------------------------------------
 #   ctx: Install the man pages:
-tar -xf ../../systemd-man-pages-259.1.tar.xz \
+tar -xf ../../systemd-man-pages-261.2.tar.xz \
     --no-same-owner --strip-components=1     \
     -C /usr/share/man
 

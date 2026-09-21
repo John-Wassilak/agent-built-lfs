@@ -1,0 +1,16 @@
+[
+  {
+    "seq": 175,
+    "order": "slfs.175",
+    "name": "slfs-htop",
+    "chapter": "slfs",
+    "page": "htop",
+    "title": "htop-3.5.3",
+    "context": "chroot",
+    "tarball": "htop-3.5.3.tar.xz",
+    "manifest": true,
+    "blocks": 2,
+    "enabled": 2,
+    "disabled": 0
+  }
+]

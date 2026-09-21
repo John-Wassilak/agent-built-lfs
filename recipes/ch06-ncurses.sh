@@ -1,14 +1,14 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter06/ncurses.html
-# title  : 6.3. Ncurses-6.6
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter06/ncurses.html
+# title  : 6.3 Ncurses-6.6
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
 
 # --- block 0 --------------------------------------------------
 #   ctx: The Ncurses package contains libraries for terminal-independent handling of character
-#   ctx: screens. Approximate build time: 0.4 SBU Required disk space: 54 MB 6.3.1. Installation
+#   ctx: screens. Approximate build time: 0.4 SBU Required disk space: 54 MB 6.3.1 Installation
 #   ctx: of Ncurses First, run the following commands to build the tic program on the build host.
 #   ctx: We install it in $LFS/tools, so that it is found in the PATH when needed:
 mkdir build

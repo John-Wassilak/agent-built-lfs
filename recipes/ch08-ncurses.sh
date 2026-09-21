@@ -1,14 +1,14 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter08/ncurses.html
-# title  : 8.31. Ncurses-6.6
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter08/ncurses.html
+# title  : 8.33 Ncurses-6.6
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
 
 # --- block 0 --------------------------------------------------
 #   ctx: The Ncurses package contains libraries for terminal-independent handling of character
-#   ctx: screens. Approximate build time: 0.2 SBU Required disk space: 47 MB 8.31.1. Installation
+#   ctx: screens. Approximate build time: 0.2 SBU Required disk space: 47 MB 8.33.1 Installation
 #   ctx: of Ncurses Prepare Ncurses for compilation:
 ./configure --prefix=/usr           \
             --mandir=/usr/share/man \

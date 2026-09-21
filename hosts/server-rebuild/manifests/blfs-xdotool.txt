@@ -1,0 +1,6 @@
+/usr/bin/xdotool
+/usr/include/xdo.h
+/usr/lib/libxdo.so
+/usr/lib/libxdo.so.4
+/usr/lib/pkgconfig/libxdo.pc
+/usr/man/man1/xdotool.1

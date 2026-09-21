@@ -1,0 +1,5 @@
+/etc/X11/app-defaults/xinitrc
+/usr/bin/startx
+/usr/bin/xinit
+/usr/share/man/man1/startx.1
+/usr/share/man/man1/xinit.1

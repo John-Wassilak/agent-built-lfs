@@ -1,7 +1,7 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter08/libtool.html
-# title  : 8.38. Libtool-2.5.4
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter08/libtool.html
+# title  : 8.40 Libtool-2.6.2
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
@@ -9,7 +9,7 @@ set -e
 # --- block 0 --------------------------------------------------
 #   ctx: The Libtool package contains the GNU generic library support script. It makes the use of
 #   ctx: shared libraries simpler with a consistent, portable interface. Approximate build time:
-#   ctx: 0.6 SBU Required disk space: 44 MB 8.38.1. Installation of Libtool Prepare Libtool for
+#   ctx: 0.6 SBU Required disk space: 50 MB 8.40.1 Installation of Libtool Prepare Libtool for
 #   ctx: compilation:
 ./configure --prefix=/usr
 

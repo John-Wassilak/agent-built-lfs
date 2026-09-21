@@ -1,7 +1,3 @@
-/root/.cache/g-ir-scanner/07a3dc06c2156f7b4bc7ee09907a1e9eddde9cfb
-/root/.cache/g-ir-scanner/3057be3a03ea32ef86be4e25be07147575698587
-/root/.cache/g-ir-scanner/4a7a7da6550dc01dd28284f59f03959c6da7df87
-/root/.cache/g-ir-scanner/fc0e52ceef4a5e6716611a0b88a15cca5e8ecd46
 /root/.config/gtk-3.0/gtk.css
 /root/.config/gtk-3.0/settings.ini
 /usr/bin/broadwayd

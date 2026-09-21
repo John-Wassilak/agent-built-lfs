@@ -1,6 +1,6 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the BLFS 13.0-systemd book.
-# source : book/blfs-13.0/multimedia/flac.html
+# CANDIDATE recipe extracted from the BLFS 13.1-systemd book.
+# source : book/blfs-13.1/multimedia/flac.html
 # title  : FLAC-1.5.0
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 set -e
@@ -9,7 +9,7 @@ set -e
 #   ctx: .tar.xz Download MD5 sum: 0bb45bcf74338b00efeec121fff27367 Download size: 1.1 MB
 #   ctx: Estimated disk space required: 25 MB (additional 170 MB to run the test suite) Estimated
 #   ctx: build time: 0.2 SBU (additional 0.2 SBU to run the test suite) FLAC Dependencies
-#   ctx: Optional libogg-1.3.6, DocBook-utils-0.6.14, Doxygen-1.16.1, and Valgrind-3.26.0
+#   ctx: Optional libogg-1.3.6, DocBook-utils-0.6.14, Doxygen-1.18.0, and Valgrind-3.27.1
 #   ctx: Installation of FLAC Install FLAC by running the following commands:
 ./configure --prefix=/usr            \
             --disable-thorough-tests \

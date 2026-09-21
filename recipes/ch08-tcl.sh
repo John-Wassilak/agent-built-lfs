@@ -1,13 +1,13 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter08/tcl.html
-# title  : 8.17. Tcl-8.6.17
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter08/tcl.html
+# title  : 8.17 Tcl-8.6.18
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
 
 # --- block 0 --------------------------------------------------
-#   ctx: .9 SBU Required disk space: 91 MB 8.17.1. Installation of Tcl This package and the next
+#   ctx: 2.9 SBU Required disk space: 92 MB 8.17.1 Installation of Tcl This package and the next
 #   ctx: two (Expect and DejaGNU) are installed to support running the test suites for Binutils,
 #   ctx: GCC and other packages. Installing three packages for testing purposes may seem
 #   ctx: excessive, but it is very reassuring, if not essential, to know that the most important
@@ -30,16 +30,16 @@ sed -e "s|$SRCDIR/unix|/usr/lib|" \
     -e "s|$SRCDIR|/usr/include|"  \
     -i tclConfig.sh
 
-sed -e "s|$SRCDIR/unix/pkgs/tdbc1.1.12|/usr/lib/tdbc1.1.12|" \
-    -e "s|$SRCDIR/pkgs/tdbc1.1.12/generic|/usr/include|"     \
-    -e "s|$SRCDIR/pkgs/tdbc1.1.12/library|/usr/lib/tcl8.6|"  \
-    -e "s|$SRCDIR/pkgs/tdbc1.1.12|/usr/include|"             \
-    -i pkgs/tdbc1.1.12/tdbcConfig.sh
+sed -e "s|$SRCDIR/unix/pkgs/tdbc1.1.13|/usr/lib/tdbc1.1.13|" \
+    -e "s|$SRCDIR/pkgs/tdbc1.1.13/generic|/usr/include|"     \
+    -e "s|$SRCDIR/pkgs/tdbc1.1.13/library|/usr/lib/tcl8.6|"  \
+    -e "s|$SRCDIR/pkgs/tdbc1.1.13|/usr/include|"             \
+    -i pkgs/tdbc1.1.13/tdbcConfig.sh
 
-sed -e "s|$SRCDIR/unix/pkgs/itcl4.3.4|/usr/lib/itcl4.3.4|" \
-    -e "s|$SRCDIR/pkgs/itcl4.3.4/generic|/usr/include|"    \
-    -e "s|$SRCDIR/pkgs/itcl4.3.4|/usr/include|"            \
-    -i pkgs/itcl4.3.4/itclConfig.sh
+sed -e "s|$SRCDIR/unix/pkgs/itcl4.3.7|/usr/lib/itcl4.3.7|" \
+    -e "s|$SRCDIR/pkgs/itcl4.3.7/generic|/usr/include|"    \
+    -e "s|$SRCDIR/pkgs/itcl4.3.7|/usr/include|"            \
+    -i pkgs/itcl4.3.7/itclConfig.sh
 
 unset SRCDIR
 
@@ -75,7 +75,7 @@ mv -v /usr/share/man/man3/{Thread,Tcl_Thread}.3
 # --- block 8 --------------------------------------------------
 #   ctx: Optionally, install the documentation by issuing the following commands:
 cd ..
-tar -xf ../tcl8.6.17-html.tar.gz --strip-components=1
-mkdir -v -p /usr/share/doc/tcl-8.6.17
-cp -v -r  ./html/* /usr/share/doc/tcl-8.6.17
+tar -xf ../tcl8.6.18-html.tar.gz --strip-components=1
+mkdir -v -p /usr/share/doc/tcl-8.6.18
+cp -v -r  ./html/* /usr/share/doc/tcl-8.6.18
 

@@ -28,7 +28,7 @@ Machines currently in the repo:
 
 | host     | what it is | status |
 |----------|------------|--------|
-| `server` | i5-2500K, GTX 770 on NVIDIA 470.xx, X11 + awesome, self-hosting | built, 218 BLFS steps |
+| `server` | i5-2500K, GTX 770 on NVIDIA 470.xx, X11 + awesome, self-hosting | built; 13.1 re-image pending, see `hosts/server/BOOTSTRAP.md` |
 | `laptop` | not audited yet | scaffold only, see `hosts/laptop/BOOTSTRAP.md` |
 
 ## Resolving the host

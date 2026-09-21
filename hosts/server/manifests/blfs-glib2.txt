@@ -1,10 +1,5 @@
 /etc/mtab
 /etc/udev/hwdb.bin
-/root/.cache/g-ir-scanner/.cache-version
-/root/.cache/g-ir-scanner/001859fa55dd05770a3ea96944e0272c9903e082
-/root/.cache/g-ir-scanner/228ffd10a6de8a61ad3f6e863b7506aa05a31652
-/root/.cache/g-ir-scanner/c6b5c9a5abb0924f9737e06f47a035686243488a
-/root/.cache/g-ir-scanner/d5a64088d798c508f01a78d76739cb1cc07ebde0
 /usr/bin/g-ir-annotation-tool
 /usr/bin/g-ir-compiler
 /usr/bin/g-ir-generate

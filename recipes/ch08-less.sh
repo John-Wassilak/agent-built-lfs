@@ -1,14 +1,14 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter08/less.html
-# title  : 8.43. Less-692
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter08/less.html
+# title  : 8.45 Less-704
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
 
 # --- block 0 --------------------------------------------------
 #   ctx: The Less package contains a text file viewer. Approximate build time: 0.1 SBU Required
-#   ctx: disk space: 17 MB 8.43.1. Installation of Less Prepare Less for compilation:
+#   ctx: disk space: 17 MB 8.45.1 Installation of Less Prepare Less for compilation:
 ./configure --prefix=/usr --sysconfdir=/etc
 
 # --- block 1 --------------------------------------------------

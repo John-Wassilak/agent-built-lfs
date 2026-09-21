@@ -1,15 +1,15 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the BLFS 13.0-systemd book.
-# source : book/blfs-13.0/x/glslang.html
-# title  : glslang-16.2.0
+# CANDIDATE recipe extracted from the BLFS 13.1-systemd book.
+# source : book/blfs-13.1/x/glslang.html
+# title  : glslang-16.5.0
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 set -e
 
 # --- block 0 --------------------------------------------------
-#   ctx: //github.com/KhronosGroup/glslang/archive/16.2.0/glslang-16.2.0.tar.gz Download MD5 sum:
-#   ctx: ae3884b31012a68146f45822444d6211 Download size: 4.1 MB Estimated disk space required:
-#   ctx: 185 MB (with tests) Estimated build time: 0.4 SBU (with parallelism=4; with tests)
-#   ctx: Glslang Dependencies Required CMake-4.2.3 and SPIRV-Tools-1.4.341.0 Installation of
+#   ctx: //github.com/KhronosGroup/glslang/archive/16.5.0/glslang-16.5.0.tar.gz Download MD5 sum:
+#   ctx: 79e949d6d50cc167e7d5307afb04c41a Download size: 4.4 MB Estimated disk space required:
+#   ctx: 191 MB (with tests) Estimated build time: 0.4 SBU (with parallelism=4; with tests)
+#   ctx: Glslang Dependencies Required CMake-4.4.2 and SPIRV-Tools-1.4.357.0 Installation of
 #   ctx: Glslang Install Glslang by running the following commands:
 mkdir build &&
 cd    build &&

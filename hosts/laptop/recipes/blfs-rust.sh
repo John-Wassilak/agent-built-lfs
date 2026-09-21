@@ -69,7 +69,7 @@ export LIBSSH2_SYS_USE_PKG_CONFIG=1
 #   ctx: Note The test suite will generate some messages in the systemd journal for traps on
 #   ctx: invalid opcodes, and for segmentation faults. In themselves these are nothing to worry
 #   ctx: about, and they are just a way for a test to be terminated. To run the tests, issue:
-#   REVIEWED [drop]: Full Rust test suite (./x.py test) -- extremely long even by this build's standards, and test suites have been skipped throughout this entire project.
+#   REVIEWED [drop]: Full Rust test suite (./x.py test) -- extremely long even by this build's standards, and test suites have been skipped throughout this entire project. This host is still pinned to BLFS 13.0 (host.toml [books].blfs); recipes/blfs-overrides.json's block 3 was repurposed for a new 13.1-only fake-git prep step during server's 2026-09-07 bump, which does not exist at this index in the 13.0 text this host still reads -- at 13.0's block 3 this is the actual './x.py test --verbose --no-fail-fast | tee rustc-testlog' invocation, and dropping it is the same intended outcome as the shared decision, just restated with the correct reason for this host's book version. Remove once this host also bumps to 13.1.
 # ./x.py test --verbose --no-fail-fast | tee rustc-testlog
 
 # --- block 4 --------------------------------------------------
@@ -78,7 +78,7 @@ export LIBSSH2_SYS_USE_PKG_CONFIG=1
 #   ctx: as a critical failure (they released 1.41.1 because of it). Most other failures will not
 #   ctx: be critical. Therefore, you should determine the number of failures. The number of tests
 #   ctx: which passed and failed can be found by running:
-#   REVIEWED [drop]: Summarizes results from the test suite in block 3, which is not run.
+#   REVIEWED [drop]: Summarizes results from the test suite in block 3, which is not run. This host is still on BLFS 13.0; the shared file's block 4 was reindexed to describe the test invocation itself (moved 3->4 for 13.1's new fake-git block) -- at 13.0's block 4 this is still the result-summary grep/awk line, so the practical effect (drop) is the same, restated with the correct reason for this host's book version. Remove once this host also bumps to 13.1.
 # grep '^test result:' rustc-testlog |
 #  awk '{sum1 += $4; sum2 += $6} END { print sum1 " passed; " sum2 " failed" }'
 

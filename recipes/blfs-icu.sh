@@ -1,7 +1,7 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the BLFS 13.0-systemd book.
-# source : book/blfs-13.0/general/icu.html
-# title  : icu-78.2
+# CANDIDATE recipe extracted from the BLFS 13.1-systemd book.
+# source : book/blfs-13.1/general/icu.html
+# title  : icu-78.3
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 set -e
 
@@ -20,9 +20,9 @@ set -e
 # readelf -d  <application or library> | grep NEEDED
 
 # --- block 2 --------------------------------------------------
-#   ctx: cdc837e402ac773f17c7cf8 Download size: 27 MB Estimated disk space required: 408 MB (add
-#   ctx: 48 MB for tests) Estimated build time: 0.5 SBU (Using parallelism=4; add 1.9 SBU for
-#   ctx: tests) ICU Dependencies Optional Doxygen-1.16.1 (for documentation) Installation of ICU
+#   ctx: 0ef0e180c96a31715a00c78 Download size: 27 MB Estimated disk space required: 362 MB (add
+#   ctx: 48 MB for tests) Estimated build time: 0.5 SBU (Using parallelism=4; add 2.1 SBU for
+#   ctx: tests) ICU Dependencies Optional Doxygen-1.18.0 (for documentation) Installation of ICU
 #   ctx: Note This package expands to the directory icu. A part of a test cannot be run on i686.
 #   ctx: Avoid executing it when building for that platform:
 case $(uname -m) in

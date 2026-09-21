@@ -5,7 +5,17 @@
 # makes sense here, and it is why the audit in BUILD-REPORT.md exists.
 
 arch = "x86_64"
-book = "13.0"
+
+[books]
+# lfs pins LFS and BLFS together -- they release as one book pair. slfs/glfs release on
+# their own cadence, onboarded 2026-09-07 as book sources this project prefers over the
+# Arch/AUR two-tier fallback wherever one of them actually covers a package. Bumped
+# 2026-09-07: LFS 13.1-systemd (2026-09-01) and BLFS 13.1-systemd (2026-09-03) were both
+# just released; SLFS and GLFS also released 13.1 (2026-09-01) tracking the same LFS
+# base, so all four move together this round -- see BUILD-REPORT.md.
+lfs  = "13.1"
+slfs = "13.1"
+glfs = "13.1"
 
 [build]
 # 0 means "this machine's core count". Set a literal only to cap a machine.

@@ -1,13 +1,13 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter06/binutils-pass2.html
-# title  : 6.17. Binutils-2.46.0 - Pass 2
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter06/binutils-pass2.html
+# title  : 6.17 Binutils-2.47 - Pass 2
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
 
 # --- block 0 --------------------------------------------------
-#   ctx: Approximate build time: 0.4 SBU Required disk space: 557 MB 6.17.1. Installation of
+#   ctx: Approximate build time: 0.4 SBU Required disk space: 560 MB 6.17.1 Installation of
 #   ctx: Binutils Binutils building system relies on an shipped libtool copy to link against
 #   ctx: internal static libraries, but the libiberty and zlib copies shipped in the package do
 #   ctx: not use libtool. This inconsistency may cause produced binaries mistakenly linked

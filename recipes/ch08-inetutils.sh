@@ -1,14 +1,14 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter08/inetutils.html
-# title  : 8.42. Inetutils-2.7
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter08/inetutils.html
+# title  : 8.44 Inetutils-2.8
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
 
 # --- block 0 --------------------------------------------------
 #   ctx: The Inetutils package contains programs for basic networking. Approximate build time:
-#   ctx: 0.3 SBU Required disk space: 38 MB 8.42.1. Installation of Inetutils First, make the
+#   ctx: 0.3 SBU Required disk space: 38 MB 8.44.1 Installation of Inetutils First, make the
 #   ctx: package build with gcc-14.1 or later:
 sed -i 's/def HAVE_TERMCAP_TGETENT/ 1/' telnet/telnet.c
 

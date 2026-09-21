@@ -1,15 +1,15 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the BLFS 13.0-systemd book.
-# source : book/blfs-13.0/x/gtk3.html
-# title  : GTK-3.24.51
+# CANDIDATE recipe extracted from the BLFS 13.1-systemd book.
+# source : book/blfs-13.1/x/gtk3.html
+# title  : GTK-3.24.52
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 set -e
 
 # --- block 0 --------------------------------------------------
-#   ctx: nual pages), Wayland-1.24.0, and wayland-protocols-1.47 Recommended (Required if
-#   ctx: building GNOME) GLib-2.86.4 (with GObject Introspection) Optional colord-1.4.8,
-#   ctx: Cups-2.4.16, Evince-48.1 (runtime for the print previewer), GTK-Doc-1.35.1,
-#   ctx: libcloudproviders-0.3.6, PyAtSpi2-2.58.1 (for tests), sassc-3.6.2, tinysparql-3.10.1,
+#   ctx: nual pages), Wayland-1.26.0, and wayland-protocols-1.49 Recommended (Required if
+#   ctx: building GNOME) GLib-2.88.3 (with GObject Introspection) Optional colord-1.4.8,
+#   ctx: Cups-2.4.19, Evince-48.4 (runtime for the print previewer), GTK-Doc-1.36.1,
+#   ctx: libcloudproviders-0.3.6, PyAtSpi2-2.58.2 (for tests), sassc-3.6.2, tinysparql-3.11.1,
 #   ctx: and PAPI Installation of GTK3 Install GTK3 by running the following commands:
 mkdir build &&
 cd    build &&
@@ -25,8 +25,9 @@ ninja
 
 # --- block 1 --------------------------------------------------
 #   ctx: To test the results you need a graphical session, then issue dbus-run-session ninja
-#   ctx: test. One test, gtk:reftest treeview-fixed-height.ui, is known to fail due to small
-#   ctx: output differences compared to what the test suite expects. Now, as the root user:
+#   ctx: test. One test, gtk:a11y / tree-relationships, is known to fail with a recent librsvg
+#   ctx: release. Another test, gtk:reftest treeview-fixed-height.ui, is known to fail due to
+#   ctx: small output differences compared to what the test suite expects. Now, as the root user:
 ninja install
 
 # --- block 2 --------------------------------------------------
@@ -44,9 +45,9 @@ ninja install
 # glib-compile-schemas /usr/share/glib-2.0/schemas
 
 # --- block 4 --------------------------------------------------
-#   ctx: change the icons that appear on the application's toolbar. If you have installed a GTK3
-#   ctx: theme (e.g. the Adwaita theme built in GTK3), an icon theme (such as oxygen-icons-6.1.0)
-#   ctx: and/or a font (Dejavu fonts), you can set your preferences in
+#   ctx: hange the icons that appear on the application's toolbar. If you have installed a GTK3
+#   ctx: theme (e.g. the Adwaita theme built in GTK3), an icon theme (such as
+#   ctx: oxygen-icons-6.29.0) and/or a font (Dejavu fonts), you can set your preferences in
 #   ctx: ~/.config/gtk-3.0/settings.ini, or the default system wide configuration file (as the
 #   ctx: root user), in /etc/gtk-3.0/settings.ini. For the local user an example is:
 mkdir -vp ~/.config/gtk-3.0

@@ -1,0 +1,13 @@
+/usr/bin/libevdev-tweak-device
+/usr/bin/mouse-dpi-tool
+/usr/bin/touchpad-edge-detector
+/usr/include/libevdev-1.0/libevdev/libevdev.h
+/usr/include/libevdev-1.0/libevdev/libevdev-uinput.h
+/usr/lib/libevdev.so
+/usr/lib/libevdev.so.2
+/usr/lib/libevdev.so.2.3.0
+/usr/lib/pkgconfig/libevdev.pc
+/usr/share/man/man1/libevdev-tweak-device.1
+/usr/share/man/man1/mouse-dpi-tool.1
+/usr/share/man/man1/touchpad-edge-detector.1
+/usr/share/man/man3/libevdev.3

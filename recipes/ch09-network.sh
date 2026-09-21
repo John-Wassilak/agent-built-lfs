@@ -1,7 +1,7 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter09/network.html
-# title  : 9.2. General Network Configuration
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter09/network.html
+# title  : 9.2 General Network Configuration
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
@@ -41,7 +41,7 @@ set -e
 
 # --- block 3 --------------------------------------------------
 #   ctx: See systemd.link(5) for more information. In /boot/grub/grub.cfg, pass the option
-#   ctx: net.ifnames=0 on the kernel command line. 9.2.1.2. Static IP Configuration The command
+#   ctx: net.ifnames=0 on the kernel command line. 9.2.1.2 Static IP Configuration The command
 #   ctx: below creates a basic configuration file for a Static IP setup (using both
 #   ctx: systemd-networkd and systemd-resolved):
 #   REVIEWED [drop]: Static-IP example with a placeholder device name and the book's 192.168.0.2 sample addresses. We use DHCP.
@@ -58,8 +58,8 @@ set -e
 
 # --- block 4 --------------------------------------------------
 #   ctx: Multiple DNS entries can be added if you have more than one DNS server. Do not include
-#   ctx: DNS or Domains entries if you intend to use a static /etc/resolv.conf file. 9.2.1.3.
-#   ctx: DHCP Configuration The command below creates a basic configuration file for an IPv4 DHCP
+#   ctx: DNS or Domains entries if you intend to use a static /etc/resolv.conf file. 9.2.1.3 DHCP
+#   ctx: Configuration The command below creates a basic configuration file for an IPv4 DHCP
 #   ctx: setup:
 cat > /etc/systemd/network/10-dhcp.network << "EOF"
 [Match]
@@ -82,17 +82,17 @@ EOF
 # systemctl disable systemd-resolved
 
 # --- block 6 --------------------------------------------------
-#   ctx: onnection), create the /etc/resolv.conf file following the static configuration below
+#   ctx: connection), create the /etc/resolv.conf file following the static configuration below
 #   ctx: for the chroot environment so the name resolution will work in the chroot environment.
 #   ctx: When you exit the chroot environment, remove it so systemd-resolved will create the
-#   ctx: symlink on boot. 9.2.2.2. Static resolv.conf Configuration If a static /etc/resolv.conf
+#   ctx: symlink on boot. 9.2.2.2 Static resolv.conf Configuration If a static /etc/resolv.conf
 #   ctx: is desired, create it by running the following command:
 ln -sfv /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
 
 # --- block 7 --------------------------------------------------
-#   ctx: le Public DNS service using the IP addresses below as nameservers. Note The Google
+#   ctx: gle Public DNS service using the IP addresses below as nameservers. Note The Google
 #   ctx: Public IPv4 DNS addresses are 8.8.8.8 and 8.8.4.4 for IPv4, and 2001:4860:4860::8888 and
-#   ctx: 2001:4860:4860::8844 for IPv6. 9.2.3. Configuring the system hostname During the boot
+#   ctx: 2001:4860:4860::8844 for IPv6. 9.2.3 Configuring the system hostname During the boot
 #   ctx: process, the file /etc/hostname is used for establishing the system's hostname. Create
 #   ctx: the /etc/hostname file and enter a hostname by running:
 echo "lfs" > /etc/hostname

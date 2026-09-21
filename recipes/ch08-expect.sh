@@ -1,7 +1,7 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter08/expect.html
-# title  : 8.18. Expect-5.45.4
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter08/expect.html
+# title  : 8.18 Expect-5.45.4
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
@@ -9,7 +9,7 @@ set -e
 # --- block 0 --------------------------------------------------
 #   ctx: also useful for testing these same applications as well as easing all sorts of tasks
 #   ctx: that are prohibitively difficult with anything else. The DejaGnu framework is written in
-#   ctx: Expect. Approximate build time: 0.2 SBU Required disk space: 3.9 MB 8.18.1. Installation
+#   ctx: Expect. Approximate build time: 0.2 SBU Required disk space: 3.9 MB 8.18.1 Installation
 #   ctx: of Expect Expect needs PTYs to work. Verify that the PTYs are working properly inside
 #   ctx: the chroot environment by performing a simple test:
 python3 -c 'from pty import spawn; spawn(["echo", "ok"])'

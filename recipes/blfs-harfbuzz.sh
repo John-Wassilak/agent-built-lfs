@@ -1,7 +1,7 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the BLFS 13.0-systemd book.
-# source : book/blfs-13.0/general/harfbuzz.html
-# title  : harfBuzz-12.3.2
+# CANDIDATE recipe extracted from the BLFS 13.1-systemd book.
+# source : book/blfs-13.1/general/harfbuzz.html
+# title  : harfBuzz-14.3.1
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 set -e
 

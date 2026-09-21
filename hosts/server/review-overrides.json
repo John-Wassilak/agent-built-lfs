@@ -1,27 +1,74 @@
 {
-  "_comment": "Host-specific review decisions for this machine. Merged on top of the shared recipes/review-overrides.json by bin/extract-*.py: a page here overrides the shared page block-by-block, so shared mechanism decisions survive while the hardware-bound ones live with the host. Every entry here names a concrete device, label, GPU driver or /boot path -- if a decision is true of any LFS box, it belongs in the shared file instead.",
+  "_comment": "Host-specific review decisions for this machine. Merged on top of the shared recipes/review-overrides.json by bin/extract-*.py: a page here overrides the shared page block-by-block, so shared mechanism decisions survive while the hardware-bound ones live with the host. Nearly every entry names a concrete device, label, GPU driver or /boot path; if a decision is true of any LFS box it belongs in the shared file instead. Exception: ch11-theend, where what differs is this host's book pin, not its hardware -- the shared recipes/ tree has no version scoping, so a stored command embedding a version string has no one correct shared value while server is on 13.1 and laptop on 13.0.",
   "ch10-fstab": {
     "0": {
       "action": "replace",
       "cmd": "cat > /etc/fstab << \"EOF\"\n# file system   mount-point    type      options             dump  fsck\n#                                                                  order\n\nLABEL=LFSROOT   /              ext4      defaults            1     1\nLABEL=LFSSWAP   swap           swap      pri=1               0     0\n\nproc            /proc          proc      nosuid,noexec,nodev 0     0\nsysfs           /sys           sysfs     nosuid,noexec,nodev 0     0\ndevpts          /dev/pts       devpts    gid=5,mode=620      0     0\ntmpfs           /run           tmpfs     defaults            0     0\ndevtmpfs        /dev           devtmpfs  mode=0755,nosuid    0     0\ntmpfs           /dev/shm       tmpfs     nosuid,nodev        0     0\ncgroup2         /sys/fs/cgroup cgroup2   nosuid,noexec,nodev 0     0\nEOF",
       "reason": "Book's template uses /dev/<xxx> and /dev/<yyy> placeholders. Written with LABEL= so the tree is not bound to a device node that does not exist yet: label the USB root LFSROOT and swap LFSSWAP when creating them."
+    },
+    "1": {
+      "action": "drop",
+      "reason": "New in LFS 13.1 (2026-09-07 bump): an /boot/efi vfat fstab line for a UEFI system. This host boots GRUB BIOS/MBR on sdb with no separate EFI System Partition (host.toml's [hardware].boot), so there is nothing at /dev/<zzz> for this line to name. True of this machine's disk layout, not of LFS in general -- a UEFI host would want it, hence the drop lives here rather than in the shared file."
     }
   },
   "ch10-kernel": {
     "5": {
       "action": "replace",
-      "cmd": "cp -v arch/x86/boot/bzImage /boot/vmlinuz-6.18.10-lfs-13.0-systemd",
-      "reason": "Book uses `cp -iv`; -i prompts on overwrite and would hang the driver on a re-run."
+      "cmd": "cp -v arch/x86/boot/bzImage /boot/vmlinuz-7.1.8-lfs-13.1-systemd",
+      "reason": "Book uses `cp -iv`; -i prompts on overwrite and would hang the driver on a re-run. Version string updated 6.18.10-lfs-13.0-systemd -> 7.1.8-lfs-13.1-systemd for the 2026-09-07 LFS 13.1 bump (kernel 7.1.8 per that release) -- ch10-grub's menuentry now points at the new name, so this must move with it or the machine has no matching /boot/vmlinuz-* to load."
     },
     "6": {
       "action": "replace",
-      "cmd": "cp -v System.map /boot/System.map-6.18.10",
-      "reason": "Interactive -i flag removed."
+      "cmd": "cp -v System.map /boot/System.map-7.1.8",
+      "reason": "Interactive -i flag removed. Version string updated to 7.1.8 for the 2026-09-07 LFS 13.1 bump."
     },
     "7": {
       "action": "replace",
-      "cmd": "cp -v .config /boot/config-6.18.10",
-      "reason": "Interactive -i flag removed."
+      "cmd": "cp -v .config /boot/config-7.1.8",
+      "reason": "Interactive -i flag removed. Version string updated to 7.1.8 for the 2026-09-07 LFS 13.1 bump."
+    }
+  },
+  "ch08-grub": {
+    "5": {
+      "action": "drop",
+      "reason": "New in LFS 13.1 (2026-09-07 bump): builds a second, UEFI-targeted GRUB (--target=x86_64-efi, then --target=i386, both --with-platform=efi). This host boots BIOS/MBR only (host.toml's [hardware].boot); the BIOS-targeted build a few blocks up is the one server actually uses. Blocks 5-12 are this whole UEFI-target build-clean-build sequence -- dropped as a set, not selectively, since none of it produces anything this host installs."
+    },
+    "6": { "action": "drop", "reason": "Part of the UEFI-target GRUB build -- see block 5's reason." },
+    "7": { "action": "drop", "reason": "Part of the UEFI-target GRUB build -- see block 5's reason." },
+    "8": { "action": "drop", "reason": "Part of the UEFI-target GRUB build -- see block 5's reason." },
+    "9": { "action": "drop", "reason": "Part of the UEFI-target GRUB build -- see block 5's reason." },
+    "10": { "action": "drop", "reason": "Part of the UEFI-target GRUB build -- see block 5's reason." },
+    "11": { "action": "drop", "reason": "Part of the UEFI-target GRUB build -- see block 5's reason." },
+    "12": { "action": "drop", "reason": "Part of the UEFI-target GRUB build -- see block 5's reason." }
+  },
+  "ch10-grub": {
+    "2": {
+      "action": "drop",
+      "reason": "New in LFS 13.1 (2026-09-07 bump): `grub-install --target=x86_64-efi --removable`. This host has no EFI System Partition to install to (host.toml's [hardware].boot: BIOS/MBR on sdb) -- block 1's `grub-install /dev/sda --target=i386-pc` right above is the real install for this machine."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "New in LFS 13.1, admonition-tagged by the book itself: mounts efivarfs to register a boot entry. No /sys/firmware/efi on a BIOS/MBR boot (confirmed live: this host has no /sys/firmware/efi directory at all)."
+    },
+    "4": {
+      "action": "drop",
+      "reason": "efibootmgr boot-entry registration -- meaningless without EFI variables; see block 3's reason."
+    },
+    "5": {
+      "action": "drop",
+      "reason": "Unmounts the efivarfs mounted in block 3 -- nothing to unmount since block 3 is dropped."
+    }
+  },
+  "ch11-theend": {
+    "1": {
+      "action": "replace",
+      "cmd": "cat > /etc/lsb-release << \"EOF\"\nDISTRIB_ID=\"Linux From Scratch\"\nDISTRIB_RELEASE=\"13.1-systemd\"\nDISTRIB_CODENAME=\"claude-managed\"\nDISTRIB_DESCRIPTION=\"Linux From Scratch\"\nEOF",
+      "reason": "Shared blocks 1-2 only fill the book's `<your name here>` placeholder, but an override stores the whole command, so they also froze the version the book printed when recorded: 13.0. book/13.1 prints 13.1-systemd and this host pins lfs=13.1. Cannot be fixed in the shared file -- laptop is still on 13.0 and reads the same entry. Placeholder value unchanged. Caught because the built tree had /etc/lfs-release (block 0, not overridden) at 13.1 next to these two at 13.0; --check cannot see it, since the override is applied exactly as written and it is the writing that is stale."
+    },
+    "2": {
+      "action": "replace",
+      "cmd": "cat > /etc/os-release << \"EOF\"\nNAME=\"Linux From Scratch\"\nVERSION=\"13.1-systemd\"\nID=lfs\nPRETTY_NAME=\"Linux From Scratch 13.1-systemd\"\nVERSION_CODENAME=\"claude-managed\"\nHOME_URL=\"https://www.linuxfromscratch.org/lfs/\"\nRELEASE_TYPE=\"stable\"\nEOF",
+      "reason": "Same as block 1 -- os-release carries the version twice, in VERSION and PRETTY_NAME."
     }
   }
 }

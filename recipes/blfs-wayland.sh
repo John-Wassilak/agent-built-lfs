@@ -1,15 +1,15 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the BLFS 13.0-systemd book.
-# source : book/blfs-13.0/general/wayland.html
-# title  : Wayland-1.24.0
+# CANDIDATE recipe extracted from the BLFS 13.1-systemd book.
+# source : book/blfs-13.1/general/wayland.html
+# title  : Wayland-1.26.0
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 set -e
 
 # --- block 0 --------------------------------------------------
-#   ctx: ted disk space required: 7.0 MB (with tests) Estimated build time: less than 0.1 SBU
-#   ctx: (with tests) Wayland Dependencies Required libxml2-2.15.1 Optional Doxygen-1.16.1,
-#   ctx: Graphviz-14.1.2 and xmlto-0.0.29 (to build the API documentation) and docbook-xml-4.5,
-#   ctx: docbook-xsl-nons-1.79.2 and libxslt-1.1.45 (to build the manual pages) Installation of
+#   ctx: f6820635765a952ec5f34fbb Download size: 600 KB Estimated disk space required: 9.0 MB
+#   ctx: (with tests) Estimated build time: less than 0.1 SBU (with tests) Wayland Dependencies
+#   ctx: Required libxml2-2.15.3 Optional Doxygen-1.18.0, Graphviz-15.1.1 and xmlto-0.0.29 (to
+#   ctx: build the API documentation) and mdBook (to build the manual pages) Installation of
 #   ctx: Wayland Install Wayland by running the following commands:
 mkdir build &&
 cd    build &&

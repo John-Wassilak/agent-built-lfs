@@ -1,13 +1,13 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the BLFS 13.0-systemd book.
-# source : book/blfs-13.0/general/dbus.html
+# CANDIDATE recipe extracted from the BLFS 13.1-systemd book.
+# source : book/blfs-13.1/general/dbus.html
 # title  : dbus-1.16.2
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 set -e
 
 # --- block 0 --------------------------------------------------
 #   ctx: hed by D-Bus session daemon as systemd user services); For the tests: D-Bus
-#   ctx: Python-1.4.0, PyGObject-3.54.5, and Valgrind-3.26.0; for documentation: Doxygen-1.16.1,
+#   ctx: Python-1.4.0, PyGObject-3.56.3, and Valgrind-3.27.1; for documentation: Doxygen-1.18.0,
 #   ctx: xmlto-0.0.29, Ducktype, and Yelp Tools Installation of D-Bus Install D-Bus by running
 #   ctx: the following commands (you may wish to review the meson_options.txt file first and add
 #   ctx: any additional desired options to the meson setup line below):

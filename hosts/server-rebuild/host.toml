@@ -1,0 +1,32 @@
+# `server-rebuild` -- a from-scratch LFS/BLFS 13.1 build of `server`, tracked separately
+# from `hosts/server/`'s own state.
+#
+# Not a second physical machine: `packages.py`, the override JSONs, `kernel-config.sh`,
+# `recipes/` and `overlay/` are all symlinks back to `hosts/server/`, so this shares the
+# exact same book pins, package set and review decisions server does. Only `state/`,
+# `manifests/` and `logs/` are real, separate directories.
+#
+# Why this exists: `hosts/server/state/completed` already has 131/134 LFS steps and
+# 216/217 BLFS steps marked done -- real history from the live, currently-running 13.0
+# system, not from this fresh attempt. Building into a brand-new /mnt/lfs with
+# `--resume` against that file would skip almost everything (it isn't done in *this*
+# tree) and, in the other direction, native-mode maintenance against the live system
+# would break if that file were reset to track this build instead. Two build attempts
+# for the same machine, two independent completion records -- created 2026-09-07.
+#
+# Once this tree is archived and deployed to a USB per BOOTSTRAP-style instructions and
+# the new image boots as the real `server`, this directory's `state/completed` becomes
+# the live record going forward (`hosts/server/state/completed` gets archived as history
+# for the 13.0 image it belongs to, same as any other build's record).
+
+arch = "x86_64"
+
+[books]
+lfs  = "13.1"
+slfs = "13.1"
+glfs = "13.1"
+
+[build]
+jobs = 0
+chroot_tree = "/mnt/lfs"
+sources = "/mnt/lfs/sources"

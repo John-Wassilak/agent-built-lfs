@@ -60,3 +60,36 @@ Things worth knowing before changing anything here:
 - **`nvme0n1p3` (the LUKS `/mnt/crypt` volume, this repo's own home) is never touched by
   any of this build or deploy process.** Only `nvme0n1p1` (root) and `nvme0n1p2` (swap)
   get reformatted at deploy time.
+- **This host is still pinned to LFS/BLFS 13.0 (`host.toml`'s `[books]`) while `server`
+  moved to 13.1 on 2026-09-07.** The shared `recipes/` tree is machine-neutral only when
+  every host reads the same book version -- that stopped being true the moment `server`
+  bumped, and the tooling has no version-scoping for the shared tree, only for the
+  chunked book HTML it reads from. Concretely: `bin/extract-recipes.py --host laptop
+  --check` / `bin/extract-blfs.py --host laptop --check` will report drift on ~240 pages
+  where this host has no `hosts/laptop/recipes/<name>.sh` copy of its own -- that is
+  **expected noise from the version gap, not real drift** (confirmed 2026-09-07: this
+  host's own book/13.0-based rendering is unchanged from before the bump; only the
+  *shared* candidate file changed, since `server`'s 13.1 extraction run overwrote it).
+  **Do not run `lfsbuild --host laptop --only <step> --force` for any step this host has
+  no `hosts/laptop/recipes/` copy of without first checking whether that step's page
+  changed between `book/13.0` and `book/blfs-13.0` vs `book/13.1`/`book/blfs-13.1`** --
+  the shared recipe may now assume a different toolchain/library version than what this
+  host is actually built against. Six pages are confirmed to need this care because they
+  had real command-content changes carried a stale block-index into the shared file
+  during the bump (`ch08-gcc`, `blfs-nodejs`, `blfs-sudo`, `blfs-glib2`, `blfs-rust`,
+  `blfs-json-c`) -- each now has a `hosts/laptop/`-level compat override restoring the
+  correct 13.0-era decision, tagged "Remove once this host also bumps to 13.1" in its
+  `reason`. The other ~240 pages were not individually re-verified against 13.1 text
+  (out of scope for server's bump); their shared recipe is now 13.1-shaped by default.
+  The clean fix, whenever this host's own bump happens, is to do the same 13.0->13.1
+  migration review this host still owes, at which point these compat overrides and this
+  whole note can be deleted. A better structural fix -- version-scoping `recipes/`
+  itself (e.g. `recipes/<family>-<ver>/`) so two hosts on different book versions never
+  share one candidate file -- was identified but not implemented; flag it if a third
+  host or another cross-version gap appears.
+
+Site data is untracked on purpose. `etc-hosts.local` and `authorized-keys.local` hold this
+machine's LAN/VPN map and its SSH access list; both are gitignored with tracked `.example`
+templates, staged into `/sources` before a build, and read by `ch09-network` and
+`blfs-authorized-keys-john`. They were inline in the tracked recipes until 2026-09-21 --
+do not move them back. The repo is public.

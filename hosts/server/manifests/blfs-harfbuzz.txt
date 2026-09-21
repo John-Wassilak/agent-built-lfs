@@ -1,8 +1,5 @@
 /etc/mtab
 /etc/udev/hwdb.bin
-/root/.cache/g-ir-scanner/3d8ccebc1bd2f0f69818f0a50b179729b0f33721
-/root/.cache/g-ir-scanner/65e73b36c38b5ac7b4c9c716043799dabe2b4365
-/root/.cache/g-ir-scanner/95f947bf1eae641455724fd5e7b08d716417dd95
 /usr/bin/hb-info
 /usr/bin/hb-shape
 /usr/bin/hb-subset

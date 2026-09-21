@@ -1,7 +1,7 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter09/inputrc.html
-# title  : 9.8. Creating the /etc/inputrc File
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter09/inputrc.html
+# title  : 9.8 Creating the /etc/inputrc File
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
@@ -52,6 +52,10 @@ set bell-style none
 # for Konsole
 "\e[H": beginning-of-line
 "\e[F": end-of-line
+
+# uncomment for history search mode with up/down
+# "\e[A": history-search-backward
+# "\e[B": history-search-forward
 
 # End /etc/inputrc
 EOF

@@ -1,0 +1,11 @@
+# Template for hosts/<host>/authorized-keys.local, which is untracked (.gitignore).
+# Copy to authorized-keys.local, put the real public keys in, and stage it to
+# /sources/authorized-keys.local before the build -- same convention as kernel-config.sh
+# and etc-hosts.local.
+#
+# Unlike etc-hosts.local, this file is REQUIRED: blfs-openssh disables password auth, so
+# a build with no authorized_keys has no way in over SSH at all. The recipe fails rather
+# than installing an empty file.
+
+# ssh-ed25519 AAAAC3Nza...  john@workstation
+# ssh-rsa     AAAAB3Nza...  john@phone

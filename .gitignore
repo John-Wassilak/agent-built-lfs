@@ -33,3 +33,8 @@ __pycache__/
 
 # Session-local scheduler lock (pid/session id/timestamp) -- not project content.
 .claude/scheduled_tasks.lock
+
+# Site-specific /etc/hosts entries (LAN map, WAN addresses, VPN mesh). Real content
+# stays out of a public repo; etc-hosts.local.example is the tracked template.
+hosts/*/etc-hosts.local
+hosts/*/authorized-keys.local

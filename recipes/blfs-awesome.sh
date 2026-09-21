@@ -68,6 +68,13 @@ LUA54_SRC=/root/build-lua54-headers/lua-5.4.9   # built once for blfs-lua5.4.sh'
 LUA54_BIN_DIR=/root/.lua54-build-path
 mkdir -p "$LUA54_BIN_DIR"
 if [ ! -x "$LUA54_SRC/src/lua" ]; then
+    # Source dir itself may not exist at all: blfs-lua5.4.sh's own build tree is
+    # cleaned up after that step (generic unpack-then-cleanup convention, same as
+    # every other package) -- only the binary's absence was checked for before, not
+    # whether $LUA54_SRC exists at all to build in (found 2026-09-09, fresh chroot
+    # build: "make: No such file or directory. Stop." with nothing to build against).
+    mkdir -p "$(dirname "$LUA54_SRC")"
+    tar -xf /sources/lua-5.4.9.tar.gz -C "$(dirname "$LUA54_SRC")"
     make -C "$LUA54_SRC" MYCFLAGS="-fPIC" MYLDFLAGS="" linux-readline
 fi
 ln -sf "$LUA54_SRC/src/lua" "$LUA54_BIN_DIR/lua"

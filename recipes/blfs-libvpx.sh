@@ -1,12 +1,12 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the BLFS 13.0-systemd book.
-# source : book/blfs-13.0/multimedia/libvpx.html
+# CANDIDATE recipe extracted from the BLFS 13.1-systemd book.
+# source : book/blfs-13.1/multimedia/libvpx.html
 # title  : libvpx-1.16.0
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 set -e
 
 # --- block 0 --------------------------------------------------
-#   ctx: Doxygen-1.16.1 (to build documentation) Note An Internet connection is needed for some
+#   ctx: Doxygen-1.18.0 (to build documentation) Note An Internet connection is needed for some
 #   ctx: tests of this package. The system certificate store may need to be set up with
 #   ctx: make-ca-1.16.1 before testing this package. Installation of libvpx If upgrading from a
 #   ctx: previous version of libvpx, update the timestamps of all the files to prevent the build

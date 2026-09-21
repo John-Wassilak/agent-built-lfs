@@ -2409,9 +2409,6 @@
 /opt/rustc-1.93.1/share/man/man1/rustc.1
 /opt/rustc-1.93.1/share/man/man1/rustdoc.1
 /opt/rustc-1.93.1/share/zsh/site-functions/_cargo
-/root/.cargo/.global-cache
-/root/.cargo/.package-cache
-/root/.cargo/.package-cache-mutate
 /usr/share/zsh/site-functions/_cargo
 /var/lib/systemd/timesync/clock
 /var/log/README

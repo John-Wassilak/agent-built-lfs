@@ -7,7 +7,7 @@
 # kernel_config_shared and kernel_config_finish, and is the file the ch10-kernel recipe
 # actually runs.
 #
-# Scripted replacement for the book's interactive `make menuconfig` (LFS 13.0 s10.3).
+# Scripted replacement for the book's interactive `make menuconfig` (LFS chapter 10).
 #
 # Starts from `make defconfig`, which the book itself recommends as "a good starting
 # place ... takes your current system architecture into account". Then applies every

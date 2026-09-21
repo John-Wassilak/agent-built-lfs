@@ -1,0 +1,12 @@
+{
+  "_comment": [
+    "Review decisions for the SLFS subset, applied by bin/extract-slfs.py.",
+    "Same contract as recipes/review-overrides.json: drop / replace / enable / defer.",
+    "SLFS has no downloadable pre-built chunked HTML (unlike LFS/BLFS) -- pages are",
+    "fetched one at a time from linuxfromscratch.org's own view/<ver>/ path into",
+    "book/slfs-<ver>/ as each package needs one. Markup differs from LFS/BLFS in one",
+    "way, checked directly against real pages: SLFS marks an admonition with a bare",
+    "class (e.g. class=\"note\") rather than \"admon note\", and marks root-only commands",
+    "with <pre class=\"root\">, same as BLFS -- both handled by bin/booklib.py."
+  ]
+}

@@ -17,7 +17,7 @@ Entries carrying no comment were added directly to the plan during the desktop p
 their rationale is in the header of their own recipe file and in the build report.
 """
 
-from base import BASE, book, hand
+from base import BASE, book, hand, slfs, glfs
 
 PACKAGES = BASE + [
     # --- Hyprland desktop stack, HYPRLAND-PLAN.md, Tier 1-2 (2026-08-25) -----------
@@ -28,17 +28,17 @@ PACKAGES = BASE + [
     # features) and glib2's Recommended (docutils/libxslt, for docs/an xslt binding)
     # are skipped -- neither affects anything Hyprland/Firefox/mpv/ffmpeg actually
     # use cmake or glib2 for. Documented per-package below where it matters more.
-    book(17, "cmake", "general/cmake.html", "cmake-4.2.3.tar.gz"),
+    book(17, "cmake", "general/cmake.html", "cmake-4.4.2.tar.gz"),
     book(19, "brotli", "general/brotli.html", "brotli-1.2.0.tar.gz"),
-    book(20, "highway", "general/highway.html", "highway-1.3.0.tar.gz"),
+    book(20, "highway", "general/highway.html", "highway-1.4.0.tar.gz"),
     book(21, "graphite2", "general/graphite2.html", "graphite2-1.3.14.tgz"),
-    book(22, "giflib", "general/giflib.html", "giflib-5.2.2.tar.gz"),
-    book(23, "libpng", "general/libpng.html", "libpng-1.6.55.tar.xz"),
-    book(24, "lcms2", "general/lcms2.html", "lcms2-2.18.tar.gz"),
+    book(22, "giflib", "general/giflib.html", "giflib-6.1.3.tar.gz"),
+    book(23, "libpng", "general/libpng.html", "libpng-1.6.58.tar.xz"),
+    book(24, "lcms2", "general/lcms2.html", "lcms2-2.19.1.tar.gz"),
 
     # libjxl: Required deps only (brotli, cmake, giflib, highway, lcms2,
     # libjpeg-turbo[Arch, added separately], libpng) -- all built above.
-    book(25, "libjxl", "general/libjxl.html", "libjxl-0.11.2.tar.gz"),
+    book(25, "libjxl", "general/libjxl.html", "libjxl-0.12.0.tar.gz"),
 
     # libwebp: Recommended is libjpeg-turbo/libpng (have) + libtiff/sdl2-compat "for
     # improved 3D acceleration" -- not built yet (sdl2-compat is tier 11, libtiff
@@ -51,18 +51,38 @@ PACKAGES = BASE + [
     # freetype2) -- book's own bootstrap order is freetype2 first without it, which
     # is what this does; harfbuzz follows below and links against this freetype2.
     # which-2.23 already built (original Claude Code dependency chain).
-    book(28, "freetype2", "general/freetype2.html", "freetype-2.14.1.tar.xz"),
-    book(29, "glib2", "general/glib2.html", "glib-2.86.4.tar.xz"),
-    book(30, "icu", "general/icu.html", "icu4c-78.2-sources.tgz"),
-    book(31, "harfbuzz", "general/harfbuzz.html", "harfbuzz-12.3.2.tar.xz"),
-    book(32, "fontconfig", "general/fontconfig.html", "fontconfig-2.17.1.tar.xz"),
-    book(33, "hwdata", "general/hwdata.html", "hwdata-0.404.tar.gz"),
-    book(35, "nettle", "postlfs/nettle.html", "nettle-3.10.2.tar.gz"),
+    book(28, "freetype2", "general/freetype2.html", "freetype-2.14.3.tar.xz"),
+    book(29, "glib2", "general/glib2.html", "glib-2.88.3.tar.xz"),
+    book(30, "icu", "general/icu.html", "icu4c-78.3-sources.tgz"),
+    book(31, "harfbuzz", "general/harfbuzz.html", "harfbuzz-14.3.1.tar.xz"),
+    book(32, "fontconfig", "general/fontconfig.html", "fontconfig-2.18.3.tar.xz"),
+    book(33, "hwdata", "general/hwdata.html", "hwdata-0.410.tar.gz"),
+    book(35, "nettle", "postlfs/nettle.html", "nettle-4.0.tar.gz"),
     book(36, "libtirpc", "basicnet/libtirpc.html", "libtirpc-1.3.7.tar.bz2"),
 
     # --- Tier 3 prep: X11/XCB compat, pulled ahead of HYPRLAND-PLAN.md's Tier 5
     # because libxkbcommon (Tier 3) recommends libxcb, and the whole chain needs
-    # $XORG_PREFIX/$XORG_CONFIG from x/xorg7.html -- see blfs-xorg-env below.
+    # $XORG_PREFIX/$XORG_CONFIG from x/xorg7.html -- see blfs-xorg-env immediately below.
+    #
+    # x/xorg7.html: every Xorg/XCB-family BLFS recipe from here on (util-macros,
+    # xorgproto, libXau, libXdmcp, xcb-proto, libxcb, libxcvt, xcb-util, and later xorg-
+    # xwayland) uses $XORG_PREFIX and $XORG_CONFIG in its literal build commands -- the
+    # book has the reader export them once, persist them via /etc/profile.d, and reuse
+    # throughout. No page-specific command block captures this since it is shared setup,
+    # not part of any one package's page.
+    #
+    # Fractional seq (36.5, between libtirpc=36 and util-macros=37), not the seq 120 this
+    # was originally given: moved 2026-09-08, found rebuilding this host from scratch for
+    # LFS 13.1. At seq 120 this ran fine on the live system (built incrementally, native
+    # mode, whenever the operator happened to reach it -- order across chapters never
+    # mattered there), but seq 120 is *after* every Xorg-family package that actually
+    # needs $XORG_PREFIX, so a genuine fresh chroot build reaches xorgproto (seq 38)
+    # before this step has ever run: meson sees an empty $XORG_PREFIX and hard-errors
+    # ("prefix value '' must be an absolute path"). This comment already said "see
+    # blfs-xorg-env below" right here, immediately above util-macros -- that was always
+    # the intended position; seq 120 was the actual mistake. Not reusing 120 for anything
+    # else, per CLAUDE.md's seq-permanence rule -- it is now a gap, real history.
+    hand(36.5, "xorg-env", "", "xorg-env (hand-authored)"),
     book(37, "util-macros", "x/util-macros.html", "util-macros-1.20.2.tar.xz"),
     book(38, "xorgproto", "x/xorgproto.html", "xorgproto-2025.1.tar.xz"),
     book(39, "libXau", "x/libXau.html", "libXau-1.0.12.tar.xz"),
@@ -73,39 +93,154 @@ PACKAGES = BASE + [
     book(44, "xcb-util", "x/xcb-util.html", "xcb-util-0.4.1.tar.xz"),
 
     # --- Tier 3: Wayland core ---
-    book(45, "libxml2", "general/libxml2.html", "libxml2-2.15.1.tar.xz"),
-    book(48, "xkeyboard-config", "x/xkeyboard-config.html", "xkeyboard-config-2.46.tar.xz"),
-    book(49, "libxkbcommon", "general/libxkbcommon.html", "libxkbcommon-1.13.1.tar.gz"),
+    book(45, "libxml2", "general/libxml2.html", "libxml2-2.15.3.tar.xz"),
+    book(48, "xkeyboard-config", "x/xkeyboard-config.html", "xkeyboard-config-2.48.tar.xz"),
+    book(49, "libxkbcommon", "general/libxkbcommon.html", "libxkbcommon-1.13.2.tar.gz"),
+
+    # Fractional seqs (49.1-49.7), not these packages' original seqs (124-170): moved
+    # 2026-09-08, same fresh-chroot-build class of bug as blfs-xorg-env above. All seven
+    # ran fine at their original positions on the live system (built incrementally,
+    # native mode, long after vulkan-loader/mesa already existed there) but a genuine
+    # fresh build reaches vulkan-loader (seq 54) and mesa (seq 56) before any of them
+    # have run. vulkan-loader's cmake configure failed with 'required packages were not
+    # found: x11' (needs xtrans, libx11, libxext, libxrender, libxrandr -- libxrandr's
+    # own configure in turn needs the other three, all sequenced first here for that
+    # reason); mesa's meson configure separately failed with 'Dependency xshmfence not
+    # found' and 'Dependency xxf86vm not found'. Not reusing 124-126/132/168-170 for
+    # anything else, per CLAUDE.md's seq-permanence rule -- they are now gaps, real
+    # history, like the Hyprland-tier gaps HYPRLAND-PLAN.md already documents.
+    hand(49.1, "xtrans", "xtrans-1.6.0.tar.xz", "xtrans (hand-authored)"),
+    hand(49.2, "libx11", "libX11-1.8.13.tar.xz", "libx11 (hand-authored)"),
+    hand(49.3, "libxext", "libXext-1.3.7.tar.xz", "libxext (hand-authored)"),
+    hand(49.4, "libxrender", "libXrender-0.9.12.tar.xz", "libxrender (hand-authored)"),
+    hand(49.5, "libxrandr", "libXrandr-1.5.5.tar.xz", "libxrandr (hand-authored)"),
+    hand(49.6, "libxshmfence", "libxshmfence-1.3.3.tar.xz", "libxshmfence (hand-authored)"),
+    hand(49.7, "libxxf86vm", "libXxf86vm-1.1.7.tar.xz", "libxxf86vm (hand-authored)"),
+
+    # Fractional seq (49.8, not its original 127): moved 2026-09-08, same fresh-build
+    # ordering bug as the cluster immediately above. mesa's meson configure (seq 56)
+    # failed with 'Dependency "libglvnd" not found' -- mesa's x11 platform links against
+    # it directly, not just a Recommended-by-mesa relationship the book documents
+    # elsewhere. libglvnd's own Recommended dep (Xorg Libraries) is satisfied by the
+    # xtrans/libx11/libxext/libxrender/libxrandr cluster just above. Not reusing 127 for
+    # anything else, per CLAUDE.md's seq-permanence rule.
+    glfs(49.8, "libglvnd", "core/libglvnd.html", "libglvnd-v1.7.0.tar.gz"),
 
     # --- Tier 4: GPU/GL stack. Driver scope decided with the operator: only this
     # box's actual hardware (GTX 770, Kepler) plus a software fallback -- nouveau +
     # llvmpipe gallium drivers, swrast for Vulkan (no NVK/nouveau Vulkan: doubtful
     # Kepler support, and it would need rust-bindgen on top of everything else).
     # Not the book's own "auto" (all drivers, all vendors) default.
-    book(50, "spirv-headers", "general/spirv-headers.html", "SPIRV-Headers-vulkan-sdk-1.4.341.0.tar.gz"),
-    book(51, "spirv-tools", "general/spirv-tools.html", "SPIRV-Tools-vulkan-sdk-1.4.341.0.tar.gz"),
-    book(52, "glslang", "x/glslang.html", "glslang-16.2.0.tar.gz"),
-    book(53, "vulkan-headers", "x/vulkan-headers.html", "Vulkan-Headers-vulkan-sdk-1.4.341.0.tar.gz"),
-    book(54, "vulkan-loader", "x/vulkan-loader.html", "Vulkan-Loader-vulkan-sdk-1.4.341.0.tar.gz"),
-    book(55, "libdrm", "x/libdrm.html", "libdrm-2.4.131.tar.xz"),
-    book(56, "mesa", "x/mesa.html", "mesa-25.3.5.tar.xz"),
+    book(50, "spirv-headers", "general/spirv-headers.html", "SPIRV-Headers-vulkan-sdk-1.4.357.0.tar.gz"),
+    book(51, "spirv-tools", "general/spirv-tools.html", "SPIRV-Tools-vulkan-sdk-1.4.357.0.tar.gz"),
+    book(52, "glslang", "x/glslang.html", "glslang-16.5.0.tar.gz"),
+    book(53, "vulkan-headers", "x/vulkan-headers.html", "Vulkan-Headers-vulkan-sdk-1.4.357.0.tar.gz"),
+    book(54, "vulkan-loader", "x/vulkan-loader.html", "Vulkan-Loader-vulkan-sdk-1.4.357.0.tar.gz"),
+    book(55, "libdrm", "x/libdrm.html", "libdrm-2.4.134.tar.xz"),
+
+    # Fractional seqs (55.1-55.2), not their original 58-59: moved 2026-09-08, same
+    # fresh-build ordering bug as the two clusters above. mesa's meson configure (next,
+    # seq 56) failed with 'Unknown compiler(s): [['rustc']]' -- the host override above
+    # (blfs-overrides.json) sets vulkan-drivers=nouveau for real NVK support (a decision
+    # made 2026-08-26, after the stale "no NVK, doubtful Kepler support" comment a few
+    # lines up was written), and Mesa 26.x's NVK driver compiles its NAK shader
+    # translator, written in Rust, as a native meson subproject -- rustc is now a hard
+    # requirement for that driver choice, not optional. libssh2 stays immediately before
+    # rust, matching its position as rust's own Recommended dep (cargo's network-fetch
+    # support) under this project's one-level Recommended-deps policy. Not reusing 58-59
+    # for anything else, per CLAUDE.md's seq-permanence rule.
+    book(55.1, "libssh2", "general/libssh2.html", "libssh2-1.11.1.tar.gz"),
+    book(55.2, "rust", "general/rust.html", "rustc-1.97.1-src.tar.xz"),
+
+    # Fractional seqs (55.3-55.5), not llvm's original 191 / cbindgen's original 61: moved
+    # 2026-09-08, same fresh-build ordering bug, this time straight from mesa's own book
+    # page rather than a discovered transitive failure -- x/mesa.html's Recommended list
+    # names 'Cbindgen-0.29.4, make-ca-1.16.1, and rust-bindgen-0.72.1 (required for the
+    # Nouveau Vulkan driver)' outright. rust-bindgen itself needs a real LLVM+Clang
+    # (runtime libclang, for parsing C headers) -- the Tier 6 comment below explains why
+    # this project normally avoids building LLVM at all (Rust links its own bundled
+    # copy); llvm's own hand-authored recipe was written for Firefox, which still runs
+    # fine from this earlier position (see recipes/blfs-llvm.sh's header, now stale about
+    # being Firefox-only). rust-bindgen is a new package entry, not previously tracked in
+    # packages.py at all: on the live system it must have been installed ad hoc (via
+    # cargo install or similar) outside the tracked build, the same class of gap
+    # ch08-perl's undocumented fix and the nvidia recipe's assumed kbuild tree were.
+    hand(55.3, "llvm", "llvm-21.1.8.src.tar.xz", "LLVM-21.1.8 with clang (hand-authored)"),
+    book(55.4, "rust-bindgen", "general/rust-bindgen.html", "rust-bindgen-0.72.1.tar.gz"),
+    # Downgraded to hand() 2026-09-09, pinned to cbindgen-0.29.2 (not the book's
+    # documented 0.29.4): Firefox's build (seq 192, invokes system cbindgen directly)
+    # failed a real build against 0.29.4 -- see hosts/server/recipes/blfs-cbindgen.sh's
+    # own header for the full "COUNT identifier" cbindgen-version-regression story and
+    # why laptop's already-working 0.29.2 is the proven fix. mesa (seq 56, built earlier
+    # in this same run against 0.29.4) is unaffected: cbindgen is a build-time-only tool,
+    # not a runtime link dependency, so its already-built artifacts don't care which
+    # version generated their headers.
+    hand(55.5, "cbindgen", "cbindgen-0.29.2.tar.gz", "cbindgen-0.29.2 (hand-authored, version-pinned)"),
+
+    # Fractional seqs (55.6-55.7), not pyyaml's original 123 -- same fresh-build ordering
+    # bug, discovered the same way: mesa's meson.build (general/mesa.html's own Required
+    # list names 'Mako-1.4.1... and PyYAML-6.0.3' outright) probes a list of python3.x
+    # binaries and, for each, checks whether the mako and pyyaml modules import
+    # successfully; none did (neither was installed yet at this earlier point in a fresh
+    # build), so meson fell through the whole candidate list and errored 'Python >= 3.10
+    # not found' -- a misleading message; the real gap is the two modules, not the
+    # interpreter. mako itself was a second, standalone gap: recipes/blfs-mako.sh has
+    # existed since this box's original Hyprland-tier work (its own header already says
+    # "Required by Mesa's build-time code generation scripts") but was never actually
+    # wired into this PACKAGES list -- a real oversight, not a version/ordering issue,
+    # caught only because this fresh build is the first time anything has ever tried to
+    # run recipes/blfs-mako.sh at all.
+    hand(55.6, "mako", "mako-1.4.1.tar.gz", "Mako-1.4.1 (hand-authored)"),
+    hand(55.7, "pyyaml", "pyyaml-6.0.3.tar.gz", "pyyaml (hand-authored)"),
+
+    # Fractional seqs (55.8-55.9), not their original 214-215: same fresh-build ordering
+    # bug, one more layer of it. mesa's meson.build auto-detects LLVM+Clang (now present,
+    # moved above) and auto-enables its SPIR-V/OpenCL code path on that basis, which hard-
+    # requires LLVMSPIRVLib (SPIRV-LLVM-Translator) at configure time -- confirmed via a
+    # real failure ('Dependency "LLVMSPIRVLib" not found'). libclc moved alongside it
+    # since it depends on spirv-llvm-translator and was already positioned immediately
+    # after it in the file (214/215, both right after mesa's original 56) -- the same
+    # "added out of order during incremental live-system work" pattern as llvm/rust-
+    # bindgen/cbindgen/mako above. vulkan-tools (still seq 216, not moved) is not part of
+    # this chain -- it is a standalone diagnostics package against vulkan-loader/vulkan-
+    # headers, both already built well before this point.
+    book(55.8, "spirv-llvm-translator", "general/spirv-llvm-translator.html", "SPIRV-LLVM-Translator-21.1.4.tar.gz"),
+    book(55.9, "libclc", "general/libclc.html", "libclc-21.1.8.src.tar.xz"),
+
+    # New package (not a moved one): mesa's host override above deliberately keeps the
+    # book's platforms=x11,wayland default (see that override's own reason -- dropping it
+    # would force a Mesa rebuild for no gain, since this box has abandoned Wayland, see
+    # AWESOME-X11-PLAN.md). That reasoning assumed wayland-protocols was already
+    # satisfied, but it was never actually built anywhere in this project -- a real gap,
+    # only surfacing now because meson's pkg-config probe for it failed on a fresh build
+    # and fell through to auto-downloading a fallback wrap subproject over the network,
+    # which then failed too (this chroot has no working resolv.conf by default, same
+    # class of issue as the cargo/npm/go fixes elsewhere in this file). Building the real
+    # thing from its own BLFS page is the fix, not another network-fetch workaround: it is
+    # a small, fast, no-compile package (protocol XML + meson install only), and this
+    # project stages real sources rather than relying on a build tool's own live fetch
+    # wherever a staged alternative exists.
+    # wayland-protocols' own Required dep -- also never built anywhere in this project
+    # despite the "Tier 3: Wayland core" header a few lines up (planned for the abandoned
+    # Hyprland tier, never followed through once the pivot to X11 happened). Only
+    # provides wayland-scanner and libwayland-client/-server here -- nothing on this box
+    # runs an actual Wayland compositor or client, but mesa's kept platforms=x11,wayland
+    # meson option still needs the scanner/headers to build its wayland-EGL platform
+    # code, confirmed via a real failure ('Subprojectwayland is buildable: NO').
+    book(55.93, "wayland", "general/wayland.html", "wayland-1.26.0.tar.xz"),
+    book(55.95, "wayland-protocols", "general/wayland-protocols.html", "wayland-protocols-1.49.tar.xz"),
+
+    book(56, "mesa", "x/mesa.html", "mesa-26.1.7.tar.xz"),
     book(57, "libepoxy", "x/libepoxy.html", "libepoxy-1.5.10.tar.xz"),
 
-    # --- Tier 6: Rust toolchain + Cairo/Pango. Decided with the operator to skip
-    # building LLVM as its own package (4.7GB, 3 extra tarballs, hours) even though
-    # Rust's bootstrap.toml recommends linking system LLVM -- Rust falls back to
-    # its own bundled copy (book's own words: "the resulting build will be larger
-    # and take longer", but avoids a second, separately-massive LLVM build on top).
-    book(58, "libssh2", "general/libssh2.html", "libssh2-1.11.1.tar.gz"),
-    book(59, "rust", "general/rust.html", "rustc-1.93.1-src.tar.xz"),
-    book(60, "cargo-c", "general/cargo-c.html", "cargo-c-0.10.20.tar.gz"),
-    book(61, "cbindgen", "general/cbindgen.html", "cbindgen-0.29.2.tar.gz"),
+    # --- Tier 6: Cairo/Pango.
+    book(60, "cargo-c", "general/cargo-c.html", "cargo-c-0.10.24.tar.gz"),
     book(62, "cairo", "x/cairo.html", "cairo-1.18.4.tar.xz"),
 
     # fribidi: pango's book page lists it as Required (Fontconfig, FriBidi-1.0.16,
     # GLib) -- missed adding it originally; discovered via a real pango meson failure.
     book(63, "fribidi", "general/fribidi.html", "fribidi-1.0.16.tar.xz"),
-    book(64, "pango", "x/pango.html", "pango-1.57.0.tar.xz"),
+    book(64, "pango", "x/pango.html", "pango-1.58.2.tar.xz"),
 
     # gdk-pixbuf: librsvg's book page lists it only as Recommended, but librsvg's
     # own rsvg-pixbuf.h header hard #includes gdk-pixbuf/gdk-pixbuf.h -- the build
@@ -114,15 +249,25 @@ PACKAGES = BASE + [
     # Skipped gdk-pixbuf's other Recommended dep, glycin: circular (book says build
     # gdk-pixbuf without it first, then glycin, then rebuild gdk-pixbuf again) and a
     # heavy separate Rust image-loader stack -- out of scope for a one-level policy.
-    book(65, "shared-mime-info", "general/shared-mime-info.html", "shared-mime-info-2.4.tar.gz"),
-    book(66, "gdk-pixbuf", "x/gdk-pixbuf.html", "gdk-pixbuf-2.44.5.tar.xz"),
-    book(67, "librsvg", "general/librsvg.html", "librsvg-2.61.4.tar.xz"),
+    book(65, "shared-mime-info", "general/shared-mime-info.html", "shared-mime-info-2.5.1.tar.gz"),
 
-    # libjpeg-turbo and muparser: both claimed "already built" in the Tier 10
-    # hyprgraphics/hyprland rationale comments below but never actually added to
-    # this list -- caught only by checking for their manifests before staging Tier
-    # 10, same class of oversight as fribidi earlier. Both have real BLFS pages.
-    book(68, "libjpeg-turbo", "general/libjpeg.html", "libjpeg-turbo-3.1.3.tar.gz"),
+    # Fractional seq (65.5), not its original 68: moved 2026-09-08, same fresh-build
+    # ordering bug as elsewhere in this file. gdk-pixbuf's own meson.build hard-requires
+    # libjpeg (confirmed via a real failure: "Dependency 'libjpeg' is required but not
+    # found") -- not documented in gdk-pixbuf's own BLFS Required/Recommended list at all,
+    # only discoverable this way. libjpeg-turbo was already known to be needed somewhere
+    # in this build (see the comment that used to sit here, now moved down with
+    # muparser) but had never been checked against gdk-pixbuf specifically since the live
+    # system built everything incrementally, out of file order.
+    book(65.5, "libjpeg-turbo", "general/libjpeg.html", "libjpeg-turbo-3.2.0.tar.gz"),
+
+    book(66, "gdk-pixbuf", "x/gdk-pixbuf.html", "gdk-pixbuf-2.44.7.tar.xz"),
+    book(67, "librsvg", "general/librsvg.html", "librsvg-2.62.3.tar.xz"),
+
+    # muparser: claimed "already built" in the Tier 10 hyprgraphics/hyprland rationale
+    # comments below but never actually added to this list -- caught only by checking
+    # for its manifest before staging Tier 10, same class of oversight as fribidi
+    # earlier. Has a real BLFS page.
     book(69, "muparser", "lxqt/muparser.html", "muparser-2.3.5.tar.gz"),
 
     # --- Requested 2026-08-26: cryptsetup (disk encryption), not part of the
@@ -139,28 +284,37 @@ PACKAGES = BASE + [
     # (confirmed via Arch's own libaio PKGBUILD, whose url= field points there now).
     # No md5 to verify against -- the book's checksum was for the dead mirror's file.
     book(70, "libaio", "general/libaio.html", "libaio-0.3.113.tar.gz"),
-    book(71, "json-c", "general/json-c.html", "json-c-0.18.tar.gz"),
+    book(71, "json-c", "general/json-c.html", "json-c-0.19.tar.gz"),
     book(72, "popt", "general/popt.html", "popt-1.19.tar.gz"),
-    book(73, "lvm2", "postlfs/lvm2.html", "LVM2.2.03.38.tgz"),
-    book(74, "cryptsetup", "postlfs/cryptsetup.html", "cryptsetup-2.8.4.tar.xz"),
+    book(73, "lvm2", "postlfs/lvm2.html", "LVM2.2.03.42.tgz"),
+    book(74, "cryptsetup", "postlfs/cryptsetup.html", "cryptsetup-2.8.7.tar.xz"),
 
     # --- Requested 2026-08-26: pass (the standard Unix password manager). Not in
     # BLFS itself; its own dependency chain (GnuPG + everything under it) is,
     # though -- pass just needs bash (have), gnupg, and tree at runtime.
-    book(75, "libgpg-error", "general/libgpg-error.html", "libgpg-error-1.59.tar.bz2"),
-    book(76, "libgcrypt", "general/libgcrypt.html", "libgcrypt-1.12.0.tar.bz2"),
+    book(75, "libgpg-error", "general/libgpg-error.html", "libgpg-error-1.61.tar.bz2"),
+    book(76, "libgcrypt", "general/libgcrypt.html", "libgcrypt-1.12.2.tar.bz2"),
     book(77, "libassuan", "general/libassuan.html", "libassuan-3.0.2.tar.bz2"),
-    book(78, "libksba", "general/libksba.html", "libksba-1.6.7.tar.bz2"),
+    book(78, "libksba", "general/libksba.html", "libksba-1.8.0.tar.bz2"),
     book(79, "npth", "general/npth.html", "npth-1.8.tar.bz2"),
-    book(80, "openldap", "server/openldap.html", "openldap-2.6.12.tgz"),
-    book(81, "pinentry", "general/pinentry.html", "pinentry-1.3.2.tar.bz2"),
-    book(82, "gnupg", "postlfs/gnupg.html", "gnupg-2.5.17.tar.bz2"),
-    book(83, "tree", "general/tree.html", "unix-tree-2.3.1.tar.bz2"),
+    book(80, "openldap", "server/openldap.html", "openldap-2.7.0.tgz"),
+    book(81, "pinentry", "general/pinentry.html", "pinentry-1.3.3.tar.bz2"),
+    book(82, "gnupg", "postlfs/gnupg.html", "gnupg-2.5.21.tar.bz2"),
+    book(83, "tree", "general/tree.html", "unix-tree-2.3.2.tar.bz2"),
 
     # --- Tier 8: input & session management ---
     book(84, "libgudev", "general/libgudev.html", "libgudev-238.tar.xz"),
     book(85, "mtdev", "general/mtdev.html", "mtdev-1.1.7.tar.bz2"),
-    book(86, "libwacom", "general/libwacom.html", "libwacom-2.18.0.tar.xz"),
+
+    # Fractional seq (85.5), not its original 128: moved 2026-09-08, same fresh-build
+    # ordering bug as elsewhere in this file. libwacom's meson.build hard-requires
+    # libevdev (confirmed via a real failure: "Dependency 'libevdev' not found") --
+    # not documented on libwacom's own BLFS page (which doesn't exist; this package's
+    # rationale below was written for libinput's sake, not knowing libwacom needed it
+    # too until this fresh build actually hit the gap).
+    hand(85.5, "libevdev", "libevdev-1.13.7.tar.xz", "libevdev (hand-authored)"),
+
+    book(86, "libwacom", "general/libwacom.html", "libwacom-2.19.1.tar.xz"),
 
     # --- Tier 9: XWayland. BLFS's own xwayland.html dependency list is much
     # leaner than Arch's equivalent package (which builds more optional
@@ -178,37 +332,73 @@ PACKAGES = BASE + [
     book(92, "opus", "multimedia/opus.html", "opus-1.6.1.tar.gz"),
     book(93, "libvorbis", "multimedia/libvorbis.html", "libvorbis-1.3.7.tar.xz"),
     book(94, "libsndfile", "multimedia/libsndfile.html", "libsndfile-1.2.2.tar.xz"),
-    book(95, "alsa-lib", "multimedia/alsa-lib.html", "alsa-lib-1.2.15.3.tar.bz2"),
+    book(95, "alsa-lib", "multimedia/alsa-lib.html", "alsa-lib-1.2.16.1.tar.bz2"),
     book(96, "speex", "multimedia/speex.html", "speex-1.2.1.tar.gz"),
-    book(97, "gsettings-desktop-schemas", "gnome/gsettings-desktop-schemas.html", "gsettings-desktop-schemas-49.1.tar.xz"),
-    book(98, "at-spi2-core", "x/at-spi2-core.html", "at-spi2-core-2.58.3.tar.xz"),
-    book(99, "gtk3", "x/gtk3.html", "gtk-3.24.51.tar.xz"),
+    book(97, "gsettings-desktop-schemas", "gnome/gsettings-desktop-schemas.html", "gsettings-desktop-schemas-50.1.tar.xz"),
+
+    # Fractional seqs (97.1-97.3), not their original 133/144/145: moved 2026-09-08, same
+    # fresh-build ordering bug as elsewhere in this file. at-spi2-core's meson.build hard-
+    # requires libxtst (confirmed via a real failure: "Dependency 'xtst' not found"),
+    # which itself needs libxi, which itself needs libxfixes -- the whole chain sequenced
+    # here in dependency order. libxcomposite/libxcursor (also needing libxfixes, still at
+    # their original 134/135) are unrelated to this chain -- pure Hyprland deps, not
+    # needed this early -- and are left in place.
+    hand(97.1, "libxfixes", "libXfixes-6.0.2.tar.xz", "libxfixes (hand-authored)"),
+    hand(97.2, "libxi", "libXi-1.8.3.tar.xz", "libxi (hand-authored)"),
+    hand(97.3, "libxtst", "libXtst-1.2.5.tar.xz", "libxtst (hand-authored)"),
+
+    book(98, "at-spi2-core", "x/at-spi2-core.html", "at-spi2-core-2.60.6.tar.xz"),
+    book(99, "gtk3", "x/gtk3.html", "gtk-3.24.52.tar.xz"),
+
+    # Fractional seqs (99.1-99.2), not their original 142-143: moved 2026-09-08, same
+    # fresh-build ordering bug as elsewhere in this file. pulseaudio's meson.build hard-
+    # requires libice and libsm (confirmed via a real failure: "Dependency 'ice' not
+    # found"), sequenced here in dependency order (libsm needs libice).
+    hand(99.1, "libice", "libICE-1.1.2.tar.xz", "libice (hand-authored)"),
+    hand(99.2, "libsm", "libSM-1.2.6.tar.xz", "libsm (hand-authored)"),
+
     book(100, "pulseaudio", "multimedia/pulseaudio.html", "pulseaudio-17.0.tar.xz"),
 
     # --- Tier 12: media codecs for FFmpeg/mpv (2026-08-26). All real BLFS book
     # pages. NASM built first -- Recommended by nearly everything else here.
     # Scope: FFmpeg's own Recommended list (not its much longer Optional list)
     # plus mpv's Required/Recommended, per the one-level Recommended-deps policy.
-    book(101, "nasm", "general/nasm.html", "nasm-3.01.tar.xz"),
-    book(102, "libusb", "general/libusb.html", "libusb-1.0.29.tar.bz2"),
-    book(103, "dav1d", "multimedia/dav1d.html", "dav1d-1.5.3.tar.gz"),
-    book(104, "libaom", "multimedia/libaom.html", "libaom-3.13.1.tar.gz"),
+    book(101, "nasm", "general/nasm.html", "nasm-3.02.tar.xz"),
+    book(102, "libusb", "general/libusb.html", "libusb-1.0.30.tar.bz2"),
+    book(103, "dav1d", "multimedia/dav1d.html", "dav1d-1.5.4.tar.gz"),
+    book(104, "libaom", "multimedia/libaom.html", "libaom-3.14.1.tar.gz"),
     book(105, "libvpx", "multimedia/libvpx.html", "libvpx-1.16.0.tar.gz"),
     book(106, "x264", "multimedia/x264.html", "x264-20250815.tar.xz"),
-    book(107, "x265", "multimedia/x265.html", "x265_4.1.tar.gz"),
+    book(107, "x265", "multimedia/x265.html", "x265_4.2.tar.gz"),
     book(108, "lame", "multimedia/lame.html", "lame-3.100.tar.gz"),
-    book(109, "libass", "multimedia/libass.html", "libass-0.17.4.tar.xz"),
-    book(110, "svt-av1", "multimedia/svt-av1.html", "SVT-AV1-v4.0.1.tar.gz"),
+    book(109, "libass", "multimedia/libass.html", "libass-0.17.5.tar.xz"),
+    book(110, "svt-av1", "multimedia/svt-av1.html", "SVT-AV1-v4.2.0.tar.gz"),
     book(111, "fdk-aac", "multimedia/fdk-aac.html", "fdk-aac-2.0.3.tar.gz"),
-    book(112, "libva", "multimedia/libva.html", "libva-2.23.0.tar.gz"),
-    book(113, "sdl3", "multimedia/sdl3.html", "SDL3-3.4.0.tar.gz"),
-    book(114, "sdl2-compat", "multimedia/sdl2.html", "sdl2-compat-2.32.64.tar.gz"),
+    book(112, "libva", "multimedia/libva.html", "libva-2.24.1.tar.gz"),
+
+    # Fractional seq (112.5), not its original 135: moved 2026-09-08, same fresh-build
+    # ordering bug as elsewhere in this file. SDL3's cmake hard-requires it when X11
+    # support is enabled (confirmed via a real failure: "Couldn't find dependency
+    # package for XCURSOR") -- not documented on SDL3's own book page (which only lists
+    # the generic Xorg Libraries as part of Recommended, same undocumented-transitive-
+    # dependency pattern as libxscrnsaver a few lines up).
+    hand(112.5, "libxcursor", "libXcursor-1.2.3.tar.xz", "libxcursor (hand-authored)"),
+
+    # Fractional seq (112.6), not its original 141: moved 2026-09-08 alongside libxcursor
+    # above, same reason (SDL3's cmake X11 checks). SDL3's other X11 extension checks
+    # (XDBE, XSYNC, XSHAPE) are satisfied by libxext, already built; XINPUT/XFIXES/XRANDR/
+    # XTEST by libxi/libxfixes/libxrandr/libxtst, all already built earlier too -- this
+    # was the last one actually missing.
+    hand(112.6, "libxscrnsaver", "libXScrnSaver-1.2.5.tar.xz", "libxscrnsaver (hand-authored)"),
+
+    book(113, "sdl3", "multimedia/sdl3.html", "SDL3-3.4.14.tar.gz"),
+    book(114, "sdl2-compat", "multimedia/sdl2.html", "sdl2-compat-2.32.70.tar.gz"),
 
     # --- Requested 2026-08-26: GNU Screen. Not part of the Hyprland/media-codec
     # stack -- queued as a quick standalone build. No hard deps (book's own
     # configure already passes --disable-pam, so the Optional Linux-PAM dep
     # doesn't apply).
-    book(115, "screen", "general/screen.html", "screen-5.0.1.tar.gz"),
+    book(115, "screen", "general/screen.html", "screen-5.0.2.tar.gz"),
 
     # The openssh page points at blfs-systemd-units for sshd.service; 'make install-sshd'
     # is that package's target, not openssh's.
@@ -226,64 +416,18 @@ PACKAGES = BASE + [
     # ch08-cleanup removed. So apply just the lost block.
     hand(118, "fix-varlog", "", "fix-varlog (hand-authored)"),
 
-    # Installs Claude Code from npm. Needs working DNS inside the chroot, which the LFS
-    # resolv.conf symlink cannot provide here.
-    hand(119, "claude-code", "", "claude-code (hand-authored)"),
-
-    # x/xorg7.html: every Xorg/XCB-family BLFS recipe from here on (util-macros,
-    # xorgproto, libXau, libXdmcp, xcb-proto, libxcb, libxcvt, xcb-util, and later xorg-
-    # xwayland) uses $XORG_PREFIX and $XORG_CONFIG in its literal build commands -- the
-    # book has the reader export them once, persist them via /etc/profile.d, and reuse
-    # throughout. No page-specific command block captures this since it is shared setup,
-    # not part of any one package's page.
-    hand(120, "xorg-env", "", "xorg-env (hand-authored)"),
-
     # Not in BLFS. libei's book page lists it as Required ('Required attrs-25.4.0') -- a
-    # pure-Python package, same pip3-wheel pattern as pyyaml/mako, except *without* --no-
-    # build-isolation: unlike pyyaml/mako (setuptools, already present), attrs' build
-    # backend is hatchling, not installed -- discovered via a real 'Cannot import
-    # hatchling.build' failure. Letting pip's normal isolated build fetch hatchling itself
-    # (this target has direct internet access, confirmed by every curl fetch this session)
-    # into a throwaway build venv is simpler and more honest than hand-vendoring hatchling
-    # as its own recipe; the final `pip3 install` step of *this* package still installs
-    # only the offline-built attrs wheel, no network involved. Sourced from PyPI directly
-    # (files.pythonhosted.org), sha256 verified against PyPI's own published digest for
-    # the 25.4.0 sdist.
+    # pure-Python package, same pip3-wheel pattern as pyyaml/mako (built above, moved
+    # 2026-09-08), except *without* --no-build-isolation: unlike pyyaml/mako (setuptools,
+    # already present), attrs' build backend is hatchling, not installed -- discovered via
+    # a real 'Cannot import hatchling.build' failure. Letting pip's normal isolated build
+    # fetch hatchling itself (this target has direct internet access, confirmed by every
+    # curl fetch this session) into a throwaway build venv is simpler and more honest than
+    # hand-vendoring hatchling as its own recipe; the final `pip3 install` step of *this*
+    # package still installs only the offline-built attrs wheel, no network involved.
+    # Sourced from PyPI directly (files.pythonhosted.org), sha256 verified against PyPI's
+    # own published digest for the 25.4.0 sdist.
     hand(122, "attrs", "attrs-25.4.0.tar.gz", "attrs (hand-authored)"),
-
-    # Same situation as blfs-mako. Required by Mesa's build-time code generation scripts.
-    # Its own Recommended deps (cython, libyaml, for C-accelerated parsing) skipped --
-    # one-level policy, and this is a build-time tool only.
-    hand(123, "pyyaml", "pyyaml-6.0.3.tar.gz", "pyyaml (hand-authored)"),
-
-    # Not in this BLFS mirror. Header-only X transport library, required by libx11's
-    # configure (discovered when libx11's build failed: 'Package xtrans not found').
-    # Arch's official xtrans PKGBUILD as reference -- header-only, no compile step, just
-    # configure + install.
-    hand(124, "xtrans", "xtrans-1.6.0.tar.xz", "xtrans (hand-authored)"),
-
-    # Not in this BLFS mirror at all (confirmed: no libX11.html anywhere under
-    # book/blfs-13.0). Required by libglvnd (Arch's libglvnd PKGBUILD makedepends) and
-    # Mesa's x11 platform support. Built per Arch's official libx11 PKGBUILD, using this
-    # project's $XORG_CONFIG rather than Arch's own flags -- same convention as every
-    # other Xorg lib already built (xorgproto, libXau, libXdmcp, etc).
-    hand(125, "libx11", "libX11-1.8.13.tar.xz", "libx11 (hand-authored)"),
-
-    # Same situation as blfs-libx11 -- not in this BLFS mirror, required by libglvnd and
-    # Mesa's x11 platform. Arch's libxext PKGBUILD as reference.
-    hand(126, "libxext", "libXext-1.3.7.tar.xz", "libxext (hand-authored)"),
-
-    # Not in BLFS at all. Vendor-neutral GL/EGL/GLX dispatch -- the piece that lets Mesa's
-    # nouveau path and (later, if installed) NVIDIA's proprietary libGL coexist and be
-    # switched via the opengl-driver mechanism, rather than one unconditionally
-    # overwriting the other's libGL.so. Arch's official libglvnd PKGBUILD as reference --
-    # confirmed in extra, not AUR.
-    hand(127, "libglvnd", "libglvnd-v1.7.0.tar.gz", "libglvnd (hand-authored)"),
-
-    # Not in BLFS. Required by libinput. Arch's official libevdev PKGBUILD as reference.
-    # tests=disabled added after a real build failure: the option defaults to enabled and
-    # hard-requires the Check unit test framework, not installed.
-    hand(128, "libevdev", "libevdev-1.13.7.tar.xz", "libevdev (hand-authored)"),
 
     # Not in BLFS (which only has LuaJIT). libinput's device-quirk scripts want Lua 5.4
     # specifically via pkg-config as 'lua5.4' -- distinct from the LuaJIT build mpv wants
@@ -311,21 +455,9 @@ PACKAGES = BASE + [
     # system (GTK3 is a later tier).
     hand(130, "libinput", "libinput-1.31.3.tar.gz", "libinput (hand-authored)"),
 
-    # Not in this BLFS mirror. Direct Hyprland dependency (confirmed in Arch's official
-    # hyprland PKGBUILD depends array: 'libxrender'), not just an XWayland transitive dep.
-    hand(132, "libxrender", "libXrender-0.9.12.tar.xz", "libxrender (hand-authored)"),
-
-    # Not in this BLFS mirror. Direct Hyprland dependency.
-    hand(133, "libxfixes", "libXfixes-6.0.2.tar.xz", "libxfixes (hand-authored)"),
-
-    # Not in this BLFS mirror. Direct Hyprland dependency, needs libxfixes (previous
-    # step).
+    # Not in this BLFS mirror. Direct Hyprland dependency, needs libxfixes (built above,
+    # seq 97.1, moved 2026-09-08 for at-spi2-core's sake).
     hand(134, "libxcomposite", "libXcomposite-0.4.7.tar.xz", "libxcomposite (hand-authored)"),
-
-    # Not in this BLFS mirror. Direct Hyprland dependency. Arch also lists 'default-
-    # cursors' (a cursor-theme meta-package) as a runtime dep -- not a build requirement,
-    # skipped; a cursor theme is a later, separate concern.
-    hand(135, "libxcursor", "libXcursor-1.2.3.tar.xz", "libxcursor (hand-authored)"),
 
     # Not in this BLFS mirror. Direct Hyprland dependency, needs xcb-util (already built).
     hand(136, "xcb-util-image", "xcb-util-image-0.4.1.tar.xz", "xcb-util-image (hand-authored)"),
@@ -341,39 +473,6 @@ PACKAGES = BASE + [
 
     # Not in this BLFS mirror. Direct Hyprland dependency.
     hand(140, "xcb-util-errors", "xcb-util-errors-1.0.1.tar.xz", "xcb-util-errors (hand-authored)"),
-
-    # Not in this BLFS mirror. SDL3's cmake hard-requires it (X11 Screen Saver extension)
-    # when X11 support is enabled -- discovered via a real configure failure ('Couldn't
-    # find dependency package for XSCRNSAVER'), not mentioned in SDL3's book page (which
-    # only lists the generic Xorg Libraries as part of Recommended). Arch's official
-    # libxss PKGBUILD as reference -- needs libxext, libx11, xorgproto (all already
-    # built).
-    hand(141, "libxscrnsaver", "libXScrnSaver-1.2.5.tar.xz", "libxscrnsaver (hand-authored)"),
-
-    # Not in this BLFS mirror. Required (hard) by pulseaudio's meson.build as 'ice' --
-    # discovered via a real configure failure, not mentioned in pulseaudio's book page
-    # beyond the generic 'Xorg Libraries' Recommended entry. Arch's official libice
-    # PKGBUILD as reference -- needs xtrans, xorgproto (both already built).
-    hand(142, "libice", "libICE-1.1.2.tar.xz", "libice (hand-authored)"),
-
-    # Not in this BLFS mirror. Required (hard) alongside libice above by pulseaudio's
-    # meson.build as 'sm', same undocumented-chain discovery. Arch's official libsm
-    # PKGBUILD as reference -- needs libice (previous step), util-linux (already built in
-    # LFS ch8), xorgproto.
-    hand(143, "libsm", "libSM-1.2.6.tar.xz", "libsm (hand-authored)"),
-
-    # Not in this BLFS mirror. Required by libXtst below (found via a real at-spi2-core
-    # meson failure: 'Dependency xtst not found' -- at-spi2-core's book page only lists
-    # the generic 'Xorg Libraries', not this specific transitive chain). Arch's official
-    # libxi PKGBUILD as reference -- needs libxext, libxfixes, libx11, xorgproto (all
-    # already built).
-    hand(144, "libxi", "libXi-1.8.3.tar.xz", "libxi (hand-authored)"),
-
-    # Not in this BLFS mirror. at-spi2-core hard-requires it (XTEST/RECORD extensions, for
-    # accessibility input injection) -- not mentioned in the book's dependency list at
-    # all, discovered via the same real failure as libxi above. Arch's official libxtst
-    # PKGBUILD as reference -- needs libxext, libxi (previous step), libx11, xorgproto.
-    hand(145, "libxtst", "libXtst-1.2.5.tar.xz", "libxtst (hand-authored)"),
 
     # Not in this BLFS mirror as its own page. xwayland.html lists it as a Required
     # dependency ('Xorg Fonts (only font-util)'). Arch's official xorg-font-util PKGBUILD
@@ -406,22 +505,6 @@ PACKAGES = BASE + [
     # xorg.freedesktop.org (no .sha256sum/.sig companion file); fetched directly over
     # HTTPS and sanity-checked as a valid tar archive.
     hand(149, "libxfont2", "libXfont2-2.0.9.tar.xz", "libxfont2 (hand-authored)"),
-
-    # Not in this BLFS mirror. Discovered when vulkan-loader's cmake configure failed:
-    # 'required packages were not found: xrandr' -- vulkan-loader's X11 WSI backend needs
-    # the RandR extension library to enumerate displays. Needs libxext, libxrender, libx11
-    # (all already built). Arch's official libxrandr PKGBUILD as reference.
-    hand(168, "libxrandr", "libXrandr-1.5.5.tar.xz", "libxrandr (hand-authored)"),
-
-    # Not in this BLFS mirror. Discovered when mesa's meson configure failed: 'Dependency
-    # xshmfence not found' -- needed for DRI3 support on the x11 platform. Arch's official
-    # libxshmfence PKGBUILD as reference.
-    hand(169, "libxshmfence", "libxshmfence-1.3.3.tar.xz", "libxshmfence (hand-authored)"),
-
-    # Not in this BLFS mirror. Discovered when mesa's meson configure failed: 'Dependency
-    # xxf86vm not found' -- the X11 platform's video-mode-switching support. Arch's
-    # official libxxf86vm PKGBUILD as reference.
-    hand(170, "libxxf86vm", "libXxf86vm-1.1.7.tar.xz", "libxxf86vm (hand-authored)"),
 
     # Not in BLFS. Checked AUR first per the standing two-tier policy -- not there either;
     # pass is popular enough for Arch's official 'extra' repo. Arch's own PKGBUILD source
@@ -459,19 +542,17 @@ PACKAGES = BASE + [
     # no DESTDIR trick needed.
     hand(174, "iptables-unit", "blfs-systemd-units-20251204.tar.xz", "iptables-unit (hand-authored)"),
 
-    # Not in the BLFS 13.0 book (checked: no book/blfs-13.0 page mentions it). Checked AUR
-    # first per the two-tier sourcing policy (BLFS when possible, else another distro's
-    # packaging as a build reference) -- zero AUR results, because htop is popular enough
-    # to live in Arch's official 'extra' repo instead. Build recipe below is adapted from
-    # Arch's real PKGBUILD (gitlab.archlinux.org/archlinux/packaging/packages/htop),
-    # cross-checked against htop's own configure.ac rather than trusted blindly: --enable-
-    # sensors and --enable-delayacct need lm_sensors and libnl-3, neither installed here
-    # and neither worth a separate package for two optional features that auto-disable
-    # cleanly without them; --enable-openvz and --enable-vserver are in Arch's flag list
-    # but do not exist as options in this htop version at all (dead flags, dropped here
-    # rather than copied). --enable-capabilities (libcap) and --enable-unicode (ncursesw)
-    # are kept -- both already present from the base LFS build.
-    hand(175, "htop", "", "htop (hand-authored)"),
+    # Moved 2026-09-07 from a hand-authored, Arch-PKGBUILD-referenced recipe to a real
+    # SLFS 13.1 book page (general/htop.html), onboarded as this project's first SLFS
+    # source -- SLFS/GLFS are now preferred over the Arch/AUR two-tier fallback wherever
+    # one of them actually covers a package (see BUILD-REPORT.md, 2026-09-07). The SLFS
+    # page's own recipe (./configure --prefix=/usr && make; make pixmapdir=... install)
+    # is simpler than the superseded hand recipe -- no git clone, no --enable-sensors/
+    # --enable-delayacct/--enable-capabilities/--enable-unicode flags at all, htop-3.5.3's
+    # own configure defaults cover this build (confirmed by reading the page directly:
+    # no admonition-flagged alternative blocks, nothing conditional). Installed htop is
+    # unaffected -- this only changes what a future rebuild sources from.
+    slfs(175, "htop", "general/htop.html", "htop-3.5.3.tar.xz"),
 
     # postlfs/vimrc.html's one example is a <pre class="screen"> block (the book's own
     # convention for 'not meant to be pasted verbatim', here just because vimrc comments
@@ -493,22 +574,54 @@ PACKAGES = BASE + [
     # block 5 was dropped for exactly this reason), so the account becomes reachable the
     # moment a password or authorized_keys is added, whenever that happens.
     hand(177, "adduser-john", "", "adduser-john (hand-authored)"),
+
+    # Fractional seq (177.1), not its original 119: moved 2026-09-08, same fresh-build
+    # ordering bug as blfs-sudo (see adduser-john's own comment above): this recipe runs
+    # `su - john -c '...'`, and needs john's account/home directory to already exist --
+    # true on the live system (john already existed from long before seq 119 was ever
+    # added there) but not on a fresh build, where seq 119 runs long before adduser-john
+    # (177) ever creates the account. Confirmed via a real failure: "No passwd entry for
+    # user 'john'". Needs working DNS inside the chroot, which the LFS resolv.conf
+    # symlink cannot provide here (handled inside the recipe itself).
+    hand(177.1, "claude-code", "", "claude-code (hand-authored)"),
+
     book(178, "glad", "general/glad.html", "glad-2.0.8.tar.gz"),
-    book(179, "libplacebo", "multimedia/libplacebo.html", "libplacebo-7.360.0.tar.gz"),
+    book(179, "libplacebo", "multimedia/libplacebo.html", "libplacebo-7.360.1.tar.gz"),
     hand(179.5, "nv-codec-headers", "nv-codec-headers-11.1.5.3.tar.gz", "nv-codec-headers-11.1.5.3 (hand-authored, version-pinned to the 470.x driver)"),
+
+    # Fractional seq (179.6), not its original 217: moved 2026-09-08, same fresh-build
+    # ordering bug as elsewhere in this file. ffmpeg's configure hard-requires it once
+    # --enable-vdpau is requested (confirmed via a real failure: "ERROR: vdpau requested
+    # but not found"). vdpauinfo (still at its original seq 240, a runtime diagnostic
+    # tool, not an ffmpeg build dependency) is left in place.
+    hand(179.6, "libvdpau", "libvdpau-1.5.tar.gz", "libvdpau (hand-authored)"),
+
     hand(180, "ffmpeg", "ffmpeg-8.0.1.tar.xz", "FFmpeg-8.0.1 (hand-authored)"),
     book(181, "luajit", "general/luajit.html", "luajit-20260213.tar.xz"),
     book(182, "uchardet", "general/uchardet.html", "uchardet-0.0.8.tar.xz"),
+
+    # Fractional seq (182.5), not its original 184: moved 2026-09-08, same fresh-build
+    # ordering bug as elsewhere in this file. mpv's meson.build hard-requires it once
+    # X11 support is enabled (confirmed via a real failure: "Dependency 'xpresent' not
+    # found").
+    hand(182.5, "libxpresent", "libXpresent-1.0.2.tar.xz", "libXpresent-1.0.2 (hand-authored)"),
+
     hand(183, "mpv", "mpv-0.41.0.tar.gz", "mpv-0.41.0 (hand-authored)"),
-    hand(184, "libxpresent", "libXpresent-1.0.2.tar.xz", "libXpresent-1.0.2 (hand-authored)"),
     book(185, "nspr", "general/nspr.html", "nspr-4.38.2.tar.gz"),
     book(186, "nss", "postlfs/nss.html", "nss-3.120.1.tar.gz"),
     book(187, "libarchive", "general/libarchive.html", "libarchive-3.8.5.tar.xz"),
     book(188, "libnotify", "x/libnotify.html", "libnotify-0.8.8.tar.xz"),
     book(189, "startup-notification", "x/startup-notification.html", "startup-notification-0.12.tar.gz"),
     book(190, "libevent", "basicnet/libevent.html", "libevent-2.1.12-stable.tar.gz"),
-    hand(191, "llvm", "llvm-21.1.8.src.tar.xz", "LLVM-21.1.8 with clang (hand-authored)"),
-    book(192, "firefox", "xsoft/firefox.html", "firefox-140.8.0esr.source.tar.xz"),
+
+    # Fractional seq (190.5), not its original 241: moved 2026-09-08, same fresh-build
+    # ordering bug as elsewhere in this file. Firefox's configure hard-requires it as
+    # part of its combined X11 pkg-config probe (confirmed via a real failure: "Package
+    # 'xdamage' not found" -- the other packages in that same probe, x11/xcb/xext/
+    # xrandr/xcomposite/xcursor/xfixes/xi, were all already built earlier).
+    hand(190.5, "libxdamage", "libXdamage-1.1.7.tar.xz", "libXdamage-1.1.7 (hand-authored)", page="x7lib"),
+
+    hand(192, "firefox", "firefox-140.8.0esr.source.tar.xz", "Firefox-140.8.0esr (hand-authored)"),
     hand(193, "pciutils", "pciutils-3.14.0.tar.gz", "pciutils-3.14.0 (hand-authored)"),
     hand(194, "pipewire", "pipewire-1.6.0.tar.bz2", "pipewire-1.6.0 (hand-authored)"),
     hand(195, "wireplumber", "wireplumber-0.5.13.tar.bz2", "Wireplumber-0.5.13 (hand-authored)"),
@@ -517,15 +630,26 @@ PACKAGES = BASE + [
     hand(198, "jq", "jq-1.8.2.tar.gz", "jq-1.8.2 (hand-authored)"),
     hand(204, "alacritty", "alacritty-0.17.0.tar.gz", "alacritty-0.17.0 (hand-authored)"),
     hand(206, "dejavu-fonts", "dejavu-fonts-ttf-2.37.tar.bz2", "DejaVu fonts 2.37 (hand-authored)", page="TTF-and-OTF-fonts"),
-    hand(207, "jetbrains-mono-fonts", "JetBrainsMono-2.304.zip", "JetBrains Mono 2.304 (hand-authored)", page="TTF-and-OTF-fonts"),
+    # tarball repackaged 2026-09-09, .zip -> .tar.gz (matching laptop's own already-
+    # working JetBrainsMono-2.304.tar.gz exactly): bin/lfsbuild's generic unpack logic
+    # is tar-only (`tar -tf`/`tar -xf`), same class of gap as the NVIDIA .run installer
+    # -- upstream only ships this as a .zip. Repackaged with the same top-level
+    # JetBrainsMono-2.304/ wrapper this recipe's relative `fonts/ttf/*.ttf` path already
+    # assumes, byte-identical contents otherwise (confirmed: same fonts/, AUTHORS.txt,
+    # OFL.txt).
+    hand(207, "jetbrains-mono-fonts", "JetBrainsMono-2.304.tar.gz", "JetBrains Mono 2.304 (hand-authored)", page="TTF-and-OTF-fonts"),
     book(208, "hicolor-icon-theme", "x/hicolor-icon-theme.html", "hicolor-icon-theme-0.18.tar.xz"),
     book(209, "usbutils", "general/usbutils.html", "usbutils-019.tar.xz"),
     hand(212, "libva-utils", "libva-utils-2.24.0.tar.gz", "libva-utils-2.24.0 (hand-authored)"),
-    book(214, "spirv-llvm-translator", "general/spirv-llvm-translator.html", "SPIRV-LLVM-Translator-21.1.4.tar.gz"),
-    book(215, "libclc", "general/libclc.html", "libclc-21.1.8.src.tar.xz"),
     hand(216, "vulkan-tools", "Vulkan-Tools-1.4.341.tar.gz", "Vulkan-Tools-1.4.341 (hand-authored)"),
-    hand(217, "libvdpau", "libvdpau-1.5.tar.gz", "libvdpau-1.5 (hand-authored)"),
-    hand(218, "nvidia-470xx", "NVIDIA-Linux-x86_64-470.256.02.run", "NVIDIA-Linux-x86_64-470.256.02 (hand-authored, experimental)"),
+    # tarball="" (not the .run installer name): the recipe fetches the driver itself via
+    # wget and the patch set via git clone, so there is nothing for the driver's generic
+    # tar-based unpack to stage or extract -- a .run file is a self-extracting shell
+    # script, not a tar archive, and `tar -tf`/`tar -xf` on it fails outright. Found
+    # 2026-09-08 rebuilding this step for LFS 13.1: previously reconciled as complete
+    # from manifest evidence on the live system, never actually driven through
+    # lfsbuild's normal unpack path before.
+    hand(218, "nvidia-470xx", "", "NVIDIA-Linux-x86_64-470.256.02 (hand-authored, experimental)"),
     hand(219, "libpciaccess", "libpciaccess-0.18.1.tar.xz", "libpciaccess-0.18.1 (hand-authored)"),
     hand(220, "xorg-server", "xorg-server-21.1.21.tar.xz", "Xorg-Server-21.1.21"),
     hand(221, "xf86-input-libinput", "xf86-input-libinput-1.5.0.tar.xz", "Xorg-Libinput-Driver-1.5.0", page="x7driver"),
@@ -548,7 +672,6 @@ PACKAGES = BASE + [
     hand(238, "libxmu", "libXmu-1.3.1.tar.xz", "libXmu-1.3.1", page="x7lib"),
     hand(239, "xauth", "xauth-1.1.5.tar.xz", "xauth-1.1.5", page="x7app"),
     hand(240, "vdpauinfo", "vdpauinfo-1.5.tar.gz", "vdpauinfo-1.5 (hand-authored)"),
-    hand(241, "libxdamage", "libXdamage-1.1.7.tar.xz", "libXdamage-1.1.7 (hand-authored)", page="x7lib"),
 
     # Not in BLFS. Needed by hyprcursor (cursor theme archives are zip files). Arch's
     # official libzip PKGBUILD as reference; built against whatever of its optional
@@ -573,4 +696,19 @@ PACKAGES = BASE + [
     # recipe as laptop (seq 246) -- portable, no host-specific content.
     hand(253, "bash-completion", "bash-completion-2.18.0.tar.xz",
          "bash-completion-2.18.0 (hand-authored, shared recipe)"),
+
+    # Operator-requested (2026-09-17). The RCE data-engineering repos import pyodbc at
+    # module scope, so with no libodbc.so.2 on this box every one of rce-etl's test
+    # files dies at collection -- 38 collection errors, the whole suite, before a
+    # single assertion runs. That repo's governance gate (tools/govern/check.sh under
+    # ADR-0037) runs `uv run pytest` as its one behavioural check before a change
+    # reaches a production container image, so on this machine that gate has been
+    # reporting success without executing a test. Found while fixing RCE-651.
+    #
+    # Client library only. Nothing here talks to SQL Server directly: the foundation-db
+    # tunnel SOP uses pymssql/FreeTDS, and the ETL containers carry their own
+    # msodbcsql18 driver. This is purely so `import pyodbc` resolves and the tests can
+    # be run and trusted. The book page's Optional dep (Mini SQL) is skipped -- it is a
+    # driver for a database nothing in this estate uses.
+    book(254, "unixodbc", "general/unixodbc.html", "unixODBC-2.3.14.tar.gz"),
 ]

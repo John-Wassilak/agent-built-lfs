@@ -487,11 +487,14 @@ def cmd_advisories(a):
 # Where to get version data. LFS publishes a wget-list per release and per release
 # candidate. BLFS publishes one per release but NOT for its development book, whose
 # downloads directory carries only a book tarball -- so BLFS development drift is not
-# available from a list and is out of scope here.
+# available from a list and is out of scope here. SLFS/GLFS ship no equivalent public
+# wget-list at all (confirmed 2026-09-07: neither has a /downloads/<ver>/ directory the
+# way LFS/BLFS do) -- both are out of scope for this list-based check until that changes.
 LIST_URLS = {
     "lfs-13.0":  "https://www.linuxfromscratch.org/lfs/downloads/13.0-systemd/wget-list",
-    "lfs-13.1":  "https://www.linuxfromscratch.org/lfs/downloads/13.1-systemd-rc2/wget-list",
+    "lfs-13.1":  "https://www.linuxfromscratch.org/lfs/downloads/13.1-systemd/wget-list",
     "blfs-13.0": "https://www.linuxfromscratch.org/blfs/downloads/13.0-systemd/wget-list",
+    "blfs-13.1": "https://www.linuxfromscratch.org/blfs/downloads/13.1-systemd/wget-list",
 }
 
 
@@ -508,7 +511,7 @@ def cmd_fetch_lists(a):
         except Exception as e:
             print(f"  FAIL  {name:10} {e}")
     print(f"\nnow: lfsmaint --root {a.root} drift "
-          f"--wget-list {d}/lfs-13.1.wget-list --wget-list {d}/blfs-13.0.wget-list")
+          f"--wget-list {d}/lfs-13.1.wget-list --wget-list {d}/blfs-13.1.wget-list")
 
 
 # ---------------------------------------------------------------------------- drift

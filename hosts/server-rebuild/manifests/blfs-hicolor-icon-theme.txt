@@ -1,0 +1,2 @@
+/usr/share/icons/hicolor/index.theme
+/usr/share/pkgconfig/default-icon-theme.pc

@@ -1,13 +1,13 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter05/linux-headers.html
-# title  : 5.4. Linux-6.18.10 API Headers
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter05/linux-headers.html
+# title  : 5.4 Linux-7.1.8 API Headers
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
 
 # --- block 0 --------------------------------------------------
-#   ctx: imate build time: less than 0.1 SBU Required disk space: 1.7 GB 5.4.1. Installation of
+#   ctx: ximate build time: less than 0.1 SBU Required disk space: 1.8 GB 5.4.1 Installation of
 #   ctx: Linux API Headers The Linux kernel needs to expose an Application Programming Interface
 #   ctx: (API) for the system's C library (Glibc in LFS) to use. This is done by way of
 #   ctx: sanitizing various C header files that are shipped in the Linux kernel source tarball.

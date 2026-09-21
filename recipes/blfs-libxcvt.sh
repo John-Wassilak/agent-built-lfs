@@ -1,6 +1,6 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the BLFS 13.0-systemd book.
-# source : book/blfs-13.0/x/libxcvt.html
+# CANDIDATE recipe extracted from the BLFS 13.1-systemd book.
+# source : book/blfs-13.1/x/libxcvt.html
 # title  : libxcvt-0.1.3
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 set -e

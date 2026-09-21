@@ -1,14 +1,14 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter08/libxcrypt.html
-# title  : 8.28. Libxcrypt-4.5.2
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter08/libxcrypt.html
+# title  : 8.29 Libxcrypt-4.5.2
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
 
 # --- block 0 --------------------------------------------------
 #   ctx: The Libxcrypt package contains a modern library for one-way hashing of passwords.
-#   ctx: Approximate build time: 0.1 SBU Required disk space: 14 MB 8.28.1. Installation of
+#   ctx: Approximate build time: 0.1 SBU Required disk space: 14 MB 8.29.1 Installation of
 #   ctx: Libxcrypt First, make a fix required by glibc-2.43 and later:
 sed -i '/strchr/s/const//' lib/crypt-{sm3,gost}-yescrypt.c
 

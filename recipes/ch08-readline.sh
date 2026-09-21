@@ -1,14 +1,14 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter08/readline.html
-# title  : 8.12. Readline-8.3
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter08/readline.html
+# title  : 8.12 Readline-8.3
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
 
 # --- block 0 --------------------------------------------------
-#   ctx: raries that offer command-line editing and history capabilities. Approximate build time:
-#   ctx: less than 0.1 SBU Required disk space: 17 MB 8.12.1. Installation of Readline
+#   ctx: braries that offer command-line editing and history capabilities. Approximate build
+#   ctx: time: less than 0.1 SBU Required disk space: 17 MB 8.12.1 Installation of Readline
 #   ctx: Reinstalling Readline will cause the old libraries to be moved to <libraryname>.old.
 #   ctx: While this is normally not a problem, in some cases it can trigger a linking bug in
 #   ctx: ldconfig. This can be avoided by issuing the following two seds:

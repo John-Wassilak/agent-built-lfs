@@ -27,6 +27,17 @@
 # to start at all on a fresh launch.
 set -e
 
+# DNS fix added 2026-09-09 (fresh chroot build): this chroot has no working
+# /etc/resolv.conf by default, same class of issue as blfs-rust/blfs-attrs/blfs-
+# xcb-util-xrm and others -- the git clones below need it.
+_restore_resolv() {
+    rm -f /etc/resolv.conf
+    ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
+}
+trap _restore_resolv EXIT
+rm -f /etc/resolv.conf
+printf 'nameserver 1.1.1.1\nnameserver 8.8.8.8\n' > /etc/resolv.conf
+
 rm -rf subprojects/libgwater subprojects/libnkutils
 git clone --depth 1 https://github.com/sardemff7/libgwater subprojects/libgwater
 git clone --depth 1 https://github.com/sardemff7/libnkutils subprojects/libnkutils

@@ -11,6 +11,18 @@
 # needed. Man page skipped -- needs scdoc, not installed.
 set -e
 
+# DNS fix added 2026-09-09 (fresh chroot build): cargo fetching crates.io dependencies
+# (copypasta, etc.) failed with a name-resolution error -- this chroot has no working
+# /etc/resolv.conf by default, same class of issue as blfs-rust/blfs-cbindgen/blfs-
+# rust-bindgen and others.
+_restore_resolv() {
+    rm -f /etc/resolv.conf
+    ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
+}
+trap _restore_resolv EXIT
+rm -f /etc/resolv.conf
+printf 'nameserver 1.1.1.1\nnameserver 8.8.8.8\n' > /etc/resolv.conf
+
 cargo build --release
 
 install -v -m755 target/release/alacritty /usr/bin/alacritty

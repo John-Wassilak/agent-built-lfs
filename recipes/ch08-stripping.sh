@@ -1,7 +1,7 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter08/stripping.html
-# title  : 8.85. Stripping
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter08/stripping.html
+# title  : 8.84 Stripping
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
@@ -16,7 +16,7 @@ save_usrlib="$(cd /usr/lib; ls ld-linux*[^g])
              libc.so.6
              libthread_db.so.1
              libquadmath.so.0.0.0
-             libstdc++.so.6.0.34
+             libstdc++.so.6.0.36
              libitm.so.1.0.0
              libatomic.so.1.2.0"
 cd /usr/lib
@@ -29,7 +29,7 @@ for LIB in $save_usrlib; do
     rm /tmp/$LIB
 done
 online_usrbin="bash find strip"
-online_usrlib="libbfd-2.46.0.20260210.so
+online_usrlib="libbfd-2.47.20260726.so
                libsframe.so.3.0.0
                libhistory.so.8.3
                libncursesw.so.6.6

@@ -1,6 +1,6 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the BLFS 13.0-systemd book.
-# source : book/blfs-13.0/x/libXdmcp.html
+# CANDIDATE recipe extracted from the BLFS 13.1-systemd book.
+# source : book/blfs-13.1/x/libXdmcp.html
 # title  : libXdmcp-1.1.5
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 set -e

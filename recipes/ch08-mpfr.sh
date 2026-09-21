@@ -1,14 +1,14 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter08/mpfr.html
-# title  : 8.23. MPFR-4.2.2
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter08/mpfr.html
+# title  : 8.24 MPFR-4.2.2
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
 
 # --- block 0 --------------------------------------------------
 #   ctx: The MPFR package contains functions for multiple precision math. Approximate build time:
-#   ctx: 0.2 SBU Required disk space: 43 MB 8.23.1. Installation of MPFR Prepare MPFR for
+#   ctx: 0.2 SBU Required disk space: 44 MB 8.24.1 Installation of MPFR Prepare MPFR for
 #   ctx: compilation:
 ./configure --prefix=/usr        \
             --disable-static     \

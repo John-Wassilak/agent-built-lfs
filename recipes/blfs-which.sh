@@ -1,16 +1,16 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the BLFS 13.0-systemd book.
-# source : book/blfs-13.0/general/which.html
-# title  : Which-2.23 and Alternatives
+# CANDIDATE recipe extracted from the BLFS 13.1-systemd book.
+# source : book/blfs-13.1/general/which.html
+# title  : Which-2.25 and Alternatives
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 set -e
 
 # --- block 0 --------------------------------------------------
-#   ctx: package. Note This package is known to build and work properly using an LFS 13.0
+#   ctx: package. Note This package is known to build and work properly using an LFS 13.1
 #   ctx: platform. Package Information Download (HTTP):
-#   ctx: https://ftpmirror.gnu.org/which/which-2.23.tar.gz Download MD5 sum:
-#   ctx: 1963b85914132d78373f02a84cdb3c86 Download size: 197 KB Estimated disk space required:
-#   ctx: 1.2 MB Estimated build time: less than 0.1 SBU Installation of Which Install which by
+#   ctx: https://ftpmirror.gnu.org/which/which-2.25.tar.gz Download MD5 sum:
+#   ctx: 60140cb2637634e4f4e68c2e98c6a07b Download size: 200 KB Estimated disk space required:
+#   ctx: 1.3 MB Estimated build time: less than 0.1 SBU Installation of Which Install which by
 #   ctx: running the following commands:
 ./configure --prefix=/usr &&
 make

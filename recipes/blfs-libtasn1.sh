@@ -1,6 +1,6 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the BLFS 13.0-systemd book.
-# source : book/blfs-13.0/general/libtasn1.html
+# CANDIDATE recipe extracted from the BLFS 13.1-systemd book.
+# source : book/blfs-13.1/general/libtasn1.html
 # title  : libtasn1-4.21.0
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 set -e
@@ -10,7 +10,7 @@ set -e
 #   ctx: https://ftpmirror.gnu.org/libtasn1/libtasn1-4.21.0.tar.gz Download MD5 sum:
 #   ctx: 2ee1d9f3aa66f1e308c46a283aa9a8c2 Download size: 1.7 MB Estimated disk space required: 16
 #   ctx: MB (with tests) Estimated build time: 0.5 SBU (with tests) libtasn1 Dependencies
-#   ctx: Optional GTK-Doc-1.35.1 and Valgrind-3.26.0 Installation of libtasn1 Install libtasn1 by
+#   ctx: Optional GTK-Doc-1.36.1 and Valgrind-3.27.1 Installation of libtasn1 Install libtasn1 by
 #   ctx: running the following commands:
 ./configure --prefix=/usr --disable-static &&
 make

@@ -1,17 +1,17 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the BLFS 13.0-systemd book.
-# source : book/blfs-13.0/server/openldap.html
-# title  : OpenLDAP-2.6.12
+# CANDIDATE recipe extracted from the BLFS 13.1-systemd book.
+# source : book/blfs-13.1/server/openldap.html
+# title  : OpenLDAP-2.7.0
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 set -e
 
 # --- block 0 --------------------------------------------------
-#   ctx: nixODBC-2.3.14, MariaDB-11.8.6 or PostgreSQL-18.2 or MySQL, OpenSLP, WiredTiger, and
-#   ctx: Berkeley DB (deprecated) (for slapd, also deprecated) Installation of OpenLDAP Note If
-#   ctx: you only need to install the client side ldap* binaries, corresponding man pages,
-#   ctx: libraries and header files (referred to as a “client-only” install), issue these
-#   ctx: commands instead of the following ones (no test suite available):
-patch -Np1 -i ../openldap-2.6.12-consolidated-1.patch &&
+#   ctx: Recommended Cyrus SASL-2.1.28 Optional GnuTLS-3.8.13, unixODBC-2.3.14, MariaDB-12.3.3 or
+#   ctx: PostgreSQL-18.6 or MySQL, OpenSLP, and WiredTiger Installation of OpenLDAP Note If you
+#   ctx: only need to install the client side ldap* binaries, corresponding man pages, libraries
+#   ctx: and header files (referred to as a “client-only” install), issue these commands instead
+#   ctx: of the following ones (no test suite available):
+patch -Np1 -i ../openldap-2.7.0-consolidated-1.patch &&
 autoconf &&
 
 ./configure --prefix=/usr     \
@@ -40,7 +40,7 @@ make install
 # --- block 3 --------------------------------------------------
 #   ctx: Install OpenLDAP by running the following commands:
 #   REVIEWED [drop]: The full server build (--enable-slapd and the rest) -- superseded by the client-only build in blocks 0-1.
-# patch -Np1 -i ../openldap-2.6.12-consolidated-1.patch &&
+# patch -Np1 -i ../openldap-2.7.0-consolidated-1.patch &&
 # autoconf &&
 # 
 # ./configure --prefix=/usr         \
@@ -83,13 +83,13 @@ make install
 # chmod   -v    640     /etc/openldap/slapd.{conf,ldif}   &&
 # chown   -v  root:ldap /etc/openldap/slapd.{conf,ldif}   &&
 # 
-# install -v -dm755 /usr/share/doc/openldap-2.6.12 &&
+# install -v -dm755 /usr/share/doc/openldap-2.7.0 &&
 # cp      -vfr      doc/{drafts,rfc,guide} \
-#                   /usr/share/doc/openldap-2.6.12
+#                   /usr/share/doc/openldap-2.7.0
 
 # --- block 5 --------------------------------------------------
-#   ctx: e. The slapd.conf(5) and slapd-config(5) man pages. The OpenLDAP 2.6 Administrator's
-#   ctx: Guide (also installed locally in /usr/share/doc/openldap-2.6.12/guide/admin). Documents
+#   ctx: ge. The slapd.conf(5) and slapd-config(5) man pages. The OpenLDAP 2.6 Administrator's
+#   ctx: Guide (also installed locally in /usr/share/doc/openldap-2.7.0/guide/admin). Documents
 #   ctx: located at https://www.openldap.org/pub/. Systemd Unit To automate the startup of the
 #   ctx: LDAP server at system bootup, install the slapd.service unit included in the
 #   ctx: blfs-systemd-units-20251204 package using the following command:

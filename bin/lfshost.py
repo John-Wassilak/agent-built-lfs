@@ -62,7 +62,17 @@ class Host:
 
         build = self.cfg.get("build", {})
         self.arch = self.cfg.get("arch") or os.uname().machine
-        self.book = self.cfg.get("book", "13.0")
+        # [books] pins each book family's version independently (SLFS/GLFS release on
+        # their own cadence, separate from LFS/BLFS). `book` (scalar) is the pre-2026-09
+        # key, read as a fallback for lfs/blfs when [books] is absent or partial; new
+        # host.toml files should use [books] directly. blfs defaults from lfs -- they
+        # release as one pair -- but can be pinned apart if that's ever needed.
+        self.books = dict(self.cfg.get("books", {}))
+        self.books.setdefault("lfs", self.cfg.get("book", "13.0"))
+        self.books.setdefault("blfs", self.books["lfs"])
+        self.books.setdefault("slfs", self.books["lfs"])
+        self.books.setdefault("glfs", self.books["lfs"])
+        self.book = self.books["lfs"]  # back-compat alias (this file's own --status only)
         # jobs = 0 (or absent) means "this machine's core count", which is right when the
         # laptop builds its own tree. A literal is for capping a machine that thermally
         # throttles or is doing something else at the same time.
@@ -81,6 +91,8 @@ class Host:
         self.state = f"{self.dir}/state"
         self.plan = f"{self.state}/plan.json"
         self.blfs_plan = f"{self.state}/blfs-plan.json"
+        self.slfs_plan = f"{self.state}/slfs-plan.json"
+        self.glfs_plan = f"{self.state}/glfs-plan.json"
         self.done = f"{self.state}/completed"
         self.timings = f"{self.state}/timings.tsv"
         self.testreports = f"{self.state}/testreports"
@@ -193,7 +205,9 @@ if __name__ == "__main__":
     add_host_arg(ap)
     h = resolve(ap.parse_args().host)
     print(f"root       : {ROOT}")
-    print(f"host       : {h.name}  arch={h.arch}  book={h.book}  jobs={h.jobs}")
+    books = "  ".join(f"{k}={v}" for k, v in h.books.items())
+    print(f"host       : {h.name}  arch={h.arch}  jobs={h.jobs}")
+    print(f"books      : {books}")
     print(f"state      : {h.state}")
     print(f"manifests  : {h.manifests}")
     print(f"logs       : {h.logs}")

@@ -1,14 +1,14 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter08/gzip.html
-# title  : 8.67. Gzip-1.14
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter08/gzip.html
+# title  : 8.66 Gzip-1.14
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
 
 # --- block 0 --------------------------------------------------
 #   ctx: The Gzip package contains programs for compressing and decompressing files. Approximate
-#   ctx: build time: 0.1 SBU Required disk space: 21 MB 8.67.1. Installation of Gzip Prepare Gzip
+#   ctx: build time: 0.1 SBU Required disk space: 21 MB 8.66.1 Installation of Gzip Prepare Gzip
 #   ctx: for compilation:
 ./configure --prefix=/usr
 

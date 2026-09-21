@@ -360,3 +360,4 @@ blfs-rsync
 blfs-rsync
 blfs-nv-codec-headers
 blfs-ffmpeg
+blfs-unixodbc

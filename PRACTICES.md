@@ -621,6 +621,49 @@ created by the very step that claims it, which is the test -- **a file under a s
 state directory belongs to the package only if the installing step is what wrote it**,
 not merely if the daemon happened to be running.
 
+## The manifest noise filter cuts both ways
+
+`bin/lfsbuild`'s manifest sweep is `find -cnewer` over `MANIFEST_ROOTS`, minus a
+`MANIFEST_NOISE` regex for churn that every step touches. Two failures live at opposite
+ends of that filter, and both were found in the same pass (2026-09-21, `server`).
+
+**Too loose.** Language toolchains cache under `/root` in places that are neither
+dotfiles nor named `build`: go's module cache at `/root/go/pkg/mod`, and
+`blfs-nvidia-470xx`'s full kernel build at `/root/kbuild`. Three manifests recorded
+275,000 phantom files -- `blfs-openbao` claimed 106,094 installed files when it installs
+four. `lfsmaint owns` answered with the Go module cache. `/sources` was left out of
+`MANIFEST_ROOTS` from the start for exactly this reason; the same swamping walked in
+through `/root` instead. Rule of thumb: any step that fetches dependencies at build time
+needs its cache location checked against the filter before its manifest is trusted.
+
+**Too tight, and worse because it is silent.** The filter excludes `^/var/log/` and
+`^/root/\.` as churn, which is right for almost every step and wrong for the two whose
+deliverable *is* that path: `blfs-fix-varlog` installs `/var/log/{btmp,faillog,lastlog,
+wtmp}` and `blfs-skel-vimrc-and-root` installs `/root/.bashrc` and friends. This is not
+hypothetical -- the same step, same recipe, captured twice:
+
+    hosts/server/manifests/blfs-fix-varlog.txt          4 files   (before the rule)
+    hosts/server-rebuild/manifests/blfs-fix-varlog.txt  0 files   (after)
+
+The second run reported success and recorded nothing. Nothing flagged it.
+
+**A third gap, same shape: `MANIFEST_ROOTS` has no `/home`.** Any step installing into a
+user's home records an empty manifest -- `blfs-claude-code` (npm global prefix under
+`/home/john`) and `blfs-authorized-keys-john` both do, on every host that built them.
+`lfsmaint` therefore does not know those files exist at all.
+
+The general shape: a global "this is not package content" rule is a statement about most
+steps, not all of them, and a manifest that comes back empty is indistinguishable from a
+step that installed nothing. Neither `--check` nor the build catches it. The structural
+fix is per-step scoping -- each step declaring the roots it owns and the noise it is
+exempt from -- rather than more global regex tuning, since narrowing the global rules
+readmits churn everywhere else and adding `/home` wholesale sweeps in every dotfile any
+step happens to touch. Not implemented. Until then: an empty manifest is a bug in the
+filter until proven otherwise, and `ch08-cleanup` is the only step legitimately empty.
+
+Corollary for repair: do not fix historical manifests by re-running the current
+`MANIFEST_NOISE` over them. That deletes those two steps' real content along with the
+junk. Filter for the specific pollution instead.
 ## The book's Google Location Service key is dead, and BLFS spends it twice
 
 Firefox's BLFS page has you write the book's shared Google Location Service key into a

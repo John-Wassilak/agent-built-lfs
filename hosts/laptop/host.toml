@@ -5,7 +5,15 @@
 # is right for the build-it-on-the-laptop path. Set it explicitly only if this host is
 # ever built from a machine of a different architecture.
 
-book = "13.0"
+[books]
+# lfs pins LFS and BLFS together -- they release as one book pair. slfs/glfs release on
+# their own cadence, onboarded 2026-09-07 as book sources this project prefers over the
+# Arch/AUR two-tier fallback wherever one of them actually covers a package. Left at
+# 13.0 here -- server took the 13.1 bump and the SLFS/GLFS onboarding first; laptop's
+# turn is later work, tracked in this host's BUILD-REPORT.md.
+lfs  = "13.0"
+slfs = "13.0"
+glfs = "13.0"
 
 [build]
 # Operator decision 2026-09-04: use all 4 threads. This reverses the original cap of 2,

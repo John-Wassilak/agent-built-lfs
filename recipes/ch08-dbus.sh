@@ -1,16 +1,16 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter08/dbus.html
-# title  : 8.79. D-Bus-1.16.2
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter08/dbus.html
+# title  : 8.78 D-Bus-1.16.2
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
 
 # --- block 0 --------------------------------------------------
-#   ctx: er-user-login-session daemon (for general IPC needs among user applications). Also, the
+#   ctx: per-user-login-session daemon (for general IPC needs among user applications). Also, the
 #   ctx: message bus is built on top of a general one-to-one message passing framework, which can
 #   ctx: be used by any two applications to communicate directly (without going through the
-#   ctx: message bus daemon). Approximate build time: 0.1 SBU Required disk space: 17 MB 8.79.1.
+#   ctx: message bus daemon). Approximate build time: 0.1 SBU Required disk space: 17 MB 8.78.1
 #   ctx: Installation of D-Bus Prepare D-Bus for compilation:
 mkdir build
 cd    build

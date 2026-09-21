@@ -1,14 +1,14 @@
 #!/bin/bash
-# CANDIDATE recipe extracted from the LFS 13.0-systemd book.
-# source : book/13.0/chapter08/pcre2.html
-# title  : 8.13. Pcre2-10.47
+# CANDIDATE recipe extracted from the LFS 13.1-systemd book.
+# source : book/13.1/chapter08/pcre2.html
+# title  : 8.13 Pcre2-10.47
 # The driver supplies unpack/cd/cleanup. Commands below are in-package only.
 # Disabled blocks are tagged with the reason; review before enabling.
 set -e
 
 # --- block 0 --------------------------------------------------
 #   ctx: The pcre2 package contains a new generation of the Perl Compatible Regular Expression
-#   ctx: libraries. Approximate build time: 0.2 SBU Required disk space: 28 MB 8.13.1.
+#   ctx: libraries. Approximate build time: 0.2 SBU Required disk space: 28 MB 8.13.1
 #   ctx: Installation of Pcre2 Prepare pcre2 for compilation:
 ./configure --prefix=/usr                       \
             --docdir=/usr/share/doc/pcre2-10.47 \
