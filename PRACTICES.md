@@ -616,16 +616,27 @@ needs its cache location checked against the filter before its manifest is trust
 **Too tight, and worse because it is silent.** The filter excludes `^/var/log/` and
 `^/root/\.` as churn, which is right for almost every step and wrong for the two whose
 deliverable *is* that path: `blfs-fix-varlog` installs `/var/log/{btmp,faillog,lastlog,
-wtmp}` and `blfs-skel-vimrc-and-root` installs `/root/.bashrc` and friends. Re-captured
-today both would record an empty manifest and report success. Their current manifests are
-correct only because they were captured before those rules existed.
+wtmp}` and `blfs-skel-vimrc-and-root` installs `/root/.bashrc` and friends. This is not
+hypothetical -- the same step, same recipe, captured twice:
+
+    hosts/server/manifests/blfs-fix-varlog.txt          4 files   (before the rule)
+    hosts/server-rebuild/manifests/blfs-fix-varlog.txt  0 files   (after)
+
+The second run reported success and recorded nothing. Nothing flagged it.
+
+**A third gap, same shape: `MANIFEST_ROOTS` has no `/home`.** Any step installing into a
+user's home records an empty manifest -- `blfs-claude-code` (npm global prefix under
+`/home/john`) and `blfs-authorized-keys-john` both do, on every host that built them.
+`lfsmaint` therefore does not know those files exist at all.
 
 The general shape: a global "this is not package content" rule is a statement about most
 steps, not all of them, and a manifest that comes back empty is indistinguishable from a
 step that installed nothing. Neither `--check` nor the build catches it. The structural
-fix is a per-step exemption rather than more global regex tuning -- not implemented,
-because narrowing the global rules readmits churn everywhere else. Until then, treat an
-empty or implausibly large manifest as a bug in the filter, not a fact about the package.
+fix is per-step scoping -- each step declaring the roots it owns and the noise it is
+exempt from -- rather than more global regex tuning, since narrowing the global rules
+readmits churn everywhere else and adding `/home` wholesale sweeps in every dotfile any
+step happens to touch. Not implemented. Until then: an empty manifest is a bug in the
+filter until proven otherwise, and `ch08-cleanup` is the only step legitimately empty.
 
 Corollary for repair: do not fix historical manifests by re-running the current
 `MANIFEST_NOISE` over them. That deletes those two steps' real content along with the

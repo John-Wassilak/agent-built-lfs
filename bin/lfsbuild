@@ -3,7 +3,7 @@
 # agent-built-lfs -- LFS/BLFS build driver
 # Copyright (c) 2026 John Wassilak
 
-"""LFS 13.0-systemd build driver.
+"""LFS/BLFS/SLFS/GLFS build driver.
 
 Runs plan steps in book order, in the right privilege context, with per-package logs,
 timing, resumable state, and (for Chapter 8) an installed-file manifest.
@@ -126,7 +126,7 @@ SPECIAL = {
     "ch11-getcounted": "skip",   # informational
     "ch11-whatnow": "skip",      # informational
     "ch11-afterlfs": "skip",     # informational
-    "ch11-reboot": "skip",       # we are not booting this tree; Phase 6 tars it instead
+    "ch11-reboot": "skip",       # we are not booting this tree; lfs-archive tars it instead
 }
 
 # Install roots scanned for the Chapter 8 manifest. /sources is deliberately absent:

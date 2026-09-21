@@ -6,7 +6,7 @@
 # Archive an LFS system, in one of two modes:
 #
 #   tree   an offline tree at the resolved host's chroot_tree (host.toml) -- the
-#          build-host arrangement. Used for the checkpoint snapshots and the Phase 6
+#          build-host arrangement. Used for the checkpoint snapshots and the final
 #          deliverable tarball. Resolved the same way every other bin/ tool resolves a
 #          host (--host, else $LFS_HOST, else the hostname) rather than assuming
 #          /mnt/lfs -- a host built in-repo (chroot_tree pointing inside a checkout, not
