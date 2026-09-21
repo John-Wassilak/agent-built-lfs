@@ -1,5 +1,5 @@
 {
-  "_comment": "Host-specific review decisions for this machine. Merged on top of the shared recipes/review-overrides.json by bin/extract-*.py: a page here overrides the shared page block-by-block, so shared mechanism decisions survive while the hardware-bound ones live with the host. Every entry here names a concrete device, label, GPU driver or /boot path -- if a decision is true of any LFS box, it belongs in the shared file instead.",
+  "_comment": "Host-specific review decisions for this machine. Merged on top of the shared recipes/review-overrides.json by bin/extract-*.py: a page here overrides the shared page block-by-block, so shared mechanism decisions survive while the hardware-bound ones live with the host. Nearly every entry names a concrete device, label, GPU driver or /boot path; if a decision is true of any LFS box it belongs in the shared file instead. Exception: ch11-theend, where what differs is this host's book pin, not its hardware -- the shared recipes/ tree has no version scoping, so a stored command embedding a version string has no one correct shared value while server is on 13.1 and laptop on 13.0.",
   "ch10-fstab": {
     "0": {
       "action": "replace",
@@ -57,6 +57,18 @@
     "5": {
       "action": "drop",
       "reason": "Unmounts the efivarfs mounted in block 3 -- nothing to unmount since block 3 is dropped."
+    }
+  },
+  "ch11-theend": {
+    "1": {
+      "action": "replace",
+      "cmd": "cat > /etc/lsb-release << \"EOF\"\nDISTRIB_ID=\"Linux From Scratch\"\nDISTRIB_RELEASE=\"13.1-systemd\"\nDISTRIB_CODENAME=\"claude-managed\"\nDISTRIB_DESCRIPTION=\"Linux From Scratch\"\nEOF",
+      "reason": "Shared blocks 1-2 only fill the book's `<your name here>` placeholder, but an override stores the whole command, so they also froze the version the book printed when recorded: 13.0. book/13.1 prints 13.1-systemd and this host pins lfs=13.1. Cannot be fixed in the shared file -- laptop is still on 13.0 and reads the same entry. Placeholder value unchanged. Caught because the built tree had /etc/lfs-release (block 0, not overridden) at 13.1 next to these two at 13.0; --check cannot see it, since the override is applied exactly as written and it is the writing that is stale."
+    },
+    "2": {
+      "action": "replace",
+      "cmd": "cat > /etc/os-release << \"EOF\"\nNAME=\"Linux From Scratch\"\nVERSION=\"13.1-systemd\"\nID=lfs\nPRETTY_NAME=\"Linux From Scratch 13.1-systemd\"\nVERSION_CODENAME=\"claude-managed\"\nHOME_URL=\"https://www.linuxfromscratch.org/lfs/\"\nRELEASE_TYPE=\"stable\"\nEOF",
+      "reason": "Same as block 1 -- os-release carries the version twice, in VERSION and PRETTY_NAME."
     }
   }
 }

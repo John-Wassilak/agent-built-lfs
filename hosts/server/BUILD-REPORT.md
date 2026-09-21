@@ -3540,3 +3540,74 @@ part of the operator's own USB-imaging step, not this build). No installed packa
 differs functionally from the original native 13.0 build's package *set* -- only
 sourcing (book vs. Arch reference where a book page now exists) and the version bump
 itself.
+
+## Deployment USB would not boot: `root=UUID=` with no initramfs (2026-09-21)
+
+The stick prepared in `64f1185` failed to boot. Diagnosed with it plugged into `server`
+and mounted read-only rather than from the commit message: `/dev/sdc1`, `LABEL=LFSUSB`,
+`PARTUUID=57b53ab2-01`, `e2fsck -f -n` clean.
+
+**The fatal one: `root=UUID=62477792-…`** -- a *filesystem* UUID. The kernel's
+`name_to_dev_t` resolves `PARTUUID=`, `PARTLABEL=`, a `/dev` node or `maj:min`; resolving
+a filesystem UUID is udev's job and needs an initramfs, which this system does not have
+(`/boot/microcode.img` is microcode only, one cpio entry). The kernel gets an unparseable
+`root=` and panics: "VFS: Unable to mount root fs on unknown-block(0,0)". This is the trap
+the 2026-08-25 USB section already names, and why both hosts' tracked grub.cfgs use
+PARTUUID; the stick's copy was adapted from `server`'s internal-disk one and regressed.
+It is untracked (deploy-time file), so no `--check` would have caught it. Now
+`root=PARTUUID=57b53ab2-01`.
+
+**Second: `rootwait` was missing.** USB enumeration is slower than the kernel's root
+probe. Also documented in the 2026-08-25 section, present on every `laptop` entry, absent
+here for the same reason -- `server`'s SATA root does not need it.
+
+**Third, which would have bitten next: `/etc/fstab` read `LABEL=LFSROOT / ext4 defaults
+1 1`**, inherited from the rsync'd tree. On this machine that label is `/dev/sdb2`, the
+disk the stick exists to re-image; systemd would fsck it and mount it as `/` over the real
+root, and with `sdb` wiped would block on a missing device. Same for `LABEL=LFSSWAP`
+(`sdb1`; the stick has no swap). Repointed at `PARTUUID=57b53ab2-01`, swap dropped, with a
+note in the file that the target's copy must go back to `LABEL=` after the restore rsync.
+
+**Ruled out with evidence: `laptop`'s 2026-09-03 GRUB/ext4 bug.** The filesystem does
+carry `metadata_csum` and `orphan_file`, so it was the obvious suspect, but that bug only
+corrupts GRUB's read of a file whose extent tree does not fit inline in the inode, and
+`filefrag` puts this kernel at 2 extents -- inline, in the four available slots.
+`server`'s own `sdb2` has both features with a 2-extent kernel and boots. A fragmented
+redeploy could still cross the threshold, so `laptop` BOOTSTRAP.md's
+`-O ^metadata_csum,^metadata_csum_seed,^orphan_file` rule still applies to any reformat.
+
+Everything else checked out and was left alone: GRUB i386-pc with a `55aa` MBR and 305
+modules, boot flag set, `default.target -> multi-user.target`, `/root/deploy/` payload
+present, whole boot path `=y` in the 7.1.8 config (`kernel-config-base.sh`'s gate held).
+Originals kept on the stick as `*.bak-20260921`. `grub-script-check` passes; not yet
+re-tested with a real boot.
+
+**`server` had no `BOOTSTRAP.md`**, though `CLAUDE.md` refers to "each host's
+`BOOTSTRAP.md`" for deploy-time steps -- so the `mkfs -O` rule, the `root=PARTUUID=` rule
+and the overlay-application step were each findable only in `laptop`'s file, this report's
+2026-08-25 section, or a comment on the stick. Written, with every disk identifier
+re-confirmed against the live machine.
+
+**A real bug found while writing it: `/etc/os-release` read `VERSION="13.0-systemd"` and
+`/etc/lsb-release` `DISTRIB_RELEASE="13.0-systemd"` on a 13.1 system.** An override stores
+the whole command, not a patch to it: shared `ch11-theend` blocks 1-2 exist only to fill
+the book's `<your name here>` placeholder, but in doing so froze the version the book
+printed when they were recorded. The 13.1 bump reindexed them without re-reading their
+content.
+
+`--check` cannot catch this class -- the override is applied exactly as written and the
+recipe matches it; the drift is between the stored command and the book it came from, and
+nothing compares those once a `replace` is recorded. The tree said so itself:
+`/etc/lfs-release` (block 0, never overridden) read 13.1-systemd next to the two
+overridden files at 13.0. Fixed as a host override, since `laptop` is genuinely on 13.0
+and reads the same shared entry; `hosts/server/recipes/ch11-theend.sh` generated from it,
+`--check` back to zero drift, shared recipe byte-unchanged. **The already-built `/mnt/lfs`
+tree still has the wrong files** -- the fix changes what a future extraction produces, not
+what ran in September.
+
+**Noted, not caused here and not fixed:** `extract-recipes.py --host laptop --check`
+reports 131 recipes drifted -- the shared `recipes/` tree has no version scoping, and it
+is currently generated from 13.1 because `server` regenerated it while `laptop` pins 13.0.
+Confirmed pre-existing by re-running with the change stashed: same 131. `server`'s
+extraction touched no shared recipe. `laptop` cannot run an honest `--check` until it
+bumps or the tree gets version-scoped.

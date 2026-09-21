@@ -5,6 +5,11 @@ The machine this repo was written on, and the one it now runs on: LFS/BLFS 13.1-
 `[hardware]` has the current facts; `BUILD-REPORT.md` is the full narrative, ~3,000
 lines and appended to in date order.
 
+`BOOTSTRAP.md` is the deploy-time procedure -- currently the re-image that replaces this
+live 13.0 root with the from-scratch 13.1 tree built in `hosts/server-rebuild/`. Read it
+before touching the USB stick, `/dev/sdb`, or the overlay; nothing in `bin/` automates any
+of it, and every disk identifier in it was re-confirmed against the live machine.
+
 Things worth knowing before changing anything here:
 
 - **This is a live system, not a tree.** `lfsbuild` detects `native` mode and runs steps
