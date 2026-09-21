@@ -3784,11 +3784,21 @@ over the restored ones:
   cannot simply be bumped -- `laptop` is genuinely still 13.0 -- so the fix is to derive it
   from the root being operated on (`<root>/etc/lfs-release`) with the constant as
   fallback. Not done here.
-- **Live-system identity was preserved but not restored.** SSH host keys, `wireguard/
-  wg0.conf`, tailscale and openbao state are in the pre-wipe tarballs and were left out of
-  the target on purpose: they are credentials, and carrying them onto a fresh image is the
-  operator's call, not a deploy step. The new system will generate its own SSH host keys
-  on first boot.
+- **Live-system identity: restored later the same day, on the operator's call.** The SSH
+  host keys, `wireguard/wg0.conf` and `/var/lib/tailscale/` came out of the pre-wipe
+  tarballs onto the target with `tar -p --numeric-owner --xattrs --acls`, so modes carried
+  (`0600` on the private keys, `wg0.conf` and `tailscaled.state`). `tailscaled.service` and
+  `wg-quick@wg0.service` were enabled with `systemctl --root=/mnt/target enable`, which
+  needs no chroot, bringing the target's enabled set to exactly the nine units the 13.0
+  root had -- `iptables.service` was already enabled in the built tree, so the firewall was
+  never missing. `openbao` state was left behind: nothing here needs it yet.
+
+  One key was deliberately *not* carried: the stick had generated an
+  `ssh_host_mldsa44_ed25519` pair that the 13.0 system never had, and the stick still holds
+  it. It was deleted from the target so `sshd`'s `ExecStartPre=ssh-keygen -A` mints a
+  unique one on first boot rather than two machines sharing a host key. The three restored
+  types (rsa, ecdsa, ed25519) are the ones `known_hosts` entries around the network
+  actually pin, which is the point of restoring them.
 - The state move `hosts/server-rebuild/state/completed` -> `hosts/server/state/completed`,
   `host.toml`'s `[hardware] kernel` (still `6.18.10`), and the native `--check` runs are
   all step-6 work, after a successful boot.
