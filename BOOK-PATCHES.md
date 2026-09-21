@@ -10,9 +10,19 @@ Scope: all against **BLFS 13.0-systemd** (`book/blfs-13.0`, "Version 13.0"), exc
 one LFS item in tier 3. Verified against the local book copy on 2026-09-08.
 
 **Before filing anything, re-check the finding against the current development book.**
-Only item 1 has been: it is still present in r13.1-84. The rest were found against 13.0
-and may already be fixed. Confirm BLFS's current submission channel (ticket tracker vs.
-blfs-dev list) before writing anything up as a patch.
+Only item 1 has been, and it is now written up: still present in the book's git at
+`7a5c3d5` (2026-09-09), then rewritten against `7f095ce8f9`; the patches and the mail now
+live in `~/oss-contributions/notes/blfs-geoclue-google-key/`. The rest
+were found against 13.0 and may already be fixed.
+
+Submission channel, settled 2026-09-09: a book change goes to the **blfs-dev mailing
+list** as a `diff -Naur` against the XML -- "Create a diff file (preferably using `diff
+-Naur`) and submit it to the blfs-dev list where one of the editors will pick it up"
+(<https://www.linuxfromscratch.org/blfs/developers.html>). The Trac tracker needs access
+granted on that same list first. The attach-and-gzip rule on
+<https://www.linuxfromscratch.org/patches/submit.html> is about the package-patch
+repository, not book edits. `~/oss-contributions/notes/blfs-geoclue-google-key.md`
+carries the full reasoning, and `notes/lfs.md` there records the list's own conventions.
 
 ---
 
@@ -71,6 +81,40 @@ the fix is deletion.
 **Evidence in this repo:** `recipes/blfs-overrides.json` (`blfs-geoclue2` block 2),
 `PRACTICES.md` "The book's Google Location Service key is dead", and
 `hosts/laptop/BUILD-REPORT.md` 2026-09-08 sections.
+
+**Status, 2026-09-12: written up against the development book, not sent.**
+Moved out of this repo: `geoclue2-beacondb.patch`, `firefox-google-key.patch` and
+`blfs-dev-email.txt` now live in `~/oss-contributions/notes/blfs-geoclue-google-key/`,
+with the write-up beside them. They are `diff -Naur` against book git `7f095ce8f9`.
+Verified by
+building the dev book itself, not by single-file `xmllint`: `make REV=systemd validate`
+is clean and identical before and after, and the chunked HTML renders. The key still
+returns 403 and beaconDB still answers 200, both checked 2026-09-12.
+
+The patches are narrower than the deletion proposed above. The GeoClue page says
+upstream now defaults to beaconDB and needs no API key, so the WiFi source works
+unconfigured; the config file is renamed `90-lfs-wifi.conf` and carries one `url` line
+per service that `geoclue.conf` documents -- beaconDB active, Positon and Google
+commented -- so an unattended run still writes a working keyless configuration and
+switching service is uncommenting one line. Two paragraphs cover the silent failure mode:
+a service that knows none of the nearby APs returns an IP-derived position rather than an
+error, and `[ip]` runs alongside `[wifi]` and usually answers first.
+
+On the Firefox page GeoClue moves from Optional to **Recommended (runtime)**, which is
+how `x/lib/webkitgtk.xml` already classifies it -- with no working key in the book,
+GeoClue is the only way a reader gets geolocation, and the two browser engines should not
+disagree. The note under the Recommended list is amended so its "internal copies of those
+packages" claim stays true of the entries it is about. The dead key is kept verbatim as
+the placeholder rather than becoming `YOUR_KEY`, so an ALFS or jhalfs run behaves exactly
+as it does today; `--with-google-location-service-api-keyfile` makes a missing or empty
+file a `FatalCheckError` (`build/moz.configure/keyfiles.configure`) and the content is
+never validated, so the dead key still builds. The note now says in words that it is dead
+and quotes the 403. One claim from the paragraph above was dropped as unfair on
+re-reading: the Firefox page does tell the reader to comment out `--disable-necko-wifi`,
+so that is not an undocumented trap.
+
+The same dead key is also in `archive/chromium.xml` and `archive/firefox-legacy.xml`.
+Neither is xincluded into the built book, so both are left alone and flagged in the mail.
 
 ### 2. gdk-pixbuf built without glycin can load no images at all
 
@@ -318,15 +362,24 @@ the rest were project choices (skipping a dependency on purpose) rather than boo
 
 ### What is not done
 
-- **Nothing has been submitted, and the submission channel was never confirmed.** BLFS
-  takes bug reports through a ticket tracker and a development mailing list; which one
-  suits a documentation fix, and whether they want a patch against the XML source rather
-  than prose, is unresearched. Settle that before writing any of this up.
-- **Only item 1 was re-checked against the development book** (r13.1-84, key still
-  present, both pages). Items 2 through tier 3 are 13.0-only. Any of them may already be
-  fixed upstream; check before filing, or the report is noise.
-- **No XML patch exists for anything.** The book source is the DocBook XML, not the
-  rendered HTML read here, so a patch means fetching the book's own repository.
+- **Nothing has been submitted.** The channel is settled (blfs-dev, `diff -Naur` against
+  the XML) and item 1 is written up in `~/oss-contributions/notes/blfs-geoclue-google-key/`,
+  awaiting a send. Sending needs a
+  blfs-dev subscription: <https://lists.linuxfromscratch.org/sympa/info/blfs-dev>.
+- **Only item 1 was re-checked against the development book** (git `7f095ce8f9`,
+  2026-09-12: key still present on both pages, geoclue 2.8.2, firefox 153.2.0). Items 2
+  through tier 3 are 13.0-only. Any of them may already be fixed upstream; check before
+  filing, or the report is noise.
+- **XML patches exist for item 1 only.** The book source is the DocBook XML, not the
+  rendered HTML read here; clone it with
+  `git clone https://git.linuxfromscratch.org/blfs.git`. Nothing in tiers 2 and 3 has a
+  patch yet.
+- **Rendering the dev book needs two downloads.** `make` wants the DocBook XML 4.5 DTD
+  (<https://www.oasis-open.org/docbook/xml/4.5/docbook-xml-4.5.zip>) and the
+  non-namespaced docbook-xsl 1.79.2 stylesheets, wired up with an XML catalog in
+  `XML_CATALOG_FILES`; the `html` target also shells out to `tidy`, which only reformats
+  the output and can be stubbed. Validation is `make REV=systemd validate` -- single-file
+  `xmllint` on a page reports cross-page IDREFs that the book's own run does not.
 - The tier 2 table names the switch but not, in most cases, the exact wording BLFS uses
   for the equivalent explanation elsewhere. Lifting the phrasing from a page that does
   document its escape (libnotify's `-D tests=false` entry is the cleanest example) will
