@@ -5920,6 +5920,27 @@ readback verified. The live profile's `user.js` and this host's overlay `firefox
 the same nine prefs with the reasoning inline. The running browser picks up the codec prefs
 at its next start; the acceleration prefs were already in effect.
 
+## 2026-09-11 -- oama (seq 325) installed, then removed the same day
+
+oama-0.22.0 was installed as seq 325 to hold an OAuth2 refresh token for an Exchange
+Online mailbox (`rockcliffenergy.com`, tenant `45e93e0f-8281-4af4-8371-35a30e288e93`),
+because Microsoft disabled Basic auth for IMAP/POP in Exchange Online in 2022 and mbsync
+would have needed XOAUTH2.
+
+The auth never worked, and the operator asked for everything installed for it to be
+removed. Removed the same day: the six installed files (`/usr/bin/oama`, its bash
+completion, doc and license directories), `~/.config/oama/`, `~/.local/state/oama/`,
+`recipes/blfs-oama.sh`, the step's manifest and log, and its entries in `packages.py`,
+`blfs-plan.json`, `state/completed` and `timings.tsv`. `lfsmaint db` rebuilt afterwards;
+`lfsmaint owns /usr/bin/oama` no longer resolves. Nothing else was ever built for this --
+cyrus-sasl, `cyrus-sasl-xoauth2` and an isync rebuilt `--with-sasl` were identified as
+required but never started, so isync-1.5.1 here is unchanged and still reports
+`-HAVE_LIBSASL`. `~/.mbsyncrc` and the mu4e config were never touched.
+
+The GPG key `292F6FAD4914BB21` named in the deleted oama config is the operator's own
+pre-existing key (also behind `pass` and `.authinfo.gpg`) and was left alone. No token was
+ever issued -- `oama authorize` was never run -- so there is nothing to revoke upstream.
+
 ## 2026-09-12 -- Nextcloud desktop client (seq 326-333), and eight dependencies
 
 Operator asked for "the nextcloud client ... the thing that sits in the system tray and
