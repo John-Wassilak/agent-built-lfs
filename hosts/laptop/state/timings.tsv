@@ -589,3 +589,4 @@ blfs-xdg-desktop-portal-gtk	native	2.8	1
 blfs-xdg-desktop-portal-gtk	native	14.0	0
 blfs-sdbus-cpp	native	15.0	0
 blfs-xdg-desktop-portal-hyprland	native	72.2	0
+blfs-sshpass	native	4.9	0

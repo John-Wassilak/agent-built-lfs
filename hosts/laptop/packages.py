@@ -1198,4 +1198,13 @@ PACKAGES = sorted(BASE + [
     book(316, "xdg-desktop-portal-gtk", "x/xdg-desktop-portal-gtk.html", "xdg-desktop-portal-gtk-1.15.3.tar.xz"),
     hand(317, "sdbus-cpp", "sdbus-cpp-2.3.1.tar.gz", "sdbus-c++-2.3.1 (hand-authored, shared recipe)"),
     hand(318, "xdg-desktop-portal-hyprland", "xdg-desktop-portal-hyprland-1.4.1.tar.gz", "xdg-desktop-portal-hyprland-1.4.1 (hand-authored, shared recipe)"),
+
+    # Operator-requested (2026-09-08): "need to install sshpass". BLFS 13.0-systemd has
+    # no sshpass page (grepped the whole book tree, zero hits), so this is a hand()
+    # entry. Portable -- one C file, no dependency beyond glibc, no host-specific
+    # content -- so the recipe is shared per CLAUDE.md's shared/host test. Not promoted
+    # into packages/base.py: BASE is the closure of a workable LFS system, and adding a
+    # step there would also inject a never-run step into `server`'s live --resume queue,
+    # the same hazard the seq-14.5 note above records.
+    hand(319, "sshpass", "sshpass-1.10.tar.gz", "sshpass-1.10 (hand-authored, shared recipe)"),
 ], key=lambda p: p["seq"])
