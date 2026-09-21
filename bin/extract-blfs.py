@@ -10,7 +10,8 @@ core from packages/base.py) -- not in this file. This is the machinery that turn
 list into recipes and a plan:
 
   book(...) steps   parsed out of the BLFS page, with review decisions applied from
-                    recipes/blfs-overrides.json. Written to recipes/<step>.sh. When the
+                    recipes/blfs-<ver>/overrides.json. Written to recipes/blfs-<ver>/<step>.sh, the
+                    directory for the release this host pins. When the
                     host has its own decisions for that page, a second copy is written to
                     hosts/<host>/recipes/<step>.sh with shared+host decisions merged --
                     that is the copy lfsbuild will pick up, and the shared one stays the
@@ -36,7 +37,7 @@ thing pointed at a different book.
 whose recipe on disk is not what the book plus the recorded review decisions produce --
 which means someone edited the recipe by hand and the edit is not captured anywhere. A
 regeneration would silently throw that edit away, so the fix is either to record the
-edit as a review decision in blfs-overrides.json, or to make the step a hand() entry
+edit as a review decision in the host's blfs-overrides.json, or to make the step a hand() entry
 whose recipe this script does not own.
 
 Note that --check reports drift on stderr while the step list goes to stdout. Piping the
@@ -54,9 +55,6 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import lfshost  # noqa: E402
 import booklib  # noqa: E402
-
-OVERRIDES_FILE = "blfs-overrides.json"
-
 
 def header(step, page_path, ver, title):
     return [
@@ -82,7 +80,7 @@ def main():
 
     plan, queue, problems, drift, new = booklib.run_family_extraction(
         lfshost.ROOT, lfshost, host, "blfs", booklib.RootAndUserinputPageParser,
-        header, OVERRIDES_FILE, check=args.check)
+        header, check=args.check)
 
     if problems:
         print(f"\n{len(problems)} problem(s):", file=sys.stderr)

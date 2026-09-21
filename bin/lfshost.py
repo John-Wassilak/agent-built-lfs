@@ -19,15 +19,23 @@ default is what makes the common case need no flag at all: on `server`, `lfsbuil
 --status` means server. The flag is what lets one machine plan for another -- editing
 the laptop's package list from the server, or building the laptop's tree in a chroot.
 
-Two layers, resolved here, keep "shared where appropriate" honest:
+Three layers, resolved here, keep "shared where appropriate" honest:
 
-  recipes     recipe(host, name) prefers hosts/<h>/recipes/<name>.sh over recipes/<name>.sh.
-              Used for recipes bound to real hardware: the NVIDIA driver, this CPU's
-              microcode blob, ffmpeg's NVENC flags.
-  overrides   overrides(host, "review-overrides.json") merges hosts/<h>/<file> on top of
-              recipes/<file> block by block. A page can therefore keep its shared
-              mechanism decisions (menuconfig is not scriptable) while the host supplies
-              the hardware-bound ones (which /boot path the kernel is copied to).
+  recipes     recipe(host, name) tries hosts/<h>/recipes/<name>.sh, then the shared
+              generated tree for the book version this host pins
+              (recipes/<family>-<ver>/<name>.sh), then recipes/<name>.sh.
+              The host layer is for recipes bound to real hardware: the NVIDIA driver,
+              this CPU's microcode blob, ffmpeg's NVENC flags. The version layer exists
+              because a generated recipe is a function of one book release, and two
+              machines can be on two releases -- `server` went to 13.1 on 2026-09-07
+              while `laptop` stayed at 13.0. The last layer is hand-authored and belongs
+              to no book version at all; no extractor ever writes there.
+  overrides   overrides(host, "blfs") merges hosts/<h>/blfs-overrides.json on top of
+              recipes/blfs-<ver>/overrides.json block by block. A page can therefore keep
+              its shared mechanism decisions (menuconfig is not scriptable) while the host
+              supplies the hardware-bound ones (which /boot path the kernel is copied to).
+              The shared half is version-scoped for the same reason the recipes are: a
+              decision names a block by index, and indices move between book releases.
 
 Standard library only, like the rest of bin/ -- this has to run on the LFS system itself
 where there is no package index. tomllib is stdlib from 3.11.
@@ -141,10 +149,40 @@ def add_host_arg(ap):
                          f"known: {', '.join(known()) or '(none)'}")
 
 
+# The per-host file each family's review decisions live in. The shared half is not
+# listed: it is always <family>-<ver>/overrides.json, next to the recipes it explains.
+HOST_OVERRIDES = {"lfs": "review-overrides.json", "blfs": "blfs-overrides.json",
+                  "slfs": "slfs-overrides.json", "glfs": "glfs-overrides.json"}
+
+
+def family_of(name):
+    """Which book family a step belongs to, from its name alone.
+
+    LFS steps are named for the book's own chapters (ch08-bash); every other family
+    prefixes its own name (blfs-glib2, slfs-htop, glfs-libglvnd).
+    """
+    for f in ("blfs", "slfs", "glfs"):
+        if name.startswith(f + "-"):
+            return f
+    return "lfs"
+
+
+def shared_recipes(host, family):
+    """The shared generated tree for the book version this host pins."""
+    return f"{SHARED_RECIPES}/{family}-{host.books[family]}"
+
+
 def recipe(host, name):
-    """Path to the recipe for `name`, host override winning over the shared copy."""
-    p = f"{host.recipes}/{name}.sh"
-    return p if os.path.exists(p) else f"{SHARED_RECIPES}/{name}.sh"
+    """Path to the recipe for `name`: host, then this host's book version, then hand.
+
+    A miss on all three returns the hand-authored path, so the caller's own "no recipe
+    at ..." error names the file a human would have to write.
+    """
+    for p in (f"{host.recipes}/{name}.sh",
+              f"{shared_recipes(host, family_of(name))}/{name}.sh"):
+        if os.path.exists(p):
+            return p
+    return f"{SHARED_RECIPES}/{name}.sh"
 
 
 def recipe_is_host(host, name):
@@ -158,29 +196,31 @@ def _read_json(path):
         return json.load(f, object_pairs_hook=collections.OrderedDict)
 
 
-def overrides(host, filename, layer="merged"):
+def overrides(host, family, layer="merged"):
     """Review decisions for the extractors.
 
-    layer="shared" -> recipes/<filename> alone, which is what the shared recipe tree is
-    generated from. layer="merged" -> that with hosts/<h>/<filename> applied on top,
-    page by page and block by block, which is what a host recipe is generated from.
+    layer="shared" -> recipes/<family>-<ver>/overrides.json alone, which is what that
+    version's shared recipe tree is generated from. layer="merged" -> that with
+    hosts/<h>/<family file> applied on top, page by page and block by block, which is
+    what a host recipe is generated from.
     The per-block merge is the point: ch10-kernel keeps the shared "menuconfig is not
     scriptable" decision and takes only its /boot paths from the host.
     """
-    shared = _read_json(f"{SHARED_RECIPES}/{filename}")
+    shared = _read_json(f"{shared_recipes(host, family)}/overrides.json")
     if layer == "shared":
         return shared
-    for page, blocks in _read_json(f"{host.dir}/{filename}").items():
+    for page, blocks in _read_json(f"{host.dir}/{HOST_OVERRIDES[family]}").items():
         if page.startswith("_"):
             continue
         shared.setdefault(page, collections.OrderedDict()).update(blocks)
     return shared
 
 
-def host_override_pages(host, filename):
+def host_override_pages(host, family):
     """Pages the host has its own decisions for -- the set that needs a host recipe
     generated alongside the shared candidate."""
-    return {p for p in _read_json(f"{host.dir}/{filename}") if not p.startswith("_")}
+    return {p for p in _read_json(f"{host.dir}/{HOST_OVERRIDES[family]}")
+            if not p.startswith("_")}
 
 
 def packages(host):
@@ -211,7 +251,9 @@ if __name__ == "__main__":
     print(f"state      : {h.state}")
     print(f"manifests  : {h.manifests}")
     print(f"logs       : {h.logs}")
-    print(f"recipes    : {h.recipes} -> {SHARED_RECIPES}")
+    print(f"recipes    : {h.recipes} -> "
+          f"{', '.join(os.path.relpath(shared_recipes(h, f), ROOT) for f in HOST_OVERRIDES)}"
+          f" -> {os.path.relpath(SHARED_RECIPES, ROOT)} (hand-authored)")
     print(f"sources    : {h.sources}  chroot_tree={h.chroot_tree}")
     for k, v in h.hardware.items():
         print(f"  hw.{k:<10} {v}")

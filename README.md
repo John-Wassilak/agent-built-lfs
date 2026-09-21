@@ -125,21 +125,29 @@ The core of it. Every recipe comes from the book plus recorded decisions -- noth
 hand-copied, so a new book release is a re-run rather than a transcription job:
 
 ```sh
-bin/extract-recipes.py             # LFS book HTML  -> recipes/
-bin/extract-blfs.py                # BLFS book HTML -> recipes/, + the build plan
-bin/extract-slfs.py                # SLFS book HTML -> recipes/, + the build plan
-bin/extract-glfs.py                # GLFS book HTML -> recipes/, + the build plan
+bin/extract-recipes.py             # LFS book HTML  -> recipes/lfs-<ver>/
+bin/extract-blfs.py                # BLFS book HTML -> recipes/blfs-<ver>/, + the build plan
+bin/extract-slfs.py                # SLFS book HTML -> recipes/slfs-<ver>/, + the build plan
+bin/extract-glfs.py                # GLFS book HTML -> recipes/glfs-<ver>/, + the build plan
 bin/build-plan.py                  # -> hosts/<host>/state/plan.json
 ```
+
+`<ver>` is the release that host's `host.toml` pins, which is why two machines can be on
+two book releases at once -- `server` moved to 13.1 on 2026-09-07 and `laptop` is still on
+13.0. Each reads its own directory; neither can overwrite the other's recipes, and
+`--check` means something on both.
 
 `extract-slfs.py`/`extract-glfs.py` only ever read the pages a host's `packages.py`
 actually references (`slfs()`/`glfs()` entries in `packages/base.py`'s sense) -- there is
 no whole-book walk for either, since neither ships a full mirror to walk (see "Getting
 the books" above).
 
-The decisions live outside the generated recipes, in `recipes/*-overrides.json` -- one
-file per book family, each with a `reason` citing the book. That separation lets the book
-be re-read from scratch without losing a judgment call.
+The decisions live outside the generated recipes, in
+`recipes/<family>-<ver>/overrides.json` -- one file per book family *per release*, each
+with a `reason` citing the book. That separation lets the book be re-read from scratch
+without losing a judgment call. Per release, because a decision names a block by index and
+indices move between releases: carrying one forward to a new book is a re-read, not a
+copy.
 
 `--check` keeps it honest:
 
@@ -157,7 +165,8 @@ whole record worthless. It has happened once.
 ## What is in here
 
     bin/          the harness: extractors, plan builder, driver, package database
-    recipes/      one recipe per book page, machine-neutral
+    recipes/      <family>-<ver>/ one generated recipe per book page, per release;
+                  hand-authored shared recipes at the top level
     packages/     the package set every machine needs, in build order
     hosts/<name>/ one machine: its plan, state, manifests, hardware config, build log
 

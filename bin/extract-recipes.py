@@ -36,8 +36,6 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lfshost  # noqa: E402
 import booklib  # noqa: E402
 
-OUT = f"{lfshost.ROOT}/recipes"
-OVERRIDES_FILE = "review-overrides.json"
 
 PageParser = booklib.PageParser
 classify = booklib.classify
@@ -90,12 +88,14 @@ def main():
     booklib.require_book(lfshost.ROOT, book_dir, "lfs")
     ver = host.books["lfs"]
 
-    shared_dec = lfshost.overrides(host, OVERRIDES_FILE, layer="shared")
-    merged_dec = lfshost.overrides(host, OVERRIDES_FILE, layer="merged")
-    host_pages = lfshost.host_override_pages(host, OVERRIDES_FILE)
+    shared_dec = lfshost.overrides(host, "lfs", layer="shared")
+    merged_dec = lfshost.overrides(host, "lfs", layer="merged")
+    host_pages = lfshost.host_override_pages(host, "lfs")
 
+    # One directory per book release -- see lfshost.recipe().
+    out = lfshost.shared_recipes(host, "lfs")
     if not args.check:
-        os.makedirs(OUT, exist_ok=True)
+        os.makedirs(out, exist_ok=True)
     index, queue, drift, new = [], [], [], []
 
     for path, chap, base in book_pages(book_dir):
@@ -106,12 +106,13 @@ def main():
         name = f"ch{chap}-{base}"
 
         text, n_on = render(name, chap, base, ver, parsed, shared_dec.get(name, {}), queue)
-        shared_path = os.path.join(OUT, name + ".sh")
+        shared_path = os.path.join(out, name + ".sh")
+        rel_shared = os.path.relpath(shared_path, lfshost.ROOT)
         if args.check:
             if not os.path.exists(shared_path):
-                new.append(name)
+                new.append(rel_shared)
             elif open(shared_path).read() != text:
-                drift.append(name)
+                drift.append(rel_shared)
         else:
             with open(shared_path, "w") as f:
                 f.write(text)
@@ -162,7 +163,7 @@ def main():
         json.dump(index, f, indent=2)
     with open(os.path.join(host.state, "review-queue.json"), "w") as f:
         json.dump(queue, f, indent=2)
-    print(f"recipes -> {os.path.relpath(OUT, lfshost.ROOT)}, "
+    print(f"recipes -> {os.path.relpath(out, lfshost.ROOT)}, "
           f"index+queue -> {os.path.relpath(host.state, lfshost.ROOT)}")
     return 0
 

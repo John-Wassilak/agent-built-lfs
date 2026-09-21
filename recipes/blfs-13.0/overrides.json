@@ -1,0 +1,795 @@
+{
+  "_comment": [
+    "Decisions for the BLFS 13.0 book, and only that book -- a decision names a block by index, and indices move between releases. Split out of the single shared recipes/blfs-overrides.json on 2026-09-21, when `server` had been on 13.1 since 2026-09-07 and the one file had become a mix of both. The 13.0 half is the pre-bump file from 9b77eca plus the decisions written against 13.0 output since. A decision that exists only in recipes/blfs-13.1/overrides.json was written against that book and has to be re-read before it is carried here."
+  ],
+  "blfs-poppler": {
+    "0": {
+      "action": "replace",
+      "cmd": "mkdir build                         &&\ncd    build                         &&\n\ncmake -D CMAKE_BUILD_TYPE=Release   \\\n      -D CMAKE_INSTALL_PREFIX=/usr  \\\n      -D TESTDATADIR=$PWD/testfiles \\\n      -D ENABLE_QT5=OFF             \\\n      -D ENABLE_UNSTABLE_API_ABI_HEADERS=ON \\\n      -D ENABLE_LIBOPENJPEG=none    \\\n      -G Ninja ..                   &&\nninja",
+      "reason": "Real failure (2026-09-06): poppler's cmake hard-errors on missing OpenJPEG the same way it does for Boost/Gpgmepp when not installed and not explicitly told to skip -- 'Could NOT find openjpeg2. ... Install libopenjpeg2 before trying to build poppler ... Possible options are: -DENABLE_LIBOPENJPEG=openjpeg2, -DENABLE_LIBOPENJPEG=none, -DENABLE_LIBOPENJPEG=UnmaintainedWillBeRemovedInJuly2026'. Unlike Boost/Gpgmepp (both real LibreOffice dependencies already being built anyway, see hosts/laptop/packages.py's seq 302-303 reordering comment), OpenJPEG has no other consumer in this project -- it exists solely to let poppler decode embedded JPEG2000/JPX images in PDFs, a narrow feature. =none over the 'UnmaintainedWillBeRemovedInJuly2026' internal-decoder option since the book's own CMakeLists message flags that path for removal in July 2026 -- not worth relying on a decoder upstream is actively dropping. True of any host building poppler without OpenJPEG installed, not host-specific."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "Book's own text is explicitly conditional: 'If you downloaded the additional encoding data package, install it by issuing the following commands'. The poppler-data-0.4.12 tarball (CJK/Cyrillic encoding files, listed as an Additional Download, not Required/Recommended) was not fetched -- nothing in this project's PDF workflow needs CJK/Cyrillic PDF rendering specifically, and it's a separate optional download the book itself frames as skippable."
+    },
+    "4": {
+      "action": "drop",
+      "reason": "Installs the poppler-data package from block 3, which is dropped for the same reason -- the tarball was never extracted so poppler-data-0.4.12/ doesn't exist."
+    }
+  },
+  "blfs-gpgme": {
+    "1": {
+      "action": "drop",
+      "reason": "Optional test suite ('To test the results, you should have GnuPG-2.5.17 installed. If so, run: make -k check'), same class of skip as every other optional test/doc block throughout this project. GnuPG-2.5.17 is built here (a Recommended dep, not Required), but this project doesn't run test suites regardless of whether the tool they need is present."
+    }
+  },
+  "blfs-boost": {
+    "2": {
+      "action": "drop",
+      "reason": "Book's own text is explicitly conditional on an upgrade: 'Boost installs many versioned directories in /usr/lib/cmake. If a new version of Boost is installed over a previous version, the older cmake directories need to be explicitly removed.' A fresh install has no previous Boost version's cmake directories to remove -- the glob would just match nothing (harmless) but there's nothing to clean up, so it's dropped as inapplicable rather than kept as a no-op."
+    }
+  },
+  "blfs-firefox": {
+    "1": {
+      "action": "replace",
+      "cmd": "GLSL_PTHREAD=\"third_party/rust/glslopt/glsl-optimizer/include/c11/threads_posix.h\"\nOLDSHA=$(sha256sum \"$GLSL_PTHREAD\" | awk '{ print $1 }') &&\npatch -Np1 -i ../firefox-140.8.0esr-glibc-2.43.patch &&\nNEWSHA=$(sha256sum \"$GLSL_PTHREAD\" | awk '{ print $1 }') &&\nsed \"s/$OLDSHA/$NEWSHA/\" \\\n  -i third_party/rust/glslopt/.cargo-checksum.json",
+      "reason": "The book uses backticks for both command substitutions and leaves $GLSL_PTHREAD unquoted. $(...) nests and reports failure properly where backticks do not; the path is a literal with no spaces, so the quoting is defensive. Lowest-risk of the four to pin: the block is a version-pinned patch fixup that a book bump replaces wholesale anyway. Recovered 2026-09-15: this hardening existed in the hand-authored recipe server carried before the recipe was declared book(), and was silently lost when laptop's book() entry made the extractor the owner of the shared file. Re-recorded as a decision, which is the mechanism that should have held it. NOTE: a replace decision pins this whole block, so a BLFS release that changes it will be masked rather than picked up -- re-read this block against the book on any book bump."
+    },
+    "3": {
+      "action": "replace",
+      "cmd": "cat > mozconfig << \"EOF\"\n# If you have a multicore machine, all cores will be used by default.\n\n# If you have installed (or will install) wireless-tools, and you wish\n# to use geolocation web services, comment out this line\nac_add_options --disable-necko-wifi\n\n# Comment out the following line if you wish not to use Google's Location\n# Service (GLS).  Note that if Geoclue is installed and configured to use\n# GLS (as the BLFS instruction does), Firefox can access GLS via Geoclue\n# anyway.  On the other hand if Geoclue is not installed (or not properly\n# configured) and this line is commented out, the website requiring a\n# location service will not function properly.\nac_add_options --with-google-location-service-api-keyfile=$PWD/google-key\n\n# If you wish to use libproxy to determine proxy server information, you will\n# need to install the libproxy package and then uncomment the option below:\n#ac_add_options --enable-libproxy\n\n# Uncomment the following option if you have not installed PulseAudio and\n# want to use alsa instead\nac_add_options --enable-audio-backends=alsa\n\n# Comment out following options if you have not installed\n# recommended dependencies:\nac_add_options --with-system-av1\nac_add_options --with-system-icu\nac_add_options --with-system-libevent\nac_add_options --with-system-libvpx\nac_add_options --with-system-nspr\nac_add_options --with-system-nss\nac_add_options --with-system-webp\n\n# Firefox provides a copy of dav1d if it has not been installed. If you have\n# not installed nasm and ffmpeg, uncomment the following line:\n#ac_add_options --disable-av1\n\n# You cannot distribute the binary if you do this.\nac_add_options --enable-official-branding\n\n# Stripping is now enabled by default.\n# Uncomment these lines if you need to run a debugger:\n#ac_add_options --disable-strip\n#ac_add_options --disable-install-strip\n\n# Disabling debug symbols makes the build much smaller and a little\n# faster. Comment this if you need to run a debugger.\nac_add_options --disable-debug-symbols\n\n# The BLFS editors recommend not changing anything below this line:\nac_add_options --prefix=/usr\nac_add_options --enable-application=browser\nac_add_options --disable-crashreporter\nac_add_options --disable-updater\n\n# Enabling the tests will use a lot more space and significantly\n# increase the build time, for no obvious benefit.\nac_add_options --disable-tests\n\n# This enables SIMD optimization in the shipped encoding_rs crate.\nac_add_options --enable-rust-simd\n\nac_add_options --enable-system-ffi\nac_add_options --enable-system-pixman\n\nac_add_options --with-system-jpeg\nac_add_options --with-system-png\nac_add_options --with-system-zlib\n\n# Sandboxing works well on x86_64 but might cause issues on other\n# platforms, e.g. i686.\n[ $(uname -m) != x86_64 ] && ac_add_options --disable-sandbox\n\n# Using sandboxed wasm libraries has been moved to all builds instead\n# of only mozilla automation builds. It requires extra llvm packages\n# and was reported to seriously slow the build. Disable it.\nac_add_options --without-wasm-sandboxed-libraries\n\n# The following option unsets Telemetry Reporting. With the Addons Fiasco,\n# Mozilla was found to be collecting user's data, including saved passwords and\n# web form data, without users consent. Mozilla was also found shipping updates\n# to systems without the user's knowledge or permission.\n# As a result of this, use the following command to permanently disable\n# telemetry reporting in Firefox.\nunset MOZ_TELEMETRY_REPORTING\n\nmk_add_options MOZ_OBJDIR=@TOPSRCDIR@/firefox-build-dir\n\n# By default firefox will attempt to use the window class firefox-default on\n# launch. This makes the icon not work properly because wayland does not\n# support the X11 property  class header. Change the remoting name to fix this.\n# This is also reflected in the .desktop file where StartupWMClass is set to\n# firefox.\nMOZ_APP_REMOTINGNAME=firefox\nEOF",
+      "reason": "Uncomments the book's own pre-written --enable-audio-backends=alsa line ('Uncomment the following option if you have not installed PulseAudio and want to use alsa instead'). PulseAudio was never built in this project -- pipewire + pipewire-pulse covers every other package's audio needs (see BUILD-REPORT.md's FFmpeg/mpv tier) -- but Firefox's own configure treats libpulse as a hard requirement unless told otherwise: 'ERROR: Package libpulse was not found in the pkg-config search path', discovered when ./mach build failed on it. True of any host in this build's pipewire-only audio profile, not laptop-specific."
+    },
+    "6": {
+      "action": "enable",
+      "reason": "Misclassified by the admonition-note heuristic as skippable, but the book's own context text is explicit and chroot-specific: 'If you are compiling this package in chroot you must ensure that /dev/shm is mounted. If you do not do this, the Python configuration will fail with a traceback report referencing .../multiprocessing/synchronize.py.' True of any host building this in a chroot, not a note to skim past. The guard (mountpoint -q ... || mount ...) is idempotent -- harmless if /dev/shm already happens to be mounted, which it was on laptop via the host's own bind-mounted /dev (confirmed 2026-08-31, 7.6G tmpfs already present), but keeping it enabled protects a future host where that isn't already true."
+    }
+  },
+  "blfs-ffmpeg": {
+    "3": {
+      "action": "drop",
+      "reason": "Optional PDF/PostScript documentation build (texi2pdf/texi2dvi/dvips) -- the book's own command has no 'if you have texlive' guard despite the prose framing, so it's unconditionally enabled by default and would fail outright: texlive is not installed anywhere in this project."
+    },
+    "4": {
+      "action": "drop",
+      "reason": "Optional Doxygen API-doc rebuild -- same pattern as every other doc-tool trap this project has hit (alsa-lib, gdk-pixbuf, pango, json-c, popt, libassuan, gnupg): Doxygen is not installed."
+    },
+    "6": {
+      "action": "drop",
+      "reason": "Installs the PDF/PostScript docs from block 3, which is dropped."
+    },
+    "7": {
+      "action": "drop",
+      "reason": "Installs the Doxygen API docs from block 4, which is dropped."
+    },
+    "8": {
+      "action": "drop",
+      "reason": "FFmpeg's FATE test suite, part 1: rsync-downloads ~1GB of sample files. Not auto-flagged by the testsuite classifier (an rsync invocation, not 'make check'/'make test'). rsync itself isn't installed in this project's stack at this point either, so it would fail outright even before the network/size concern."
+    },
+    "9": {
+      "action": "drop",
+      "reason": "FATE test suite, part 2 -- another rsync-based sample sync, paired with block 8."
+    },
+    "10": {
+      "action": "drop",
+      "reason": "The actual FATE test suite run -- 'more than 5200 tests', explicitly not run anywhere else in this project."
+    }
+  },
+  "blfs-xwayland": {
+    "1": {
+      "action": "drop",
+      "reason": "Same class of gap as blfs-vulkan-loader/blfs-libei: not auto-flagged by the testsuite classifier (a multi-step git-clone-and-build-a-test-framework block, not the usual 'make check' shape). Sets up piglit + xts (both git-cloned) and weston purely for the optional test suite -- none of it needed to build or install Xwayland itself. Confirmed failing 2026-08-31: the paired block 2 ('ninja test') failed needing /usr/bin/xkbcomp, not built at this point in the plan, and the whole piglit/weston/xts chain is exactly the kind of heavy optional test infra this project skips everywhere else."
+    },
+    "2": {
+      "action": "drop",
+      "reason": "The actual test run (XTEST_DIR=... PIGLIT_DIR=... ninja test) -- paired with block 1's now-dropped setup, see its reason."
+    }
+  },
+  "blfs-libei": {
+    "1": {
+      "action": "drop",
+      "reason": "Same class of gap as blfs-vulkan-loader's test suite: not auto-flagged by the testsuite classifier ('meson configure -D tests=enabled && ninja test', not the usual 'make check'/'make test' shape), and unconditionally re-enables tests right after block 0 correctly disabled them with the book's own -D tests=disabled. The test suite needs munit, an external dependency not built here (block 0's -D tests=disabled is exactly the book's own documented path for that case) -- meson then tries to git-clone munit as a subproject and fails outright with no network in the chroot ('Git command failed'). True of any host building this page without munit/structlog installed, not laptop-specific."
+    }
+  },
+  "blfs-cargo-c": {
+    "0": {
+      "action": "replace",
+      "cmd": "_restore_resolv() {\n    rm -f /etc/resolv.conf\n    ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf\n}\ntrap _restore_resolv EXIT\nrm -f /etc/resolv.conf\nprintf 'nameserver 1.1.1.1\\nnameserver 8.8.8.8\\n' > /etc/resolv.conf\n\ncurl -fLO https://github.com/lu-zero/cargo-c/releases/download/v0.10.20/Cargo.lock",
+      "reason": "Same DNS fix as blfs-rust (see its reason) -- this page's own curl fetch and the cargo build in block 1 both need real DNS, which the chroot's default resolv.conf symlink can't provide. Fixed here in block 0 since the trap it sets covers the whole recipe script."
+    }
+  },
+  "blfs-cbindgen": {
+    "0": {
+      "action": "replace",
+      "cmd": "_restore_resolv() {\n    rm -f /etc/resolv.conf\n    ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf\n}\ntrap _restore_resolv EXIT\nrm -f /etc/resolv.conf\nprintf 'nameserver 1.1.1.1\\nnameserver 8.8.8.8\\n' > /etc/resolv.conf\n\ncargo build --release",
+      "reason": "Same DNS fix as blfs-rust -- the book's own note says 'An Internet connection is needed for building this package' (cargo fetching crates.io dependencies)."
+    }
+  },
+  "blfs-vulkan-loader": {
+    "1": {
+      "action": "drop",
+      "reason": "The optional test-suite block, not auto-flagged by the testsuite classifier (it's a cmake reconfigure + 'ninja test', not the usual 'make check'/'make test' shape). Unlike a flaky/environment-dependent hang, this one is unconditionally network-dependent on any offline build: 'cmake -D UPDATE_DEPS=ON' makes the loader's own CMakeLists shell out to scripts/update_deps.py, which git-clones a private copy of Vulkan-Headers from GitHub regardless of the system copy already installed (this book's own dependency list lists Vulkan-Headers as Required and expects it built first). Confirmed failing 2026-08-30 (laptop): 'Failed to run [\"git\", \"clone\", ...] ... Could not run update_deps.py'. True of any host building this page in an offline chroot, not laptop-specific -- shared rather than a host override."
+    }
+  },
+  "blfs-which": {
+    "2": {
+      "action": "drop",
+      "reason": "The page is 'Which-2.23 and Alternatives'. This block is the alternative: 'The second option (for those who don't want to install the package) is to create a simple script'. We install the real package in blocks 0-1, so running this would overwrite the just-installed /usr/bin/which binary with a shell script."
+    }
+  },
+  "blfs-libtasn1": {
+    "2": {
+      "action": "drop",
+      "reason": "Installs the GTK-Doc API documentation ('If you did not pass --enable-gtk-doc ... you can install the API documentation'). GTK-Doc is not installed and the docs are not needed."
+    }
+  },
+  "blfs-make-ca": {
+    "2": {
+      "action": "replace",
+      "cmd": "/usr/sbin/make-ca -f -C /sources/certdata.txt",
+      "reason": "Book uses 'make-ca -g', which downloads certdata.txt from Mozilla at build time. We supply certdata.txt as a verified build input instead (staged in /sources), so the cert store is deterministic and the build needs no network. Note make-ca downloads via 'openssl s_client', not wget/curl, so -g will still work on the booted system."
+    },
+    "3": {
+      "action": "replace",
+      "cmd": "install -vdm755 /etc/systemd/system/timers.target.wants\nln -sfv /usr/lib/systemd/system/update-pki.timer /etc/systemd/system/timers.target.wants/update-pki.timer",
+      "reason": "'systemctl enable' cannot run in the chroot ('System has not been booted with systemd as init system'). Creating the WantedBy=timers.target symlink by hand is exactly what enable would do. This is worth keeping enabled: make-ca fetches via openssl s_client, so the weekly refresh works on the booted system with no extra packages."
+    },
+    "4": {
+      "action": "drop",
+      "reason": "Optional: adds the CAcert roots, which are not in Mozilla's store. Also fetches them with wget, which is not installed."
+    },
+    "5": {
+      "action": "drop",
+      "reason": "The book's worked example of distrusting a CA, operating on /etc/ssl/certs/Makebelieve_CA_Root.pem -- a fictional certificate that does not exist. Would fail immediately."
+    },
+    "6": {
+      "action": "drop",
+      "reason": "A bare 'export _PIP_STANDALONE_CERT=...' illustrating the variable. Setting it inside a build script has no lasting effect; block 7 is the persistent version and is kept."
+    }
+  },
+  "blfs-openssh": {
+    "2": {
+      "action": "replace",
+      "cmd": "make install &&\ninstall -v -m755    contrib/ssh-copy-id /usr/bin     &&\n\ninstall -v -m644    contrib/ssh-copy-id.1 \\\n                    /usr/share/man/man1              &&\ninstall -v -m755 -d /usr/share/doc/openssh-10.5p1     &&\ninstall -v -m644    INSTALL LICENCE OVERVIEW README* \\\n                    /usr/share/doc/openssh-10.5p1",
+      "reason": "Version bumped ahead of the book 2026-09-05 (openssh-10.2p1 -> 10.5p1, packages/base.py seq 5) -- sa-13.0-032/173/200 all affect 10.2p1, fixed versions confirmed against openssh.org/releasenotes.html. The book's own text for this block hardcodes the doc-install path to the version it was written against (openssh-10.2p1); everything else in this recipe (configure/make/make install) is version-agnostic and needs no change. Shared, not host-specific, since the version bump itself lives in the shared packages/base.py and applies to any host built from this book."
+    },
+    "3": {
+      "action": "replace",
+      "cmd": "echo \"PermitRootLogin yes\" >> /etc/ssh/sshd_config",
+      "reason": "The book appends 'PermitRootLogin no', which is the right default on a system with normal user accounts. This system has only root, so 'no' would make sshd unreachable and defeat the purpose of installing it. Set to 'yes' deliberately and flagged in the build report: change the root password on first boot and move to key-only auth."
+    },
+    "4": {
+      "action": "drop",
+      "reason": "Interactive 'ssh-keygen' followed by 'ssh-copy-id ... REMOTE_USERNAME@REMOTE_HOSTNAME' -- literal placeholders, and it would block on a prompt."
+    },
+    "5": {
+      "action": "drop",
+      "reason": "Appends 'PasswordAuthentication no' and 'KbdInteractiveAuthentication no', i.e. key-only auth. No authorized_keys exists on this system, so applying it together with the block above would leave no way to log in at all."
+    },
+    "6": {
+      "action": "drop",
+      "reason": "Builds /etc/pam.d/sshd from /etc/pam.d/login. Linux-PAM is not part of LFS 13.0 and Shadow was built without it, so /etc/pam.d/login does not exist and the sed would fail."
+    },
+    "7": {
+      "action": "drop",
+      "reason": "'make install-sshd' is a target of the blfs-systemd-units package, not of openssh's own Makefile -- the book shows it under 'Systemd Unit' referring to blfs-systemd-units-20251204. Running it in the openssh tree fails. Handled instead by the blfs-sshd-unit step."
+    }
+  },
+  "blfs-nodejs": {
+    "1": {
+      "action": "replace",
+      "cmd": "./configure --prefix=/usr    \\\n            --shared-openssl \\\n            --shared-zlib &&\nmake",
+      "reason": "The book's configure line passes --shared-brotli, --shared-cares, --shared-libuv, --shared-nghttp2 and --with-intl=system-icu, because BLFS assumes you installed those 'recommended' dependencies. We deliberately did not: Node bundles all of them, and using the bundled copies keeps the dependency closure to the one package Node actually requires (which). Configure would fail outright looking for the missing system libraries. --shared-openssl and --shared-zlib are kept because LFS provides both (OpenSSL 3.6.1, zlib 1.3.2), so Node benefits from system security updates rather than carrying its own copy."
+    }
+  },
+  "blfs-git": {
+    "1": {
+      "action": "drop",
+      "reason": "'make html' builds the HTML docs and requires asciidoc, which is not installed. The book gates it on 'If you have installed asciidoc'."
+    },
+    "2": {
+      "action": "drop",
+      "reason": "'make man' builds the man pages and requires both asciidoc and xmlto, neither installed. We use the prebuilt git-manpages tarball instead (block 6)."
+    },
+    "4": {
+      "action": "drop",
+      "reason": "'make install-man' installs man pages built by block 2. Since we do not build them, there is nothing to install and the target would fail."
+    },
+    "5": {
+      "action": "drop",
+      "reason": "'make install-html' installs HTML docs built by block 1. Same reason: not built, so nothing to install."
+    },
+    "7": {
+      "action": "drop",
+      "reason": "Untars git-htmldocs-2.53.0.tar.xz, which we deliberately did not download -- HTML documentation is not wanted and the tarball is large. The book presents it as an alternative to block 1/5, not an addition."
+    },
+    "8": {
+      "action": "drop",
+      "reason": "Reorganises the HTML doc tree that block 7 would have unpacked. With block 7 dropped the paths do not exist and the mv commands would fail."
+    }
+  },
+  "blfs-cpio": {
+    "2": {
+      "action": "drop",
+      "reason": "'make -C doc pdf && make -C doc ps', gated on 'If you have texlive-20250308 installed'. texlive is not installed."
+    },
+    "4": {
+      "action": "drop",
+      "reason": "Installs the pdf/ps/dvi docs built by block 2. Not built, so nothing to install and the install would fail."
+    }
+  },
+  "blfs-shell-startup-files": {
+    "7": {
+      "action": "replace",
+      "cmd": "install -dm755 /etc/skel\ncat > /etc/skel/.bash_profile << \"EOF\"\n# Begin ~/.bash_profile\n# Written for Beyond Linux From Scratch\n# by James Robertson <jameswrobertson@earthlink.net>\n# updated by Bruce Dubbs <bdubbs@linuxfromscratch.org>\n\n# Personal environment variables and startup programs.\n\n# Personal aliases and functions should go in ~/.bashrc.  System wide\n# environment variables and startup programs are in /etc/profile.\n# System wide aliases and functions are in /etc/bashrc.\n\nif [ -f \"$HOME/.bashrc\" ] ; then\n  source $HOME/.bashrc\nfi\n\nif [ -d \"$HOME/bin\" ] ; then\n  pathprepend $HOME/bin\nfi\n\n# Having . in the PATH is dangerous\n#if [ $EUID -gt 99 ]; then\n#  pathappend .\n#fi\n\n# End ~/.bash_profile\nEOF\nchmod 600 /etc/skel/.bash_profile",
+      "reason": "Book writes to ~/.bash_profile (whoever runs the command). skel.html explicitly suggests redirecting this to /etc/skel instead so every new user gets it via 'useradd -m'. Also creates /etc/skel here (mode 0755, book's own instruction) since this is the first file placed in it. Each skel file gets chmod 600 per skel.html: 'should be writable only by the owner... unreadable by group and other'."
+    },
+    "8": {
+      "action": "replace",
+      "cmd": "install -dm755 /etc/skel\ncat > /etc/skel/.profile << \"EOF\"\n# Begin ~/.profile\n# Personal environment variables and startup programs.\n\nif [ -d \"$HOME/bin\" ] ; then\n  pathprepend $HOME/bin\nfi\n\n# Set up user specific i18n variables\n#export LANG=<ll>_<CC>.<charmap><@modifiers>\n\n# End ~/.profile\nEOF\nchmod 600 /etc/skel/.profile",
+      "reason": "Same redirection as block 7, for the /bin/sh-invocation equivalent of .bash_profile."
+    },
+    "9": {
+      "action": "replace",
+      "cmd": "install -dm755 /etc/skel\ncat > /etc/skel/.bashrc << \"EOF\"\n# Begin ~/.bashrc\n# Written for Beyond Linux From Scratch\n# by James Robertson <jameswrobertson@earthlink.net>\n\n# Personal aliases and functions.\n\n# Personal environment variables and startup programs should go in\n# ~/.bash_profile.  System wide environment variables and startup\n# programs are in /etc/profile.  System wide aliases and functions are\n# in /etc/bashrc.\n\nif [ -f \"/etc/bashrc\" ] ; then\n  source /etc/bashrc\nfi\n\n# Set up user specific i18n variables\n#export LANG=<ll>_<CC>.<charmap><@modifiers>\n\n# End ~/.bashrc\nEOF\nchmod 600 /etc/skel/.bashrc",
+      "reason": "Same redirection as block 7."
+    },
+    "10": {
+      "action": "replace",
+      "cmd": "install -dm755 /etc/skel\ncat > /etc/skel/.bash_logout << \"EOF\"\n# Begin ~/.bash_logout\n# Written for Beyond Linux From Scratch\n# by James Robertson <jameswrobertson@earthlink.net>\n\n# Personal items to perform on logout.\n\n# End ~/.bash_logout\nEOF\nchmod 600 /etc/skel/.bash_logout",
+      "reason": "Same redirection as block 7."
+    }
+  },
+  "blfs-sudo": {
+    "2": {
+      "action": "replace",
+      "cmd": "cat > /etc/sudoers.d/00-sudo << \"EOF\"\nDefaults secure_path=\"/usr/sbin:/usr/bin\"\n%wheel ALL=(ALL) ALL\nEOF\nchmod 440 /etc/sudoers.d/00-sudo\nusermod -aG wheel john",
+      "reason": "Book's suggested common config as-is (wheel group gets full sudo after entering their own password), plus adding john to wheel -- he's the one human non-root account on this box, and granting sudo through wheel membership is the whole point of the book's suggested config here rather than editing sudoers directly. chmod 440 matches how sudoers.d files ship (root-only read, no write)."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "PAM config for sudo. Linux-PAM is not part of this LFS 13.0 build (Shadow was built without it, confirmed when reviewing blfs-openssh) -- sudo was not built with --without-pam disabled explicitly, but configure auto-detects PAM's absence and skips it, so /etc/pam.d/sudo would configure a subsystem that isn't wired into anything."
+    }
+  },
+  "blfs-iptables": {
+    "2": {
+      "action": "replace",
+      "cmd": "install -v -dm755 /etc/systemd/scripts\n\ncat > /etc/systemd/scripts/iptables << \"EOF\"\n#!/bin/sh\n\n# Begin /etc/systemd/scripts/iptables\n\n# Insert connection-tracking modules\n# (not needed if built into the kernel)\nmodprobe nf_conntrack\nmodprobe xt_LOG\n\n# Enable broadcast echo Protection\necho 1 > /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts\n\n# Disable Source Routed Packets\necho 0 > /proc/sys/net/ipv4/conf/all/accept_source_route\necho 0 > /proc/sys/net/ipv4/conf/default/accept_source_route\n\n# Enable TCP SYN Cookie Protection\necho 1 > /proc/sys/net/ipv4/tcp_syncookies\n\n# Disable ICMP Redirect Acceptance\necho 0 > /proc/sys/net/ipv4/conf/default/accept_redirects\n\n# Do not send Redirect Messages\necho 0 > /proc/sys/net/ipv4/conf/all/send_redirects\necho 0 > /proc/sys/net/ipv4/conf/default/send_redirects\n\n# Drop Spoofed Packets coming in on an interface, where responses\n# would result in the reply going out a different interface.\necho 1 > /proc/sys/net/ipv4/conf/all/rp_filter\necho 1 > /proc/sys/net/ipv4/conf/default/rp_filter\n\n# Log packets with impossible addresses.\necho 1 > /proc/sys/net/ipv4/conf/all/log_martians\necho 1 > /proc/sys/net/ipv4/conf/default/log_martians\n\n# be verbose on dynamic ip-addresses  (not needed in case of static IP)\necho 2 > /proc/sys/net/ipv4/ip_dynaddr\n\n# disable Explicit Congestion Notification\n# too many routers are still ignorant\necho 0 > /proc/sys/net/ipv4/tcp_ecn\n\n# Set a known state\niptables -P INPUT   DROP\niptables -P FORWARD DROP\niptables -P OUTPUT  DROP\n\n# These lines are here in case rules are already in place and the\n# script is ever rerun on the fly. We want to remove all rules and\n# pre-existing user defined chains before we implement new rules.\niptables -F\niptables -X\niptables -Z\n\niptables -t nat -F\n\n# Allow local-only connections\niptables -A INPUT  -i lo -j ACCEPT\n\n# Free output on any interface to any ip for any service\n# (equal to -P ACCEPT)\niptables -A OUTPUT -j ACCEPT\n\n# Permit answers on already established connections\n# and permit new connections related to established ones\n# (e.g. port mode ftp)\niptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT\n\n# Not in the book's example: this box is administered entirely over SSH, and\n# the book's own Personal Firewall script does not allow any inbound service,\n# SSH included -- applying it unmodified would have locked out the only way\n# in. Explicit allow for new inbound SSH connections; the ESTABLISHED,RELATED\n# rule above already covers the rest of each session once it exists.\niptables -A INPUT -p tcp --dport 22 -m conntrack --ctstate NEW -j ACCEPT\n\n# Everything else is dropped by policy (no LOG rule -- the book's example logs\n# every dropped packet, which on an internet-facing host is a constant stream\n# of scan/noise traffic; not wanted here, dropped without a paper trail).\n\n# End /etc/systemd/scripts/iptables\nEOF\nchmod 700 /etc/systemd/scripts/iptables",
+      "reason": "Book's 'Personal Firewall' example (single-interface, matches this box) with two changes: an explicit ACCEPT for new inbound SSH (tcp/22) before the closing rule -- the book's own script allows no inbound service at all, which would have locked out the only access path to this machine -- and the book's final 'LOG everything else' rule dropped entirely (operator's call: never going to review the log, and on an internet-facing host it's a constant stream of scan noise). Everything else is the book's text unchanged."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "The 'Masquerading Router' example -- two network interfaces (LAN1/WAN1), NAT/routing between them. This box has one NIC (enp6s0) and is a single server, not a router; the block references interface names that do not exist here."
+    },
+    "4": {
+      "action": "drop",
+      "reason": "'make install-iptables' is a target of the blfs-systemd-units package's Makefile, not iptables' own -- same situation as blfs-openssh block 7 for sshd.service. Handled by the blfs-iptables-unit step instead, run from the blfs-systemd-units source tree."
+    }
+  },
+  "blfs-glib2": {
+    "1": {
+      "action": "enable",
+      "reason": "Guards itself with 'if [ -e /usr/include/glib-2.0 ]' -- no-op on this fresh install, no prior glib. Flagged only because it sits in the book's upgrade-warning admonition."
+    },
+    "3": {
+      "action": "replace",
+      "cmd": "mkdir build &&\ncd    build &&\n\nmeson setup ..                  \\\n      --prefix=/usr             \\\n      --buildtype=release       \\\n      -D introspection=disabled \\\n      -D glib_debug=disabled    \\\n      -D man-pages=disabled     \\\n      -D sysprof=disabled       &&\nninja",
+      "reason": "man-pages=enabled needs rst2man (from docutils), which was deliberately skipped as glib2's own Recommended dep (one-level policy -- docs generation, not needed for anything else in this build). Flag flipped to match that decision instead of leaving a contradiction between the skipped dependency and a flag that requires it."
+    },
+    "8": {
+      "action": "drop",
+      "reason": "Builds HTML documentation (-D documentation=true), needs rst2html5 (from docutils). Same root cause as block 3's man-pages fix -- docutils deliberately skipped, one-level policy. Block 9's final 'ninja install' still runs and installs the introspection-enabled build from block 7."
+    }
+  },
+  "blfs-icu": {
+    "0": {
+      "action": "drop",
+      "reason": "Command Explanations example showing HOW to check a binary's dependency on ICU later ('ldd <application or library>') -- a literal placeholder, not an install step."
+    },
+    "1": {
+      "action": "drop",
+      "reason": "Same section, readelf variant of the same usage example -- not an install step."
+    }
+  },
+  "blfs-freetype2": {
+    "0": {
+      "action": "drop",
+      "reason": "Extracts the optional supplementary documentation tarball (freetype-doc-2.14.1.tar.xz), which was not fetched -- docs only, not needed. The base docs/ directory still ships in the main source tree, so block 3 (copying docs/ to /usr/share/doc) is kept."
+    }
+  },
+  "blfs-graphite2": {
+    "4": {
+      "action": "drop",
+      "reason": "'If you wish to build the documentation, issue: make docs' -- explicitly optional, not needed."
+    },
+    "6": {
+      "action": "drop",
+      "reason": "Installs the documentation built by block 4. Not built, so nothing to install."
+    }
+  },
+  "blfs-brotli": {
+    "2": {
+      "action": "drop",
+      "reason": "'If desired, build the Python3 bindings' -- explicitly optional. Nothing in this stack needs Python brotli bindings, only the C library installed by blocks 0-1."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "Installs the Python wheel built by block 2. Not built, so nothing to install."
+    }
+  },
+  "blfs-libxml2": {
+    "4": {
+      "action": "drop",
+      "reason": "Test-suite step: stop a running httpd before running libxml2's test suite (which uses port 80). httpd is not installed on this system and the test suite is not being run."
+    },
+    "2": {
+      "action": "drop",
+      "reason": "Reconfigures with docs=enabled, needs doxygen (not installed) -- 'Program doxygen not found', discovered when the build failed. One-level policy: docs generation, not needed."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "Fetches the optional test-suite tarball (xmlts20130923.tar.gz), not staged since the test suite is not being run."
+    }
+  },
+  "blfs-xkeyboard-config": {
+    "1": {
+      "action": "drop",
+      "reason": "Upgrade-only cleanup ('if upgrading from version 2.44 or earlier'). This is a fresh install -- $XORG_PREFIX/share/X11/xkb does not exist yet."
+    }
+  },
+  "blfs-cmake": {
+    "0": {
+      "action": "replace",
+      "cmd": "sed -i '/\"lib64\"/s/64//' Modules/GNUInstallDirs.cmake &&\n\n./configure --prefix=/usr        \\\n            --system-curl         \\\n            --system-zlib         \\\n            --system-expat        \\\n            --mandir=/share/man  \\\n            --docdir=/share/doc/cmake-4.2.3 &&\nmake",
+      "reason": "Book's --system-libs is all-or-nothing (cmake's own bootstrap --help confirms no granular 'system except X' flag) and requires libarchive, libuv, and nghttp2 as system libraries -- none built (deliberately skipped as cmake's own Recommended deps, since nothing in this build's actual dependency chain needs cmake's network-fetch/archive features). Switched to explicit --system-{curl,zlib,expat}, the three cmake's own configure step already confirmed present, letting everything else (libarchive, libuv, nghttp2, bzip2, liblzma, zstd, jsoncpp, cppdap, librhash) fall back to cmake's bundled copies -- the documented default behavior when a recommended dep isn't installed."
+    }
+  },
+  "blfs-rust": {
+    "1": {
+      "action": "replace",
+      "cmd": "cat << EOF > bootstrap.toml\n# See bootstrap.toml.example for more possible options,\n# and see src/bootstrap/defaults/bootstrap.dist.toml for a few options\n# automatically set when building from a release tarball\n# (unfortunately, we have to override many of them).\n\n# Tell x.py that the editors have reviewed the content of this file\n# and updated it to follow the major changes of the building system,\n# so x.py will not warn users to review that information.\nchange-id = 148795\n\n[llvm]\n# If building the shipped LLVM source, only enable the x86 target\n# instead of all the targets supported by LLVM.\ntargets = \"X86\"\n\n[build]\ndescription = \"for BLFS 13.0\"\n\n# Omit the documentation to save time and space (the default is to build them).\ndocs = false\n\n# Do not look for new versions of the dependencies online.\nlocked-deps = true\n\n# Only install these extended tools. Cargo, clippy, rustdoc, and rustfmt\n# are installed by a default rustup installation, and rust-src is needed\n# to build the Rust code in Linux kernel (in case you need such a kernel\n# feature).\ntools = [\"cargo\", \"clippy\", \"rustdoc\", \"rustfmt\", \"src\"]\n\n[install]\nprefix = \"/opt/rustc-1.93.1\"\ndocdir = \"share/doc/rustc-1.93.1\"\n\n[rust]\nchannel = \"stable\"\n\n# Enable the same optimizations as the official upstream build.\nlto = \"thin\"\ncodegen-units = 1\n\n# Don't build llvm-bitcode-linker which is only useful for the NVPTX\n# backend that we don't enable.\nllvm-bitcode-linker = false\nEOF",
+      "reason": "Removed '[llvm] link-shared = true' and both [target.*] llvm-config entries. Those are exactly the section the book says to omit when building against Rust's own shipped LLVM instead of a system one (its own words: 'This whole section should be omitted if you wish to build against the shipped llvm') -- decided with the operator to skip building LLVM as its own package (4.7GB, hours) rather than build it standalone just to satisfy this recommended link."
+    },
+    "2": {
+      "action": "replace",
+      "cmd": "_restore_resolv() {\n    rm -f /etc/resolv.conf\n    ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf\n}\ntrap _restore_resolv EXIT\nrm -f /etc/resolv.conf\nprintf 'nameserver 1.1.1.1\\nnameserver 8.8.8.8\\n' > /etc/resolv.conf\n\nexport LIBSSH2_SYS_USE_PKG_CONFIG=1\n./x.py build",
+      "reason": "Dropped LIBSQLITE3_SYS_USE_PKG_CONFIG -- sqlite was never built (not used by anything else in this stack), so this would just point pkg-config at a library that does not exist. LIBSSH2_SYS_USE_PKG_CONFIG kept: libssh2 is built (previous step). DNS fix added 2026-08-31 (laptop, first host to actually exercise this from-scratch): the book's own text says rustc 'will download a stage0 binary at the start of the build, so you must have an internet connection', but the chroot's /etc/resolv.conf is a symlink to systemd-resolved's stub, which doesn't exist without a running resolved -- same fix as the shared blfs-claude-code recipe. The trap restoring resolv.conf on EXIT covers the whole recipe script (all blocks run as one shell), so later blocks don't need their own copy."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "Full Rust test suite (./x.py test) -- extremely long even by this build's standards, and test suites have been skipped throughout this entire project."
+    },
+    "4": {
+      "action": "drop",
+      "reason": "Summarizes results from the test suite in block 3, which is not run."
+    },
+    "6": {
+      "action": "replace",
+      "cmd": "rm -fv /opt/rustc-1.93.1/share/doc/rustc-1.93.1/*.old   &&\ninstall -vm644 README.md                                \\\n               /opt/rustc-1.93.1/share/doc/rustc-1.93.1 &&\n\ninstall -vdm755 /usr/share/zsh/site-functions      &&\nln -sfv /opt/rustc/share/zsh/site-functions/_cargo \\\n        /usr/share/zsh/site-functions",
+      "reason": "Dropped the final 'mv /etc/bash_completion.d/cargo ...' line -- bash-completion is not installed, so /etc/bash_completion.d does not exist and the mv would fail. The zsh completion symlink is kept even though zsh is not installed either -- it is just a dangling convenience file, costs nothing, and works if zsh is ever added."
+    },
+    "9": {
+      "action": "replace",
+      "cmd": "# Not sourced here: pathprepend (defined in /etc/profile) only exists in a\n# login shell, which this non-interactive batch build never is. The written\n# /etc/profile.d/rustc.sh is still correct for real interactive sessions;\n# this just gets rustc/cargo onto PATH for the rest of *this* build script.\nexport PATH=\"/opt/rustc/bin:$PATH\"",
+      "reason": "The book's `source /etc/profile.d/rustc.sh` calls pathprepend, a function /etc/profile defines for login shells. Running this recipe via `ssh host bash script.sh` (as this whole project's live BLFS builds do) is never a login shell, so the function does not exist and the source line dies with 'command not found' -- discovered when it took down the entire batch script with set -e immediately after Rust itself finished successfully. Direct PATH export achieves the same effect for the packages built later in the same script (cargo-c, cbindgen)."
+    }
+  },
+  "blfs-librsvg": {
+    "2": {
+      "action": "drop",
+      "reason": "Test suite (meson test -v) -- skipped, matches every other package in this build."
+    },
+    "1": {
+      "action": "replace",
+      "cmd": "_restore_resolv() {\n    rm -f /etc/resolv.conf\n    ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf\n}\ntrap _restore_resolv EXIT\nrm -f /etc/resolv.conf\nprintf 'nameserver 1.1.1.1\\nnameserver 8.8.8.8\\n' > /etc/resolv.conf\n\nmkdir build &&\ncd    build &&\n\nmeson setup --prefix=/usr --buildtype=release -D pixbuf-loader=enabled .. &&\nninja",
+      "reason": "Adds -D pixbuf-loader=enabled to the book's configure line. Without it librsvg installs the library but no gdk-pixbuf loader module, so SVG icons and images stay unloadable through gdk-pixbuf -- the same class of silent gap as the gdk-pixbuf loaders above, and worth having wherever gdk-pixbuf is built. DNS fix added 2026-08-31 (laptop), same reason as blfs-rust's block 2: librsvg is a Rust crate built through meson's cargo integration, which needs live DNS for crates.io fetches even though this page's own text doesn't call out an Internet requirement the way cargo-c/cbindgen/rust do."
+    }
+  },
+  "blfs-lvm2": {
+    "1": {
+      "action": "drop",
+      "reason": "Installs a minimal tool subset specifically so the test suite can run without a full install first ('if you do not want to install the full package before running the tests') -- block 5 does the full install regardless and tests are not being run."
+    },
+    "2": {
+      "action": "drop",
+      "reason": "'mount -o remount,dev /tmp' -- test-suite prep (needs device nodes in /tmp for the tests). Not running the test suite."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "'make check_local' -- the test suite itself, needs en_US.UTF-8 locale generated. Skipped, matches every other package in this build."
+    },
+    "4": {
+      "action": "drop",
+      "reason": "Orphaned continuation lines (--with-thin-check= etc), not a standalone command -- the extractor split this off from a configure invocation shown elsewhere on the page for a variant install. Not executable as its own block."
+    }
+  },
+  "blfs-openldap": {
+    "0": {
+      "action": "enable",
+      "reason": "This is the 'client-only install' the book presents as a Note-boxed alternative -- exactly what's wanted here: GnuPG only needs the client ldap* libraries for LDAP keyserver support, not a running slapd server. --disable-slapd."
+    },
+    "1": {
+      "action": "enable",
+      "reason": "make install for the client-only build above."
+    },
+    "2": {
+      "action": "drop",
+      "reason": "Creates the ldap system user/group for a running slapd daemon. Not installing slapd (client-only build above)."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "The full server build (--enable-slapd and the rest) -- superseded by the client-only build in blocks 0-1."
+    },
+    "4": {
+      "action": "drop",
+      "reason": "Installs and configures the full slapd server tree built by block 3, which is dropped."
+    },
+    "5": {
+      "action": "drop",
+      "reason": "'make install-slapd' is a blfs-systemd-units target, not openldap's own -- same situation as sshd.service/iptables.service. Moot anyway: no slapd server is being installed."
+    },
+    "6": {
+      "action": "drop",
+      "reason": "Starts the slapd server via systemctl. Not installing slapd."
+    },
+    "7": {
+      "action": "drop",
+      "reason": "Tests a running slapd server. Not installing slapd."
+    }
+  },
+  "blfs-libsecret": {
+    "0": {
+      "action": "replace",
+      "cmd": "mkdir bld &&\ncd    bld &&\n\nmeson setup --prefix=/usr       \\\n            --buildtype=release \\\n            -D gtk_doc=false    \\\n            -D vapi=false       \\\n            -D manpage=false    \\\n            ..                  &&\nninja",
+      "reason": "Book's own default (vapi=true) fails: 'ERROR: Program vapigen not found or not executable' -- vapigen ships with Vala, which is Recommended (not Required) per this page's own dependency list and is not built anywhere in this project. Same class as the GTK4 vulkan/glslc trap and the gtk_doc=true block already dropped below: an optional tool the book assumes without a guard.\n\nmanpage=false added after a second real failure past the vapi fix: 'ERROR: Program xsltproc not found or not executable' -- docbook-xml/docbook-xsl-nons/libxslt are this page's own Optional list ('to build manual pages'), and libxslt is not built in this project."
+    },
+    "1": {
+      "action": "drop",
+      "reason": "Optional API-doc generation ('If you have Gi-DocGen ... installed and wish to build the API documentation, issue') -- gi-docgen is not part of this build. Same class as the GTK4/gtkmm4/XWayland doc blocks: true of any host that has not built gi-docgen."
+    }
+  },
+  "blfs-gcr": {
+    "1": {
+      "action": "replace",
+      "cmd": "sed -i 's:\"/desktop:\"/org:' schema/*.xml &&\n\nmkdir build &&\ncd    build &&\n\nmeson setup --prefix=/usr       \\\n            --buildtype=release \\\n            -D gtk_doc=false    \\\n            -D ssh_agent=false  \\\n            -D introspection=false \\\n            ..                  &&\nninja",
+      "reason": "Book's own default fails: 'ERROR: Program vapigen not found or not executable' inside gck/meson.build's generate_vapi call. Unlike gcr4/libsecret, this older gcr-3.41.2 has no separate 'vapi' meson option (checked meson_options.txt directly) -- both GIR and VAPI generation here are gated by the single 'introspection' option (gck/meson.build: 'if get_option(\"introspection\")' wraps generate_gir and the unconditional generate_vapi call right after it), so introspection is what has to go, not a vapi-specific flag. GObject Introspection is Recommended for GLib, not something this project's actual use of gcr-3 (gnome-keyring's SystemPrompter dependency, not a GNOME desktop) needs at runtime -- libgck/libgcr shared libs are all gnome-keyring links against."
+    },
+    "2": {
+      "action": "drop",
+      "reason": "Optional API-doc generation ('If you have Gi-DocGen ... installed and wish to build the API documentation, issue') -- gi-docgen is not part of this build. Same class as the GTK4/gtkmm4/XWayland/libsecret/gcr4 doc blocks."
+    }
+  },
+  "blfs-gcr4": {
+    "0": {
+      "action": "replace",
+      "cmd": "mkdir build &&\ncd    build &&\n\nmeson setup --prefix=/usr       \\\n            --buildtype=release \\\n            -D gtk_doc=false    \\\n            -D vapi=false       \\\n            ..                  &&\nninja",
+      "reason": "Same vapigen gap as blfs-libsecret (built right before this, same fix): 'ERROR: Program vapigen not found or not executable'. Vala is Optional per this page's own dependency list and not built in this project."
+    },
+    "1": {
+      "action": "drop",
+      "reason": "Optional API-doc generation ('If you have Gi-DocGen ... installed and wish to build the API documentation, issue') -- gi-docgen is not part of this build. Same class as the GTK4/gtkmm4/XWayland doc blocks: true of any host that has not built gi-docgen."
+    }
+  },
+  "blfs-gnome-keyring": {
+    "0": {
+      "action": "replace",
+      "cmd": "sed -i 's:\"/desktop:\"/org:' schema/*.xml &&\n\nmkdir build-gkr &&\ncd    build-gkr &&\n\nmeson setup --prefix=/usr --buildtype=release -D pam=false -D manpage=false .. &&\nninja",
+      "reason": "Book's own default fails: 'ERROR: C shared or static library \"pam\" not found' -- meson.build unconditionally probes for libpam whenever -D pam=true (the default), and Linux-PAM is this page's own Recommended (not Required) dependency, not built anywhere in this project (same standing gap as every other PAM-optional package here, e.g. blfs-cairomm's Boost Test). ssh-agent is unaffected: its meson option already defaults to false in this release, and ssh-agent/ssh-add exist anyway.\n\nmanpage=false added after a second real failure past the pam fix: 'ERROR: Program xsltproc not found or not executable' (docs/meson.build, gated behind -D manpage, default true) -- libxslt is not built in this project, same gap already hit on blfs-libsecret."
+    }
+  },
+  "blfs-xdg-utils": {
+    "0": {
+      "action": "replace",
+      "cmd": "./configure --prefix=/usr &&\nfor d in scripts/desc/*.xml; do\n    b=$(basename \"$d\" .xml)\n    echo \"See \\`man $b\\` or https://gitlab.freedesktop.org/xdg/xdg-utils for full usage.\" > \"scripts/$b.txt\"\ndone &&\nmake -C scripts scripts",
+      "reason": "Book's own plain 'make' fails: scripts/Makefile.in's 'all' target is 'html man scripts', all three generated via xmlto ('XMLTO = @XMLTO@', configure.ac's AC_PATH_PROG falls back to a literal /usr/bin/xmlto path that doesn't exist rather than erroring at configure time, so the failure only surfaces at make). xmlto's own book page (pst/xmlto.html) Requires docbook-xml/docbook-xsl-nons/libxslt, none built here -- same standing gap as every other xmlto/xsltproc/docbook consumer in this project, and a 3-package cascade nobody asked for just for `--help` text.\n\nFirst attempt ('make -C scripts scripts' alone) still failed: turns out 'scripts' itself needs xmlto too -- each script's build rule ('%: %.in %.txt') depends on a per-script .txt file generated by 'xmlto txt' from scripts/desc/*.xml, and generate-help-script.awk (checked directly) really does splice that .txt's content into the script's own --help/usage output, not just a doc-build side effect. Placeholder .txt files (one line, pointing at the real xdg-utils docs) are created for each script before 'make -C scripts scripts' runs, dated after their desc/*.xml source so make's timestamp check is satisfied and it never invokes xmlto. Only cost: `xdg-open --help` (etc.) prints a generic pointer instead of the full usage text -- the scripts' actual behavior is unaffected, matching this project's standing practice of trimming doc/help-text extras rather than building a docbook toolchain for them. The install rule already guards man page installation with 'if [ -f $x ]' (scripts/Makefile.in), so plain 'make install' next still works untouched."
+    }
+  },
+  "blfs-pango": {
+    "1": {
+      "action": "drop",
+      "reason": "man-pages=true needs docutils (rst2man), not installed."
+    },
+    "2": {
+      "action": "drop",
+      "reason": "documentation=true needs gi-docgen, not installed."
+    }
+  },
+  "blfs-gdk-pixbuf": {
+    "1": {
+      "action": "drop",
+      "reason": "gtk_doc=true needs Gi-DocGen, not installed."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "DESTDIR-only caveat; this project installs directly (no DESTDIR), so the cache is already correctly generated by ninja install."
+    },
+    "0": {
+      "action": "replace",
+      "cmd": "mkdir build &&\ncd    build &&\n\nmeson setup ..                \\\n      --prefix=/usr           \\\n      --buildtype=release     \\\n      -D man=false            \\\n      -D png=enabled          \\\n      -D gif=enabled          \\\n      -D jpeg=enabled         \\\n      -D tiff=disabled        \\\n      -D thumbnailer=disabled \\\n      --wrap-mode=nofallback  \\\n      -D glycin=disabled &&\nninja",
+      "reason": "Two changes to the book's configure line, both required, found 2026-08-26.\n\nman=false: the option defaults to true in meson_options.txt and needs rst2man (docutils), which is not installed.\n\npng/gif/jpeg re-enabled: the book disables every built-in loader on the assumption that glycin, a newer external loader service, replaces them. This build deliberately skipped glycin (circular Rust rebuild, out of scope), which left BOTH paths disabled -- gdk-pixbuf could load precisely nothing. /usr/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache existed and listed zero loaders, confirmed directly, and even GTK's own bundled PNG icons failed with \"Unrecognized image file format\". That was the real cause of a launcher crashing in Gtk:ERROR ensure_surface_for_gicon; nothing about that crash was specific to the launcher -- anything drawing an icon was equally broken and simply had not hit a hard failure yet. Any build that skips glycin needs this, whatever the hardware. libpng, giflib and libjpeg-turbo are all built by then. tiff stays disabled: libtiff is not built and nothing needs it."
+    }
+  },
+  "blfs-json-c": {
+    "2": {
+      "action": "drop",
+      "reason": "Optional doxygen docs, not installed."
+    },
+    "4": {
+      "action": "drop",
+      "reason": "Installs the doxygen docs from block 2, which was dropped."
+    }
+  },
+  "blfs-popt": {
+    "1": {
+      "action": "drop",
+      "reason": "Optional doxygen docs, not installed."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "Installs the doxygen docs from block 1, which was dropped."
+    }
+  },
+  "blfs-libassuan": {
+    "1": {
+      "action": "drop",
+      "reason": "Optional PDF/PS docs need texlive, not installed."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "Installs the PDF/PS/DVI docs from block 1, which was dropped."
+    }
+  },
+  "blfs-gnupg": {
+    "1": {
+      "action": "drop",
+      "reason": "Optional PDF docs need texlive, not installed."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "Installs the PDF docs from block 1, which was dropped."
+    }
+  },
+  "blfs-dbus": {
+    "4": {
+      "action": "drop",
+      "reason": "Optional intrusive/assert test-suite run, not wanted."
+    },
+    "5": {
+      "action": "drop",
+      "reason": "Example local-session config snippet from the book text, not an install step."
+    },
+    "6": {
+      "action": "drop",
+      "reason": "Example ~/.xinitrc snippet (eval dbus-launch), not an install step -- would hang a non-interactive batch build."
+    },
+    "7": {
+      "action": "drop",
+      "reason": "Example ~/.bash_logout snippet, not an install step."
+    }
+  },
+  "blfs-gsettings-desktop-schemas": {
+    "2": {
+      "action": "drop",
+      "reason": "DESTDIR-only caveat; this project installs directly, so the compiled schema cache is already correctly generated by ninja install."
+    }
+  },
+  "blfs-gtk3": {
+    "2": {
+      "action": "drop",
+      "reason": "DESTDIR-only caveat; not applicable."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "DESTDIR-only caveat; not applicable."
+    },
+    "0": {
+      "action": "replace",
+      "cmd": "mkdir build &&\ncd    build &&\n\nmeson setup ..            \\\n      --prefix=/usr       \\\n      --buildtype=release \\\n      -D man=false         \\\n      -D broadway_backend=true \\\n      -D x11_backend=true \\\n      -D wayland_backend=false &&\nninja",
+      "reason": "man=false: the book hardcodes man=true, which needs docbook-xsl-nons and libxslt for xsltproc, not installed.\n\nx11_backend and wayland_backend pinned explicitly rather than left on meson's auto default (rebuilt 2026-08-27 after a real failure). Auto silently enabled the Wayland backend because wayland happened to be installed at the time, and that made gdk-3.0.pc unconditionally declare Requires: wayland-client, wayland-cursor, wayland-egl. Removing the wayland package later -- correctly, nothing here used it -- broke `pkg-config gtk+-3.0` for every consumer, Firefox's configure included, even though nothing ever used gtk3's Wayland backend. The lesson is not about Wayland: a backend left on auto encodes whatever was present at build time into the installed .pc file. Declare both. A host that does run Wayland should override this block with wayland_backend=true rather than reverting to auto."
+    }
+  },
+  "blfs-alsa-lib": {
+    "1": {
+      "action": "drop",
+      "reason": "Optional API doc build needs Doxygen, not installed."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "Installs the doxygen docs from block 1, which was dropped."
+    }
+  },
+  "blfs-nasm": {
+    "0": {
+      "action": "drop",
+      "reason": "Optional xdoc tarball not fetched (docs only)."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "Installs the docs from block 0, which was dropped."
+    }
+  },
+  "blfs-libusb": {
+    "1": {
+      "action": "drop",
+      "reason": "Optional doxygen API docs, not installed."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "Installs the doxygen docs from block 1, which was dropped."
+    }
+  },
+  "blfs-svt-av1": {
+    "1": {
+      "action": "drop",
+      "reason": "Optional test suite, explicitly called out by the book as very long (31 SBU) and not meaningful."
+    }
+  },
+  "blfs-sdl3": {
+    "2": {
+      "action": "drop",
+      "reason": "Optional test build, not wanted."
+    }
+  },
+  "blfs-mesa": {
+    "0": {
+      "action": "drop",
+      "reason": "`lspci | grep VGA`, the book telling a reader to look up their own GPU before choosing drivers. A scripted build already knows: the answer is host.toml's [hardware].gpu, and the driver choice it feeds is block 2's host override. pciutils is also not necessarily installed this early."
+    },
+    "1": {
+      "action": "drop",
+      "reason": "Applies the optional xdemos patch ('If you have downloaded...'). Not fetched: it only adds demo programs for testing an Xorg install, which nothing here needs."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "Reconfigures with build-tests=true and runs the full suite, roughly doubling build time for verification not done for any other package in this build -- test suites are skipped throughout except the critical three in LFS Chapter 8."
+    }
+  },
+  "blfs-libnotify": {
+    "0": {
+      "action": "replace",
+      "cmd": "mkdir build &&\ncd    build &&\n\nmeson setup --prefix=/usr       \\\n            --buildtype=release \\\n            -D gtk_doc=false    \\\n            -D man=false        \\\n            -D tests=false      \\\n            -D introspection=disabled \\\n            ..                  &&\nninja",
+      "reason": "Adds -D tests=false and -D introspection=disabled to the book's configure line. libnotify's own meson.build makes gtk4 a *hard* dependency whenever tests=true (its default) -- 'gtk_dep = dependency(\"gtk4\", ..., required: get_option(\"tests\"))' -- so on any build that has not built a full GNOME desktop (gtk4, gobject-introspection) ahead of libnotify, the book's own configure line as printed fails outright with 'Dependency \"gtk4\" not found', discovered when it did exactly that. Not wanting the test suite anyway (matches every other package in this build), disabling it also removes the gtk4 requirement. introspection defaults to the meson feature 'enabled' (required, not auto), which equally hard-fails without gobject-introspection installed -- also not part of this build's dependency chain, so disabled rather than built solely for this one optional feature."
+    },
+    "1": {
+      "action": "drop",
+      "reason": "Optional API-doc generation ('If you have Gi-DocGen installed and wish to build the API documentation, issue...') -- gi-docgen is not part of this build. Same class as the FFmpeg/Doxygen and XWayland doc blocks: true of any host that has not built gi-docgen, not laptop-specific."
+    }
+  },
+  "blfs-fuse": {
+    "1": {
+      "action": "drop",
+      "reason": "Optional API-doc rebuild ('if you have Doxygen installed and wish to rebuild it') -- doxygen is not part of this build. Same class as every other doc-tool trap in this project (json-c, gdk-pixbuf, pango, popt, libassuan, gnupg, ffmpeg, libnotify, libevent)."
+    },
+    "2": {
+      "action": "drop",
+      "reason": "The test suite (python3 venv + pytest) -- skipped, matches every other package in this build. Needs pytest-9.0.2 and looseversion, neither installed."
+    }
+  },
+  "blfs-sshfs": {
+    "2": {
+      "action": "drop",
+      "reason": "'Using Sshfs' usage example ('To mount an ssh server you need to be able to log into the server... sshfs example.com:/home/userid ~/examplepath') -- a literal demo command from the book's usage section, not part of installation. Running it during the build would try to actually SSH to example.com and either hang on a password prompt or fail outright."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "The matching 'fusermount3 -u ~/examplepath' unmount example for the demo mount above -- same usage-example block, not installation. Nothing to unmount since block 2's mount never ran."
+    }
+  },
+  "blfs-libnl": {
+    "2": {
+      "action": "drop",
+      "reason": "Optional API documentation, installed from a separate libnl-doc-3.12.0.tar.gz tarball that is not part of this build (not fetched -- same skip as every other doc-tool trap in this project)."
+    }
+  },
+  "blfs-polkit": {
+    "0": {
+      "action": "replace",
+      "cmd": "groupadd -fg 27 polkitd &&\nid polkitd >/dev/null 2>&1 || useradd -c \"PolicyKit Daemon Owner\" -d /etc/polkit-1 -u 27 \\\n        -g polkitd -s /bin/false polkitd",
+      "reason": "Book's useradd (unlike the groupadd right above it, which already has -f) is not idempotent -- it fails outright if the user already exists. Real failure on a retry: an earlier attempt at this step got as far as creating the user before failing later (the block 1 meson configure error, fixed separately), and the driver's own retry re-runs the whole recipe from a fresh source tree but has no way to undo global OS state like a created user. Guarded with the same check-first idiom already used elsewhere in this build (ch09-network's /dev/shm mountpoint guard)."
+    },
+    "1": {
+      "action": "replace",
+      "cmd": "mkdir build &&\ncd    build &&\n\nmeson setup ..                   \\\n      --prefix=/usr              \\\n      --buildtype=release        \\\n      -D man=false               \\\n      -D session_tracking=logind \\\n      -D authfw=shadow           \\\n      -D introspection=false     \\\n      -D tests=false",
+      "reason": "-D tests=true only builds the test binaries (the actual `ninja test` invocation is never a command in this recipe, so tests=true just wastes build time/space with no suite ever run) -- changed to tests=false, matching every other package in this build.\n\n-D man=false, changed from the book's own man=true default after a real configure failure ('xsltproc is required for man pages generation'). xsltproc is not part of this build.\n\n-D authfw=shadow added after a real configure failure ('C shared or static library pam not found'): the book's own command passes no explicit authfw flag, so meson_options.txt's default (authfw=pam) applies regardless of whether the book's prose lists PAM as Required or Recommended. Linux-PAM is deliberately not part of this build (see packages.py's comment on this addition -- installing it would require reinstalling and reconfiguring Shadow and Systemd per the book's own PAM page, a much larger change than adding WiFi support). 'shadow' is a real, supported alternative authfw value read directly from meson_options.txt, not guessed -- classic crypt(3)-based authentication instead of a PAM stack.\n\n-D introspection=false added preemptively: meson_options.txt shows introspection as a plain boolean (value: true), not an auto-skipping 'feature' type, so it would hard-require g-ir-scanner exactly like libnotify's tests=true did earlier in this build -- gobject-introspection is not part of this build's dependency chain for the same reason it wasn't there."
+    }
+  },
+  "blfs-wpa_supplicant": {
+    "6": {
+      "action": "drop",
+      "reason": "'wpa_passphrase SSID | sed ...' -- SSID is a literal placeholder, and wpa_passphrase reads the real passphrase interactively from stdin if not given as a second argument, which would hang an unattended build. Not wanted anyway: NetworkManager (block 1's own CONFIG_CTRL_IFACE_DBUS additions exist specifically for this) manages wpa_supplicant instances itself via D-Bus, so a static per-SSID config file here is unnecessary and would go stale immediately."
+    },
+    "7": {
+      "action": "drop",
+      "reason": "'systemctl start wpa_supplicant@wlan0' -- a runtime usage example, not an install step, and would fail regardless (no running systemd, no wlan0 interface, in the chroot)."
+    },
+    "8": {
+      "action": "drop",
+      "reason": "'systemctl enable wpa_supplicant@wlan0' -- statically enabling a per-interface wpa_supplicant instance would fight NetworkManager for control of the wifi interface (NetworkManager spawns and manages its own wpa_supplicant processes via D-Bus, per block 1's CONFIG_CTRL_IFACE_DBUS build options). Not wanted on a NetworkManager-managed host."
+    }
+  },
+  "blfs-networkmanager": {
+    "1": {
+      "action": "replace",
+      "cmd": "mkdir build &&\ncd    build &&\n\nmeson setup ..                    \\\n      --prefix=/usr               \\\n      --buildtype=release         \\\n      -D libaudit=no              \\\n      -D nmtui=false              \\\n      -D ovs=false                \\\n      -D ppp=false                \\\n      -D nbft=false               \\\n      -D selinux=false            \\\n      -D qt=false                 \\\n      -D session_tracking=systemd \\\n      -D nm_cloud_setup=false     \\\n      -D modem_manager=false      \\\n      -D introspection=false      &&\nninja",
+      "reason": "nmtui=false, changed from the book's own nmtui=true default after a real configure failure ('You must have libnewt installed to build nmtui... Use -Dnmtui=false to disable it' -- the book's own error message names the exact fix). libnewt (the terminal-UI library nmtui needs) is not part of this build; nmcli and the GUI-facing D-Bus API are unaffected.\n\nintrospection=false added after a second real failure: meson_options.txt shows introspection as a plain boolean (value: true), not an auto-skipping 'feature' type, same libnotify/polkit pattern already hit twice in this build. gobject-introspection is not part of this build. Fixing it also resolves a second symptom that looked unrelated at first (block 2's `ninja install` failing with 'xsltproc is required', then leaving /usr/share/doc/NetworkManager never created so block 4's cp had nothing to copy into) -- traced to man/meson.build's own gate, `if enable_introspection and (enable_man or enable_docs)`, which only pulls in the xsltproc requirement when introspection is also on."
+    }
+  },
+  "blfs-emacs": {
+    "0": {
+      "action": "replace",
+      "cmd": "./configure --prefix=/usr --with-xpm=ifavailable &&\nmake",
+      "reason": "--with-xpm=ifavailable added after a real configure failure ('The following required libraries were not found: libXpm ... To build anyway, give: --with-xpm=ifavailable' -- the error message names the exact fix). libXpm (old-style X Pixmap image support, mostly toolbar icon cosmetics) is not part of this build; every other optional dependency emacs checked for (libpng, libtiff, libgif) was found and used without any explicit flag needed."
+    }
+  },
+  "blfs-nss": {
+    "0": {
+      "action": "replace",
+      "cmd": "patch -Np1 -i ../nss-standalone-1.patch &&\n\ncd nss &&\n\nmake BUILD_OPT=1                      \\\n  NSPR_INCLUDE_DIR=/usr/include/nspr  \\\n  USE_SYSTEM_ZLIB=1                   \\\n  ZLIB_LIBS=-lz                       \\\n  NSS_ENABLE_WERROR=0                 \\\n  NSS_USE_SYSTEM_SQLITE=1             \\\n  $([ \"$(uname -m)\" = x86_64 ] && echo USE_64=1)",
+      "reason": "Same unquoted $(uname -m) as the NSPR page, same reason. Recovered 2026-09-15: this hardening existed in the hand-authored recipe server carried before the recipe was declared book(), and was silently lost when laptop's book() entry made the extractor the owner of the shared file. Re-recorded as a decision, which is the mechanism that should have held it. NOTE: a replace decision pins this whole block, so a BLFS release that changes it will be masked rather than picked up -- re-read this block against the book on any book bump."
+    },
+    "1": {
+      "action": "drop",
+      "reason": "The test suite ('To run the tests, execute the following commands') -- not flagged optional by the extractor since the surrounding prose has no 'if you want' framing, the same classifier gap as vulkan-loader/libei/xwayland/ffmpeg. Skipped, matches every other package in this build; the book's own text for this suite (block 2's ctx) warns it 'fails to spin down test servers... leads to an infinite loop', and it hard-failed here with 564/606 tests failing after 20.9 minutes, confirming it is not worth running unattended."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "'If p11-kit is installed, the p11-kit trust module can be used as a drop-in replacement...' -- p11-kit is not part of this build, so the symlink target (./pkcs11/p11-kit-trust.so) does not exist and this would create a dangling link. True of any host without p11-kit, not laptop-specific."
+    }
+  },
+  "blfs-libevent": {
+    "2": {
+      "action": "drop",
+      "reason": "'If you have Doxygen installed and wish to build API documentation, issue: doxygen Doxyfile' -- doxygen is not part of this build; failed with 'doxygen: command not found', discovered when it did. Optional-dependency prose is not part of the extractor's classifier by design (keying off surrounding prose has caused real breakage before -- see PRACTICES.md), so this needs an explicit decision like every other doc-generation block in this build."
+    },
+    "4": {
+      "action": "drop",
+      "reason": "Installs the API documentation doxygen generated in block 2, which is dropped -- there is no doxygen/html/ directory to copy from."
+    }
+  },
+  "blfs-gnutls": {
+    "0": {
+      "action": "replace",
+      "cmd": "./configure --prefix=/usr \\\n            --docdir=/usr/share/doc/gnutls-3.8.13 \\\n            --with-default-trust-store-pkcs11=\"pkcs11:\" &&\nmake",
+      "reason": "Version bumped ahead of the book 2026-09-05 (gnutls-3.8.12 -> 3.8.13, hosts/laptop/packages.py seq 181) -- sa-13.0-076 (Critical) affects 3.8.12, fixed version confirmed against the live linuxfromscratch.org advisories DB (no later gnutls advisory exists in the tracked set). The book's own text for this block hardcodes --docdir to the version it was written against (gnutls-3.8.12); configure's other flags and make are version-agnostic and need no change. Shared, not host-specific, since this is a book-text fact true of any host building this page."
+    }
+  },
+  "blfs-bubblewrap": {
+    "1": {
+      "action": "drop",
+      "reason": "Book's own text is conditional on running the test suite: 'Next, if you desire to run the test suite, fix an issue caused by the merged-/usr configuration in LFS'. The sed only patches tests/libtest.sh, so it changes nothing that gets installed, and the test suite itself is skipped here the same way every other optional test block in this project is -- Bubblewrap's tests need libseccomp built with its python bindings (Optional on the page), which is not in this build's closure. True of any host building bubblewrap without libseccomp."
+    }
+  },
+  "blfs-xdg-desktop-portal": {
+    "1": {
+      "action": "drop",
+      "reason": "Optional test suite, guarded by the book's own conditional: 'If the optional dependencies are installed, you can test the results by running'. Those dependencies are pytest-9.0.2, libportal-0.9.1, dbusmock-0.38.1 and umockdev-0.19.4, none of which is in this build. This block is worse than a plain 'make check' skip: its first command is 'meson configure -D tests=enabled', which reconfigures the tree away from the '-D tests=disabled' the book's own block 0 sets, so running it on a system without those four packages breaks the configured build rather than merely failing a test. The book itself notes that one test (integration/dynamiclauncher) fails without the external dependencies anyway."
+    }
+  },
+  "blfs-xdg-desktop-portal-gtk": {
+    "0": {
+      "action": "replace",
+      "cmd": "mkdir build &&\ncd    build &&\n\nmeson setup --prefix=/usr --buildtype=release -D wallpaper=disabled .. &&\nninja",
+      "reason": "Real failure (2026-09-07, laptop): '../src/meson.build:24:17: ERROR: Dependency \"gnome-desktop-3.0\" not found, tried pkgconfig and cmake'. The book's own Command Explanations give exactly this fix -- '-D wallpaper=disabled: Use this option if you have not installed the recommended dependency gnome-desktop-44.5' -- and gnome-desktop is not in this build. Worth recording why the flag is not optional despite the option being declared 'auto': src/meson.build guards the wallpaper portal with get_option('wallpaper').allowed(), which is true for an auto feature (allowed() only means 'not disabled'), and then calls dependency('gnome-desktop-3.0') with required defaulting to true. So an 'auto' feature here hard-errors on a missing dependency instead of degrading, and only an explicit 'disabled' avoids it. True of any host building this page without gnome-desktop, not host-specific."
+    }
+  },
+  "blfs-geoclue2": {
+    "2": {
+      "action": "drop",
+      "reason": "The book writes /etc/geoclue/conf.d/90-lfs-google.conf pointing the [wifi] source at Google's Geolocation Service with the key the Firefox page also uses, and that key is dead: a direct POST to https://www.googleapis.com/geolocation/v1/geolocate with it returns '403 PERMISSION_DENIED: You must enable Billing on the Google Cloud Project' (re-verified 2026-09-08, and again against the current development book r13.1-84, which still ships the same key on both pages). Writing the file is worse than skipping it: GeoClue-2.8.0's own compile-time default for that same setting is already https://api.beacondb.net/v1/geolocate (meson_options.txt, 'default-wifi-url'), keyless and public-domain, and the book's file overrides that good default with a dead endpoint. beaconDB is the Ichnaea-compatible successor to the Mozilla Location Service Mozilla shut down in June 2024, and pointing GeoClue at it is what Gentoo, Fedora, NixOS, Guix and Void all do. Dropping the block therefore leaves the stock upstream configuration in place -- no conf.d file, no key, no third party the book has to keep paying for. This is a book fact, not a machine fact, so the decision is shared: any host building this page is better off without the file. Coverage is a separate question and is per-location -- see hosts/laptop/BUILD-REPORT.md and PRACTICES.md for what beaconDB actually answers here."
+    }
+  },
+  "blfs-glad": {
+    "0": {
+      "action": "replace",
+      "cmd": "pip3 wheel -w dist --no-build-isolation --no-deps --no-cache-dir \"$PWD\"",
+      "reason": "The book's command leaves $PWD unquoted. /sources has no spaces today, so this is defensive rather than a live bug, but an unquoted $PWD makes pip silently see two arguments if the build tree is ever unpacked under a path with one. Recovered 2026-09-15: this hardening existed in the hand-authored recipe server carried before the recipe was declared book(), and was silently lost when laptop's book() entry made the extractor the owner of the shared file. Re-recorded as a decision, which is the mechanism that should have held it. NOTE: a replace decision pins this whole block, so a BLFS release that changes it will be masked rather than picked up -- re-read this block against the book on any book bump."
+    }
+  },
+  "blfs-nspr": {
+    "0": {
+      "action": "replace",
+      "cmd": "cd nspr &&\n\nsed -i '/^RELEASE/s|^|#|' pr/src/misc/Makefile.in &&\nsed -i 's|$(LIBRARY) ||'  config/rules.mk         &&\n\n./configure --prefix=/usr   \\\n            --with-mozilla  \\\n            --with-pthreads \\\n            $([ \"$(uname -m)\" = x86_64 ] && echo --enable-64bit) &&\nmake",
+      "reason": "The book writes $([ $(uname -m) = x86_64 ] ...) with the command substitution unquoted. Identical behaviour on every machine this targets; quoted so the test cannot degenerate into `[ = x86_64 ]` and abort the configure line if uname ever returns empty. Recovered 2026-09-15: this hardening existed in the hand-authored recipe server carried before the recipe was declared book(), and was silently lost when laptop's book() entry made the extractor the owner of the shared file. Re-recorded as a decision, which is the mechanism that should have held it. NOTE: a replace decision pins this whole block, so a BLFS release that changes it will be masked rather than picked up -- re-read this block against the book on any book bump."
+    }
+  }
+}

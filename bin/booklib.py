@@ -245,27 +245,32 @@ def render_body(name, parsed, decisions, queue):
     return lines, n_on
 
 
-def hand_owned_shared(lfshost, family):
-    """Steps that some host declares hand() and whose recipe is the SHARED one.
+def hand_owned_shared(lfshost, host, family):
+    """Steps a host on THIS host's book version declares hand(), against the shared
+    hand-authored recipe at recipes/<step>.sh.
 
-    Returns {step: [host, ...]}. These files belong to a human, and the extractors must
-    never write them -- not even when a different host declares the same package as a
-    book() step, which is the case this exists for.
+    Returns {step: [host, ...]}. Generated recipes live under recipes/<family>-<ver>/ and
+    hand-authored ones at the root of recipes/, so an extraction can no longer overwrite
+    a hand-authored file -- that was the 2026-09-15 failure, and the layout now makes it
+    impossible. What is still possible is subtler: recipe() resolves the version tree
+    before the hand-authored root, so if this host generates <family>-<ver>/<step>.sh
+    while another host on the SAME version declares that step hand(), the other host
+    silently starts running the generated recipe instead of its own.
 
-    recipes/ is shared by every machine while packages.py is per-machine, so the two can
-    disagree: `server` declares hand(226, "imagemagick", ...) and owns the comments in
-    recipes/blfs-imagemagick.sh, and a book(334, "imagemagick", "general/imagemagick.html",
-    ...) added to `laptop` made the extractor the owner of that same filename and rewrite
-    it (2026-09-15). Nothing in the per-host view could see the conflict, because the
-    other host's entry is not in this host's plan. Only reading every packages.py can.
+    Hosts on a different version of this family are not reported: their resolution never
+    reaches this version's directory, which is the whole point of scoping it.
 
     A hand() step whose recipe is host-scoped (hosts/<h>/recipes/<step>.sh exists) is not
-    included: that file is unreachable from any other machine, so the shared path is free.
+    included either: that file wins over both shared layers on the host that owns it.
     """
     owners = {}
     for name in lfshost.known():
+        if name == host.name:
+            continue
         try:
             h = lfshost.Host(name)
+            if h.books[family] != host.books[family]:
+                continue
             pkgs = lfshost.packages(h)
         except Exception as exc:
             print(f"warning: cannot read hosts/{name}/packages.py ({exc}) -- its "
@@ -281,7 +286,7 @@ def hand_owned_shared(lfshost, family):
 
 
 def run_family_extraction(root, lfshost, host, family, page_parser_cls, header,
-                          overrides_file, check=False):
+                          check=False):
     """Shared driver for a book family whose steps come from a host's packages.py list
     (BLFS/SLFS/GLFS all share this shape; LFS's whole-book chapter walk in
     extract-recipes.py does not and keeps its own main()).
@@ -298,12 +303,16 @@ def run_family_extraction(root, lfshost, host, family, page_parser_cls, header,
     require_book(root, book_dir, family)
 
     packages = lfshost.packages(host)
-    shared_dec = lfshost.overrides(host, overrides_file, layer="shared")
-    merged_dec = lfshost.overrides(host, overrides_file, layer="merged")
-    host_pages = lfshost.host_override_pages(host, overrides_file)
-    hand_owned = hand_owned_shared(lfshost, family)
+    shared_dec = lfshost.overrides(host, family, layer="shared")
+    merged_dec = lfshost.overrides(host, family, layer="merged")
+    host_pages = lfshost.host_override_pages(host, family)
+    hand_owned = hand_owned_shared(lfshost, host, family)
 
-    out = f"{root}/recipes"
+    # One directory per book release: a generated recipe is a function of the book it
+    # came from, and two machines can be on two releases.
+    out = lfshost.shared_recipes(host, family)
+    if not check:
+        os.makedirs(out, exist_ok=True)
     ver = host.books[family]
     plan, queue, problems, drift, new = [], [], [], [], []
 
@@ -315,12 +324,15 @@ def run_family_extraction(root, lfshost, host, family, page_parser_cls, header,
         if p["html"]:
             if step in hand_owned:
                 others = ", ".join(f"'{h}'" for h in hand_owned[step])
+                rel = os.path.relpath(out, root)
                 problems.append(
                     f"{step}: declared book() here, but {others} declare(s) it hand() "
-                    f"and its recipe is the shared recipes/{step}.sh. Generating it "
-                    f"would overwrite a hand-authored file. Declare it hand() here too, "
-                    f"or convert the other host(s) to book() and move the recipe's "
-                    f"comments into that host's BUILD-REPORT.md.")
+                    f"against the shared recipes/{step}.sh and pin(s) the same book "
+                    f"version. Writing {rel}/{step}.sh would take that host's "
+                    f"resolution, since the version tree wins over the hand-authored "
+                    f"root. Declare it hand() here too, or convert the other host(s) to "
+                    f"book() and move the recipe's comments into that host's "
+                    f"BUILD-REPORT.md.")
                 continue
             path = os.path.join(book_dir, p["html"])
             if not os.path.exists(path):
@@ -333,11 +345,12 @@ def run_family_extraction(root, lfshost, host, family, page_parser_cls, header,
             body, n_on = render_body(step, parsed, shared_dec.get(step, {}), queue)
             text = "\n".join(header(step, p["html"], ver, parsed.title) + body) + "\n"
             shared_path = f"{out}/{step}.sh"
+            rel_shared = os.path.relpath(shared_path, root)
             if check:
                 if not os.path.exists(shared_path):
-                    new.append(step)
+                    new.append(rel_shared)
                 elif open(shared_path).read() != text:
-                    drift.append(step)
+                    drift.append(rel_shared)
             else:
                 with open(shared_path, "w") as f:
                     f.write(text)

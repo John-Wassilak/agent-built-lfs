@@ -10,7 +10,8 @@ timing, resumable state, and (for Chapter 8) an installed-file manifest.
 
 Everything it reads and writes belongs to one machine, resolved before any step runs:
 the plan, the completed list, timings, logs, manifests, and which recipe a step uses
-(hosts/<host>/recipes/<step>.sh wins over the shared recipes/<step>.sh). The host comes
+(hosts/<host>/recipes/<step>.sh wins over recipes/<family>-<ver>/<step>.sh for the
+release that host pins, which wins over the hand-authored recipes/<step>.sh). The host comes
 from --host, else $LFS_HOST, else the hostname -- so on the machine being built no flag
 is needed, and from elsewhere --host names the machine whose tree you are building.
 

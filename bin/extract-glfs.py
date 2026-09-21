@@ -37,9 +37,6 @@ sys.path.insert(0, HERE)
 import lfshost  # noqa: E402
 import booklib  # noqa: E402
 
-OVERRIDES_FILE = "glfs-overrides.json"
-
-
 def header(step, page_path, ver, title):
     return [
         "#!/bin/bash",
@@ -62,7 +59,7 @@ def main():
 
     plan, queue, problems, drift, new = booklib.run_family_extraction(
         lfshost.ROOT, lfshost, host, "glfs", booklib.RootAndUserinputPageParser,
-        header, OVERRIDES_FILE, check=args.check)
+        header, check=args.check)
 
     if problems:
         print(f"\n{len(problems)} problem(s):", file=sys.stderr)

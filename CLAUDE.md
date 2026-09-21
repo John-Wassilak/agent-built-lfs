@@ -35,15 +35,36 @@ environment, a display manager, or other host-specific content goes in
 `mpv.conf` -- five X11/awesome dotfiles were found misfiled in the shared tree during
 `laptop`'s `/lfs-audit` on 2026-09-01 and moved to `hosts/server/overlay/` to match).
 
+## One directory per book release
+
+`recipes/` has three layers, and which one a step resolves to depends on the machine:
+
+- `hosts/<h>/recipes/<step>.sh` -- this machine's own copy, hardware-bound or
+  host-overridden. Wins over everything.
+- `recipes/<family>-<ver>/<step>.sh` -- generated, and generated from *one* book release.
+  A host reads the directory for the version its `host.toml` `[books]` pins, so `server`
+  on BLFS 13.1 and `laptop` on 13.0 read different files and neither can disturb the
+  other. The extractors write nowhere else.
+- `recipes/<step>.sh` -- hand-authored and shared, belonging to no book release. No
+  extractor ever writes here.
+
+`python3 bin/lfshost.py [--host X]` prints the resolution. Before this split (2026-09-21)
+there was one flat `recipes/`, and the host that ran an extraction last owned every shared
+file: `laptop` reported 112 BLFS and 131 LFS recipes as drifted purely because `server`
+had bumped to 13.1, which made `--check` useless on both machines.
+
 ## Do not edit generated recipes in place
 
-`recipes/*.sh` are generated from the book. An edit there is lost the next time the
-extractor runs, and `--check` will report it as drift. The three legitimate ways to change
-what a step does:
+`recipes/<family>-<ver>/*.sh` are generated from the book. An edit there is lost the next
+time the extractor runs, and `--check` will report it as drift. The three legitimate ways
+to change what a step does:
 
-1. Record a review decision in `recipes/blfs-overrides.json` or
-   `recipes/review-overrides.json` (shared), or `hosts/<h>/…` (machine-specific). Every
-   decision carries a `reason` citing the book. This is the default.
+1. Record a review decision in `recipes/<family>-<ver>/overrides.json` (shared, and scoped
+   to that release because a decision names a block by *index*), or in
+   `hosts/<h>/blfs-overrides.json` / `review-overrides.json` (machine-specific). Every
+   decision carries a `reason` citing the book. This is the default. A decision written
+   against one release is not automatically true of the next: carrying it forward is a
+   re-read, not a copy.
 2. Make it a `hand()` entry in the host's `packages.py` and write the recipe as a normal
    file. Correct when the real content is not book-plus-a-decision -- a tuned configure
    line with a long rationale, a driver BLFS does not carry.

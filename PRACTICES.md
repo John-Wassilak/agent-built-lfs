@@ -409,7 +409,7 @@ real cause was one line in wireplumber's journal ("PipeWire's ALSA SPA plugin is
 or broken"), two packages away from the mistake.
 
 This is the same failure shape as the `blfs-gdk-pixbuf` loader trap already recorded in
-`recipes/blfs-overrides.json`, where the book's own defaults left every image loader
+`recipes/blfs-<ver>/overrides.json`, where the book's own defaults left every image loader
 disabled and the symptom was an unrelated launcher aborting on an icon. Both were
 absence, not breakage, surfacing far from the cause.
 
@@ -688,7 +688,8 @@ keyless and public-domain. beaconDB is the Ichnaea-compatible successor to the M
 Location Service that Mozilla shut down in June 2024, and pointing GeoClue at it is what
 Gentoo, Fedora, NixOS, Guix and Void all do. The book's `90-lfs-google.conf` *overrides*
 that working default with a dead endpoint, so writing the file is strictly worse than
-skipping it. `recipes/blfs-overrides.json` drops the block for every host.
+skipping it. `recipes/blfs-<ver>/overrides.json` drops the block for every host on that
+release.
 
 Three things that cost time on the way there, none of them host-specific:
 
@@ -852,7 +853,8 @@ Two independent reasons, both worth knowing beyond this one knob:
   running the book's own hardening script, every interface reads
   `accept_redirects = 0` and every interface accepts ICMP redirects.
 
-Fixed in the shared layer (`recipes/blfs-overrides.json`, `blfs-iptables` block 2), which
+Fixed in the shared layer (`recipes/blfs-<ver>/overrides.json`, `blfs-iptables` block 2),
+which
 now writes `conf/all/accept_redirects` alongside the book's `default` line. Keeping both
 is deliberate: `all` closes it now, `default` does the job the book intended for
 interfaces brought up later (`wg0`, `tailscale0`).
@@ -977,3 +979,34 @@ step's bookkeeping unwritten, and the manifest is the half that cannot be recons
    `lfsbuild --only <step> --force`, then `lfsmaint db` to re-record it.
 3. When a new book release lands: `lfsmaint fetch-lists`, then `lfsmaint drift` shows the
    whole delta at once.
+
+## A generated file keyed to an outside release needs that release in its path
+
+`recipes/` held one generated recipe per book page, shared by every machine. That worked
+exactly as long as every machine read the same book. `server` moved to LFS/BLFS 13.1 on
+2026-09-07, `laptop` stayed on 13.0, and from then on whichever machine ran an extraction
+last owned the tree: `laptop`'s `--check` reported 112 BLFS and 131 LFS recipes as
+drifted, none of them a hand edit, all of them the other machine's book. Drift detection
+is the mechanism that proves a recipe still matches its own rationale, and a permanent
+112-line false positive turns it off as surely as deleting it.
+
+Fixed 2026-09-21 by putting the release in the path -- `recipes/<family>-<ver>/<step>.sh`,
+with hand-authored recipes left at the top level where no extractor writes. The general
+shapes:
+
+- **Two artifacts derived from two different inputs are two artifacts.** They were sharing
+  a filename because they usually agreed, which is not the same as being the same file.
+  Sharing held while both machines tracked one book and broke silently the moment one
+  moved.
+- **A decision that names a block by index is version-bound too.** The overrides file had
+  to split the same way. Before it did, the only way for `laptop` to survive `server`'s
+  bump was 16 host-level entries whose entire job was to cancel a shared decision that had
+  been re-indexed -- bookkeeping that existed to work around the layout, and that deleted
+  itself when the layout was fixed.
+- **Suspect a false positive that never goes away.** The drift was reported honestly for
+  three weeks and read as noise, because acting on it meant regenerating recipes for the
+  other machine's book. A check nobody can act on gets ignored, and then the real signal
+  it would have carried is gone too.
+- **The migration is a `git mv`, not a regeneration, when history still holds the inputs.**
+  The 13.0 tree came back byte-exact from the last commit before the bump (`9b77eca`),
+  which made the whole change reviewable as a diff and needed no second copy of the books.

@@ -78,7 +78,7 @@ IP-accuracy only even with a working key.
 **Strength:** highest. One curl reproduces it, it affects every reader of two pages, and
 the fix is deletion.
 
-**Evidence in this repo:** `recipes/blfs-overrides.json` (`blfs-geoclue2` block 2),
+**Evidence in this repo:** `recipes/blfs-13.0/overrides.json` (`blfs-geoclue2` block 2),
 `PRACTICES.md` "The book's Google Location Service key is dead", and
 `hosts/laptop/BUILD-REPORT.md` 2026-09-08 sections.
 
@@ -138,7 +138,7 @@ cleanly.
 **Proposed change.** Gate the four `*=disabled` switches on glycin the same way the
 glycin switch itself is gated, or promote glycin to Required.
 
-**Evidence:** `recipes/blfs-overrides.json` (`blfs-gdk-pixbuf` block 0).
+**Evidence:** `recipes/blfs-13.0/overrides.json` (`blfs-gdk-pixbuf` block 0).
 
 ### 3. The Personal Firewall's "Disable ICMP Redirect Acceptance" line does not disable it
 
@@ -189,7 +189,7 @@ the safe direction, so `accept_redirects` is the one that inverts.
 up later inherit it). The one-line version is to change `default` to `all` and match the
 other example on the page.
 
-**Evidence:** `recipes/blfs-overrides.json` (`blfs-iptables` block 2), the "CHANGED from
+**Evidence:** `recipes/blfs-13.0/overrides.json` (`blfs-iptables` block 2), the "CHANGED from
 the book's Personal Firewall example" comment in the generated
 `/etc/systemd/scripts/iptables`, and `PRACTICES.md`, "A sysctl written to `conf/default`
 can be a no-op, and for `accept_redirects` it is". Found 2026-09-09 on `laptop` while
@@ -237,7 +237,7 @@ Two sub-cases worth calling out separately, because they are more than a missing
 matching the wording BLFS already uses elsewhere. Submittable as one report about the
 inconsistency, or one per page.
 
-**Evidence:** the corresponding entries in `recipes/blfs-overrides.json`; every one cites
+**Evidence:** the corresponding entries in `recipes/blfs-13.0/overrides.json`; every one cites
 the exact configure error it was found by.
 
 ---
@@ -348,7 +348,7 @@ any lookup happens. The provider list that contradicts the page's prose is in
 Every tier 1 and tier 2 row traces to an override `reason` naming the exact configure
 error it was found by:
 
-- shared, book-wide: `recipes/blfs-overrides.json`
+- shared, book-wide: `recipes/blfs-13.0/overrides.json`
 - machine-specific: `hosts/laptop/blfs-overrides.json`, `hosts/server/blfs-overrides.json`
 - the geolocation narrative, with measurements: `hosts/laptop/BUILD-REPORT.md`,
   2026-09-08 sections

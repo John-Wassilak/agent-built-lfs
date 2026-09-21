@@ -47,17 +47,21 @@ machine's state into another's directory.
 
 ## The two sharing mechanisms
 
-**Recipe shadowing.** `hosts/<h>/recipes/<step>.sh` wins over `recipes/<step>.sh`. This is
-for steps whose content is bound to real hardware and cannot be derived from the book: a
-proprietary driver, a CPU's microcode blob, ffmpeg's NVENC flags. `bin/lfshost.py` prints
-which copy each step resolves to.
+**Recipe shadowing.** `hosts/<h>/recipes/<step>.sh` wins over
+`recipes/<family>-<ver>/<step>.sh` for the release that host pins, which in turn wins over
+the hand-authored `recipes/<step>.sh`. The host layer is for steps whose content is bound
+to real hardware and cannot be derived from the book: a proprietary driver, a CPU's
+microcode blob, ffmpeg's NVENC flags. The version layer is why two machines can sit on two
+book releases without fighting over the same files. `bin/lfshost.py` prints which copy each
+step resolves to.
 
 **Override merging.** For a step that *is* a book page but whose right answer is
 machine-specific, the decision goes in `hosts/<h>/review-overrides.json` and is merged
-over `recipes/review-overrides.json` block by block. `ch10-kernel` is the example: the
+over `recipes/lfs-<ver>/overrides.json` block by block. `ch10-kernel` is the example: the
 shared file keeps "menuconfig is not scriptable, run kernel-config.sh instead" and the
 host supplies only the `/boot` paths. The extractor then writes the neutral candidate to
-`recipes/` and the merged version to `hosts/<h>/recipes/`.
+`recipes/lfs-<ver>/` and the merged version to `hosts/<h>/recipes/`. The shared half is
+per-release; the host half is not, because a host pins one release at a time.
 
 ## Normal flow
 
