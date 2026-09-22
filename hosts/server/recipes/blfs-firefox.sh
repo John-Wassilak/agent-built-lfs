@@ -1,48 +1,49 @@
 #!/bin/bash
 # HAND-AUTHORED recipe -- host-specific fork of the shared recipes/blfs-firefox.sh.
-# source : book/blfs-13.0/xsoft/firefox.html (original basis; this host is on 13.1 books)
-# title  : Firefox-140.8.0esr
+# source : book/blfs-13.1/xsoft/firefox.html
+# title  : Firefox-153.2.0esr
 #
-# Forked 2026-09-09: --enable-rust-simd (below, "This enables SIMD optimization in the
-# shipped encoding_rs crate") fails a real build on this host's Rust-1.97.1 (the 13.1
-# bump's version): "error[E0599]: no method named `select` found for struct `Mask<T, N>`
-# in the current scope" while compiling the vendored encoding_rs v0.8.35 crate --
-# upstream Rust's still-unstable core::simd::Mask API renamed/changed this method
-# between Rust versions, and encoding_rs 0.8.35 (the exact version Firefox 140.8.0esr
-# vendors) was written against the older shape laptop's Rust-1.93.1 (still on 13.0
-# books) still has. Purely a performance optimization for text-decoding, not a
-# functional requirement -- dropped here rather than chasing upstream Rust/encoding_rs
-# API churn. Left enabled in the shared recipe and laptop's own separate host copy,
-# both of which build against the older, still-working Rust version.
+# Re-read against BLFS 13.1 on 2026-09-21, replacing the 140.8.0esr fork this file
+# carried. 13.1 moves Firefox from the 140 ESR line to 153.2.0esr, and the page's
+# command set shrank accordingly -- every block below is the 13.1 page's, in its
+# order, with exactly two host deltas marked in the mozconfig.
+#
+# Four blocks the 140.8.0esr fork carried are GONE from the 13.1 page and are
+# deliberately not carried forward. Each was a version-specific workaround whose
+# patch does not exist for 153.2.0esr:
+#   - firefox-140.8.0esr-ffmpeg-8.0.patch (video with FFmpeg 8);
+#   - firefox-140.8.0esr-glibc-2.43.patch, plus the glslopt .cargo-checksum.json
+#     sha256 fixup that existed only to keep that patch from breaking the vendored
+#     crate's checksum;
+#   - firefox-140.8.0esr-python_3.14_fixes-1.patch;
+#   - `sed -i '/VIRAMA = 47/a CLASS_CHARACTER,' intl/lwbrk/LineBreaker.cpp`, the
+#     system-ICU-78.1 fixup.
+# Verified by extracting every <pre> block from the 13.1 page: it references no
+# .patch file at all, and its only download is firefox-153.2.0esr.source.tar.xz.
+#
+# CAUTION on the 140.14.0esr tarball: BLFS 13.1's wget-list contains BOTH
+# firefox-153.2.0esr.source.tar.xz and firefox-140.14.0esr.source.tar.xz. The
+# latter belongs to general/spidermonkey.html, which builds its JS engine from an
+# ESR tarball, NOT to this page. `lfsmaint drift` matched installed firefox against
+# it and reported the book version as 140.14.0esr, which is wrong for this package
+# -- the firefox page says 153.2.0esr and that is what packages.py seq 192 pins.
+#
+# Host delta 1: --enable-audio-backends=alsa is uncommented. Carried from the
+# previous fork. The book ships it commented for PulseAudio users.
+#
+# Host delta 2: --enable-rust-simd stays commented out. On 140.8.0esr it was a real
+# build failure on this host's Rust-1.97.1 -- "error[E0599]: no method named
+# `select` found for struct `Mask<T, N>`" compiling the vendored encoding_rs
+# v0.8.35, whose use of the still-unstable core::simd API predates that Rust.
+# Firefox 153.2.0esr vendors a newer encoding_rs and this may well build now, but
+# that cannot be established without a full build, and the option is purely a
+# text-decoding performance optimization. Kept off for the first 153 build as the
+# conservative choice; re-testing it is a one-line change and worth doing once
+# 153.2.0esr is known to build here.
 set -e
 
 # --- block 0 --------------------------------------------------
-#   ctx: . Optional cURL-8.18.0, Doxygen-1.16.1, FFmpeg-8.0.1 (runtime, to play mov, mp3 or mp4
-#   ctx: files), GeoClue-2.8.0 (runtime), liboauth-1.0.3, libproxy-0.5.12, pciutils-3.14.0
-#   ctx: (runtime), Valgrind-3.26.0, Wget-1.25.0, Wireless Tools-29, and yasm-1.3.0 Editor Notes:
-#   ctx: https://wiki.linuxfromscratch.org/blfs/wiki/firefox Installation of Firefox First, apply
-#   ctx: a patch to fix video functionality with FFmpeg-8.0.1:
-patch -Np1 -i ../firefox-140.8.0esr-ffmpeg-8.0.patch
-
-# --- block 1 --------------------------------------------------
-#   ctx: Fix building this package with glibc-2.43 and adapt the checksums:
-GLSL_PTHREAD="third_party/rust/glslopt/glsl-optimizer/include/c11/threads_posix.h"
-OLDSHA=`sha256sum $GLSL_PTHREAD | awk '{ print $1 }'` &&
-patch -Np1 -i ../firefox-140.8.0esr-glibc-2.43.patch &&
-NEWSHA=`sha256sum $GLSL_PTHREAD | awk '{ print $1 }'` &&
-sed "s/$OLDSHA/$NEWSHA/" \
-  -i third_party/rust/glslopt/.cargo-checksum.json
-
-# --- block 2 --------------------------------------------------
-#   ctx: Next, fix building this package with Python-3.14:
-patch -Np1 -i ../firefox-140.8.0esr-python_3.14_fixes-1.patch
-
-# --- block 3 --------------------------------------------------
-#   ctx: hed by creating a mozconfig file containing the desired configuration options. A default
-#   ctx: mozconfig is created below. To see the entire list of available configuration options
-#   ctx: (and an abbreviated description of some of them), issue ./mach configure -- --help |
-#   ctx: less. You may also wish to review the entire file and uncomment any other desired
-#   ctx: options. Create the file by issuing the following command:
+#   mozconfig (book's, with this host's two deltas marked inline)
 cat > mozconfig << "EOF"
 # If you have a multicore machine, all cores will be used by default.
 
@@ -103,7 +104,7 @@ ac_add_options --disable-updater
 ac_add_options --disable-tests
 
 # This enables SIMD optimization in the shipped encoding_rs crate.
-# Dropped on this host (see this recipe's own header): breaks against Rust-1.97.1.
+# Dropped on this host -- see this recipe's header.
 #ac_add_options --enable-rust-simd
 
 ac_add_options --enable-system-ffi
@@ -140,50 +141,32 @@ mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/firefox-build-dir
 MOZ_APP_REMOTINGNAME=firefox
 EOF
 
-# --- block 4 --------------------------------------------------
-#   ctx: If you are building with system ICU-78.1 or later, update one file:
-sed -i '/VIRAMA = 47/a CLASS_CHARACTER,' intl/lwbrk/LineBreaker.cpp
-
-# --- block 5 --------------------------------------------------
-#   ctx: If the geolocation APIs are needed: Note The Google API Key below is specific to LFS. If
-#   ctx: using these instructions for another distro, or if you intend to distribute binary
-#   ctx: copies of the software using these instructions, please obtain your own key following
-#   ctx: the instructions located at https://www.chromium.org/developers/how-tos/api-keys.
+# --- block 1 --------------------------------------------------
+#   Google Location Service key (the book's LFS-specific key)
 echo "AIzaSyDxKL42zsPjbke5O8_rPVpVrLrJ8aeE9rQ" > google-key
 
-# --- block 6 --------------------------------------------------
-#   ctx: Note If you are compiling this package in chroot you must ensure that /dev/shm is
-#   ctx: mounted. If you do not do this, the Python configuration will fail with a traceback
-#   ctx: report referencing /usr/lib/pythonN.N/multiprocessing/synchronize.py. As the root user,
-#   ctx: run:
+# --- block 2 --------------------------------------------------
+#   /dev/shm must be a mountpoint or Python's multiprocessing fails
 mountpoint -q /dev/shm || mount -t tmpfs devshm /dev/shm
 
-# --- block 7 --------------------------------------------------
-#   ctx: Compile Firefox by issuing the following commands:
+# --- block 3 --------------------------------------------------
+#   compile
 export MACH_BUILD_PYTHON_NATIVE_PACKAGE_SOURCE=none &&
 export MOZBUILD_STATE_PATH=${PWD}/mozbuild          &&
 ./mach build
 
-# --- block 8 --------------------------------------------------
-#   ctx: d them, you can run the tests by executing ./mach gtest. This will require a network
-#   ctx: connection, and to be run from within an Xorg session - there is a popup dialog when it
-#   ctx: fails to connect to ALSA (that does not create a failed test). One or two tests will
-#   ctx: fail. To see the details of the failure(s) you will need to log the output from that
-#   ctx: command so that you can review it. Now, as the root user:
+# --- block 4 --------------------------------------------------
+#   install
 export MACH_BUILD_PYTHON_NATIVE_PACKAGE_SOURCE=none &&
 ./mach install
 
-# --- block 9 --------------------------------------------------
-#   ctx: Empty the environment variables which were set above:
+# --- block 5 --------------------------------------------------
+#   empty the build environment variables set above
 unset MACH_BUILD_PYTHON_NATIVE_PACKAGE_SOURCE
 unset MOZBUILD_STATE_PATH
 
-# --- block 10 --------------------------------------------------
-#   ctx: cc and g++, primarily because of extra warnings, and is bigger. Set these environment
-#   ctx: variables before you run the configure script if you wish to continue to use gcc, g++.
-#   ctx: Building with GCC on i?86 is currently broken. Configuring Firefox If you use a desktop
-#   ctx: environment like Gnome or KDE you may want to create a firefox.desktop file so that
-#   ctx: Firefox appears in the panel's menus. As the root user:
+# --- block 6 --------------------------------------------------
+#   desktop entry and icon
 mkdir -pv /usr/share/applications &&
 mkdir -pv /usr/share/pixmaps      &&
 
@@ -211,4 +194,3 @@ unset MIMETYPE &&
 
 ln -sfv /usr/lib/firefox/browser/chrome/icons/default/default128.png \
         /usr/share/pixmaps/firefox.png
-

@@ -1,6 +1,11 @@
 #!/bin/bash
 # HAND-AUTHORED recipe -- host-specific fork of the shared recipes/blfs-pipewire.sh.
-# source : book/blfs-13.0/multimedia/pipewire.html
+# source : book/blfs-13.1/multimedia/pipewire.html
+#
+# Re-read against 13.1 on 2026-09-21 for the 1.6.0 -> 1.6.8 bump: the page's two
+# command blocks are byte-identical to 13.0's, and nothing here names a version,
+# so only the pin in packages.py moved. `-D alsa=enabled` and `-D bluez5=disabled`
+# remain this host's additions to the book's meson line.
 # title  : pipewire-1.6.0
 #
 # Forked 2026-09-09: the shared recipe's `-D bluez5=enabled` (added 2026-09-04,

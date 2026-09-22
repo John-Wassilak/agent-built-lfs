@@ -1,0 +1,40 @@
+#!/bin/bash
+# CANDIDATE recipe extracted from the BLFS 13.1-systemd book.
+# source : book/blfs-13.1/basicnet/libevent.html
+# title  : libevent-2.1.13
+# The driver supplies unpack/cd/cleanup. Commands below are in-package only.
+set -e
+
+# --- block 0 --------------------------------------------------
+#   ctx: /release-2.1.13-stable/libevent-2.1.13-stable.tar.gz Download MD5 sum:
+#   ctx: eaa0bd3472b5d6a52ac6b9e0b7418b03 Download size: 1.1 MB Estimated disk space required: 23
+#   ctx: MB (with tests and API docs) Estimated build time: 0.3 SBU (add 11 SBU for tests)
+#   ctx: libevent Dependencies Optional Doxygen-1.18.0 (for API documentation) Installation of
+#   ctx: libevent First, fix an issue that prevents event_rpcgen.py from working:
+sed -i 's/python/&3/' event_rpcgen.py
+
+# --- block 1 --------------------------------------------------
+#   ctx: Install libevent by running the following commands:
+./configure --prefix=/usr --disable-static &&
+make
+
+# --- block 2 --------------------------------------------------
+#   ctx: If you have Doxygen-1.18.0 installed and wish to build API documentation, issue :
+#   REVIEWED [drop]: 'If you have Doxygen installed and wish to build API documentation, issue: doxygen Doxyfile' -- doxygen is not part of this build; failed with 'doxygen: command not found', discovered when it did. Optional-dependency prose is not part of the extractor's classifier by design (keying off surrounding prose has caused real breakage before -- see PRACTICES.md), so this needs an explicit decision like every other doc-generation block in this build.
+# doxygen Doxyfile
+
+# --- block 3 --------------------------------------------------
+#   ctx: To test the results, issue: make verify. Seven tests in every suite related to
+#   ctx: regress_ssl.c and regress_http.c are known to fail due to incompatibilities with
+#   ctx: OpenSSL-3. Some tests that are related to regress_dns.c are also known to fail
+#   ctx: intermittently due to insufficient test timeouts. Now, as the root user:
+make install
+
+# --- block 4 --------------------------------------------------
+#   ctx: If you built the API documentation, install it by issuing the following commands as the
+#   ctx: root user:
+#   REVIEWED [drop]: Installs the API documentation doxygen generated in block 2, which is dropped -- there is no doxygen/html/ directory to copy from.
+# install -v -m755 -d /usr/share/doc/libevent-2.1.13/api &&
+# cp      -v -R       html/* \
+#                     /usr/share/doc/libevent-2.1.13/api
+

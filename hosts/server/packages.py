@@ -175,7 +175,7 @@ PACKAGES = BASE + [
     # in this same run against 0.29.4) is unaffected: cbindgen is a build-time-only tool,
     # not a runtime link dependency, so its already-built artifacts don't care which
     # version generated their headers.
-    hand(55.5, "cbindgen", "cbindgen-0.29.2.tar.gz", "cbindgen-0.29.2 (hand-authored, version-pinned)"),
+    book(55.5, "cbindgen", "general/cbindgen.html", "cbindgen-0.29.4.tar.gz"),
 
     # Fractional seqs (55.6-55.7), not pyyaml's original 123 -- same fresh-build ordering
     # bug, discovered the same way: mesa's meson.build (general/mesa.html's own Required
@@ -204,7 +204,7 @@ PACKAGES = BASE + [
     # bindgen/cbindgen/mako above. vulkan-tools (still seq 216, not moved) is not part of
     # this chain -- it is a standalone diagnostics package against vulkan-loader/vulkan-
     # headers, both already built well before this point.
-    book(55.8, "spirv-llvm-translator", "general/spirv-llvm-translator.html", "SPIRV-LLVM-Translator-21.1.4.tar.gz"),
+    book(55.8, "spirv-llvm-translator", "general/spirv-llvm-translator.html", "SPIRV-LLVM-Translator-22.1.5.tar.gz"),
     book(55.9, "libclc", "general/libclc.html", "libclc-21.1.8.src.tar.xz"),
 
     # New package (not a moved one): mesa's host override above deliberately keeps the
@@ -596,7 +596,7 @@ PACKAGES = BASE + [
     # tool, not an ffmpeg build dependency) is left in place.
     hand(179.6, "libvdpau", "libvdpau-1.5.tar.gz", "libvdpau (hand-authored)"),
 
-    hand(180, "ffmpeg", "ffmpeg-8.0.1.tar.xz", "FFmpeg-8.0.1 (hand-authored)"),
+    hand(180, "ffmpeg", "ffmpeg-9.0.1.tar.xz", "FFmpeg-9.0.1 (hand-authored)"),
     book(181, "luajit", "general/luajit.html", "luajit-20260213.tar.xz"),
     book(182, "uchardet", "general/uchardet.html", "uchardet-0.0.8.tar.xz"),
 
@@ -607,9 +607,9 @@ PACKAGES = BASE + [
     hand(182.5, "libxpresent", "libXpresent-1.0.2.tar.xz", "libXpresent-1.0.2 (hand-authored)"),
 
     hand(183, "mpv", "mpv-0.41.0.tar.gz", "mpv-0.41.0 (hand-authored)"),
-    book(185, "nspr", "general/nspr.html", "nspr-4.38.2.tar.gz"),
-    book(186, "nss", "postlfs/nss.html", "nss-3.120.1.tar.gz"),
-    book(187, "libarchive", "general/libarchive.html", "libarchive-3.8.5.tar.xz"),
+    book(185, "nspr", "general/nspr.html", "nspr-4.40.tar.gz"),
+    book(186, "nss", "postlfs/nss.html", "nss-3.126.tar.gz"),
+    book(187, "libarchive", "general/libarchive.html", "libarchive-3.8.9.tar.xz"),
     book(188, "libnotify", "x/libnotify.html", "libnotify-0.8.8.tar.xz"),
     book(189, "startup-notification", "x/startup-notification.html", "startup-notification-0.12.tar.gz"),
     book(190, "libevent", "basicnet/libevent.html", "libevent-2.1.12-stable.tar.gz"),
@@ -621,10 +621,10 @@ PACKAGES = BASE + [
     # xrandr/xcomposite/xcursor/xfixes/xi, were all already built earlier).
     hand(190.5, "libxdamage", "libXdamage-1.1.7.tar.xz", "libXdamage-1.1.7 (hand-authored)", page="x7lib"),
 
-    hand(192, "firefox", "firefox-140.8.0esr.source.tar.xz", "Firefox-140.8.0esr (hand-authored)"),
-    hand(193, "pciutils", "pciutils-3.14.0.tar.gz", "pciutils-3.14.0 (hand-authored)"),
-    hand(194, "pipewire", "pipewire-1.6.0.tar.bz2", "pipewire-1.6.0 (hand-authored)"),
-    hand(195, "wireplumber", "wireplumber-0.5.13.tar.bz2", "Wireplumber-0.5.13 (hand-authored)"),
+    hand(192, "firefox", "firefox-153.2.0esr.source.tar.xz", "Firefox-153.2.0esr (hand-authored)"),
+    hand(193, "pciutils", "pciutils-3.15.0.tar.gz", "pciutils-3.15.0 (hand-authored)"),
+    hand(194, "pipewire", "pipewire-1.6.8.tar.bz2", "pipewire-1.6.8 (hand-authored)"),
+    hand(195, "wireplumber", "wireplumber-0.5.15.tar.bz2", "Wireplumber-0.5.15 (hand-authored)"),
     hand(196, "wireguard-tools", "wireguard-tools-1.0.20260223.tar.xz", "wireguard-tools-1.0.20260223 (hand-authored)"),
     hand(197, "xkbcomp", "xkbcomp-xkbcomp-1.5.0.tar.gz", "xkbcomp-1.5.0 (hand-authored)"),
     hand(198, "jq", "jq-1.8.2.tar.gz", "jq-1.8.2 (hand-authored)"),
@@ -651,13 +651,13 @@ PACKAGES = BASE + [
     # lfsbuild's normal unpack path before.
     hand(218, "nvidia-470xx", "", "NVIDIA-Linux-x86_64-470.256.02 (hand-authored, experimental)"),
     hand(219, "libpciaccess", "libpciaccess-0.18.1.tar.xz", "libpciaccess-0.18.1 (hand-authored)"),
-    hand(220, "xorg-server", "xorg-server-21.1.21.tar.xz", "Xorg-Server-21.1.21"),
+    book(220, "xorg-server", "x/xorg-server.html", "xorg-server-21.1.24.tar.xz"),
     hand(221, "xf86-input-libinput", "xf86-input-libinput-1.5.0.tar.xz", "Xorg-Libinput-Driver-1.5.0", page="x7driver"),
-    hand(222, "xinit", "xinit-1.4.4.tar.xz", "xinit-1.4.4"),
+    book(222, "xinit", "x/xinit.html", "xinit-1.4.4.tar.xz"),
     hand(223, "libxdg-basedir", "libxdg-basedir-1.2.3.tar.gz", "libxdg-basedir-1.2.3 (hand-authored)"),
     hand(224, "xcb-util-cursor", "xcb-util-cursor-0.1.5.tar.xz", "xcb-util-cursor-0.1.5 (hand-authored)"),
     hand(225, "xcb-util-xrm", "xcb-util-xrm-1.3.tar.gz", "xcb-util-xrm-1.3 (hand-authored)"),
-    hand(226, "imagemagick", "ImageMagick-7.1.2-13.tar.xz", "ImageMagick-7.1.2-13"),
+    book(226, "imagemagick", "general/imagemagick.html", "ImageMagick-7.1.2-13.tar.xz"),
     hand(227, "lua-lgi", "lgi-0.9.2.tar.gz", "lua-lgi-0.9.2 (hand-authored)"),
     hand(228, "awesome", "awesome-4.3.tar.gz", "awesome-4.3 (hand-authored)"),
     hand(229, "libxinerama", "libXinerama-1.1.5.tar.xz", "libXinerama-1.1.5 (hand-authored)"),
@@ -687,7 +687,7 @@ PACKAGES = BASE + [
     hand(249, "tailscale", "tailscale-v1.102.3.tar.gz", "tailscale-1.102.3 (hand-authored)"),
     hand(250, "openbao", "openbao-v2.6.2.tar.gz", "openbao-2.6.2 (hand-authored)"),
     hand(251, "opentofu", "opentofu-v1.12.6.tar.gz", "opentofu-1.12.6 (hand-authored)"),
-    hand(252, "rsync", "rsync-3.4.1.tar.gz", "rsync-3.4.1"),
+    hand(252, "rsync", "rsync-3.5.0.tar.gz", "rsync-3.5.0"),
 
     # Operator-requested (2026-09-04): pass/pass-otp completions install correctly
     # (confirmed in their own manifests) but nothing sources them -- this framework

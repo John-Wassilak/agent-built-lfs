@@ -1,14 +1,18 @@
 #!/bin/bash
-# HAND-AUTHORED recipe from the BLFS 13.0-systemd book.
-# source : book/blfs-13.0/basicnet/rsync.html
-# title  : rsync-3.4.1
+# HAND-AUTHORED recipe from the BLFS 13.1-systemd book.
+# source : book/blfs-13.1/basicnet/rsync.html
+# title  : rsync-3.5.0
 # rationale: operator-requested. Recommended dependency popt-1.19 was
 # already installed; system zlib is used instead of the bundled copy.
 #
-# The book's required security patch is applied (upstream commit
-# 797e17f, an invalid access to the files array in sender.c, reported
-# by Rapid7). It is an additional download alongside the tarball, so it
-# must be staged next to the source directory like nodejs's patch.
+# No patch on 13.1. Through 13.0 this recipe applied the book's required
+# security patch (upstream 797e17f, an invalid access to the files array
+# in sender.c, reported by Rapid7). 3.5.0 carries that fix upstream and
+# the BLFS 13.1 page lists no patch at all -- re-read 2026-09-21 against
+# basicnet/rsync.html, whose only download is rsync-3.5.0.tar.gz. That
+# removal is also what keeps this file legitimately shared: with the
+# versioned patch filename gone, no command here names a version, so the
+# same recipe is correct for any release that needs no patch.
 #
 # --disable-xxhash: xxhash is not installed (book default).
 # --without-included-zlib: link the system zlib so rsync tracks its
@@ -26,18 +30,16 @@
 # weight and extra attack surface.
 set -e
 
-patch -Np1 -i ../rsync-3.4.1-security_fix-1.patch
-
 ./configure --prefix=/usr \
             --disable-xxhash \
             --without-included-zlib
 make
 
-# Test suite (book: 'sed -i /typedef/d wildtest.c && make check') is
-# left disabled here to match this project's BLFS test policy. It was
-# run once by hand at install time: 45 passed, 1 skipped (crtimes,
-# unsupported by this configuration), 0 failed.
-# sed -i '/typedef/d' wildtest.c
+# Test suite left disabled here to match this project's BLFS test policy.
+# On 13.0 it was run once by hand at install time: 45 passed, 1 skipped
+# (crtimes, unsupported by this configuration), 0 failed. The 13.1 page
+# dropped the 'sed -i /typedef/d wildtest.c' prerequisite the 13.0 page
+# carried -- it is a plain 'make check' now.
 # make check
 
 make install

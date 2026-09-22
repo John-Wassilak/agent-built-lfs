@@ -827,5 +827,30 @@
       "cmd": "mkdir build &&\ncd    build &&\n\nmeson setup --prefix=/usr       \\\n            --buildtype=release \\\n            -D database=gdbm    \\\n            -D doxygen=false    \\\n            -D bluez5=disabled  \\\n            -D man=false        \\\n            -D tests=false      \\\n            ..                  &&\nninja",
       "reason": "man=false added: the book itself documents this option (\"Use this option if you have not installed [XML::Parser]\") -- discovered via a real failure, ninja aborting man-page generation with \"Cant locate XML/Parser.pm\". XML::Parser is a Perl CPAN module, not a BLFS/distro package; this project has skipped comparable optional-docs dependencies throughout (doxygen/graphviz elsewhere) rather than add a CPAN package manager to the stack for one man-page generator."
     }
+  },
+  "blfs-libxt": {
+    "2": {
+      "action": "drop",
+      "reason": "BLFS's `as_root()` convenience function, from the Note admonition on the grouped x7lib/x7app pages. It defines a shell function and installs nothing: the book offers it to a human building the whole X library group in a `for` loop by hand, so each iteration does not re-prompt for a root password. This driver supplies the privilege context itself (bin/lfsbuild runs a step's root blocks as root -- natively the process already is root, under chroot it is root inside the chroot), so the function would be defined into a shell that never calls it. A book fact about how the book expects to be read by hand, true of any machine running it, hence the shared file rather than a host override. Surfaced 2026-09-21 when libxt/libxmu/xauth were converted hand() -> book() and their pages were extracted for the first time against 13.1."
+    }
+  },
+  "blfs-libxmu": {
+    "2": {
+      "action": "drop",
+      "reason": "BLFS's `as_root()` convenience function, from the Note admonition on the grouped x7lib/x7app pages. It defines a shell function and installs nothing: the book offers it to a human building the whole X library group in a `for` loop by hand, so each iteration does not re-prompt for a root password. This driver supplies the privilege context itself (bin/lfsbuild runs a step's root blocks as root -- natively the process already is root, under chroot it is root inside the chroot), so the function would be defined into a shell that never calls it. A book fact about how the book expects to be read by hand, true of any machine running it, hence the shared file rather than a host override. Surfaced 2026-09-21 when libxt/libxmu/xauth were converted hand() -> book() and their pages were extracted for the first time against 13.1."
+    }
+  },
+  "blfs-xauth": {
+    "2": {
+      "action": "drop",
+      "reason": "BLFS's `as_root()` convenience function, from the Note admonition on the grouped x7lib/x7app pages. It defines a shell function and installs nothing: the book offers it to a human building the whole X library group in a `for` loop by hand, so each iteration does not re-prompt for a root password. This driver supplies the privilege context itself (bin/lfsbuild runs a step's root blocks as root -- natively the process already is root, under chroot it is root inside the chroot), so the function would be defined into a shell that never calls it. A book fact about how the book expects to be read by hand, true of any machine running it, hence the shared file rather than a host override. Surfaced 2026-09-21 when libxt/libxmu/xauth were converted hand() -> book() and their pages were extracted for the first time against 13.1."
+    }
+  },
+  "blfs-xorg-server": {
+    "1": {
+      "action": "replace",
+      "cmd": "mkdir build &&\ncd    build &&\n\nmeson setup ..              \\\n      --prefix=$XORG_PREFIX \\\n      --localstatedir=/var  \\\n      -D glamor=true        \\\n      -D sha1=libgcrypt     \\\n      -D xkb_output_dir=/var/lib/xkb &&\nninja",
+      "reason": "Adds `-D sha1=libgcrypt` to the book's meson line. meson's default for this option is `auto`, which picks libnettle, whose xsha1.c branch does `#include <nettle/sha.h>` -- a header nettle does not ship. Re-verified against the live 13.1 tree on 2026-09-21: the installed nettle-4.0 (BLFS 13.1's own pinned version; 13.0 pinned 3.10.2) has /usr/include/nettle/sha1.h, sha2.h and sha3.h and no sha.h at all, so the nettle branch cannot compile. libgcrypt is a Required dependency of this same page and xsha1.c has a complete libgcrypt branch (`#include <gcrypt.h>`), so forcing that implementation avoids the missing header rather than patching around it. A real upstream xorg-server/nettle mismatch, not a packaging fault here, and true of any machine on BLFS 13.1 -- hence the shared file.\n\nRecorded as a decision on 2026-09-21 because the 13.0 recipe carried this same flag as a hand-edit with its rationale in a comment inside a GENERATED file. When xorg-server was converted hand() -> book() and re-extracted for 13.1, both the flag and the comment were silently dropped -- exactly the failure mode PRACTICES.md records for 6aad09a. As a `replace` this pins the whole block and will mask a future book change to the meson line, so it wants re-reading on the next release bump."
+    }
   }
 }
