@@ -433,3 +433,10 @@ blfs-firefox	native	115.8	1
 blfs-nss	native	271.5	0
 blfs-firefox	native	4864.1	2
 blfs-libevent	native	22.7	0
+blfs-firefox	native	7962.5	0
+blfs-pciutils	native	3.3	0
+blfs-pipewire	native	188.8	0
+blfs-wireplumber	native	24.2	0
+blfs-xorg-server	native	79.0	0
+blfs-rsync	native	29.8	0
+blfs-unixodbc	native	41.6	0

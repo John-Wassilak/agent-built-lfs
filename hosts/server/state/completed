@@ -370,3 +370,10 @@ blfs-nss
 blfs-libarchive
 blfs-nss
 blfs-libevent
+blfs-firefox
+blfs-pciutils
+blfs-pipewire
+blfs-wireplumber
+blfs-xorg-server
+blfs-rsync
+blfs-unixodbc

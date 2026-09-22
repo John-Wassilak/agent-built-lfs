@@ -5,7 +5,7 @@
 /usr/include/pci/types.h
 /usr/lib/libpci.so
 /usr/lib/libpci.so.3
-/usr/lib/libpci.so.3.14.0
+/usr/lib/libpci.so.3.15.0
 /usr/lib/pkgconfig/libpci.pc
 /usr/sbin/pcilmr
 /usr/sbin/setpci

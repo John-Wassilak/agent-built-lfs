@@ -4714,3 +4714,56 @@ The first run of the remaining seven steps was launched as
 firefox had failed with rc=2 and the script had stopped. A pipeline's status is its last
 command's, so that 0 was `tail`'s. Relaunched writing to a file and reporting `$?`
 directly.
+
+## The sweep is complete: zero packages behind the book (2026-09-22)
+
+The relaunched run took all seven remaining steps without stopping, and this time the
+script's own exit status was captured rather than a pipeline's.
+
+**`lfsmaint drift` against the 13.1 lists: 287 packages compared, 218 identical, 0 behind
+the book**, down from 12 at the start. Three read "ahead of book" and all three are
+expected:
+
+- `libevdev` 1.13.7 against 1.13.6 and `lua` 5.4.9 against 5.4.8 -- the two deliberate
+  pins that were already ahead before any of this.
+- `firefox` 153.2.0esr against "140.14.0esr" -- not real. That is the spidermonkey
+  mis-attribution recorded earlier: 153.2.0esr *is* BLFS 13.1's firefox, and drift is
+  matching it against the ESR tarball `general/spidermonkey.html` uses.
+
+Final versions, each read from the installed binary rather than the build log:
+Firefox 153.2.0esr, lspci 3.15.0, pipewire 1.6.8, wireplumber 0.5.15, X.Org X Server
+1.21.1.24, rsync 3.5.0, unixODBC 2.3.14, libevent 2.1.13-stable, and from the earlier
+half clang/llvm-config 22.1.8, ffmpeg 9.0.1, nspr 4.40.0, nss 3.126.0, libarchive 3.8.9,
+htop 3.5.3, cbindgen 0.29.4.
+
+Manifests were checked for the truncation signature the nss bug taught: firefox 33,
+pciutils 16, pipewire 505, wireplumber 212, xorg-server 188, rsync 5, unixODBC 93,
+libevent 57. Firefox's 33 is small but correct -- it ships a handful of very large files,
+`find /usr/lib/firefox -type f` counts 30, and the archived 13.0 manifest had 29.
+
+`lfsmaint verify`: nothing unexplained, the same 122 accounted-for removals. Zero failed
+units. `libgallium` links `libLLVM.so.22.1`. The package database was rebuilt by the
+script this time (11:53) rather than left stale.
+
+Xorg was not running during any of this, so the new 21.1.24 server binary will be picked
+up at the next start with nothing to restart.
+
+### Cleanup candidate, reported not actioned: 271 MB of orphaned LLVM 21.1
+
+Installing LLVM 22.1.8 did not remove the previous versioned sonames, and the recaptured
+manifests no longer claim them, so seven files are now owned by nothing:
+
+```
+/usr/lib/libLLVM.so.21.1        /usr/lib/libclang-cpp.so.21.1
+/usr/lib/libLTO.so.21.1         /usr/lib/libclang.so.21.1.8
+/usr/lib/libRemarks.so.21.1     /usr/lib/libLLVMSPIRVLib.so.21.1
+/usr/bin/clang-21
+```
+
+`lfsmaint owns` returns "no package owns" for every one, and a full sweep of every ELF
+under `/usr`, `/opt`, `/bin`, `/sbin` and `/lib` found **zero** consumers outside that set
+-- they reference only each other. 271 MB reclaimable.
+
+Left in place deliberately. `/lfs-audit`'s section G is explicit that cleanup happens only
+on request, and the last unrequested cleanup on this host ended in a kernel panic. The
+evidence for removing them is recorded here so the decision does not have to be re-derived.
