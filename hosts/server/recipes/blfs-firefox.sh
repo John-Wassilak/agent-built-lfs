@@ -31,15 +31,34 @@
 # Host delta 1: --enable-audio-backends=alsa is uncommented. Carried from the
 # previous fork. The book ships it commented for PulseAudio users.
 #
-# Host delta 2: --enable-rust-simd stays commented out. On 140.8.0esr it was a real
-# build failure on this host's Rust-1.97.1 -- "error[E0599]: no method named
-# `select` found for struct `Mask<T, N>`" compiling the vendored encoding_rs
-# v0.8.35, whose use of the still-unstable core::simd API predates that Rust.
-# Firefox 153.2.0esr vendors a newer encoding_rs and this may well build now, but
-# that cannot be established without a full build, and the option is purely a
-# text-decoding performance optimization. Kept off for the first 153 build as the
-# conservative choice; re-testing it is a one-line change and worth doing once
-# 153.2.0esr is known to build here.
+# Host delta 2: --enable-rust-simd stays commented out, and unlike the note this
+# replaces, that is now a conclusion rather than caution.
+#
+# The option turns on the `simd-accel` feature of Firefox's vendored encoding_rs
+# crate: hand-written portable-SIMD paths for character-encoding conversion --
+# UTF-8 validation, UTF-16 conversion, and the single-byte legacy decoders. It is
+# a throughput optimization for decoding text, and nothing functional depends on
+# it; with the option off, encoding_rs uses its scalar paths.
+#
+# It failed a real build of 140.8.0esr on this host's Rust-1.97.1 with
+# "error[E0599]: no method named `select` found for struct `Mask<T, N>`".
+#
+# The root cause is that this code is pinned to an unstable compiler API. lib.rs
+# carries `#![cfg_attr(feature = "simd-accel", feature(core_intrinsics,
+# portable_simd))]`, so the SIMD path is gated behind nightly-only features, and
+# the crate is written against whatever snapshot of `core::simd` existed when it
+# was published. encoding_rs 0.8.35's x_user_defined.rs does `use
+# core::simd::Select;` and then `unpacked.simd_gt(highest_ascii).select(...)` --
+# a mask API whose shape has since changed.
+#
+# CORRECTION, checked 2026-09-22 against the 153.2.0esr tarball rather than
+# assumed: the earlier version of this comment said 153 "vendors a newer
+# encoding_rs and this may well build now". It does not. It vendors **the same
+# 0.8.35**, and third_party/rust/encoding_rs/src/x_user_defined.rs still contains
+# that exact `.select(` call at line 25. There is therefore no reason to expect a
+# different result, and re-enabling the flag should be assumed to reproduce the
+# same failure until BLFS ships an encoding_rs that has moved to the current
+# core::simd API. Not worth a speculative multi-hour rebuild to confirm.
 set -e
 
 # --- block 0 --------------------------------------------------
