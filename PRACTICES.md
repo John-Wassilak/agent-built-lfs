@@ -244,6 +244,46 @@ performing the stripping (`/usr/bin/xargs`, mid-loop, no crash) -- the atomic
 rename is what makes "currently in use" irrelevant, which is the entire reason to
 prefer it unconditionally rather than trying to enumerate what is and isn't in use.
 
+### It happened a third time, and the reason is the one that matters (2026-09-21)
+
+On `server`, from `/lfs-audit`'s own section-G snippet -- which still read
+`strip --strip-debug "$1"`, in place, on a live root. Everything above was already
+written, on this page, in this repo, when that pass ran. **A rule recorded only in prose
+is not a rule.** The two earlier incidents produced a correct pattern and a
+"non-negotiable" heading; neither produced an edit to the file that actually issues the
+commands, so the third machine ran the original mistake verbatim. When a practice here
+names a specific command, the skill, recipe or `bin/` tool carrying that command has to
+be changed in the same session, or the practice is a comment.
+
+Two things this incident established that the first two did not:
+
+- **`strip` never renames.** The safety of the copy-strip-`install` pattern was credited
+  above to "the atomic rename". `strip` does not do one. Measured on binutils
+  2.47.20260726: `strip --strip-debug <file>` leaves the *inode number unchanged*,
+  whatever the link count -- it writes a temp file beside the target, then truncates the
+  target and copies back into it. That is why an interrupted run yields a zero-length
+  library rather than an untouched one, and why a mapped file is read back rewritten. The
+  property that makes `install` safe is `install`'s, not strip's: it unlinks the
+  destination and creates a new inode, so a process holding the old one keeps reading the
+  old one. Verified directly -- a process whose `/proc/<pid>/exe` was the file being
+  replaced stayed alive, its `exe` became `... (deleted)`, and it exited 0.
+- **`install` breaks hard links, and this tree is full of them.** `git` ships 150 names on
+  one inode; `gcc`/`g++`/`c++`, the `x86_64-pc-linux-gnu-*` aliases, `perl`, and the
+  e2fsprogs `fsck.ext[234]`/`mkfs.ext[234]` families several more. A naive
+  copy-strip-`install` sweep over paths explodes every one of those sets into independent
+  copies -- on `git` alone that is 149 extra files, which on a pass whose entire purpose
+  is reclaiming disk space is worse than doing nothing. The corrected form in
+  `.claude/skills/lfs-audit/SKILL.md` iterates over *inodes*, not paths: one
+  `find -printf '%i\t%p\n'` pass up front, strip each inode once, then `ln -f` the
+  remaining names back onto the new inode.
+
+The `file`-versus-`readelf` finding above also needs a caveat: the ratio is
+host-dependent and `laptop`'s 16-of-2,942 is not the general case. On `server`'s 13.1
+tree, `file` called 988 of 1,263 files in `/usr/bin` and `/usr/sbin` "not stripped" while
+414 genuinely had `.debug_info`. Over-reporting by 2.4x rather than 180x -- still the
+wrong metric, still worth correcting, but the savings on a fresh BLFS tree are real and
+the finding is not a reason to skip the category.
+
 ## `lfsbuild`'s cleanup could be skipped by a *correct* abort, not just a swallowed one
 
 A follow-on discovery while fixing the `set -e` bug above, on the very next real

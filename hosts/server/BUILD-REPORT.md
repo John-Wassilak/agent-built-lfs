@@ -3947,3 +3947,85 @@ rotational, both on `mq-deadline`. Boot 15.9s, of which 6.4s is
   out of date -- but the 13.1 tree is incomplete relative to the plan. Untouched here.
 - **`/usr/share/doc/dbus-1.16.2` vs `ch08-dbus`'s manifest** is worked around in `verify`,
   not fixed at the source. The honest fix is for the rename to update the manifest.
+
+## `/lfs-audit`'s strip pass panicked the machine (2026-09-21, same day, after the above)
+
+The six-step fix script from the audit entry above was run at **16:34:47** (`sudo … bash
+/tmp/…/apply-audit-fixes.sh`, journal, `TTY=pts/1`). Steps 1-5 applied and are on disk:
+the lgi `ffi.lua` patch, the awesome config move to `/etc/xdg/awesome/`, `grub.cfg` with
+the corrected `cb1db9c1-…` fs-uuid, the `fstab` reorder, and the rebuilt `packages.db`.
+Step 6 -- strip and gzip -- started at 16:34:51 and the machine hung with a kernel panic
+at **16:35:20**, 33 seconds in. Recovered by booting the deployment stick again and
+working on `sdb2` from there.
+
+### What step 6 got through, and what it destroyed
+
+Its loop was `find /usr/bin /usr/sbin /usr/lib -type f \( -name '*.so*' -o -perm -u+x \)`
+piped into `file … "not stripped"` and then `strip --strip-debug "$f"` -- in place, on a
+live root, which is exactly the form `PRACTICES.md` had already forbidden twice. It
+finished `/usr/bin` (853 files touched, 417 content-changed), `/usr/sbin` (125), and had
+reached the 90th file of `/usr/lib` when the panic hit. It never reached the man/info
+gzip: 13,017 man pages are still uncompressed, 7 compressed.
+
+On-disk damage was **one file**: `/usr/lib/libicudata.so.78.3`, left at 0 bytes, with
+strip's temp file `stcAX5O0` beside it. That one file is enough to look like total
+failure, because of what hangs off it -- `libicudata` ← `libicuuc` ← `libxml2` ←
+`libarchive`, `libLLVM`, ImageMagick, librsvg, `bsdtar`, `xmllint`, 35 objects in all.
+Mesa's llvmpipe path and GTK icon loading both go through it.
+
+Restored from the stick, which is the tree `sdb2` was imaged from: 33,112,968 bytes,
+`dddbb5c5…`, md5 now matching on both. Temp file removed. `e2fsck -f -n` clean before and
+after; the first mount reported `EXT4-fs (sdb2): INFO: recovery required`, confirming the
+abrupt stop.
+
+### Proving the kernel was not touched
+
+The first question after a panic during a strip pass. Byte-compared against the stick:
+`vmlinuz-7.1.8-lfs-13.1-systemd` (`bc20d1eb…`), `System.map-7.1.8`, `config-7.1.8` and
+`microcode.img` (`4b78e7fc…`) all identical; **all 82 files** under
+`/usr/lib/modules/7.1.8/` identical, 0 differing, 0 missing, including the five
+out-of-tree `nvidia-470xx` modules. Zero files under `/boot`, `/usr/lib/modules` or
+`/usr/lib/firmware` carry a Sep 21 16:3x mtime, and zero NVIDIA userspace files were
+touched. The reason is in the find predicate: `.ko` files are `0644`, so they match
+neither `-name '*.so*'` nor `-perm -u+x`, and `/boot` was never in the search list.
+
+Beyond that one library the tree is intact. A sweep of all 132,051 files under `/usr`,
+`/opt`, `/bin`, `/sbin` and `/lib` parsing every ELF header, section table and program
+header for truncation found nothing else; the other zero-length hits are files that ship
+that way. All 21 SUID/SGID binaries match the stick exactly. In a chroot, `ldd` across
+every binary in `/usr/bin` and `/usr/sbin` reports no missing dependencies, and across
+1,353 shared objects the only five unresolved are identical on the stick (firefox's
+`$ORIGIN` libs, `libsystemd-shared`, `libnvidia-gtk2` wanting an absent GTK2).
+`lfsmaint verify` returns the same 122 accounted-for missing files as the audit, plus
+`/root/go/bin/bao` -- the deliberately-excluded `/root/go` from the pre-wipe backup.
+
+### Why the panic itself is unrecoverable
+
+`# CONFIG_PSTORE is not set` and no kdump, so nothing was written anywhere;
+`CONFIG_PANIC_TIMEOUT=0` is why it sat on screen instead of rebooting. Ruled out from
+disk: the ext4 superblock records no error counters at all, and 31 GB of RAM against a
+loop forking three short-lived processes per file at ~36 files/second makes OOM
+implausible. One unexplained anomaly stands in the record: PIDs ran from 1,560 at 15:57
+to 1,867,951 at 16:34 -- about 1.87 million processes in 37 minutes during the audit's
+own read-only sweep, roughly 840 forks/second sustained. The machine was still healthy at
+16:34:47, so it is not a direct cause, but it is the only other thing out of place.
+`CONFIG_NETCONSOLE=y` is built in, so a `netconsole=` cmdline argument would capture the
+next one.
+
+### Fixed at the source
+
+`.claude/skills/lfs-audit/SKILL.md` section G now strips a copy and `install`s the result,
+iterating over inodes so hard links survive, gated on `readelf -S | grep .debug_info`
+rather than `file`'s "not stripped" (988 candidates against 414 real ones here). The
+measured behaviour behind that change, and the fact that the rule already existed in
+prose while the skill still carried the unsafe command, are written up in `PRACTICES.md`.
+
+### Open
+
+- **`d979d93` existed only on `sdb2`.** The audit session committed on the target and
+  never pushed; the commit was fetched off the unmounted root over SSH before anything
+  was built on top of it. A build session that commits on a machine about to be rebooted
+  into an experiment should push first.
+- **Step 6's gzip half never ran.** 13,017 man pages and the info tree are still
+  uncompressed. Re-running section G with the corrected script is the remaining work.
+- **The target has still not been booted since the panic.**
