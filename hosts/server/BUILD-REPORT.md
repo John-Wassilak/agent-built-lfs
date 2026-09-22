@@ -4803,3 +4803,119 @@ note for the next time this pattern is used: the staging directory measured 444 
 `libLLVM-21.so` were copied as full duplicates of their targets rather than as links. It
 made the safety copy larger, not wrong, but a faithful restore from it would have needed
 the two links recreated by hand.
+
+## Firefox 153.2.0esr verified on the live desktop; video *decode* is software (2026-09-22)
+
+Launched and checked, both headless and on the running X session.
+
+**It works.** Headless renders correctly (screenshot of a data: URL, exit 0). On the live
+display it comes up under awesome on X11, and `about:support` reports version 153.2.0esr,
+build 20260922093542, binary `/usr/lib/firefox/firefox`. The `about:support` JSON was
+pulled through the page's own "Copy raw data to clipboard" button with `xsel` rather than
+read off a screenshot.
+
+### Graphics acceleration: fully working
+
+```
+adapterDescription   NVIDIA GeForce GTX 770/PCIe/SSE2      driverVersion  470.256.2.0
+windowLayerManagerType  WebRender                          windowProtocol x11
+numAcceleratedWindows   1 of 1                             desktopEnvironment awesome
+webgl1/2Renderer     NVIDIA Corporation -- GeForce GTX 770/PCIe/SSE2
+webgl1/2Version      3.2.0 NVIDIA 470.256.02   (EGL_VENDOR: NVIDIA, EGL_VERSION 1.5)
+```
+
+`HW_COMPOSITING`, `OPENGL_COMPOSITING`, `WEBRENDER`, `X11_EGL`, `WEBGL`, `WEBGPU`,
+`ACCELERATED_CANVAS2D`, `VIDEO_HDR` and `WEBRENDER_OPTIMIZED_SHADERS` all report
+`available`, and there are no entries in `graphics.failures`. Notably this is *not* a
+repeat of `laptop`'s 2026-09-17 finding where Firefox ran on software because its GPU
+probe SEGV'd -- the adapter here is the real GTX 770, not llvmpipe.
+
+### Video decode is not accelerated, and cannot be from the books
+
+```
+HARDWARE_VIDEO_DECODING   unavailable   FEATURE_FAILURE_VIDEO_DECODING_TEST_FAILED
+codecSupportInfo:  H264 SWDEC · VP9 SWDEC · VP8 SWDEC · AV1 SWDEC · HEVC SWDEC
+```
+
+Every codec decodes in software. The chain, established rather than assumed:
+
+1. Firefox on Linux does hardware video decode through **VA-API**. It has no VDPAU path.
+2. `vainfo` fails outright: `vaGetDriverNames() failed`, `vaInitialize failed with error
+   code -1`.
+3. The only VA-API driver on disk is `/usr/lib/dri/nouveau_drv_video.so`, a symlink into
+   `libgallium-26.1.7.so`. This GPU runs the **proprietary** NVIDIA driver with nouveau
+   blacklisted on the kernel command line, so mesa's nouveau VA backend cannot drive it.
+4. Asked explicitly with `LIBVA_DRIVER_NAME=nvidia`, libva looks for
+   `/usr/lib/dri/nvidia_drv_video.so` and finds nothing. NVIDIA 470 ships VDPAU, not
+   VA-API.
+5. **VDPAU itself is healthy** -- `vdpauinfo` reports the 470.256.02 driver with
+   MPEG1, MPEG2_SIMPLE/MAIN, H264_BASELINE/MAIN/HIGH at level 51 up to 4032x4080, and
+   VC1_SIMPLE/MAIN/ADVANCED. VP9 and HEVC are `--- not supported ---`, which is correct
+   for Kepler GK104 silicon. This is the same capability mpv already uses.
+
+So the hardware decoder works and is in use by mpv; Firefox simply cannot reach it.
+Closing that gap needs a VA-API↔NVIDIA bridge, and **there is none in BLFS/SLFS/GLFS
+13.1** -- the only VA driver page in the book is `intel-vaapi-driver`, for Intel GPUs.
+The out-of-book option is `nvidia-vaapi-driver` (a `nvidia_drv_video.so` mapping VA-API
+onto NVDEC, which this driver does expose and which ffmpeg here is already built
+against). Two cautions before anyone tries it: Firefox additionally reports
+`DMABUF  blocklisted  FEATURE_FAILURE_BUG_1788573`, and that driver's normal path
+depends on dma-buf; and it would be another hand-authored out-of-book package on a host
+that already carries several. Recorded as a decision to make, not made.
+
+`HARDWARE_VIDEO_ENCODING` does report `available`, though the per-codec
+`H264_HW_ENCODE`/`VP8`/`VP9`/`AV1`/`HEVC_HW_ENCODE` entries are each blocklisted with
+`FEATURE_FAILURE_VIDEO_ENCODING_MISSING` -- the same missing VA-API, from the encode
+side. NVENC remains available to ffmpeg directly, which is where this host uses it.
+
+### The remaining warnings, and why none of them are fixable here
+
+Checked individually rather than dismissed:
+
+- `WEBRENDER_COMPOSITOR unavailable -- FEATURE_FAILURE_NO_WAYLAND`: needs Wayland. This
+  host is X11 permanently and deliberately (`AWESOME-X11-PLAN.md`).
+- `WEBRENDER_ANGLE`, `WEBRENDER_DCOMP_PRESENT`, `WEBGPU_EXTERNAL_TEXTURE`: Windows-only
+  or OS-unsupported features.
+- `WEBRENDER_PARTIAL blocklisted -- FEATURE_ROLLOUT_WR_PARTIAL_PRESENT_NVIDIA_BINARY`:
+  Mozilla's own blocklist against the NVIDIA binary driver, not a local misconfiguration.
+- `MESA_THREADING failed -- No glthread with EGL and X11`: mesa glthread is irrelevant
+  here; rendering goes through the NVIDIA driver, not mesa.
+- `CANVAS_RENDERER_THREAD blocked -- thread unsafe GL` and
+  `WEBRENDER_SHADER_CACHE disabled`: Firefox defaults.
+- `DMABUF` / `DMABUF_WEBGL` blocklisted: Mozilla bug-number blocklists for this driver
+  class.
+
+Nothing in that list is a local packaging fault and none has a fix that does not amount
+to overriding a Mozilla blocklist.
+
+### A mistake to record: `pgrep -x Xorg` does not find this host's X server
+
+Before starting a test server I checked for a running one with `pgrep -ax Xorg`, got
+nothing, and concluded the machine had no X session. It had: `xinit` had been running
+since 2026-09-21 20:18 and the server process is named **`X`**, not `Xorg`
+(`/usr/bin/X :0 vt1 -auth /home/john/.serverauth.34080`). On that wrong conclusion
+`/tmp/.X0-lock` and `/tmp/.X11-unix/X0` were deleted as "stale".
+
+The session survived: on Linux libX11 and XCB reach the server through the abstract
+socket `@/tmp/.X11-unix/X0`, which the running server still holds, so new clients kept
+connecting -- `vdpauinfo`, `xdotool`, `xsel` and Firefox itself all worked afterwards.
+What is lost is the filesystem socket and the lock that stops a second server claiming
+`:0`; both are recreated by the server on its next start, so a reboot or X restart clears
+it. Restoring the lock by hand was attempted and refused by tooling policy, so it is
+listed under Open below.
+
+The general form, and the second instance of it in one session: **a `pgrep`/`pkill`
+pattern is matched against full command lines, including the checking shell's own.**
+A wait-loop earlier in this session spun for four hours because
+`until ! pgrep -f "lfsbuild ... blfs-nss"` matched itself, and a later
+`pkill -f "profile /tmp/... ffx"` killed its own shell. Use `pgrep -x <comm>` only when
+the process name is known exactly -- and here it was not.
+
+### Open
+
+- **`/tmp/.X0-lock` is missing** on the running session. Harmless until something tries
+  to start a second X server on `:0`, and gone at the next restart. Restore with
+  `printf '%10d\n' 34105 | sudo tee /tmp/.X0-lock >/dev/null && sudo chmod 444 /tmp/.X0-lock`
+  if that session is going to keep running.
+- **Hardware video decode in Firefox** stays unavailable unless `nvidia-vaapi-driver` is
+  added as an out-of-book package, against the `DMABUF` blocklist noted above.
