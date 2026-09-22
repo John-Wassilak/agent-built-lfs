@@ -440,3 +440,4 @@ blfs-wireplumber	native	24.2	0
 blfs-xorg-server	native	79.0	0
 blfs-rsync	native	29.8	0
 blfs-unixodbc	native	41.6	0
+blfs-nvidia-vaapi-driver	native	5.7	0

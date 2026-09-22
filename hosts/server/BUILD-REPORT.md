@@ -4919,3 +4919,101 @@ the process name is known exactly -- and here it was not.
   if that session is going to keep running.
 - **Hardware video decode in Firefox** stays unavailable unless `nvidia-vaapi-driver` is
   added as an out-of-book package, against the `DMABUF` blocklist noted above.
+
+## Hardware video decode in Firefox, via nvidia-vaapi-driver (2026-09-22)
+
+The gap the previous entry recorded is closed, within the limit the silicon imposes.
+
+`nvidia-vaapi-driver` v0.0.18 (2026-08-31) added as `packages.py` **seq 255**, `hand()`,
+with the recipe in `hosts/server/recipes/` -- it exists only to serve a proprietary
+NVIDIA GPU and `laptop` is Intel on i915/iris, so root `CLAUDE.md`'s "names a GPU vendor"
+test puts it with the host. It implements VA-API on top of NVDEC, which is the API
+Firefox actually uses and the one the 470 driver does not otherwise provide.
+
+Every build dependency was already present and was checked before building rather than
+after: `egl` 1.5, `ffnvcodec` 11.1.5.3 (the driver needs >= 11.1.5.1, so
+`blfs-nv-codec-headers`' immovable pin sits comfortably inside the range), `libdrm`
+2.4.134, `libva` 1.24.0 (needs >= 1.8.0). `gstreamer-codecparsers-1.0` is optional and
+deliberately not added: it only enables VP9, which this GPU cannot decode, so it would
+mean pulling in GStreamer to enable a codec the hardware refuses.
+
+`nvidia-drm.modeset=1` is a hard requirement of this driver and was **already
+satisfied** -- `/etc/modprobe.d/nvidia-modeset.conf` sets it and
+`/sys/module/nvidia_drm/parameters/modeset` reads `Y`. No kernel command line change and
+no reboot were needed. Anything re-imaging this host has to keep that file.
+
+### It works, and it was verified decoding rather than merely advertised
+
+`vainfo` now reports **`VA-API NVDEC driver [direct backend]`** and enumerates
+`VAProfileH264Main/High/ConstrainedBaseline`, `VAProfileMPEG2Simple/Main`,
+`VAProfileVC1Simple/Main/Advanced`, `VAProfileJPEGBaseline` and
+`VAEntrypointVideoProc`.
+
+Firefox `about:support`, on **john's real profile**, now reports:
+
+```
+H264 SWDEC HWDEC          (was: H264 SWDEC)
+HARDWARE_VIDEO_DECODING   force_enabled    (was: unavailable)
+DMABUF                    force_enabled    (was: blocklisted)
+X11_EGL                   force_enabled
+```
+
+Capability being advertised is not the same as it being used, so it was proved
+end-to-end: an H.264 High 1280x720 clip generated with ffmpeg, played from a local file,
+with `NVD_LOG=1`. The driver's own trace:
+
+```
+__vaDriverInit_1_0  Initialising NVIDIA VA-API Driver
+__vaDriverInit_1_0  Got DRM FD: 1 24
+defaultMaxDetachedBackingImageBytes  ... (total VRAM 2093875200 bytes)
+__vaDriverInit_1_0  Selecting Direct backend
+nvCreateContext     Creating context with 0 render targets, at 1280x720
+nvCreateContext     Creating decoder: 0x7f2480bd5000 for context id: 7
+resolveSurfaces     [RT] Resolve thread ... started
+```
+
+2,093,875,200 bytes of VRAM is the GTX 770's 2 GiB, and a decoder really was created.
+
+### What this does and does not buy
+
+**H.264 only, in practice.** The GTX 770 is Kepler GK104 and its NVDEC block does H.264,
+MPEG2 and VC1. `vdpauinfo` and now `vainfo` agree on that, and VP9, HEVC and AV1 remain
+`SWDEC` no matter what is configured. Most of YouTube defaults to VP9 or AV1, so it will
+still decode in software there. This is a hardware ceiling, not a packaging gap, and
+`media.av1.enabled=false` is set so sites negotiate H.264 where they offer the choice
+rather than dropping to software AV1.
+
+### The two halves of the configuration, and where each lives
+
+Both are required; neither works alone.
+
+- **Session environment**, in `hosts/server/overlay/home/john/.xinitrc` (tracked) and
+  applied live: `LIBVA_DRIVER_NAME=nvidia` because libva 2.24 no longer guesses a driver
+  for this device and `vaGetDriverNames()` fails outright;
+  `__EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/10_nvidia.json`, required
+  for the 470 series specifically, so glvnd cannot hand Firefox the mesa EGL vendor from
+  the `50_mesa.json` sitting beside it; and `MOZ_DISABLE_RDD_SANDBOX=1`.
+- **Firefox prefs**, in `~/.mozilla/firefox/zi3g7u8s.default-default/user.js`:
+  `media.hardware-video-decoding.force-enabled`, `media.rdd-ffmpeg.enabled`,
+  `gfx.x11-egl.force-enabled`, `widget.dmabuf.force-enabled`, `media.av1.enabled=false`.
+
+**`MOZ_DISABLE_RDD_SANDBOX=1` is a real security tradeoff and is recorded as one.** The
+decoder runs in Firefox's RDD process, and that sandbox blocks the NVIDIA device access
+this driver needs. Disabling it weakens the isolation of the process that parses
+untrusted media. Accepted knowingly here for hardware decode on a single-user desktop;
+anyone who values the sandbox more than H.264 offload should drop that variable and the
+`user.js`, and the system falls back to software decode with nothing else broken.
+
+Two of the prefs override Mozilla blocklists on purpose --
+`FEATURE_HARDWARE_VIDEO_DECODING_NO_LINUX_NVIDIA` and DMABUF's bug 1788573. The driver's
+README requires both for the 470 series. They are overrides of a vendor's caution, not
+fixes, and are the first thing to undo if media playback starts misbehaving.
+
+The prefs live in a profile directory, which is not tracked by the repo and is not
+recreated by a Firefox rebuild -- so they survive upgrades but would be lost with the
+profile. The `.xinitrc` half is in the overlay and is covered by `BOOTSTRAP.md`'s
+overlay-application step.
+
+`lfsmaint db` was rebuilt afterwards, so `/usr/lib/dri/nvidia_drv_video.so` is owned by
+`nvidia-vaapi-driver-0.0.18` rather than orphaned, and `lfsmaint verify` still reports
+nothing unexplained. All four extractors: zero drift, 223 steps.

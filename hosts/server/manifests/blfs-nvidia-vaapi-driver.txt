@@ -1,0 +1,1 @@
+/usr/lib/dri/nvidia_drv_video.so

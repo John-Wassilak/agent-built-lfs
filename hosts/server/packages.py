@@ -714,4 +714,13 @@ PACKAGES = BASE + [
     # be run and trusted. The book page's Optional dep (Mini SQL) is skipped -- it is a
     # driver for a database nothing in this estate uses.
     book(254, "unixodbc", "general/unixodbc.html", "unixODBC-2.3.14.tar.gz"),
+
+    # Requested 2026-09-22 after verifying Firefox 153.2.0esr decodes every codec in
+    # software. Firefox does hardware video decode only through VA-API; NVIDIA 470
+    # ships VDPAU and no VA-API driver, so libva had nothing to load but mesa's
+    # nouveau backend, which cannot drive a card bound to the proprietary driver.
+    # This is the bridge: it implements VA-API on top of NVDEC. Not in BLFS/SLFS/GLFS
+    # 13.1 -- the book's only VA driver is intel-vaapi-driver -- hence hand().
+    hand(255, "nvidia-vaapi-driver", "nvidia-vaapi-driver-0.0.18.tar.gz",
+         "nvidia-vaapi-driver-0.0.18 (hand-authored)"),
 ]
