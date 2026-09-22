@@ -4767,3 +4767,39 @@ under `/usr`, `/opt`, `/bin`, `/sbin` and `/lib` found **zero** consumers outsid
 Left in place deliberately. `/lfs-audit`'s section G is explicit that cleanup happens only
 on request, and the last unrequested cleanup on this host ended in a kernel panic. The
 evidence for removing them is recorded here so the decision does not have to be re-derived.
+
+### The LLVM 21.1 orphans removed (2026-09-22, on request)
+
+Done, and the set turned out to be **nine** files rather than the seven reported above.
+Scanning every path under `/usr` matching `21.1`, `clang-21` or `-21.so` and asking
+`lfsmaint owns` about each one found two more: `/usr/lib/libclang.so.21.1` and
+`/usr/lib/libLLVM-21.so`, both unowned symlinks pointing into the set. Removing the seven
+targets without them would have left two dangling links behind -- the kind of leftover
+this cleanup exists to avoid. Everything else matching those patterns is legitimately
+owned (Python's `test_importlib` fixtures, mesa's `relnotes/21.1.*.rst`).
+
+Re-verified immediately before removing rather than relying on the earlier check: all nine
+still unowned, a full ELF sweep of `/usr`, `/opt`, `/bin`, `/sbin` and `/lib` excluding the
+set itself found **zero** consumers, and nothing in `/proc/*/maps` had any of them mapped.
+
+Staged to `/var/tmp/` first, then removed, then verified, then the staging copy dropped --
+rather than deleted outright. `rm` is not `strip`: unlinking a mapped library leaves the
+inode intact for anything holding it, so this was never the hazard the 2026-09-21 pass
+was. The staging was cheap insurance and is the pattern this host has earned.
+
+After `ldconfig`: `clang --version` and `llvm-config --version` both 22.1.8, `clang++`
+22.1.8, and a compile-and-run of a trivial C program through clang succeeds.
+`libgallium-26.1.7.so` still resolves `libLLVM.so.22.1` with zero missing dependencies,
+and `firefox`, `ffmpeg`, `Xorg` and `clang` each report zero. The only object on the
+machine with an unresolved dependency is `libsystemd-core-261.so` wanting
+`libsystemd-shared-261.so`, which is one of the five pre-existing `$ORIGIN`-style cases
+already matched against the deploy stick on 2026-09-21 -- not new, and not related.
+`lfsmaint verify` still reports nothing unexplained; the removed files were in no
+manifest, which is exactly why they were orphans.
+
+271 MB reclaimed from `/`, and no path matching those patterns is unowned any more. One
+note for the next time this pattern is used: the staging directory measured 444 MB, not
+271 MB, because `install -D` dereferences symlinks -- `libclang.so.21.1` and
+`libLLVM-21.so` were copied as full duplicates of their targets rather than as links. It
+made the safety copy larger, not wrong, but a faithful restore from it would have needed
+the two links recreated by hand.
