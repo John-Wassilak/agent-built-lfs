@@ -82,4 +82,29 @@ $K --module  SND_HDA_GENERIC
 # Microcode is current (0x2f; `old_microcode: Not affected`), unlike laptop's
 # still-open finding. Revisit if KVM is ever enabled on this box.
 
+# xt_connmark / CONNMARK: absent, and tailscale asks for it on every start.
+# Recorded 2026-09-22 (/lfs-audit). `journalctl -u tailscaled` carries ten lines
+# per boot of:
+#     router: warning: failed to add connmark rules (rp_filter workaround may
+#     not work) ... Extension CONNMARK revision 0 not supported, missing kernel
+#     module?  /  iptables v1.8.13 (legacy): unknown option "--nfmask"
+# Confirmed against /boot/config-7.1.8: CONFIG_NETFILTER_XT_MATCH_CONNMARK,
+# CONFIG_NETFILTER_XT_TARGET_CONNMARK, CONFIG_NETFILTER_XT_CONNMARK and
+# CONFIG_NF_CONNTRACK_MARK do not appear at all -- not "is not set", absent,
+# meaning the parent option was never turned on. So the warning is accurate and
+# the rules genuinely are not installed.
+#
+# NOT enabled, for the same reason the Broadcom card above is not: it needs a
+# kernel rebuild, and a kernel rebuild orphans the out-of-tree NVIDIA 470.xx
+# modules until they are rebuilt against the new /lib/modules/<ver>/ path. What
+# is actually lost is tailscale's reverse-path-filter workaround, which matters
+# on a host that both forwards tailscale traffic and runs strict rp_filter. This
+# box does neither: it is a leaf node on the tailnet, and its own firewall sets
+# rp_filter=1 with FORWARD policy DROP and no forwarding rules. Tailscale itself
+# works -- the interface is up, the peer address is assigned, and traffic flows.
+#
+# Enable all four here and rebuild the kernel (then nvidia-470xx) if this host
+# ever becomes a tailscale exit node or subnet router, which is exactly when the
+# workaround stops being cosmetic.
+
 kernel_config_finish

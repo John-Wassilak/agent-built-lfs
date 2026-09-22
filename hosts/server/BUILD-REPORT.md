@@ -5157,3 +5157,98 @@ to them at all.
 **Nothing under `hosts/server/recipes/` names a 13.0 book any more**, which is the state
 the sweep was after: every book-derived thing this host resolves now cites 13.1, or cites
 both releases where the file is genuinely shared and genuinely identical across them.
+
+## Post-audit remediation: mpv, coredumps, the firewall, and the strip pass (2026-09-22)
+
+### mpv rebuilt against ffmpeg 9
+
+The audit's one critical finding. `mpv` and `libmpv.so.2.5.0` were the only two objects
+left bound to `libavcodec.so.62`; rebuilt at seq 183 and now on `libavcodec.so.63` /
+`libavutil.so.61`, with **zero** consumers of the ffmpeg-8 sonames anywhere on the
+system. Verified decoding rather than just linking: `mpv --hwdec=vdpau-copy` on the
+H.264 test clip reports `Using hardware decoding (vdpau-copy)` and runs 120 frames with
+no error and no crash. 26-file manifest.
+
+326 MB of coredumps cleared -- all nine were that same broken mpv.
+
+### The firewall was accepting ICMP redirects
+
+`iptables.service` was enabled, active, and enforcing a sane ruleset, so the audit's
+section B and D both passed it. What neither checks is whether the *script* on disk
+matches the recipe. It did not:
+
+```
+net.ipv4.conf.all.accept_redirects = 1      <- live kernel, before
+```
+
+`/etc/systemd/scripts/iptables` was the 13.0 text, which writes only
+`conf/default/accept_redirects`. That does nothing for an interface that already exists
+-- the kernel's `IN_DEV_RX_REDIRECTS` ORs `conf/all` in whenever forwarding is off, and
+`conf/all` defaults to 1. This project had already diagnosed exactly this and written it
+up as `BOOK-PATCHES.md` item 3, and the corrected script has been sitting in
+`recipes/blfs-13.1/overrides.json` unapplied.
+
+Fixed surgically rather than by rebuilding iptables: the block was extracted from
+`recipes/blfs-13.1/blfs-iptables.sh`, diffed against the live file (**one** addition --
+the `conf/all` line and its comment; the SSH allow rule and every policy byte-identical),
+`sh -n`'d, backed up to `iptables.bak-20260922`, installed, and the unit restarted from
+the SSH session it protects. After: `conf/all` and `conf/default` both 0, INPUT still
+`policy DROP` with loopback/ESTABLISHED/`dpt:22` intact, session survived.
+
+**The same bug was in the operator's own script**, and that is the half that would have
+undone this. `~/Scripts/firewall.sh` is a symlink to `~/Config/common/firewall/firewall.sh`
+-- a separate, hand-run bash firewall, not the systemd one -- and it also wrote only
+`conf/default`. The next manual run would have silently reopened the hole. Patched there
+too, with the same reasoning in a comment, and committed and pushed in that repo
+(`acbc493`), which is where firewall changes are logged.
+
+### Strip pass: the one that panicked this machine, done correctly
+
+`/usr/bin` and `/usr/sbin` were already finished by the interrupted 09-21 pass (git was
+sitting at its post-strip 4,990,848 bytes), so the 1,279 candidates were nearly all
+`/usr/lib`.
+
+Ran section G's corrected copy-strip-`install` form, unmodified:
+
+```
+stripped 1280 inode(s), restored 0 hard link(s), skipped 0
+bytes before: 918261039  after: 743257840  reclaimed: 175003199
+```
+
+**Zero skipped, zero failures.** Verified after: no zero-length shared object or
+executable anywhere under `/usr/bin`, `/usr/sbin`, `/usr/lib`, `/lib`, `/opt`; the
+hardlink sets intact at their exact baselines (git 150, gcc 3, perl 2); no leftover
+`/var/tmp/lfs-strip.*`; twelve binaries including git, gcc, clang, ffmpeg, mpv and
+systemctl all run; and `ldd` across all of `/usr/bin` and `/usr/sbin` reports **zero**
+missing dependencies.
+
+`restored 0 hard link(s)` is correct, not a bug: the hardlinked sets live in `/usr/bin`,
+which the earlier pass had already stripped, so nothing in this run's candidate set had
+a link count above 1.
+
+`df` moved only 52 MB against 175 MB of file shrinkage, which is also expected --
+`install` unlinks the old inode but the kernel keeps it allocated while any running
+process still has that library mapped. The rest returns on reboot.
+
+### Man/info compression: NOT done, and it is not the free win it looks like
+
+13,026 uncompressed man pages and 130 info pages, about 84 MB, maybe 59 MB recoverable.
+The reason it was not run:
+
+**every one of those 13,026 paths is recorded in `hosts/server/manifests/`.** Compressing
+renames all of them, so `lfsmaint verify` -- which today reports *nothing unexplained*
+across 108,776 files -- would immediately report 13,026 files missing. That is not a
+cosmetic regression; it destroys the one property that makes `verify` worth running, and
+it would have to be papered over afterwards.
+
+Doing this properly needs one of two decisions first, and both are real work rather than
+a `gzip -9`:
+
+1. **Teach `lfsmaint verify` a compressed-manpage class**, the way it already handles the
+   BLFS versioned-docdir rename -- a manifested `/usr/share/man/man1/foo.1` is satisfied
+   by `foo.1.gz`. Cheapest, and keeps manifests as the record of what the book installed.
+2. **Recapture the manifests after compressing**, which makes them describe the tree as
+   it is but diverges them from what the recipes actually install.
+
+Option 1 is the better fit for how this project treats manifests. Left for a decision
+rather than guessed at.

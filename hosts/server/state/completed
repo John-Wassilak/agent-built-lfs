@@ -378,3 +378,4 @@ blfs-xorg-server
 blfs-rsync
 blfs-unixodbc
 blfs-nvidia-vaapi-driver
+blfs-mpv
