@@ -222,8 +222,11 @@ before the wipe (2026-09-21 did: `/mnt/big_disk/backups/home-john-<date>/`, an r
 `--link-dest` snapshot against the previous backup, so only the delta is written), or
 accept a bare `/home/john` and re-clone the repo from GitHub afterwards.
 
-Note the fs-UUID `mkfs.ext4` just generated (`blkid /dev/sdb2`). It will **not** be
-`4ed155bc-…` any more, and step 5's `grub.cfg` needs the new one.
+Note that `mkfs.ext4` just generated a new fs-UUID (`blkid /dev/sdb2`): it will **not**
+be `4ed155bc-…` any more, and the disk table at the top of this file still records the
+old one. Step 5's `grub.cfg` does **not** need it -- that file searches by `--label
+LFSROOT`, which step 4's `mkfs.ext4 -L LFSROOT` writes back every time, precisely so this
+procedure stops minting an identifier the boot path then has to be hand-edited to match.
 
 ## 5. Fix up the target before rebooting
 
@@ -248,10 +251,17 @@ In order, all against `/mnt/target`:
    `systemctl enable`; the `cpufreq` one is not cosmetic, it is the fix for the measured
    2.1x loss from the default governor. `hosts/server/overlay/home/john/*` are `john`'s
    dotfiles and must land owned by uid 1000, not root.
-3. **`/boot/grub/grub.cfg`** comes from `hosts/server/overlay/boot/grub.cfg`, with two
-   identifiers updated by hand: `search --set=root --fs-uuid` to the new fs-UUID from
-   step 4, and `root=PARTUUID=c2cd0612-02` confirmed (unchanged, since the partition table
-   was not touched). Do **not** add `rootwait` here -- that is the stick's line.
+3. **`/boot/grub/grub.cfg`** is copied from `hosts/server/overlay/boot/grub.cfg`
+   **verbatim** -- no hand-edited identifiers. It searches `--label LFSROOT` and boots
+   `root=PARTUUID=c2cd0612-02`, and both survive this procedure: step 4's
+   `mkfs.ext4 -L LFSROOT`/`mkswap -L LFSSWAP` write the labels back and the partition
+   table is never touched. This step used to say to
+   patch `search --set=root --fs-uuid` to the new fs-UUID by hand; that is what was
+   missed on 2026-09-21, leaving a `search` that matched nothing on the machine for
+   every boot after the re-image (it booted only because a failed `search` leaves `$root`
+   at the partition GRUB loaded from). An identifier a human has to remember to update
+   is the defect, so there is no longer one to update. Do **not** add `rootwait` here --
+   that is the stick's line.
    `hosts/server/CLAUDE.md` is emphatic about the two things this file carries that
    nothing regenerates: the `modprobe.blacklist=nouveau` and
    `snd_hda_intel.probe_mask=0x1FF,0x1FF`. Without the second there is no audio hardware

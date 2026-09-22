@@ -1050,3 +1050,37 @@ shapes:
 - **The migration is a `git mv`, not a regeneration, when history still holds the inputs.**
   The 13.0 tree came back byte-exact from the last commit before the bump (`9b77eca`),
   which made the whole change reviewable as a diff and needed no second copy of the books.
+
+## A fix in the overlay is not a fix on the machine
+
+`overlay/` and `hosts/<h>/overlay/` are deploy-time trees. Nothing in `bin/` applies
+them, which means a session can reason its way to the right content, commit it, write it
+up in `BUILD-REPORT.md`, and leave the running host exactly as it was.
+
+That happened on `server`, 2026-09-21. The audit found `/boot/grub/grub.cfg` searching
+for `--fs-uuid 4ed155bc-…`, an identity the partition lost when it was re-imaged. The
+live file was patched to the *new* fs-UUID; an hour later the decision was reconsidered
+-- a re-image mints a fresh fs-UUID every time, so the search has to key off
+`--label LFSROOT`, which `mkfs.ext4 -L` writes back -- and that went into the overlay
+with its reasoning. The live file was never brought forward. The report then said "now
+searches `--label LFSROOT`", which was true of the repo and false of the machine, and
+the host stayed one re-image away from the silent failure the audit had just removed.
+
+- **Diff the overlay against the live tree before claiming a deploy-time file is fixed.**
+  All 13 files, not the one just edited; it costs one loop and it is the only check that
+  distinguishes "decided" from "deployed". Twelve matched here and the thirteenth was the
+  one under discussion.
+- **A live edit and an overlay edit are two separate acts.** Doing the first does not
+  schedule the second, and doing the second does not imply the first. If only one has
+  happened, the entry has to say which.
+- **Fix the procedure, not just the file.** `BOOTSTRAP.md` step 5.3 was the real source:
+  it instructed the operator to copy the overlay `grub.cfg` and then hand-patch the
+  fs-UUID to whatever step 4's `mkfs` had just generated. The tracked file and the
+  procedure that deploys it disagreed, and the procedure wins, every time, on the next
+  machine. An identifier a human has to remember to update is the defect -- the fix is to
+  leave none to update, not to document the update more clearly.
+
+Same shape as the strip incident above, one layer out: there, a practice stated in prose
+while the skill still issued the old command; here, a decision stated in a tracked file
+while the procedure still issued the old hand-edit. In both cases the write-up read as
+done and nothing that executes had changed.

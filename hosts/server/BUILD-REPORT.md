@@ -4029,3 +4029,86 @@ prose while the skill still carried the unsafe command, are written up in `PRACT
 - **Step 6's gzip half never ran.** 13,017 man pages and the info tree are still
   uncompressed. Re-running section G with the corrected script is the remaining work.
 - **The target has still not been booted since the panic.**
+
+## First boot after the panic, and the `grub.cfg` that never reached the disk (2026-09-21)
+
+Closes the last open bullet above, which was written a minute before the machine came
+back up. **Boot `91d60864…` at 19:35:48 is clean.** 3.355s kernel + 11.710s userspace =
+15.066s, `systemctl is-system-running` → `running`, **zero failed units**. `sdb2` mounted
+`ro` then re-mounted `r/w` with no `recovery required` this time -- the abrupt-stop
+recovery the post-panic mount reported was consumed by that mount and has not recurred.
+The only kernel errors are the two this machine has always had: the ACPI `_GTF.DSSP`
+BIOS bug on the SATA ports, and `snd_hda_intel` probing the codecs it is forced to probe.
+
+### The restore and the strip damage, re-verified on the running system
+
+The previous entry established all of this from a stick with `sdb2` mounted from outside.
+Re-checked now that the tree is the one actually executing:
+
+- `/usr/lib/libicudata.so.78.3` is 33,112,968 bytes, md5 `dddbb5c50693475adbff46c171da9d06`
+  -- the stick's bytes exactly. No `stc*` temp file left beside it.
+- **No zero-length shared object anywhere** under `/usr/bin`, `/usr/sbin`, `/usr/lib`,
+  `/lib` or `/opt`. The 114 zero-length files that do exist are all Python `__init__.py`,
+  `py.typed` and pip `REQUESTED` markers, and **not one carries a Sep 21 mtime**.
+- Every one of the 1,218 files the strip pass touched still parses as ELF.
+- `ldd` across all of `/usr/bin` and `/usr/sbin` on the live system: **zero** binaries
+  with a missing dependency. Across 1,355 shared objects, 6 unresolved -- the five the
+  previous entry already matched against the stick (firefox's `$ORIGIN` libs,
+  `libsystemd-shared`, `libnvidia-gtk2` wanting an absent GTK2) plus
+  `/opt/go-1.27.0/src/debug/elf/testdata/libtiffxx.so_`, which is Go's own test fixture
+  and was simply outside the earlier sweep's scope.
+- Smoke-tested twelve strip-touched binaries including the whole restored icu chain:
+  `git`, `curl`, `openssl`, `python3`, `perl`, `gcc`, `tar`, `xz`, `systemctl`,
+  `ldconfig`, and `xmllint`/`bsdtar` -- the last two being the ones that go through
+  `libicudata` ← `libicuuc` ← `libxml2`. All twelve run.
+- `lfsmaint verify`: 108,536 recorded files, the same **122 missing but accounted for**,
+  nothing unexplained. `findmnt --verify`: "Success, no errors or warnings detected",
+  so step 4's fstab reorder holds on a real boot.
+- `extract-recipes.py --check` and `extract-blfs.py --check`: **zero drift** on both.
+
+### The gap: the `grub.cfg` decision was recorded but never deployed
+
+Diffing all 13 tracked overlay files against their live counterparts -- 12 are byte
+identical, and `grub.cfg` is not:
+
+```
+ hosts/server/overlay/boot/grub.cfg   search --set=root --label LFSROOT
+ /boot/grub/grub.cfg                  search --set=root --fs-uuid cb1db9c1-245d-47f2-8628-1d87d9430777
+```
+
+The live file's mtime is **15:04**, an hour and a half before the fix script ran, so this
+is not panic damage -- step 6 died in `/usr/lib` and never went near `/boot`. The audit
+session fixed the stale `4ed155bc-…` search on the live file at 15:04 by writing the
+*new* fs-UUID, then at 16:13 reconsidered and put `--label LFSROOT` in the overlay with a
+full rationale, and the live file was never brought forward to match. The entry above
+says "Now searches `--label LFSROOT`"; that was true of the tracked overlay and **not**
+of the machine.
+
+Nothing was broken by this -- `cb1db9c1-…` is `sdb2`'s current fs-UUID, which is why this
+boot worked. What was lost is the durability the label was chosen for: the next re-image
+mkfs's `sdb2`, mints a third fs-UUID, and puts the boot path straight back into the
+silent-failure state the audit found it in. `LFSROOT` and `PARTUUID=c2cd0612-02` both
+resolve to `sdb2` right now (`/dev/disk/by-label`, `/dev/disk/by-partuuid`), and
+`grub-script-check` passes on the overlay file, so it is a safe drop-in.
+
+`BOOTSTRAP.md` was the actual source of this. Its step 5.3 told the operator to copy the
+overlay file and then **hand-patch `search --set=root --fs-uuid` to the new fs-UUID from
+step 4** -- the instruction preserved the exact defect the audit had just diagnosed, and
+a note further up repeated it. Both are rewritten: the file is copied verbatim, there is
+no identifier to update by hand, and the reason is stated where the next re-image will
+read it. Same lesson as the strip incident one entry above -- a decision that lives only
+in prose while the procedure still issues the old command has not actually been made.
+
+### Open
+
+- **`/boot/grub/grub.cfg` has not been replaced yet**; it needs root and the running
+  boot does not depend on it. `install -m 0644 hosts/server/overlay/boot/grub.cfg
+  /boot/grub/grub.cfg` (no `grub-install` -- the MBR is untouched).
+- **Step 6's gzip half and its `/usr/lib` half are both still owed.** `/usr/bin` and
+  `/usr/sbin` are effectively done: 4 files still carry `.debug_info`, down from 414.
+  `/usr/lib` has 1,116 left, `libLLVM.so.21.1` at 130 MB heading the list. 13,017 man
+  pages uncompressed against 7 compressed, and 130 info files. Section G's corrected
+  copy-strip-`install` script is what to re-run.
+- Carried forward untouched: `hosts/server/manifests/` still describing the 13.0 install,
+  the 14 BLFS recipes `--check` would create under `recipes/blfs-13.1/`, and the
+  `ch08-dbus` docdir rename worked around in `verify` rather than in the manifest.
