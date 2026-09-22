@@ -418,3 +418,5 @@ blfs-opentofu	chroot	0.5	1
 blfs-opentofu	chroot	187.8	0
 blfs-rsync	chroot	38.5	0
 blfs-bash-completion	chroot	5.5	0
+blfs-cbindgen	native	91.4	0
+blfs-spirv-llvm-translator	native	3.2	1

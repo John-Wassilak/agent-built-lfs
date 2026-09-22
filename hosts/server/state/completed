@@ -358,3 +358,4 @@ blfs-openbao
 blfs-opentofu
 blfs-rsync
 blfs-bash-completion
+blfs-cbindgen

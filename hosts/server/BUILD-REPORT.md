@@ -4344,3 +4344,84 @@ restart to pick up the new binary.
 
 Two of the fourteen are not upgrades but restorations: `blfs-unixodbc` and `slfs-htop`
 are the packages the re-image dropped, absent from the running root entirely.
+
+## The rebuild's first run, and the package `drift` structurally cannot see (2026-09-21)
+
+`blfs-cbindgen` built clean at 0.29.4 -- the 0.29.2 pin removed with Firefox 140 is
+vindicated so far. The second step, `blfs-spirv-llvm-translator` 22.1.5, died in cmake
+after 0.1 min:
+
+```
+CMake Error at CMakeLists.txt:82 (find_package):
+  Could not find a configuration file for package "LLVM" that is compatible
+  with requested version "22.1.0".
+    /usr/lib/cmake/llvm/LLVMConfig.cmake, version: 21.1.8
+```
+
+### Why LLVM was not on the list
+
+Not an oversight in the sweep -- `lfsmaint drift` **cannot** report this package. It
+parses a package name out of each wget-list filename and matches it against the
+database. BLFS 13.0 shipped `llvm-21.1.8.src.tar.xz`; 13.1 ships
+`llvm-project-22.1.8.src.tar.xz`, the upstream monorepo. `llvm-project` and `llvm` are
+different names, so installed LLVM 21.1.8 was never compared against anything. It did
+not appear as "book is newer"; it did not appear at all.
+
+This is the second instance of the same blind spot in one session. The first was
+firefox, where drift matched the installed browser against `spidermonkey`'s ESR source
+tarball and reported the book version as 140.14.0esr instead of 153.2.0esr. Both are the
+same defect: **a tarball rename between releases makes the package invisible to a
+list-based version check, in either direction.**
+
+So the check was redone on a basis that does not depend on names matching: take all 222
+planned steps, and flag every pinned tarball that does not appear verbatim in the 13.1
+wget-lists. 72 came back. Most are explained and fine -- 30-odd X libraries that come
+from the grouped `x7lib`/`x7app`/`x7driver` pages with their own embedded md5 lists
+rather than the wget-list, and the non-BLFS hand-authored packages (go, tailscale,
+openbao, opentofu, jq, alacritty, awesome, rofi, dunst, lfsmaint, the fonts). Exactly
+**two** were real: `blfs-llvm` and `blfs-libclc`, both still pinned at 21.1.8.
+
+### LLVM 13.1 is not a version bump, it is a different build
+
+`recipes/blfs-llvm.sh` is shared and `laptop` reads it -- `hand(79.1, "llvm",
+"llvm-21.1.8.src.tar.xz", "... shared recipe")` -- so the 13.1 version is a host copy at
+`hosts/server/recipes/blfs-llvm.sh` and the shared file stays 13.0. One recipe cannot be
+correct for both, because the source layout changed:
+
+- **One tarball instead of four.** The 13.0 recipe untarred `llvm-cmake` and
+  `llvm-third-party` by hand, patched `CMakeLists.txt` and `HandleLLVMOptions.cmake`
+  with seds to point at the unpacked directory names, then untarred clang into `tools/`
+  and renamed it. All of that is deleted. clang arrives via
+  `-D LLVM_ENABLE_PROJECTS=clang`.
+- **compiler-rt is built now**, via `-D LLVM_ENABLE_RUNTIMES=compiler-rt`. The old
+  rationale's "compiler-rt not downloaded -- optional, not needed by anything in this
+  plan" was true only while it was a separate tarball nobody fetched.
+- Build directory is `llvm/build`; the FileCheck sed targets `llvm/utils/FileCheck/`.
+- `-W no-author` replaces `-W no-dev`.
+- The python shebang grep is anchored -- `'#!.*python$'` where 13.0 had `'#!.*python'`.
+  The unanchored form matched files already on python3, so this is a correction.
+- **`/etc/clang` and its two config files are created.** This is the one genuinely new
+  block and it fixes a live defect, not a version difference: the 13.0 recipe passed
+  `-D CLANG_CONFIG_FILE_SYSTEM_DIR=/etc/clang` and never created that directory.
+  Confirmed on this machine before the rebuild -- `/etc/clang` did not exist, so clang
+  has been running with no system config file and without the `-fstack-protector-strong`
+  default that option exists to provide.
+
+`libclc` moves to 22.1.8 from the *same* monorepo tarball (identical md5,
+`69065494…`), and its generated 13.1 recipe correctly builds in `libclc/build`.
+
+### mesa has to be relinked, and that is the part that can hurt
+
+Bumping LLVM changes the dylib soname from `libLLVM.so.21.1` to `libLLVM.so.22.1`. On
+this host mesa-26.1.7 links it directly -- confirmed with `ldd`, four objects:
+`libgallium-26.1.7.so`, `libEGL_mesa.so.0.0.0`, `libGLX_mesa.so.0.0.0` and
+`gbm/dri_gbm.so`. mesa is **not** a version bump; 26.1.7 is already 13.1's version. It
+is a `--force` relink, it must run after LLVM, and the run must not be stopped between
+the two. Real GL/GLX here comes from the proprietary NVIDIA driver rather than mesa, so
+a stale mesa does not by itself blank the display, but EGL and the llvmpipe fallback do
+go through it.
+
+`rebuild.sh` is revised accordingly: 16 steps in strict `seq` order, with
+`blfs-llvm` (55.3) -> `blfs-spirv-llvm-translator` (55.8) -> `blfs-libclc` (55.9) ->
+`blfs-mesa` (56) as the leading unit, and the caution written into the file rather than
+left in a commit message. `blfs-cbindgen` is dropped from the list, being done.

@@ -165,7 +165,7 @@ PACKAGES = BASE + [
     # packages.py at all: on the live system it must have been installed ad hoc (via
     # cargo install or similar) outside the tracked build, the same class of gap
     # ch08-perl's undocumented fix and the nvidia recipe's assumed kbuild tree were.
-    hand(55.3, "llvm", "llvm-21.1.8.src.tar.xz", "LLVM-21.1.8 with clang (hand-authored)"),
+    hand(55.3, "llvm", "llvm-project-22.1.8.src.tar.xz", "LLVM-22.1.8 with clang (hand-authored)"),
     book(55.4, "rust-bindgen", "general/rust-bindgen.html", "rust-bindgen-0.72.1.tar.gz"),
     # Downgraded to hand() 2026-09-09, pinned to cbindgen-0.29.2 (not the book's
     # documented 0.29.4): Firefox's build (seq 192, invokes system cbindgen directly)
@@ -205,7 +205,7 @@ PACKAGES = BASE + [
     # this chain -- it is a standalone diagnostics package against vulkan-loader/vulkan-
     # headers, both already built well before this point.
     book(55.8, "spirv-llvm-translator", "general/spirv-llvm-translator.html", "SPIRV-LLVM-Translator-22.1.5.tar.gz"),
-    book(55.9, "libclc", "general/libclc.html", "libclc-21.1.8.src.tar.xz"),
+    book(55.9, "libclc", "general/libclc.html", "llvm-project-22.1.8.src.tar.xz"),
 
     # New package (not a moved one): mesa's host override above deliberately keeps the
     # book's platforms=x11,wayland default (see that override's own reason -- dropping it
