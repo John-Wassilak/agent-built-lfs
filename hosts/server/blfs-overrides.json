@@ -13,5 +13,12 @@
       "cmd": "mkdir build &&\ncd    build &&\n\nmeson setup ..             \\\n      --prefix=/usr        \\\n      --buildtype=release  \\\n      -D enable-docs=false \\\n      -D enable-wayland=false &&\nninja",
       "reason": "This host is X11 + awesome, no Wayland anywhere (see AWESOME-X11-PLAN.md) -- wayland-client/wayland-protocols are not installed. libxkbcommon 1.13.2's meson.build defaults enable-wayland to auto and, when it can't find them, tries to build the Wayland xkbcli programs anyway and hard-errors rather than silently skipping them. Host-specific, not shared: laptop's Hyprland/Wayland stack genuinely wants this support."
     }
+  },
+  "blfs-xorg-server": {
+    "2": {
+      "action": "replace",
+      "cmd": "ninja install &&\nmkdir -pv /etc/X11/xorg.conf.d &&\n\nchmod u+s /usr/bin/Xorg",
+      "reason": "Adds `chmod u+s /usr/bin/Xorg` to the book's install block. Not a BLFS command -- the 13.1 page says nothing about setuid anywhere -- and not optional on this machine.\n\nThis host runs no display manager and no logind session management, so `startx` is launched by an unprivileged user from a console login. Without the setuid bit Xorg cannot take the VT and dies with `xf86OpenConsole: Switching VT failed` (the 13.0 recipe recorded the older wording, `Cannot open virtual console 1 (Permission denied)`). Setuid-root is Xorg's own pre-logind mechanism for VT access and was the standard arrangement for display-manager-less X11 for decades.\n\nWhy this is a host decision rather than a shared one: it is a deliberate setuid-root grant, and it is needed only because of how THIS machine starts its session. `laptop` does not build xorg-server at all. A host that gains a display manager or logind should drop it.\n\nRecorded 2026-09-22 after it was lost. The 13.0 recipe carried this chmod as a hand-edit with its rationale in a comment inside a GENERATED file; converting xorg-server from hand() to book() for 13.1 re-extracted the recipe and silently dropped both. The running X server survived only because it still held the old unlinked binary's inode -- the regression would have surfaced as an unbootable desktop at the next restart, with no way to start X from an SSH session to fix it. This is the second casualty of that one conversion; `-D sha1=libgcrypt` was the first and is recorded in recipes/blfs-13.1/overrides.json. As a `replace` it pins the whole block and will mask a future book change to it, so it wants re-reading on the next release bump."
+    }
   }
 }

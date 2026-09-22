@@ -5017,3 +5017,91 @@ overlay-application step.
 `lfsmaint db` was rebuilt afterwards, so `/usr/lib/dri/nvidia_drv_video.so` is owned by
 `nvidia-vaapi-driver-0.0.18` rather than orphaned, and `lfsmaint verify` still reports
 nothing unexplained. All four extractors: zero drift, 223 steps.
+
+## Session restart confirmed the VA-API env, and uncovered a setuid regression (2026-09-22)
+
+Restarting the X session to prove the `.xinitrc` half works turned up something more
+important than the thing being tested.
+
+### `/usr/bin/Xorg` lost its setuid bit in the 13.1 rebuild
+
+The 13.0 recipe ended with:
+
+```sh
+chmod u+s /usr/bin/Xorg
+```
+
+with a comment recording exactly why: this host runs **no display manager and no
+logind**, so `startx` is launched by an unprivileged user and without setuid Xorg cannot
+take the VT. The regenerated 13.1 recipe does not have it. BLFS says nothing about
+setuid on that page -- it was a local, load-bearing addition, and converting
+`blfs-xorg-server` from `hand()` to `book()` re-extracted the recipe and dropped it.
+
+**This is the second casualty of that single conversion.** `-D sha1=libgcrypt` was the
+first; it was caught at the time because the configure line was diffed. The `chmod` sat
+in a different block and was not.
+
+It was invisible for six hours. The X server running since 2026-09-21 20:18 kept working
+because it still held the *unlinked* inode of the pre-rebuild binary -- `/usr/bin/Xorg`
+was already replaced on disk at 11:52. The failure only appears on the next start, and
+the first attempt to start a session produced exactly:
+
+```
+(EE) xf86OpenConsole: Switching VT failed
+```
+
+Had this gone unnoticed until a reboot, the machine would have come up with no desktop
+and no way to start one remotely: `startx` over SSH fails for the same reason, so the fix
+would have needed physical console access.
+
+Restored live with `chmod u+s`, and recorded as a `replace` decision on block 2 in
+`hosts/server/blfs-overrides.json` -- the **host** file, not the shared one, because it is
+a deliberate setuid-root grant justified by how this specific machine starts its session.
+`laptop` does not build xorg-server at all. The decision regenerates
+`hosts/server/recipes/blfs-xorg-server.sh`, which now carries both recovered pieces:
+`-D sha1=libgcrypt` from the shared 13.1 overrides and `chmod u+s` from the host's.
+
+### The `.xinitrc` environment works, proved without setting anything by hand
+
+Old session stopped, new one started with `startx -- vt1`. X runs as root again (setuid
+confirmed working), awesome came up.
+
+- awesome's own `/proc/<pid>/environ` on the new session carries all three exports:
+  `LIBVA_DRIVER_NAME=nvidia`,
+  `__EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/10_nvidia.json`,
+  `MOZ_DISABLE_RDD_SANDBOX=1`. The pre-change session had none of them.
+- Firefox was then launched with `env -i` and *only* the variables read back out of
+  awesome's environment -- nothing supplied by this session. Its own
+  `/proc/<pid>/environ` shows the same three inherited.
+- `about:support` on john's real profile
+  (`/home/john/.mozilla/firefox/zi3g7u8s.default-default`) reports **`H264 SWDEC
+  HWDEC`**, with `HARDWARE_VIDEO_DECODING`, `DMABUF` and `X11_EGL` all `force_enabled`
+  and `WEBRENDER available`.
+
+So the full chain -- `.xinitrc` -> awesome -> Firefox -> NVDEC -- works from a cold
+session start with no manual environment.
+
+### Not restored: the camera viewer
+
+`play-cams.sh` was running in the old session and is *not* autostarted by `rc.lua` --
+it is launched by hand. Restarting it failed:
+
+```
+gpg: public key decryption failed: Timeout
+play-cams: could not read nvr/admin from pass
+```
+
+It reads the NVR credentials from `pass`, which needs an unlocked gpg-agent and a
+pinentry prompt that has nowhere to appear from a non-interactive SSH shell. That one is
+the operator's to restart from the desktop. The three orphaned `mpv` processes from the
+old session -- still alive with a dead X connection 16h47m later -- were cleared.
+
+### Open
+
+- `/tmp/.X0-lock` is present again, recreated by the new server's own start, so the
+  earlier note about it being missing is closed by this restart.
+- The other 13.1 recipes converted `hand()` -> `book()` in this sweep -- `xinit` and
+  `imagemagick` -- were diffed against their 13.0 files at conversion time and carried no
+  local additions, but that check was a configure-line diff. Given xorg-server lost a
+  command in a *different* block, a whole-file diff of those two against their 13.0
+  versions is cheap insurance and has not been done.
