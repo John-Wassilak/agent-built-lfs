@@ -1,7 +1,13 @@
 #!/bin/bash
-# HAND-AUTHORED recipe from the BLFS 13.0-systemd book.
-# source : book/blfs-13.0/general/pciutils.html
-# title  : pciutils-3.14.0
+# HAND-AUTHORED recipe, shared (belongs to no book release).
+# source : general/pciutils.html, read against both 13.0 and 13.1 on 2026-09-22.
+# title  : pciutils (version comes from the host's own packages.py pin)
+#
+# The two releases' command sets are identical -- the Makefile sed, the two make
+# invocations and the libpci.so chmod are byte-equal apart from the book's own
+# whitespace alignment -- and nothing here names a version, which is what keeps this
+# file legitimately shared. `server` builds 3.15.0 from it (BLFS 13.1) and `laptop`
+# 3.14.0 (BLFS 13.0), off the same commands.
 # rationale: Operator-requested diagnostic tooling (lspci) -- flagged as
 # missing during the post-outage system scan. Recommended: hwdata (already
 # built, tier 2) -- pci.ids installation deliberately disabled here in favor

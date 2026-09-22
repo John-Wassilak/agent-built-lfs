@@ -1,5 +1,7 @@
 #!/bin/bash
-# HAND-AUTHORED recipe -- no BLFS 13.0-systemd book page covers this package.
+# HAND-AUTHORED recipe -- no BLFS book page covers this package, in either release.
+# Re-checked 2026-09-22: neither book/blfs-13.0 nor book/blfs-13.1 has a page for it,
+# and it is absent from the 13.1 wget-list. Out-of-book on both hosts.
 # source: github.com/scop/bash-completion, release tag 2.18.0 (upstream release
 # tarball, ships a generated ./configure -- confirmed by inspection, no autoreconf
 # needed). Checked the book directly first (grepped every book/blfs-13.0/*.html for

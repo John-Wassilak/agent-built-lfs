@@ -5105,3 +5105,55 @@ old session -- still alive with a dead X connection 16h47m later -- were cleared
   local additions, but that check was a configure-line diff. Given xorg-server lost a
   command in a *different* block, a whole-file diff of those two against their 13.0
   versions is cheap insurance and has not been done.
+
+## Whole-file diff of the other two conversions, and a book-reference sweep (2026-09-22)
+
+### `xinit` and `imagemagick`: no command lost, but real knowledge was
+
+Diffed in full against their 13.0 files, then again with comments and whitespace stripped
+and the lines sorted. **Both command sets are identical** -- unlike `xorg-server`, neither
+lost a build step. What looked like removed commands in the raw diff is the book's own
+alignment changing.
+
+`imagemagick` did lose something, in its comments: the record that
+**the book's download URL is dead**. The 13.1 page still prints
+`https://www.imagemagick.org/archive/releases/ImageMagick-7.1.2-13.tar.xz`, and that path
+404s -- both the tarball and the whole directory listing. BLFS's documented fallback
+mirror `https://ftp.osuosl.org/pub/blfs/conglomeration/ImageMagick/` serves the same
+tarball at md5 `a28a5d65a58fce9c24e8cf4b47cb5c5c`, which is the md5 the 13.1 page itself
+publishes. First hit 2026-08-26 on `server`, again 2026-09-15 on `laptop`.
+
+The lost comment also contained a warning that predicted its own deletion: *"Declared
+hand(334) there ... NOT book(): a book() entry makes the extractor the owner of this
+filename and it rewrites the file, which is exactly what happened on the first attempt
+and silently discarded every comment above."* Converting it to `book()` for 13.1 did that
+again. Restored to `hosts/server/packages.py` beside the `book(226, ...)` entry --
+hand-maintained, names the tarball, and is where a download fact survives an extraction.
+
+### Every book reference server resolves, checked against 13.1
+
+81 of server's 223 steps resolve to the shared `recipes/` directory, which `laptop` reads
+too -- and `laptop` is genuinely on 13.0, so a "13.0" in a shared file is not automatically
+wrong. Each one that named 13.0 was checked against the 13.1 book rather than edited on
+sight:
+
+| recipe | finding | header now |
+|---|---|---|
+| `blfs-pciutils` | 13.0 and 13.1 command sets identical; no version in any command | release-neutral, "read against both" |
+| `blfs-smartmontools` | both books pin 7.5, commands match | release-neutral, with a note that a future divergence makes the versioned `--docdir` release-bound |
+| `blfs-bash-completion` | in **neither** book, and absent from the 13.1 wget-list | "no BLFS page in either release" |
+| `blfs-fix-varlog` | LFS chapter 7 block 6 is **byte-identical** in 13.0 and 13.1 | cites the section, notes it is the same in both |
+| `blfs-libx11` | claimed "Not in this BLFS mirror at all" -- **wrong**. 13.1's grouped `x7lib` page builds it and pins `libX11-1.8.13`, exactly this host's pin | corrected; same carve-out case as libxt/libxmu/xauth |
+
+`blfs-libxt`, `blfs-libxmu`, `blfs-xauth` and `blfs-xf86-input-libinput` already read
+"read against both 13.0 and 13.1" from the earlier fix and needed nothing.
+
+The remaining shared recipes that embed a version in a command are all out-of-book
+packages (`go`, `tailscale`, `openbao`, `opentofu`, `alacritty`, `awesome`, `rofi`,
+`lua5.4`, `attrs`, `claude-code`, `redshift`, `xcb-util-xrm`, `linux-firmware-rtl-nic`)
+where both hosts pin the same version, so sharing is correct and no book release applies
+to them at all.
+
+**Nothing under `hosts/server/recipes/` names a 13.0 book any more**, which is the state
+the sweep was after: every book-derived thing this host resolves now cites 13.1, or cites
+both releases where the file is genuinely shared and genuinely identical across them.

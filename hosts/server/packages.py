@@ -660,6 +660,21 @@ PACKAGES = BASE + [
     hand(223, "libxdg-basedir", "libxdg-basedir-1.2.3.tar.gz", "libxdg-basedir-1.2.3 (hand-authored)"),
     hand(224, "xcb-util-cursor", "xcb-util-cursor-0.1.5.tar.xz", "xcb-util-cursor-0.1.5 (hand-authored)"),
     hand(225, "xcb-util-xrm", "xcb-util-xrm-1.3.tar.gz", "xcb-util-xrm-1.3 (hand-authored)"),
+    # DOWNLOAD NOTE, restored here 2026-09-22 after being lost. The book's own URL,
+    # https://www.imagemagick.org/archive/releases/ImageMagick-7.1.2-13.tar.xz, 404s --
+    # imagemagick.org restructured that path, and both the exact tarball and the whole
+    # directory listing are gone. Still true on the 13.1 page, which prints the same URL.
+    # Use BLFS's documented fallback mirror instead:
+    #   https://ftp.osuosl.org/pub/blfs/conglomeration/ImageMagick/
+    # Same tarball, md5 a28a5d65a58fce9c24e8cf4b47cb5c5c, which is the md5 the 13.1 page
+    # itself publishes. Confirmed live on 2026-08-26 (server) and again 2026-09-15
+    # (laptop, building it for zbar).
+    #
+    # This note lives in packages.py, not in the recipe, on purpose: imagemagick was
+    # converted hand() -> book() for 13.1, which makes the extractor the owner of
+    # recipes/blfs-13.1/blfs-imagemagick.sh and rewrites it from the book -- discarding
+    # exactly this comment, twice now. packages.py is hand-maintained and names the
+    # tarball, so it is where a download fact survives.
     book(226, "imagemagick", "general/imagemagick.html", "ImageMagick-7.1.2-13.tar.xz"),
     hand(227, "lua-lgi", "lgi-0.9.2.tar.gz", "lua-lgi-0.9.2 (hand-authored)"),
     hand(228, "awesome", "awesome-4.3.tar.gz", "awesome-4.3 (hand-authored)"),
