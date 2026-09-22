@@ -1,6 +1,19 @@
 #!/bin/bash
-# HAND-AUTHORED recipe from the BLFS 13.0-systemd book.
-# source : book/blfs-13.0/multimedia/mpv.html
+# HAND-AUTHORED recipe from the BLFS 13.1-systemd book.
+# source : book/blfs-13.1/multimedia/mpv.html
+#
+# Re-read against 13.1 on 2026-09-21: mpv is 0.41.0 in both books, so this package is
+# NOT part of that date's version catch-up and was not rebuilt. The meson line is
+# identical to 13.1's apart from this host's `-D vdpau=enabled` and
+# `-D wayland=disabled`.
+#
+# Known omission, recorded rather than silently carried: the book's third block,
+# `gtk-update-icon-cache -qtf /usr/share/icons/hicolor && update-desktop-database -q`,
+# is absent here. It is on both the 13.0 and 13.1 pages, so this is not a release
+# difference -- it is an omission dating to when this recipe was written. Both commands
+# are idempotent cache refreshes that install no files and need no rebuild to apply;
+# left alone because changing what this step does is a separate decision from the
+# version sweep.
 # title  : mpv-0.41.0
 # rationale: Required: alsa-lib, FFmpeg, libass, libplacebo, Mesa, PulseAudio
 # (all already built by this point in tier 13/prior tiers). Recommended:

@@ -22,7 +22,7 @@
 # delivers that, confirmed working end-to-end (see BUILD-REPORT.md's
 # Phase 4 testing).
 #
-# Patched for kernel 6.18.10 using the actively-maintained
+# Patched for kernel 7.1.8 using the actively-maintained
 # github.com/joanbm/nvidia-470xx-linux-mainline patch set (used by
 # Arch's own nvidia-470xx-dkms AUR package) -- 470.xx's own kernel
 # module source predates modern kernel internal APIs and does not

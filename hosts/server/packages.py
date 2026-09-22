@@ -272,12 +272,15 @@ PACKAGES = BASE + [
 
     # --- Requested 2026-08-26: cryptsetup (disk encryption), not part of the
     # Hyprland stack -- queued alongside it since the build pipeline is already
-    # running. Needs a kernel follow-up: CONFIG_BLK_DEV_DM/CRYPTO_AES/CRYPTO_SHA256
-    # are already =y on 6.18.10-nftables, but CONFIG_DM_CRYPT, CONFIG_CRYPTO_XTS,
-    # and CONFIG_CRYPTO_USER_API_SKCIPHER are not -- cryptsetup will build fine as
-    # userspace tooling but can't actually open/create an encrypted volume until
-    # those are added to kernel-config.sh and the kernel is rebuilt (batched with
-    # the still-pending CONFIG_DRM_NOUVEAU addition noted in HYPRLAND-PLAN.md).
+    # running. The kernel follow-up this entry used to call for is DONE, verified
+    # against the running 7.1.8 kernel on 2026-09-21: CONFIG_DM_CRYPT=m,
+    # CONFIG_CRYPTO_XTS=y and CONFIG_CRYPTO_USER_API_SKCIPHER=y are all in
+    # /boot/config-7.1.8, alongside the BLK_DEV_DM/CRYPTO_AES/CRYPTO_SHA256 that were
+    # already =y. They come from bin/kernel-config-base.sh (the shared base, not this
+    # host's file -- disk encryption is not hardware-specific), dm-crypt.ko is built
+    # at /lib/modules/7.1.8/kernel/drivers/md/dm-crypt.ko, and cryptsetup 2.8.7 is
+    # installed. The old text here said these options "are not" set and named a
+    # kernel 6.18.10-nftables this machine no longer runs.
     # libaio: the book's download URL (pagure.io/libaio/archive/...) 404s -- upstream
     # moved to codeberg.org/jmoyer/libaio since this book mirror was captured. Fetched
     # from https://codeberg.org/jmoyer/libaio/archive/libaio-0.3.113.tar.gz instead
