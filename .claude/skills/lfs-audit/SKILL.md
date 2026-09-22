@@ -245,12 +245,19 @@ distro-level "strip debug info at packaging time" step the way a binary distro d
 this project's own installed tree accumulates full debug sections and uncompressed man
 pages by default unless a recipe specifically stripped them.
 
+Count with `readelf`, never with `file`. `file`'s "not stripped" means the binary has a
+`.symtab`, which `--strip-debug` deliberately never removes, so it over-reports the
+candidate set and never goes down no matter how many times the tree is stripped
+correctly. On `server`'s 13.1 tree, `file` called 988 of 1,263 files in `/usr/bin` and
+`/usr/sbin` "not stripped" while only 414 had a `.debug_info` section to remove; on
+`laptop` the same metric said 2,942 against an actual 16. Sizing the job off `file`
+inflates it, and inflates the blast radius of any mistake with it.
+
 ```sh
-find /usr/bin /usr/sbin /usr/lib -type f -exec sh -c \
-  'file "$1" | grep -q "not stripped" && echo "$1"' _ {} \; 2>/dev/null | head -50
-# total reclaimable, roughly:
-find /usr/bin /usr/sbin /usr/lib -type f -exec file {} \; 2>/dev/null \
-  | grep "not stripped" | wc -l
+find /usr/bin /usr/sbin /usr/lib -xdev -type f \( -name '*.so*' -o -perm -u+x \) \
+     ! -path '/usr/lib/modules/*' ! -path '/usr/lib/debug/*' -print0 2>/dev/null \
+  | xargs -0r -n1 sh -c 'readelf -S "$1" 2>/dev/null | grep -q "\.debug_info" && echo "$1"' _ \
+  | tee /tmp/strip-candidates | wc -l
 find /usr/share/man -name '*.[1-9]' ! -name '*.gz' 2>/dev/null | head -20   # uncompressed man pages
 find /usr/share/info -name '*.info*' ! -name '*.gz' 2>/dev/null | head -20 # uncompressed info pages
 du -sh /usr/lib/debug 2>/dev/null                                          # separate debug-info tree, if any
@@ -258,18 +265,56 @@ du -sh /usr/lib/debug 2>/dev/null                                          # sep
 
 The actual fix, offered but not auto-run:
 ```sh
-find /usr/bin /usr/sbin /usr/lib -type f -exec sh -c \
-  'file "$1" | grep -q "not stripped" && strip --strip-debug "$1"' _ {} \; 2>/dev/null
-find /usr/share/man -name '*.[1-9]' ! -name '*.gz' -exec gzip -9 {} \;
-find /usr/share/info -name '*.info*' ! -name '*.gz' -exec gzip -9 {} \;
+#!/bin/bash
+# NEVER `strip <file>` on a live tree. Verified on binutils 2.47: strip rewrites the
+# file inside its own inode -- the inode number is unchanged afterwards whatever the
+# link count -- so it truncates the destination and copies back into it. A process
+# that has the file mapped reads the rewritten bytes, and an interrupted run leaves a
+# zero-length library. `install` instead unlinks the destination and creates a new
+# inode, so anything holding the old one keeps reading the old one, intact.
+set -u
+tmp=$(mktemp -d -p /var/tmp lfs-strip.XXXXXX)   # /var/tmp, not tmpfs: libxul is ~200M
+trap 'rm -rf "$tmp"' EXIT
+
+# Record the inode, because `install` breaks hard links and this tree has large
+# hardlinked sets -- git alone ships 150 names on one inode, gcc/g++/c++ and the
+# e2fsprogs fsck/mkfs families several more.
+find /usr/bin /usr/sbin /usr/lib -xdev -type f \( -name '*.so*' -o -perm -u+x \) \
+     ! -path '/usr/lib/modules/*' ! -path '/usr/lib/debug/*' \
+     -printf '%i\t%p\n' 2>/dev/null | sort -s -k1,1n > "$tmp/inodes"
+
+n=0; relinked=0; skipped=0
+while IFS=$'\t' read -r ino first; do
+    readelf -S "$first" 2>/dev/null | grep -q '\.debug_info' || continue
+    mode=$(stat -c %a "$first"); uid=$(stat -c %u "$first"); gid=$(stat -c %g "$first")
+    cp -p "$first" "$tmp/work"      || { skipped=$((skipped+1)); continue; }
+    strip --strip-debug "$tmp/work" || { skipped=$((skipped+1)); continue; }
+    install -m "$mode" -o "$uid" -g "$gid" "$tmp/work" "$first" \
+                                    || { skipped=$((skipped+1)); continue; }
+    while IFS= read -r peer; do          # put the hard links back onto the new inode
+        [ "$peer" = "$first" ] || { ln -f "$first" "$peer" && relinked=$((relinked+1)); }
+    done < <(awk -v i="$ino" -F'\t' '$1==i {print $2}' "$tmp/inodes")
+    n=$((n+1))
+done < <(awk -F'\t' '!seen[$1]++' "$tmp/inodes")
+echo "stripped $n inode(s), restored $relinked hard link(s), skipped $skipped"
+
+find /usr/share/man  -name '*.[1-9]' ! -name '*.gz' -exec gzip -9 {} +
+find /usr/share/info -name '*.info*' ! -name '*.gz' -exec gzip -9 {} +
 ```
 `--strip-debug`, not `--strip-unneeded` or `--strip-all`: this project already recorded
 why (`libc.a` stripped with `--strip-unneeded` breaks statically-linked Rust programs
 with SIGSEGV on startup, a real Glibc-2.42+ bug -- LFS's own book switched to
 `--strip-debug` for exactly this reason, and this skill follows the same rule). Don't
-strip anything already stripped (wastes time, risk-free but pointless) and don't touch
-`/usr/lib/debug` if it exists on purpose (a deliberately-kept separate debug-info tree,
-not a mistake).
+touch `/usr/lib/debug` if it exists on purpose (a deliberately-kept separate debug-info
+tree, not a mistake), and don't touch `/usr/lib/modules` -- kernel modules are `0644` so
+the predicate above skips them anyway, but say so, because that is the first question
+asked after a strip pass ends in a panic.
+
+There is no exclusion list here and there must never be one. `PRACTICES.md`'s
+"Stripping a live shared library in place can zero it out" records three incidents, two
+of which were caused by an exclusion list that was self-consistently wrong. The
+unconditional copy-strip-install form is what makes "is this file in use?" a question
+nobody has to answer.
 
 Flag: report the count and rough disk-space estimate; only actually strip/compress on
 request.
