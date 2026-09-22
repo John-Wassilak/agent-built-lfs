@@ -5252,3 +5252,23 @@ a `gzip -9`:
 
 Option 1 is the better fit for how this project treats manifests. Left for a decision
 rather than guessed at.
+
+## Firewall: iptables.service now owns the whole posture (2026-09-22)
+
+Until today two things loaded rules on this box. iptables.service ran the shared
+blfs-iptables script at boot (IPv4 only), and `~/Scripts/firewall.sh` re-ran from the
+tty1 login hook in Config's `hosts/server/bash/bash_profile.local`, flushing and adding
+its own rules on top -- the only place the IPv6 block was applied. A boot with no
+console login left v6 at policy ACCEPT with sshd on `*:22`. `~/Scripts/firewall.sh` has
+since become the laptop's documentation-and-check script, which no longer loads rules
+when run bare, so the hook would have silently stopped firewalling.
+
+Fix: a host `blfs-iptables` block 2 in `hosts/server/blfs-overrides.json` -- the shared
+block verbatim plus the laptop's IPv6 block (DROP everywhere, flushed, ::1 allowed).
+Installed the heredoc from `hosts/server/recipes/blfs-iptables.sh` to
+`/etc/systemd/scripts/iptables` (previous copy at `iptables.bak-20260922-2`), restarted
+iptables.service, and removed the login hook. Verified after: `iptables -S` shows lo,
+ESTABLISHED/RELATED, NEW tcp/22 and OUTPUT accept; `ip6tables -S` shows DROP policies
+with only the two lo rules; tailscale still up. Two rules the old login script had are
+gone: the BROADCAST/MULTICAST DROP (no-op without a LOG rule) and its unconditioned
+tcp/22 accept (replaced by the NEW-state one).
