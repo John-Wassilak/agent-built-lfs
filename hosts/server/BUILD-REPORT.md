@@ -4585,3 +4585,58 @@ is not built here -- only the release in the prose is stale.
 
 `blfs-nss` rebuilt clean: **271 files** in the manifest against the previous 1, and both
 `pkg-config --modversion nss` and `nss-config --version` now report **3.126.0**.
+
+## htop: correctly tracked, correctly installed, and misreporting its own version (2026-09-22)
+
+Checked on request, mid-run. Three separate questions, and they have different answers.
+
+**Is it in a book?** Yes, and only one: `book/slfs-13.1/general/htop.html`. There is no
+`book/blfs-13.1/general/htop.html` -- htop is not a BLFS package at all. `packages.py`
+has it right as `slfs(175, "htop", "general/htop.html", "htop-3.5.3.tar.xz")`, and the
+comment above that entry already records why the recipe carries no
+`--enable-delayacct/--enable-capabilities/--enable-unicode`: htop-3.5.3's own configure
+defaults cover this build. So there is nothing to install by hand -- it is a book
+package, from the book this host pins, and it was rebuilt today as part of the sweep
+because the re-image had dropped it.
+
+**Is the install complete?** Yes. `recipes/slfs-13.1/slfs-htop.sh` is the SLFS page
+verbatim (`./configure --prefix=/usr && make`, then
+`make pixmapdir=/usr/share/icons/hicolor/128x128/apps install`), and the five-file
+manifest is exactly what that installs: the binary, the man page, the `.desktop` file,
+and the 128x128 PNG and scalable SVG icons. Small, but complete rather than truncated --
+the distinction the nss failure above made worth checking.
+
+**Why does it say `htop 3.5.3-3.5.3`?** An upstream defect in the 3.5.3 release tarball,
+not anything this project did. `configure.ac` builds the version as
+`m4_join([-], htop_release_version, htop_git_version)`, where `htop_git_version` is
+`m4_esyscmd([git describe --abbrev=7 --dirty --always --tags 2>/dev/null || echo ''])`.
+That `m4_esyscmd` runs at **autoconf** time, not configure time, so it was evaluated on
+the maintainers' machine inside their git checkout, where `git describe --tags` returned
+the release tag `3.5.3` -- giving `3.5.3-3.5.3`, which is then baked into the shipped
+`configure`. Confirmed directly rather than inferred: the tarball's own `configure`
+contains `PACKAGE_VERSION='3.5.3-3.5.3'` before anything here touches it, and `/sources`
+is not a git repository, so nothing local could have produced the suffix.
+
+htop's own `docs/understanding-htop-versions.md` says a *release* build should identify
+as `htop 9.9.9` and only a *development* build carries the `-<git describe>` suffix, so
+the tarball contradicts its own documented convention. Cosmetic: the binary is correct,
+and nothing here parses that string -- `lfsmaint` takes the version from the tarball name
+via the plan, so it records `htop-3.5.3` and `drift` is unaffected. Recorded rather than
+patched. It is not a `BOOK-PATCHES.md` item either: that file is for defects in the
+*book*, and the SLFS page accurately describes the tarball it points at.
+
+### The package database had not been rebuilt since before any of this
+
+Found while answering the htop question: `lfsmaint owns /usr/bin/htop` said **"no package
+owns"**, and the reason is bigger than htop. `/var/lib/lfsmaint/packages.db` was still the
+copy written at 2026-09-21 16:34, before a single one of these rebuilds. Mid-run it was
+reporting `ffmpeg-8.0.1`, `nss-3.120.1` and `llvm-21.1.8.src` for files that had already
+been replaced.
+
+`lfsbuild` writes `hosts/server/manifests/<step>.txt` per step, and it did so correctly
+throughout -- but `packages.db` is built *from* those manifests by `lfsmaint db` and does
+not update itself. `rebuild.sh`'s header claimed "the manifest is recaptured, so lfsmaint
+stays accurate without a separate `lfsmaint db` run", which was simply wrong and is now
+corrected in the file, with a `lfsmaint db` appended to the end of the run while it is
+still root. The run currently in flight was launched from the older copy, so that rebuild
+has to be done by hand once it finishes.
