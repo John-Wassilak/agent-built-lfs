@@ -1,3 +1,4 @@
 /etc/openbao/config.hcl
+/root/go/bin/bao
 /usr/bin/bao
 /usr/lib/systemd/system/openbao.service

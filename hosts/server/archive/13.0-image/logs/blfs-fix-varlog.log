@@ -1,0 +1,12 @@
+# blfs-fix-varlog  context=chroot  Tue Aug 25 13:58:09 2026
+# argv: sudo chroot /mnt/lfs /usr/bin/env -i HOME=/root TERM=screen.xterm-256color PS1=(lfs chroot) \u:\w\$  PATH=/usr/bin:/usr/sbin MAKEFLAGS=-j4 TESTSUITEFLAGS=-j4 /bin/bash --login -c /bin/bash "/sources/.build/blfs-fix-varlog.sh"
+
+changed group of '/var/log/lastlog' from root to utmp
+mode of '/var/log/lastlog' changed from 0644 (rw-r--r--) to 0664 (rw-rw-r--)
+mode of '/var/log/btmp' changed from 0644 (rw-r--r--) to 0600 (rw-------)
+### login accounting files:
+-rw------- 1 root root 0 Aug 25 13:58 /var/log/btmp
+-rw-r--r-- 1 root root 0 Aug 25 13:58 /var/log/faillog
+-rw-rw-r-- 1 root utmp 0 Aug 25 13:58 /var/log/lastlog
+-rw-r--r-- 1 root root 0 Aug 25 13:58 /var/log/wtmp
+manifest: 4 files

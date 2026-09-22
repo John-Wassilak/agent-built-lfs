@@ -296,11 +296,25 @@ out-of-tree, they are not part of the in-tree kernel build, and a kernel change 
 them until rebuilt against the new `/lib/modules/<ver>/` path. This has already caused one
 silent breakage on this machine. If X does not come up, check that first, not `xorg.conf`.
 
-Then the state move, which is what makes the repo describe reality again:
+Then the state move, which is what makes the repo describe reality again. **Do not defer
+this.** On the 2026-09-21 deploy it was the one item of the four below that did not get
+done, and it stayed undone through three subsequent sessions because every symptom it
+produced looked like an isolated stale version string. `--host server` kept resolving the
+*13.0* install's manifests and completion record onto a 13.1 machine, and `lfsmaint` was
+only correct because the database had been rebuilt by hand with an explicit
+`--manifests hosts/server-rebuild/manifests`. It also hid two packages that the re-image
+dropped. Done for this deploy on 2026-09-21, late; see `hosts/server/archive/README.md`.
 
-- `hosts/server-rebuild/state/completed` becomes `hosts/server/state/completed`.
-- The old `hosts/server/state/completed` is archived as the 13.0 image's history rather
-  than deleted -- it is the record of a real build, just not of the running one.
+- `hosts/server-rebuild/state/completed`, `timings.tsv`, `manifests/` and `logs/` become
+  `hosts/server/`'s. These are the records of the tree that was actually deployed.
+- The old `hosts/server/` copies are archived as the outgoing image's history rather than
+  deleted -- they are the record of a real build, just not of the running one.
+- **Diff the two `completed` files before moving.** Anything present in the outgoing
+  system's record but absent from the deployed tree's was built natively on the old root
+  and is simply *gone* after the re-image. On this deploy that was `blfs-unixodbc` (95
+  files) and `slfs-htop` (7), both added after the rebuild chroot had finished. Check
+  each against the live root rather than assuming: `ch08-intltool` and `ch08-xml-parser`
+  came up in the same diff and are correct absences, because LFS 13.1 dropped both pages.
 - `hosts/server/host.toml`'s `[hardware] kernel` still reads `6.18.10`; update it, along
   with the root/boot lines if anything about the disks changed.
 - Append the deploy to `BUILD-REPORT.md` with the date, per root `CLAUDE.md`. What broke

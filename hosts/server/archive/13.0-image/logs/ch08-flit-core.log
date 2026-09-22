@@ -1,0 +1,17 @@
+# ch08-flit-core  context=chroot  Tue Aug 25 08:31:25 2026
+# argv: sudo chroot /mnt/lfs /usr/bin/env -i HOME=/root TERM=screen.xterm-256color PS1=(lfs chroot) \u:\w\$  PATH=/usr/bin:/usr/sbin MAKEFLAGS=-j4 TESTSUITEFLAGS=-j4 /bin/bash --login -c /bin/bash "/sources/.build/ch08-flit-core.sh"
+
+Processing /sources/flit_core-3.12.0
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Building wheels for collected packages: flit_core
+  Building wheel for flit_core (pyproject.toml): started
+  Building wheel for flit_core (pyproject.toml): finished with status 'done'
+  Created wheel for flit_core: filename=flit_core-3.12.0-py3-none-any.whl size=45594 sha256=d3850e712b7491922cfdf70d78dbc701dec29f1ecf332eb6f1be8e24ef9ccb6e
+  Stored in directory: /tmp/pip-ephem-wheel-cache-6d4hq9g3/wheels/37/5e/01/893ac756450baf4720e34ff59d6955053e4093d10e40ad6490
+Successfully built flit_core
+Looking in links: dist
+Processing ./dist/flit_core-3.12.0-py3-none-any.whl
+Installing collected packages: flit_core
+Successfully installed flit_core-3.12.0
+manifest: 37 files

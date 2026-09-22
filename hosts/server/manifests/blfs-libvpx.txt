@@ -1,8 +1,8 @@
 /usr/bin/vpxdec
 /usr/bin/vpxenc
-/usr/include/vpx/vp8.h
 /usr/include/vpx/vp8cx.h
 /usr/include/vpx/vp8dx.h
+/usr/include/vpx/vp8.h
 /usr/include/vpx/vpx_codec.h
 /usr/include/vpx/vpx_decoder.h
 /usr/include/vpx/vpx_encoder.h

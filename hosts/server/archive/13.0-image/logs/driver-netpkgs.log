@@ -1,0 +1,19 @@
+running 5 step(s), 4 jobs
+
+  RUN     7 blfs-libunistring            [chroot] src=libunistring-1.4.1
+        OK  1.9 min   manifest: 52 files
+  RUN     8 blfs-libidn2                 [chroot] src=libidn2-2.3.8
+        OK  0.3 min   manifest: 71 files
+  RUN     9 blfs-libpsl                  [chroot] src=libpsl-0.21.5
+        OK  0.1 min   manifest: 6 files
+  RUN    10 blfs-curl                    [chroot] src=curl-8.18.0
+        OK  1.0 min   manifest: 1579 files
+  RUN    11 blfs-wget                    [chroot] src=wget-1.25.0
+        OK  0.9 min   manifest: 85 files
+
+all selected steps complete
+completed: 146/133
+next     : -- all steps complete --
+free     : 48.0 GB on /mnt/lfs
+vkfs     : /dev=up, /dev/pts=up, /proc=up, /sys=up, /run=up
+buildtime: 9.93 h so far

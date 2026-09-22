@@ -1,5 +1,5 @@
-/usr/include/X11/extensions/XInput.h
 /usr/include/X11/extensions/XInput2.h
+/usr/include/X11/extensions/XInput.h
 /usr/lib/libXi.la
 /usr/lib/libXi.so
 /usr/lib/libXi.so.6
@@ -82,4 +82,3 @@
 /usr/share/man/man3/XUngrabDevice.3
 /usr/share/man/man3/XUngrabDeviceButton.3
 /usr/share/man/man3/XUngrabDeviceKey.3
-/var/log/journal/fa41fba8515b4edca48224e5e93c9251/system.journal

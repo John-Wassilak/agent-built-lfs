@@ -1,0 +1,14 @@
+# blfs-sshd-unit  context=chroot  Tue Aug 25 12:05:04 2026
+# argv: sudo chroot /mnt/lfs /usr/bin/env -i HOME=/root TERM=screen.xterm-256color PS1=(lfs chroot) \u:\w\$  PATH=/usr/bin:/usr/sbin MAKEFLAGS=-j4 TESTSUITEFLAGS=-j4 /bin/bash --login -c /bin/bash "/sources/.build/blfs-sshd-unit.sh"
+
+install -d -m 755 //etc/default
+install -d -m 755 //usr/lib/tmpfiles.d
+install -d -m 755 //usr/lib/systemd/system
+install -m 644 blfs/units/sshd.service //usr/lib/systemd/system/
+install -m 644 blfs/units/sshdat.service //usr/lib/systemd/system/sshd@.service
+install -m 644 blfs/units/sshd.socket //usr/lib/systemd/system/
+test -n "/" || systemctl enable sshd.service
+'/etc/systemd/system/multi-user.target.wants/sshd.service' -> '/usr/lib/systemd/system/sshd.service'
+install: creating directory '/etc/systemd/system/sshd.service.d'
+### sshd.service enabled; host keys generated on first start
+manifest: 5 files

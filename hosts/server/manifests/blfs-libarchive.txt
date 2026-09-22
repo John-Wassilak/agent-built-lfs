@@ -3,8 +3,8 @@
 /usr/bin/bsdtar
 /usr/bin/bsdunzip
 /usr/bin/unzip
-/usr/include/archive.h
 /usr/include/archive_entry.h
+/usr/include/archive.h
 /usr/lib/libarchive.la
 /usr/lib/libarchive.so
 /usr/lib/libarchive.so.13
@@ -55,5 +55,3 @@
 /usr/share/man/man5/libarchive-formats.5
 /usr/share/man/man5/mtree.5
 /usr/share/man/man5/tar.5
-/var/lib/systemd/timesync/clock
-/var/log/journal/fa41fba8515b4edca48224e5e93c9251/system.journal

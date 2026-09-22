@@ -1,0 +1,26 @@
+running 10 step(s), 4 jobs
+
+  RUN   124/133 ch09-clock                   [chroot] src=-
+        OK  0.0 min
+  RUN   125/133 ch09-console                 [chroot] src=-
+        OK  0.0 min
+  RUN   126/133 ch09-locale                  [chroot] src=-
+        OK  0.0 min
+  RUN   127/133 ch09-inputrc                 [chroot] src=-
+        OK  0.0 min
+  RUN   128/133 ch09-systemd-custom          [chroot] src=-
+        OK  0.0 min
+  RUN   129/133 ch10-fstab                   [chroot] src=-
+        OK  0.0 min
+  RUN   130/133 ch10-kernel                  [chroot] src=linux-6.18.10
+        OK  13.8 min
+  SKIP  ch10-grub  (informational / deferred)
+  SKIP  ch11-theend  (informational / deferred)
+  SKIP  ch11-reboot  (informational / deferred)
+
+all selected steps complete
+completed: 133/133
+next     : -- all steps complete --
+free     : 50.1 GB on /mnt/lfs
+vkfs     : /dev=up, /dev/pts=up, /proc=up, /sys=up, /run=up
+buildtime: 8.36 h so far

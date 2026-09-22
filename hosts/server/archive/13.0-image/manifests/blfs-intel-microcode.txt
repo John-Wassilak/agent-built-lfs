@@ -1,0 +1,7 @@
+/boot/grub/grub.cfg
+/boot/microcode.img
+/etc/mtab
+/etc/udev/hwdb.bin
+/var/lib/systemd/random-seed
+/var/log/README
+/var/log/journal/fa41fba8515b4edca48224e5e93c9251/system.journal

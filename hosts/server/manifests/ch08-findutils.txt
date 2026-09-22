@@ -6,6 +6,7 @@
 /usr/share/info/dir
 /usr/share/info/find-maint.info
 /usr/share/info/find.info
+/usr/share/locale/ar/LC_MESSAGES/findutils.mo
 /usr/share/locale/be/LC_MESSAGES/findutils.mo
 /usr/share/locale/bg/LC_MESSAGES/findutils.mo
 /usr/share/locale/ca/LC_MESSAGES/findutils.mo

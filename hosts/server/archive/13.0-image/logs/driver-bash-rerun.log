@@ -1,0 +1,32 @@
+running 1 step(s), 4 jobs
+
+  RUN    73 ch08-bash                    [chroot] src=bash-5.3
+        FAILED rc=1 after 2.6 min -- see /home/john/lfs/logs/ch08-bash.log
+        last lines:
+        | utf8.c:38:10: warning: return discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+        |    38 |   return strchr (s, c);         /* for now */
+        |       |          ^~~~~~
+        | gcc -c   -I. -I../.. -I../.. -I../../lib -I../../include -I.  -DHAVE_CONFIG_H -DSHELL  -Wno-parentheses -Wno-format-security -g -O2   gettimeofday.c
+        | gcc -c   -I. -I../.. -I../.. -I../../lib -I../../include -I.  -DHAVE_CONFIG_H -DSHELL  -Wno-parentheses -Wno-format-security -g -O2   timers.c
+        | gcc -c   -I. -I../.. -I../.. -I../../lib -I../../include -I.  -DHAVE_CONFIG_H -DSHELL  -Wno-parentheses -Wno-format-security -g -O2   wcsnwidth.c
+        | gcc -c   -I. -I../.. -I../.. -I../../lib -I../../include -I.  -DHAVE_CONFIG_H -DSHELL  -Wno-parentheses -Wno-format-security -g -O2   mbschr.c
+        | mbschr.c: In function ‘mbschr’:
+        | mbschr.c:84:11: warning: return discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+        |    84 |   return (strchr (s, c));
+        |       |           ^~~~~~
+        | rm -f libsh.a
+        | ar cr libsh.a clktck.o clock.o getenv.o oslib.o setlinebuf.o strnlen.o itos.o zread.o zwrite.o shtty.o shmatch.o eaccess.o netconn.o netopen.o timeval.o makepath.o pathcanon.o pathphys.o tmpfile.o stringlist.o stringvec.o spell.o shquote.o strtrans.o snprintf.o mailstat.o fmtulong.o fmtullong.o fmtumax.o zcatfd.o zmapfd.o winsize.o wcsdup.o fpurge.o zgetline.o mbscmp.o mbsncmp.o uconvert.o ufuncs.o casemod.o input_avail.o mbscasecmp.o fnxform.o unicode.o shmbchar.o strvis.o strscpy.o anonfile.o compat.o utf8.o random.o gettimeofday.o timers.o wcsnwidth.o mbschr.o
+        | test -n "ranlib" && ranlib libsh.a
+        | make[1]: Leaving directory '/sources/bash-5.3/lib/sh'
+        | rm -f bash
+        | gcc -L./builtins -L/usr/lib -L/usr/lib -L./lib/glob -L./lib/tilde  -L./lib/sh  -rdynamic -g -O2   -o bash shell.o eval.o y.tab.o general.o make_cmd.o print_cmd.o dispose_cmd.o execute_cmd.o variables.o copy_cmd.o error.o expr.o flags.o jobs.o subst.o hashcmd.o hashlib.o mailcheck.o trap.o input.o unwind_prot.o pathexp.o sig.o test.o version.o alias.o array.o arrayfunc.o assoc.o braces.o bracecomp.o bashhist.o bashline.o  list.o stringlib.o locale.o findcmd.o redir.o pcomplete.o pcomplib.o syntax.o xmalloc.o  -lbuiltins -lglob -lsh -lreadline -lhistory -lcurses -ltilde     -ldl 
+        | /usr/bin/ld: ./lib/sh/libsh.a(tmpfile.o): in function `sh_mktmpname':
+        | /sources/bash-5.3/lib/sh/tmpfile.c:173:(.text+0x172): warning: the use of `mktemp' is dangerous, better use `mkstemp' or `mkdtemp'
+        | ls -l bash
+        | -rwxr-xr-x 1 root root 3638616 Aug 25 14:00 bash
+        | size bash
+        |    text	   data	    bss	    dec	    hex	filename
+        | 1023098	  23080	  62336	1108514	 10ea22	bash
+        | chown: invalid user: ‘tester’
+
+STOPPED at ch08-bash

@@ -1,0 +1,13 @@
+/home/john/.npmrc
+/home/john/.npm-global/bin/claude
+/home/john/.npm-global/lib/node_modules/@anthropic-ai/claude-code/LICENSE.md
+/home/john/.npm-global/lib/node_modules/@anthropic-ai/claude-code/README.md
+/home/john/.npm-global/lib/node_modules/@anthropic-ai/claude-code/bin/claude.exe
+/home/john/.npm-global/lib/node_modules/@anthropic-ai/claude-code/cli-wrapper.cjs
+/home/john/.npm-global/lib/node_modules/@anthropic-ai/claude-code/install.cjs
+/home/john/.npm-global/lib/node_modules/@anthropic-ai/claude-code/node_modules/@anthropic-ai/claude-code-linux-x64/LICENSE.md
+/home/john/.npm-global/lib/node_modules/@anthropic-ai/claude-code/node_modules/@anthropic-ai/claude-code-linux-x64/README.md
+/home/john/.npm-global/lib/node_modules/@anthropic-ai/claude-code/node_modules/@anthropic-ai/claude-code-linux-x64/claude
+/home/john/.npm-global/lib/node_modules/@anthropic-ai/claude-code/node_modules/@anthropic-ai/claude-code-linux-x64/package.json
+/home/john/.npm-global/lib/node_modules/@anthropic-ai/claude-code/package.json
+/home/john/.npm-global/lib/node_modules/@anthropic-ai/claude-code/sdk-tools.d.ts

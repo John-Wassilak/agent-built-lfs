@@ -1,5 +1,9 @@
+/usr/include/opus/opus_defines.h
+/usr/include/opus/opus.h
+/usr/include/opus/opus_multistream.h
+/usr/include/opus/opus_projection.h
+/usr/include/opus/opus_types.h
 /usr/lib/libopus.so
 /usr/lib/libopus.so.0
 /usr/lib/libopus.so.0.11.1
 /usr/lib/pkgconfig/opus.pc
-/var/lib/systemd/timesync/clock

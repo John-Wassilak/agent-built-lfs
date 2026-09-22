@@ -1,0 +1,12 @@
+# blfs-nv-codec-headers  context=native  mode=native  Thu Aug 27 18:45:31 2026
+# argv: sudo /usr/bin/env -i HOME=/root TERM=screen.xterm-256color PS1=(lfs native) \u:\w\$  PATH=/usr/bin:/usr/sbin MAKEFLAGS=-j4 TESTSUITEFLAGS=-j4 /bin/bash --login -c /bin/bash "/sources/.build/blfs-nv-codec-headers.sh"
+
+sed 's#@@PREFIX@@#/usr#' ffnvcodec.pc.in > ffnvcodec.pc
+sed 's#@@PREFIX@@#/usr#' ffnvcodec.pc.in > ffnvcodec.pc
+install -m 0755 -d '/usr/include/ffnvcodec'
+install -m 0644 include/ffnvcodec/*.h '/usr/include/ffnvcodec'
+install -m 0755 -d '/usr/lib/pkgconfig'
+install -m 0644 ffnvcodec.pc '/usr/lib/pkgconfig'
+### installed pkg-config version
+11.1.5.3
+manifest: 6 files

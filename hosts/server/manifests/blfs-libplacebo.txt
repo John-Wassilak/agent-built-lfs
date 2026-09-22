@@ -13,12 +13,12 @@
 /usr/include/libplacebo/opengl.h
 /usr/include/libplacebo/options.h
 /usr/include/libplacebo/renderer.h
-/usr/include/libplacebo/shaders.h
 /usr/include/libplacebo/shaders/colorspace.h
 /usr/include/libplacebo/shaders/custom.h
 /usr/include/libplacebo/shaders/deinterlacing.h
 /usr/include/libplacebo/shaders/dithering.h
 /usr/include/libplacebo/shaders/film_grain.h
+/usr/include/libplacebo/shaders.h
 /usr/include/libplacebo/shaders/icc.h
 /usr/include/libplacebo/shaders/lut.h
 /usr/include/libplacebo/shaders/sampling.h

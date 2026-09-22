@@ -8,6 +8,7 @@
 /usr/bin/colcrt
 /usr/bin/colrm
 /usr/bin/column
+/usr/bin/copyfilerange
 /usr/bin/coresched
 /usr/bin/dmesg
 /usr/bin/eject
@@ -18,6 +19,7 @@
 /usr/bin/fincore
 /usr/bin/findmnt
 /usr/bin/flock
+/usr/bin/getino
 /usr/bin/getopt
 /usr/bin/hardlink
 /usr/bin/hexdump
@@ -172,6 +174,7 @@
 /usr/share/bash-completion/completions/colcrt
 /usr/share/bash-completion/completions/colrm
 /usr/share/bash-completion/completions/column
+/usr/share/bash-completion/completions/copyfilerange
 /usr/share/bash-completion/completions/coresched
 /usr/share/bash-completion/completions/ctrlaltdel
 /usr/share/bash-completion/completions/delpart
@@ -191,6 +194,7 @@
 /usr/share/bash-completion/completions/fsck.minix
 /usr/share/bash-completion/completions/fsfreeze
 /usr/share/bash-completion/completions/fstrim
+/usr/share/bash-completion/completions/getino
 /usr/share/bash-completion/completions/getopt
 /usr/share/bash-completion/completions/hardlink
 /usr/share/bash-completion/completions/hexdump
@@ -266,8 +270,9 @@
 /usr/share/bash-completion/completions/whereis
 /usr/share/bash-completion/completions/wipefs
 /usr/share/bash-completion/completions/zramctl
-/usr/share/doc/util-linux-2.41.3/getopt-example.bash
-/usr/share/doc/util-linux-2.41.3/getopt-example.tcsh
+/usr/share/doc/util-linux-2.42.2/getopt-example.bash
+/usr/share/doc/util-linux-2.42.2/getopt-example.tcsh
+/usr/share/locale/ar/LC_MESSAGES/util-linux.mo
 /usr/share/locale/ca/LC_MESSAGES/util-linux.mo
 /usr/share/locale/cs/LC_MESSAGES/util-linux.mo
 /usr/share/locale/da/LC_MESSAGES/util-linux.mo
@@ -308,6 +313,7 @@
 /usr/share/man/man1/colcrt.1
 /usr/share/man/man1/colrm.1
 /usr/share/man/man1/column.1
+/usr/share/man/man1/copyfilerange.1
 /usr/share/man/man1/coresched.1
 /usr/share/man/man1/dmesg.1
 /usr/share/man/man1/eject.1
@@ -317,6 +323,7 @@
 /usr/share/man/man1/fallocate.1
 /usr/share/man/man1/fincore.1
 /usr/share/man/man1/flock.1
+/usr/share/man/man1/getino.1
 /usr/share/man/man1/getopt.1
 /usr/share/man/man1/hardlink.1
 /usr/share/man/man1/hexdump.1

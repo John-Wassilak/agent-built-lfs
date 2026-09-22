@@ -27,3 +27,5 @@
 /usr/lib/firefox/platform.ini
 /usr/lib/firefox/removed-files
 /usr/lib/firefox/vaapitest
+/usr/share/applications/firefox.desktop
+/usr/share/pixmaps/firefox.png

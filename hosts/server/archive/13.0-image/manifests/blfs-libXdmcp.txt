@@ -1,0 +1,10 @@
+/etc/mtab
+/etc/udev/hwdb.bin
+/usr/include/X11/Xdmcp.h
+/usr/lib/libXdmcp.la
+/usr/lib/libXdmcp.so
+/usr/lib/libXdmcp.so.6
+/usr/lib/libXdmcp.so.6.0.0
+/usr/lib/pkgconfig/xdmcp.pc
+/usr/share/doc/libXdmcp-1.1.5/xdmcp.xml
+/var/log/README

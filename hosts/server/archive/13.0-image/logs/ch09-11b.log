@@ -1,0 +1,14 @@
+running 11 step(s), 4 jobs
+
+  RUN   123/133 ch09-symlinks                [chroot] src=-
+        OK  0.0 min
+  RUN   124/133 ch09-clock                   [chroot] src=-
+        FAILED rc=1 after 0.0 min -- see /home/john/lfs/logs/ch09-clock.log
+        last lines:
+        | # ch09-clock  context=chroot  Tue Aug 25 09:16:23 2026
+        | # argv: sudo chroot /mnt/lfs /usr/bin/env -i HOME=/root TERM=screen.xterm-256color PS1=(lfs chroot) \u:\w\$  PATH=/usr/bin:/usr/sbin MAKEFLAGS=-j4 TESTSUITEFLAGS=-j4 /bin/bash --login -c /bin/bash "/sources/.build/ch09-clock.sh"
+        | 
+        | System has not been booted with systemd as init system (PID 1). Can't operate.
+        | Failed to connect to system scope bus via local transport: Host is down
+
+STOPPED at ch09-clock

@@ -1,0 +1,17 @@
+# ch08-packaging  context=chroot  Tue Aug 25 08:31:27 2026
+# argv: sudo chroot /mnt/lfs /usr/bin/env -i HOME=/root TERM=screen.xterm-256color PS1=(lfs chroot) \u:\w\$  PATH=/usr/bin:/usr/sbin MAKEFLAGS=-j4 TESTSUITEFLAGS=-j4 /bin/bash --login -c /bin/bash "/sources/.build/ch08-packaging.sh"
+
+Processing /sources/packaging-26.0
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Building wheels for collected packages: packaging
+  Building wheel for packaging (pyproject.toml): started
+  Building wheel for packaging (pyproject.toml): finished with status 'done'
+  Created wheel for packaging: filename=packaging-26.0-py3-none-any.whl size=74366 sha256=3a8d2a069993686598eafca767092b96471130d8bcc28f8f6b97ca72519c9f71
+  Stored in directory: /tmp/pip-ephem-wheel-cache-xhexf53f/wheels/a0/d4/ae/d48d60867372ad4a1c3aceb9ec2ba947b6aed35be982a892a7
+Successfully built packaging
+Looking in links: dist
+Processing ./dist/packaging-26.0-py3-none-any.whl
+Installing collected packages: packaging
+Successfully installed packaging-26.0
+manifest: 43 files

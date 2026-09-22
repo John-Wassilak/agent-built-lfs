@@ -1,0 +1,701 @@
+# blfs-libidn2  context=chroot  Tue Aug 25 13:16:53 2026
+# argv: sudo chroot /mnt/lfs /usr/bin/env -i HOME=/root TERM=screen.xterm-256color PS1=(lfs chroot) \u:\w\$  PATH=/usr/bin:/usr/sbin MAKEFLAGS=-j4 TESTSUITEFLAGS=-j4 /bin/bash --login -c /bin/bash "/sources/.build/blfs-libidn2.sh"
+
+configure: Libidn2 2.3.8 libidn2 2.3.8 0x02030008 4:0:4 0
+checking for a BSD-compatible install... /usr/bin/install -c
+checking whether build environment is sane... yes
+checking for a race-free mkdir -p... /usr/bin/mkdir -p
+checking for gawk... gawk
+checking whether make sets $(MAKE)... yes
+checking whether make supports nested variables... yes
+checking whether UID '0' is supported by ustar format... yes
+checking whether GID '0' is supported by ustar format... yes
+checking how to create a ustar tar archive... gnutar
+checking whether make supports nested variables... (cached) yes
+checking for gcc... gcc
+checking whether the C compiler works... yes
+checking for C compiler default output file name... a.out
+checking for suffix of executables... 
+checking whether we are cross compiling... no
+checking for suffix of object files... o
+checking whether the compiler supports GNU C... yes
+checking whether gcc accepts -g... yes
+checking for gcc option to enable C11 features... none needed
+checking whether gcc understands -c and -o together... yes
+checking whether the compiler is clang... no
+checking for compiler option needed when checking for declarations... none
+checking whether make supports the include directive... yes (GNU style)
+checking dependency style of gcc... gcc3
+checking for stdio.h... yes
+checking for stdlib.h... yes
+checking for string.h... yes
+checking for inttypes.h... yes
+checking for stdint.h... yes
+checking for strings.h... yes
+checking for sys/stat.h... yes
+checking for sys/types.h... yes
+checking for unistd.h... yes
+checking for wchar.h... yes
+checking for minix/config.h... no
+checking for stdbool.h... yes
+checking for sys/socket.h... yes
+checking for error.h... yes
+checking for getopt.h... yes
+checking for limits.h... yes
+checking for sys/param.h... yes
+checking for sys/time.h... yes
+checking for stdckdint.h... yes
+checking for iconv.h... yes
+checking for features.h... yes
+checking for crtdefs.h... no
+checking whether it is safe to define __EXTENSIONS__... yes
+checking whether _XOPEN_SOURCE should be defined... no
+checking build system type... x86_64-pc-linux-gnu
+checking host system type... x86_64-pc-linux-gnu
+checking how to run the C preprocessor... gcc -E
+checking for grep that handles long lines and -e... /usr/bin/grep
+checking for egrep... /usr/bin/grep -E
+checking for Minix Amsterdam compiler... no
+checking for ar... ar
+checking for ranlib... ranlib
+checking for gcc option to support large files... none needed
+checking how to print strings... printf
+checking for a sed that does not truncate output... /usr/bin/sed
+checking for fgrep... /usr/bin/grep -F
+checking for ld used by gcc... /usr/bin/ld
+checking if the linker (/usr/bin/ld) is GNU ld... yes
+checking for BSD- or MS-compatible name lister (nm)... /usr/bin/nm -B
+checking the name lister (/usr/bin/nm -B) interface... BSD nm
+checking whether ln -s works... yes
+checking the maximum length of command line arguments... 1572864
+checking how to convert x86_64-pc-linux-gnu file names to x86_64-pc-linux-gnu format... func_convert_file_noop
+checking how to convert x86_64-pc-linux-gnu file names to toolchain format... func_convert_file_noop
+checking for /usr/bin/ld option to reload object files... -r
+checking for file... file
+checking for objdump... objdump
+checking how to recognize dependent libraries... pass_all
+checking for dlltool... no
+checking how to associate runtime and link libraries... printf %s\n
+checking for archiver @FILE support... @
+checking for strip... strip
+checking for ranlib... (cached) ranlib
+checking command to parse /usr/bin/nm -B output from gcc object... ok
+checking for sysroot... no
+checking for a working dd... /usr/bin/dd
+checking how to truncate binary pipes... /usr/bin/dd bs=4096 count=1
+checking for mt... no
+checking if : is a manifest tool... no
+checking for dlfcn.h... yes
+checking for objdir... .libs
+checking if gcc supports -fno-rtti -fno-exceptions... no
+checking for gcc option to produce PIC... -fPIC -DPIC
+checking if gcc PIC flag -fPIC -DPIC works... yes
+checking if gcc static flag -static works... yes
+checking if gcc supports -c -o file.o... yes
+checking if gcc supports -c -o file.o... (cached) yes
+checking whether the gcc linker (/usr/bin/ld -m elf_x86_64) supports shared libraries... yes
+checking whether -lc should be explicitly linked in... no
+checking dynamic linker characteristics... GNU/Linux ld.so
+checking how to hardcode library paths into programs... immediate
+checking whether stripping libraries is possible... yes
+checking if libtool supports shared libraries... yes
+checking whether to build shared libraries... yes
+checking whether to build static libraries... no
+checking for size_t... yes
+checking for working alloca.h... yes
+checking for alloca... yes
+checking whether the preprocessor supports include_next... yes
+checking whether source code line length is unlimited... yes
+checking for _set_invalid_parameter_handler... no
+checking for fcntl... yes
+checking for symlink... yes
+checking for getdtablesize... yes
+checking for getexecname... no
+checking for lstat... yes
+checking for complete errno.h... yes
+checking for gcc options needed to detect all undeclared functions... none needed
+checking for error... yes
+checking whether error_at_line is declared... yes
+checking for error_at_line... yes
+checking for working error function... yes
+checking whether strerror_r is declared... yes
+checking whether strerror_r returns char *... yes
+checking whether ctype.h defines __header_inline... no
+checking for working fcntl.h... yes
+checking for pid_t... yes
+checking for mode_t... yes
+checking whether stat file-mode macros are broken... no
+checking for C/C++ restrict keyword... __restrict__
+checking for nlink_t... yes
+checking whether getdelim is declared... yes
+checking whether getdtablesize is declared... yes
+checking whether getline is declared... yes
+checking for getopt.h... (cached) yes
+checking for getopt_long_only... yes
+checking whether getopt is POSIX compatible... yes
+checking for working GNU getopt function... yes
+checking for working GNU getopt_long function... yes
+checking for glibc-compatible sys/cdefs.h... yes
+checking for inline... inline
+checking whether limits.h has WORD_BIT, BOOL_WIDTH etc.... yes
+checking whether limits.h has SSIZE_MAX... yes
+checking whether malloc is ptrdiff_t safe... yes
+checking whether malloc, realloc, calloc set errno on failure... yes
+checking whether malloc (0) returns nonnull... yes
+checking whether the compiler produces multi-arch binaries... no
+checking for O_CLOEXEC... yes
+checking for promoted mode_t type... mode_t
+checking for good max_align_t... yes
+checking whether NULL can be used in arbitrary expressions... yes
+checking for unreachable... yes
+checking whether nullptr_t needs <stddef.h>... yes
+checking for clean definition of __STDC_VERSION_STDDEF_H__... no
+checking for wint_t... yes
+checking whether wint_t is large enough... yes
+checking whether stdint.h conforms to C99... yes
+checking whether stdint.h works without ISO C predefines... yes
+checking whether stdint.h has UINTMAX_WIDTH etc.... yes
+checking whether fcloseall is declared... yes
+checking whether getw is declared... yes
+checking whether putw is declared... yes
+checking which flavor of printf attribute matches inttypes macros... system
+checking for nl_langinfo and CODESET... yes
+checking for an english Unicode locale... en_US.UTF-8
+checking whether ecvt is declared... yes
+checking whether fcvt is declared... yes
+checking whether gcvt is declared... yes
+checking whether MB_CUR_MAX is correct... yes
+checking whether strerror(0) succeeds... yes
+checking for off64_t... yes
+checking for blksize_t... yes
+checking for blkcnt_t... yes
+checking for struct timespec in <time.h>... yes
+checking for TIME_UTC in <time.h>... yes
+checking whether execvpe is declared... yes
+checking for valgrind... no
+checking for C compiler option to allow warnings... -Wno-error
+checking for alloca as a compiler built-in... yes
+checking for static_assert... yes, a keyword
+checking for bool, true, false... yes
+checking whether // is distinct from /... no
+checking whether dup2 works... yes
+checking whether fcntl handles F_DUPFD correctly... yes
+checking whether fcntl understands F_DUPFD_CLOEXEC... needs runtime check
+checking for getdelim... yes
+checking for working getdelim function... yes
+checking whether getdtablesize works... yes
+checking for getline... yes
+checking for working getline function... yes
+checking for getprogname... no
+checking whether program_invocation_name is declared... yes
+checking whether program_invocation_name is declared... (cached) yes
+checking whether program_invocation_short_name is declared... yes
+checking whether __argv is declared... no
+checking whether the compiler generally respects inline... yes
+checking if gcc/ld supports -Wl,--output-def... no
+checking if LD -Wl,--version-script works... yes
+checking whether the -Werror option is usable... yes
+checking for simple visibility declarations... yes
+checking whether the compiler supports the __inline keyword... yes
+checking whether open recognizes a trailing slash... yes
+checking whether program_invocation_name is declared... (cached) yes
+checking whether program_invocation_short_name is declared... (cached) yes
+checking for rawmemchr... yes
+checking for ssize_t... yes
+checking whether stat handles trailing slashes on files... yes
+checking for struct stat.st_atim.tv_nsec... yes
+checking whether struct stat.st_atim is of type struct timespec... yes
+checking for struct stat.st_birthtimespec.tv_nsec... no
+checking for struct stat.st_birthtimensec... no
+checking for struct stat.st_birthtim.tv_nsec... no
+checking for va_copy... yes
+checking for strchrnul... yes
+checking whether strchrnul works... yes
+checking for working strerror function... yes
+checking for strverscmp... yes
+checking whether strverscmp works... yes
+checking for variable-length arrays... yes
+checking for ld... /usr/bin/ld -m elf_x86_64
+checking if the linker (/usr/bin/ld -m elf_x86_64) is GNU ld... yes
+checking for shared library run path origin... done
+checking 32-bit host C ABI... no
+checking for ELF binary format... yes
+checking for the common suffixes of directories in the library search path... lib,lib,lib
+checking for iconv... yes
+checking for working iconv... yes
+checking whether iconv is compatible with its POSIX signature... yes
+checking whether included libunistring is requested... no
+checking for libunistring... yes
+checking how to link with libunistring... /usr/lib/libunistring.so
+checking for libunistring version... 1.4.1
+checking for unistring/woe32dll.h... yes
+checking whether <wchar.h> uses 'inline' correctly... yes
+checking whether wcsdup is declared... yes
+checking for bool, true, false... (cached) yes
+checking whether free is known to preserve errno... yes
+checking whether the compiler generally respects inline... (cached) yes
+checking whether to use the included libunistring... no
+checking for ssize_t... (cached) yes
+checking for pkg-config... /usr/bin/pkg-config
+checking pkg-config is at least version 0.9.0... yes
+checking for gtk-doc... no
+configure: WARNING:
+  You will not be able to create source packages with 'make dist'
+  because gtk-doc >= 1.14 is not found.
+checking for gtkdoc-check... no
+checking for gtkdoc-check... no
+checking for gtkdoc-rebase... no
+checking for gtkdoc-mkpdf... no
+checking whether to build gtk-doc documentation... no
+checking for GTKDOC_DEPS... no
+checking whether NLS is requested... yes
+checking for msgfmt... /usr/bin/msgfmt
+checking for gmsgfmt... /usr/bin/msgfmt
+checking for xgettext... /usr/bin/xgettext
+checking for msgmerge... /usr/bin/msgmerge
+checking for CFPreferencesCopyAppValue... no
+checking for CFLocaleCopyCurrent... no
+checking for GNU gettext in libc... yes
+checking whether to use NLS... yes
+checking where the gettext function comes from... libc
+checking whether to build with code coverage support... no
+checking whether C compiler handles -Werror -Wunknown-warning-option... no
+checking whether -Wno-missing-field-initializers is needed... no
+checking whether -Wuninitialized is supported... yes
+checking whether C compiler handles -fanalyzer... yes
+checking whether C compiler handles -fstrict-flex-arrays... yes
+checking whether C compiler handles -Wall... yes
+checking whether C compiler handles -Warith-conversion... yes
+checking whether C compiler handles -Wcast-align=strict... yes
+checking whether C compiler handles -Wdate-time... yes
+checking whether C compiler handles -Wdisabled-optimization... yes
+checking whether C compiler handles -Wdouble-promotion... yes
+checking whether C compiler handles -Wduplicated-branches... yes
+checking whether C compiler handles -Wduplicated-cond... yes
+checking whether C compiler handles -Wextra... yes
+checking whether C compiler handles -Wformat-signedness... yes
+checking whether C compiler handles -Wflex-array-member-not-at-end... yes
+checking whether C compiler handles -Winit-self... yes
+checking whether C compiler handles -Winvalid-pch... yes
+checking whether C compiler handles -Wlogical-op... yes
+checking whether C compiler handles -Wmissing-declarations... yes
+checking whether C compiler handles -Wmissing-include-dirs... yes
+checking whether C compiler handles -Wmissing-prototypes... yes
+checking whether C compiler handles -Wmissing-variable-declarations... yes
+checking whether C compiler handles -Wnested-externs... yes
+checking whether C compiler handles -Wnull-dereference... yes
+checking whether C compiler handles -Wold-style-definition... yes
+checking whether C compiler handles -Wopenmp-simd... yes
+checking whether C compiler handles -Woverlength-strings... yes
+checking whether C compiler handles -Wpacked... yes
+checking whether C compiler handles -Wpointer-arith... yes
+checking whether C compiler handles -Wshadow... yes
+checking whether C compiler handles -Wstack-protector... yes
+checking whether C compiler handles -Wstrict-flex-arrays... yes
+checking whether C compiler handles -Wstrict-prototypes... yes
+checking whether C compiler handles -Wsuggest-attribute=cold... yes
+checking whether C compiler handles -Wsuggest-attribute=format... yes
+checking whether C compiler handles -Wsuggest-attribute=malloc... yes
+checking whether C compiler handles -Wsuggest-attribute=noreturn... yes
+checking whether C compiler handles -Wsuggest-final-methods... yes
+checking whether C compiler handles -Wsuggest-final-types... yes
+checking whether C compiler handles -Wsync-nand... yes
+checking whether C compiler handles -Wtrampolines... yes
+checking whether C compiler handles -Wuninitialized... yes
+checking whether C compiler handles -Wunknown-pragmas... yes
+checking whether C compiler handles -Wunsafe-loop-optimizations... yes
+checking whether C compiler handles -Wunused-macros... yes
+checking whether C compiler handles -Wvariadic-macros... yes
+checking whether C compiler handles -Wvector-operation-performance... yes
+checking whether C compiler handles -Wvla... yes
+checking whether C compiler handles -Wwrite-strings... yes
+checking whether C compiler handles -Warray-bounds=2... yes
+checking whether C compiler handles -Wattribute-alias=2... yes
+checking whether C compiler handles -Wbidi-chars=any,ucn... yes
+checking whether C compiler handles -Wformat-overflow=2... yes
+checking whether C compiler handles -Wformat=2... yes
+checking whether C compiler handles -Wformat-truncation=2... yes
+checking whether C compiler handles -Wimplicit-fallthrough=5... yes
+checking whether C compiler handles -Wshift-overflow=2... yes
+checking whether C compiler handles -Wuse-after-free=3... yes
+checking whether C compiler handles -Wunused-const-variable=2... yes
+checking whether C compiler handles -Wvla-larger-than=4031... yes
+checking whether C compiler handles -Wthread-safety... no
+checking whether C compiler handles -Wno-analyzer-malloc-leak... yes
+checking whether C compiler handles -Wno-sign-compare... yes
+checking whether C compiler handles -Wno-system-headers... yes
+checking that generated files are newer than configure... done
+configure: creating ./config.status
+config.status: creating doc/Makefile
+config.status: creating doc/reference/Makefile
+config.status: creating doc/reference/version.xml
+config.status: creating Makefile
+config.status: creating examples/Makefile
+config.status: creating lib/idn2.h
+config.status: creating lib/Makefile
+config.status: creating unistring/Makefile
+config.status: creating gl/Makefile
+config.status: creating libidn2.pc
+config.status: creating po/Makefile.in
+config.status: creating src/Makefile
+config.status: creating tests/Makefile
+config.status: creating fuzz/Makefile
+config.status: creating config.h
+config.status: executing depfiles commands
+config.status: executing libtool commands
+config.status: executing po-directories commands
+config.status: creating po/POTFILES
+config.status: creating po/Makefile
+config.status: executing version-timestamp commands
+configure: summary of main build options:
+
+  Version:            2.3.8
+  Libtool version     4:0:4
+  DLL version:        0
+  Header version:     major 2 minor 3 patch 8 number 0x02030008
+  Build system:       x86_64-pc-linux-gnu
+  Host/Target system: x86_64-pc-linux-gnu
+  Install prefix:     /usr
+  Compiler:           gcc
+  CFLAGS:             -g -O2
+  CPPFLAGS:           
+  LDFLAGS:            
+  Library types:      Shared=yes, Static=no
+
+  Warning flags:      
+      WERROR_CFLAGS:  
+WERROR_TESTS_CFLAGS:  
+        WARN_CFLAGS:   -fanalyzer -fstrict-flex-arrays -Wall -Warith-conversion -Wcast-align=strict -Wdate-time -Wdisabled-optimization -Wdouble-promotion -Wduplicated-branches -Wduplicated-cond -Wextra -Wformat-signedness -Wflex-array-member-not-at-end -Winit-self -Winvalid-pch -Wlogical-op -Wmissing-declarations -Wmissing-include-dirs -Wmissing-prototypes -Wmissing-variable-declarations -Wnested-externs -Wnull-dereference -Wold-style-definition -Wopenmp-simd -Woverlength-strings -Wpacked -Wpointer-arith -Wshadow -Wstack-protector -Wstrict-flex-arrays -Wstrict-prototypes -Wsuggest-attribute=cold -Wsuggest-attribute=format -Wsuggest-attribute=malloc -Wsuggest-attribute=noreturn -Wsuggest-final-methods -Wsuggest-final-types -Wsync-nand -Wtrampolines -Wuninitialized -Wunknown-pragmas -Wunsafe-loop-optimizations -Wunused-macros -Wvariadic-macros -Wvector-operation-performance -Wvla -Wwrite-strings -Warray-bounds=2 -Wattribute-alias=2 -Wbidi-chars=any,ucn -Wformat-overflow=2 -Wformat=2 -Wformat-truncation=2 -Wimplicit-fallthrough=5 -Wshift-overflow=2 -Wuse-after-free=3 -Wunused-const-variable=2 -Wvla-larger-than=4031 -Wno-analyzer-malloc-leak -Wno-sign-compare -Wno-system-headers
+
+  Documentation:      yes
+
+  nl_langinfo:        yes
+  Libiconv:           yes, in libc
+         LTLIBICONV:  
+  Libunistring:       yes
+            VERSION:  1.4.1
+     LTLIBUNISTRING:  -L/usr/lib -lunistring
+
+  Version script:     yes
+
+  Valgrind:              
+
+make  all-recursive
+make[1]: Entering directory '/sources/libidn2-2.3.8'
+Making all in gl
+make[2]: Entering directory '/sources/libidn2-2.3.8/gl'
+  GEN      alloca.h
+  GEN      error.h
+  GEN      fcntl.h
+  GEN      limits.h
+  GEN      stddef.h
+  GEN      stdio.h
+  GEN      stdlib.h
+  GEN      string.h
+  GEN      sys/stat.h
+  GEN      sys/types.h
+  GEN      time.h
+  GEN      unistd.h
+make  all-recursive
+make[3]: Entering directory '/sources/libidn2-2.3.8/gl'
+make[4]: Entering directory '/sources/libidn2-2.3.8/gl'
+  CC       libgnu_la-basename-lgpl.lo
+  CC       libgnu_la-cloexec.lo
+  CC       libgnu_la-fcntl.lo
+  CC       libgnu_la-fd-hook.lo
+  CC       libgnu_la-getprogname.lo
+  CC       libgnu_la-malloca.lo
+  CC       libgnu_la-progname.lo
+  CC       libgnu_la-stat-time.lo
+  CC       libgnu_la-stdlib.lo
+  CC       libgnu_la-unistd.lo
+  CC       libgnu_la-version-etc.lo
+  CCLD     libgnu.la
+make[4]: Leaving directory '/sources/libidn2-2.3.8/gl'
+make[3]: Leaving directory '/sources/libidn2-2.3.8/gl'
+make[2]: Leaving directory '/sources/libidn2-2.3.8/gl'
+Making all in unistring
+make[2]: Entering directory '/sources/libidn2-2.3.8/unistring'
+  GEN      iconv.h
+  GEN      inttypes.h
+  GEN      limits.h
+  GEN      stddef.h
+  GEN      stdlib.h
+  GEN      string.h
+  GEN      sys/types.h
+  GEN      unistd.h
+  GEN      wchar.h
+make  all-am
+make[3]: Entering directory '/sources/libidn2-2.3.8/unistring'
+  CC       libunistring_la-c-ctype.lo
+  CC       libunistring_la-c-strcasecmp.lo
+  CC       libunistring_la-c-strncasecmp.lo
+  CC       libunistring_la-localcharset.lo
+  CC       libunistring_la-stdlib.lo
+  CC       libunistring_la-striconveh.lo
+  CC       libunistring_la-striconveha.lo
+  CC       libunistring_la-unistd.lo
+  CC       unictype/libunistring_la-categ_none.lo
+  CC       uninorm/libunistring_la-decompose-internal.lo
+  CC       uninorm/libunistring_la-decomposition-table.lo
+  CCLD     libunistring.la
+make[3]: Leaving directory '/sources/libidn2-2.3.8/unistring'
+make[2]: Leaving directory '/sources/libidn2-2.3.8/unistring'
+Making all in lib
+make[2]: Entering directory '/sources/libidn2-2.3.8/lib'
+make  all-am
+make[3]: Entering directory '/sources/libidn2-2.3.8/lib'
+  CC       idna.lo
+  CC       lookup.lo
+  CC       register.lo
+  CC       decode.lo
+  CC       bidi.lo
+  CC       version.lo
+  CC       error.lo
+  CC       punycode.lo
+  CC       free.lo
+  CC       data.lo
+  CC       tr46map.lo
+  CC       tables.lo
+  CC       context.lo
+  CCLD     libidn2.la
+make[3]: Leaving directory '/sources/libidn2-2.3.8/lib'
+make[2]: Leaving directory '/sources/libidn2-2.3.8/lib'
+Making all in src
+make[2]: Entering directory '/sources/libidn2-2.3.8/src'
+make  all-am
+make[3]: Entering directory '/sources/libidn2-2.3.8/src'
+  CC       idn2.o
+  CC       libidn2_cmd_la-idn2_cmd.lo
+  CCLD     libidn2_cmd.la
+  CCLD     idn2
+make[3]: Leaving directory '/sources/libidn2-2.3.8/src'
+make[2]: Leaving directory '/sources/libidn2-2.3.8/src'
+Making all in examples
+make[2]: Entering directory '/sources/libidn2-2.3.8/examples'
+  CC       decode.o
+  CC       lookup.o
+  CC       register.o
+  CC       example-toascii.o
+  CC       example-tounicode.o
+  CCLD     decode
+  CCLD     lookup
+  CCLD     register
+  CCLD     example-toascii
+  CCLD     example-tounicode
+make[2]: Leaving directory '/sources/libidn2-2.3.8/examples'
+Making all in fuzz
+make[2]: Entering directory '/sources/libidn2-2.3.8/fuzz'
+make[2]: Nothing to be done for 'all'.
+make[2]: Leaving directory '/sources/libidn2-2.3.8/fuzz'
+Making all in po
+make[2]: Entering directory '/sources/libidn2-2.3.8/po'
+make[2]: Nothing to be done for 'all'.
+make[2]: Leaving directory '/sources/libidn2-2.3.8/po'
+Making all in doc
+make[2]: Entering directory '/sources/libidn2-2.3.8/doc'
+make  all-recursive
+make[3]: Entering directory '/sources/libidn2-2.3.8/doc'
+Making all in reference
+make[4]: Entering directory '/sources/libidn2-2.3.8/doc/reference'
+make[4]: Nothing to be done for 'all'.
+make[4]: Leaving directory '/sources/libidn2-2.3.8/doc/reference'
+make[4]: Entering directory '/sources/libidn2-2.3.8/doc'
+make[4]: Nothing to be done for 'all-am'.
+make[4]: Leaving directory '/sources/libidn2-2.3.8/doc'
+make[3]: Leaving directory '/sources/libidn2-2.3.8/doc'
+make[2]: Leaving directory '/sources/libidn2-2.3.8/doc'
+Making all in tests
+make[2]: Entering directory '/sources/libidn2-2.3.8/tests'
+make  all-am
+make[3]: Entering directory '/sources/libidn2-2.3.8/tests'
+make[3]: Nothing to be done for 'all-am'.
+make[3]: Leaving directory '/sources/libidn2-2.3.8/tests'
+make[2]: Leaving directory '/sources/libidn2-2.3.8/tests'
+make[2]: Entering directory '/sources/libidn2-2.3.8'
+make[2]: Leaving directory '/sources/libidn2-2.3.8'
+make[1]: Leaving directory '/sources/libidn2-2.3.8'
+make  install-recursive
+make[1]: Entering directory '/sources/libidn2-2.3.8'
+Making install in gl
+make[2]: Entering directory '/sources/libidn2-2.3.8/gl'
+make  install-recursive
+make[3]: Entering directory '/sources/libidn2-2.3.8/gl'
+make[4]: Entering directory '/sources/libidn2-2.3.8/gl'
+make[5]: Entering directory '/sources/libidn2-2.3.8/gl'
+make[5]: Nothing to be done for 'install-exec-am'.
+make[5]: Leaving directory '/sources/libidn2-2.3.8/gl'
+make[4]: Leaving directory '/sources/libidn2-2.3.8/gl'
+make[3]: Leaving directory '/sources/libidn2-2.3.8/gl'
+make[2]: Leaving directory '/sources/libidn2-2.3.8/gl'
+Making install in unistring
+make[2]: Entering directory '/sources/libidn2-2.3.8/unistring'
+make  install-am
+make[3]: Entering directory '/sources/libidn2-2.3.8/unistring'
+make[4]: Entering directory '/sources/libidn2-2.3.8/unistring'
+make[4]: Nothing to be done for 'install-exec-am'.
+make[4]: Nothing to be done for 'install-data-am'.
+make[4]: Leaving directory '/sources/libidn2-2.3.8/unistring'
+make[3]: Leaving directory '/sources/libidn2-2.3.8/unistring'
+make[2]: Leaving directory '/sources/libidn2-2.3.8/unistring'
+Making install in lib
+make[2]: Entering directory '/sources/libidn2-2.3.8/lib'
+make  install-am
+make[3]: Entering directory '/sources/libidn2-2.3.8/lib'
+make[4]: Entering directory '/sources/libidn2-2.3.8/lib'
+ /usr/bin/mkdir -p '/usr/lib'
+ /usr/bin/mkdir -p '/usr/include'
+ /bin/sh ../libtool   --mode=install /usr/bin/install -c   libidn2.la '/usr/lib'
+ /usr/bin/install -c -m 644 idn2.h '/usr/include'
+libtool: install: /usr/bin/install -c .libs/libidn2.so.0.4.0 /usr/lib/libidn2.so.0.4.0
+libtool: install: (cd /usr/lib && { ln -s -f libidn2.so.0.4.0 libidn2.so.0 || { rm -f libidn2.so.0 && ln -s libidn2.so.0.4.0 libidn2.so.0; }; })
+libtool: install: (cd /usr/lib && { ln -s -f libidn2.so.0.4.0 libidn2.so || { rm -f libidn2.so && ln -s libidn2.so.0.4.0 libidn2.so; }; })
+libtool: install: /usr/bin/install -c .libs/libidn2.lai /usr/lib/libidn2.la
+libtool: finish: PATH="/usr/bin:/usr/sbin:/sbin" ldconfig -n /usr/lib
+----------------------------------------------------------------------
+Libraries have been installed in:
+   /usr/lib
+
+If you ever happen to want to link against installed libraries
+in a given directory, LIBDIR, you must either use libtool, and
+specify the full pathname of the library, or use the '-LLIBDIR'
+flag during linking and do at least one of the following:
+   - add LIBDIR to the 'LD_LIBRARY_PATH' environment variable
+     during execution
+   - add LIBDIR to the 'LD_RUN_PATH' environment variable
+     during linking
+   - use the '-Wl,-rpath -Wl,LIBDIR' linker flag
+   - have your system administrator add LIBDIR to '/etc/ld.so.conf'
+
+See any operating system documentation about shared libraries for
+more information, such as the ld(1) and ld.so(8) manual pages.
+----------------------------------------------------------------------
+make[4]: Leaving directory '/sources/libidn2-2.3.8/lib'
+make[3]: Leaving directory '/sources/libidn2-2.3.8/lib'
+make[2]: Leaving directory '/sources/libidn2-2.3.8/lib'
+Making install in src
+make[2]: Entering directory '/sources/libidn2-2.3.8/src'
+make  install-am
+make[3]: Entering directory '/sources/libidn2-2.3.8/src'
+make[4]: Entering directory '/sources/libidn2-2.3.8/src'
+make[4]: Nothing to be done for 'install-data-am'.
+ /usr/bin/mkdir -p '/usr/bin'
+  /bin/sh ../libtool   --mode=install /usr/bin/install -c idn2 '/usr/bin'
+libtool: install: /usr/bin/install -c .libs/idn2 /usr/bin/idn2
+make[4]: Leaving directory '/sources/libidn2-2.3.8/src'
+make[3]: Leaving directory '/sources/libidn2-2.3.8/src'
+make[2]: Leaving directory '/sources/libidn2-2.3.8/src'
+Making install in examples
+make[2]: Entering directory '/sources/libidn2-2.3.8/examples'
+make[3]: Entering directory '/sources/libidn2-2.3.8/examples'
+make[3]: Nothing to be done for 'install-exec-am'.
+make[3]: Nothing to be done for 'install-data-am'.
+make[3]: Leaving directory '/sources/libidn2-2.3.8/examples'
+make[2]: Leaving directory '/sources/libidn2-2.3.8/examples'
+Making install in fuzz
+make[2]: Entering directory '/sources/libidn2-2.3.8/fuzz'
+make[3]: Entering directory '/sources/libidn2-2.3.8/fuzz'
+make[3]: Nothing to be done for 'install-exec-am'.
+make[3]: Nothing to be done for 'install-data-am'.
+make[3]: Leaving directory '/sources/libidn2-2.3.8/fuzz'
+make[2]: Leaving directory '/sources/libidn2-2.3.8/fuzz'
+Making install in po
+make[2]: Entering directory '/sources/libidn2-2.3.8/po'
+installing cs.gmo as /usr/share/locale/cs/LC_MESSAGES/libidn2.mo
+installing da.gmo as /usr/share/locale/da/LC_MESSAGES/libidn2.mo
+installing de.gmo as /usr/share/locale/de/LC_MESSAGES/libidn2.mo
+installing eo.gmo as /usr/share/locale/eo/LC_MESSAGES/libidn2.mo
+installing es.gmo as /usr/share/locale/es/LC_MESSAGES/libidn2.mo
+installing fi.gmo as /usr/share/locale/fi/LC_MESSAGES/libidn2.mo
+installing fr.gmo as /usr/share/locale/fr/LC_MESSAGES/libidn2.mo
+installing fur.gmo as /usr/share/locale/fur/LC_MESSAGES/libidn2.mo
+installing hr.gmo as /usr/share/locale/hr/LC_MESSAGES/libidn2.mo
+installing hu.gmo as /usr/share/locale/hu/LC_MESSAGES/libidn2.mo
+installing id.gmo as /usr/share/locale/id/LC_MESSAGES/libidn2.mo
+installing it.gmo as /usr/share/locale/it/LC_MESSAGES/libidn2.mo
+installing ja.gmo as /usr/share/locale/ja/LC_MESSAGES/libidn2.mo
+installing ka.gmo as /usr/share/locale/ka/LC_MESSAGES/libidn2.mo
+installing ko.gmo as /usr/share/locale/ko/LC_MESSAGES/libidn2.mo
+installing lv.gmo as /usr/share/locale/lv/LC_MESSAGES/libidn2.mo
+installing nl.gmo as /usr/share/locale/nl/LC_MESSAGES/libidn2.mo
+installing pl.gmo as /usr/share/locale/pl/LC_MESSAGES/libidn2.mo
+installing pt_BR.gmo as /usr/share/locale/pt_BR/LC_MESSAGES/libidn2.mo
+installing ro.gmo as /usr/share/locale/ro/LC_MESSAGES/libidn2.mo
+installing ru.gmo as /usr/share/locale/ru/LC_MESSAGES/libidn2.mo
+installing sr.gmo as /usr/share/locale/sr/LC_MESSAGES/libidn2.mo
+installing sv.gmo as /usr/share/locale/sv/LC_MESSAGES/libidn2.mo
+installing uk.gmo as /usr/share/locale/uk/LC_MESSAGES/libidn2.mo
+installing vi.gmo as /usr/share/locale/vi/LC_MESSAGES/libidn2.mo
+installing zh_CN.gmo as /usr/share/locale/zh_CN/LC_MESSAGES/libidn2.mo
+if test "libidn2" = "gettext-tools"; then \
+  /usr/bin/mkdir -p /usr/share/gettext/po; \
+  for file in Makefile.in.in remove-potcdate.sin quot.sed boldquot.sed en@quot.header en@boldquot.header insert-header.sin Rules-quot   Makevars.template; do \
+    /usr/bin/install -c -m 644 ./$file \
+		    /usr/share/gettext/po/$file; \
+  done; \
+  for file in Makevars; do \
+    rm -f /usr/share/gettext/po/$file; \
+  done; \
+else \
+  : ; \
+fi
+make[2]: Leaving directory '/sources/libidn2-2.3.8/po'
+Making install in doc
+make[2]: Entering directory '/sources/libidn2-2.3.8/doc'
+make  install-recursive
+make[3]: Entering directory '/sources/libidn2-2.3.8/doc'
+Making install in reference
+make[4]: Entering directory '/sources/libidn2-2.3.8/doc/reference'
+make[5]: Entering directory '/sources/libidn2-2.3.8/doc/reference'
+make[5]: Nothing to be done for 'install-exec-am'.
+ /usr/bin/install -c -m 644 ./html/api-index-0.1.html
+ /usr/bin/install -c -m 644 ./html/api-index-2.0.0.html
+ /usr/bin/install -c -m 644 ./html/api-index-2.1.1.html
+ /usr/bin/install -c -m 644 ./html/api-index-2.3.5.html
+ /usr/bin/install -c -m 644 ./html/api-index-deprecated.html
+ /usr/bin/install -c -m 644 ./html/api-index-full.html
+ /usr/bin/install -c -m 644 ./html/home.png
+ /usr/bin/install -c -m 644 ./html/index.html
+ /usr/bin/install -c -m 644 ./html/left-insensitive.png
+ /usr/bin/install -c -m 644 ./html/left.png
+ /usr/bin/install -c -m 644 ./html/libidn2.html
+ /usr/bin/install -c -m 644 ./html/right-insensitive.png
+ /usr/bin/install -c -m 644 ./html/right.png
+ /usr/bin/install -c -m 644 ./html/style.css
+ /usr/bin/install -c -m 644 ./html/up-insensitive.png
+ /usr/bin/install -c -m 644 ./html/up.png
+make[5]: Leaving directory '/sources/libidn2-2.3.8/doc/reference'
+make[4]: Leaving directory '/sources/libidn2-2.3.8/doc/reference'
+make[4]: Entering directory '/sources/libidn2-2.3.8/doc'
+make[5]: Entering directory '/sources/libidn2-2.3.8/doc'
+make[5]: Nothing to be done for 'install-exec-am'.
+ /usr/bin/mkdir -p '/usr/share/man/man1'
+ /usr/bin/mkdir -p '/usr/share/man/man3'
+ /usr/bin/mkdir -p '/usr/share/info'
+ /usr/bin/install -c -m 644 idn2.1 '/usr/share/man/man1'
+ /usr/bin/install -c -m 644 ./libidn2.info '/usr/share/info'
+ /usr/bin/install -c -m 644 man/idn2_to_unicode_8z4z.3 man/idn2_to_unicode_4z4z.3 man/idn2_to_unicode_44i.3 man/idn2_to_unicode_8z8z.3 man/idn2_to_unicode_8zlz.3 man/idn2_to_unicode_lzlz.3 man/idn2_lookup_u8.3 man/idn2_lookup_ul.3 man/idn2_to_ascii_4i.3 man/idn2_to_ascii_4i2.3 man/idn2_to_ascii_4z.3 man/idn2_to_ascii_8z.3 man/idn2_to_ascii_lz.3 man/idn2_register_u8.3 man/idn2_register_ul.3 man/idn2_strerror.3 man/idn2_strerror_name.3 man/idn2_check_version.3 man/idn2_free.3 '/usr/share/man/man3'
+ install-info --info-dir='/usr/share/info' '/usr/share/info/libidn2.info'
+make[5]: Leaving directory '/sources/libidn2-2.3.8/doc'
+make[4]: Leaving directory '/sources/libidn2-2.3.8/doc'
+make[3]: Leaving directory '/sources/libidn2-2.3.8/doc'
+make[2]: Leaving directory '/sources/libidn2-2.3.8/doc'
+Making install in tests
+make[2]: Entering directory '/sources/libidn2-2.3.8/tests'
+make  install-am
+make[3]: Entering directory '/sources/libidn2-2.3.8/tests'
+make[4]: Entering directory '/sources/libidn2-2.3.8/tests'
+make[4]: Nothing to be done for 'install-exec-am'.
+make[4]: Nothing to be done for 'install-data-am'.
+make[4]: Leaving directory '/sources/libidn2-2.3.8/tests'
+make[3]: Leaving directory '/sources/libidn2-2.3.8/tests'
+make[2]: Leaving directory '/sources/libidn2-2.3.8/tests'
+make[2]: Entering directory '/sources/libidn2-2.3.8'
+make[3]: Entering directory '/sources/libidn2-2.3.8'
+make[3]: Nothing to be done for 'install-exec-am'.
+ /usr/bin/mkdir -p '/usr/lib/pkgconfig'
+ /usr/bin/install -c -m 644 libidn2.pc '/usr/lib/pkgconfig'
+make[3]: Leaving directory '/sources/libidn2-2.3.8'
+make[2]: Leaving directory '/sources/libidn2-2.3.8'
+make[1]: Leaving directory '/sources/libidn2-2.3.8'
+manifest: 71 files

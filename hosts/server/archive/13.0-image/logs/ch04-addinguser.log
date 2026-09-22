@@ -1,0 +1,11 @@
+# ch04-addinguser  context=root-host  Tue Aug 25 00:47:30 2026
+# argv: sudo LFS=/mnt/lfs LFS_TGT=x86_64-lfs-linux-gnu MAKEFLAGS=-j4 /bin/bash /mnt/lfs/sources/.build/ch04-addinguser.sh
+
+changed ownership of '/mnt/lfs/usr' from root to lfs
+changed ownership of '/mnt/lfs/usr/bin' from root to lfs
+changed ownership of '/mnt/lfs/usr/lib' from root to lfs
+changed ownership of '/mnt/lfs/usr/sbin' from root to lfs
+changed ownership of '/mnt/lfs/var' from root to lfs
+changed ownership of '/mnt/lfs/etc' from root to lfs
+changed ownership of '/mnt/lfs/tools' from root to lfs
+changed ownership of '/mnt/lfs/lib64' from root to lfs

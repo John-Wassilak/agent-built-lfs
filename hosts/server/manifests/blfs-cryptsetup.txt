@@ -18,6 +18,7 @@
 /usr/share/locale/it/LC_MESSAGES/cryptsetup.mo
 /usr/share/locale/ja/LC_MESSAGES/cryptsetup.mo
 /usr/share/locale/ka/LC_MESSAGES/cryptsetup.mo
+/usr/share/locale/ko/LC_MESSAGES/cryptsetup.mo
 /usr/share/locale/nl/LC_MESSAGES/cryptsetup.mo
 /usr/share/locale/pl/LC_MESSAGES/cryptsetup.mo
 /usr/share/locale/pt_BR/LC_MESSAGES/cryptsetup.mo
@@ -29,6 +30,7 @@
 /usr/share/locale/uk/LC_MESSAGES/cryptsetup.mo
 /usr/share/locale/vi/LC_MESSAGES/cryptsetup.mo
 /usr/share/locale/zh_CN/LC_MESSAGES/cryptsetup.mo
+/usr/share/man/man8/cryptsetup.8
 /usr/share/man/man8/cryptsetup-benchmark.8
 /usr/share/man/man8/cryptsetup-bitlkDump.8
 /usr/share/man/man8/cryptsetup-bitlkOpen.8
@@ -65,6 +67,5 @@
 /usr/share/man/man8/cryptsetup-tcryptDump.8
 /usr/share/man/man8/cryptsetup-tcryptOpen.8
 /usr/share/man/man8/cryptsetup-token.8
-/usr/share/man/man8/cryptsetup.8
 /usr/share/man/man8/integritysetup.8
 /usr/share/man/man8/veritysetup.8

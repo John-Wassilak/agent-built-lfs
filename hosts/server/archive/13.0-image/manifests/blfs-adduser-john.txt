@@ -1,0 +1,11 @@
+/etc/group
+/etc/gshadow
+/etc/passwd
+/etc/passwd-
+/etc/shadow
+/etc/shadow-
+/home/john/.bash_logout
+/home/john/.bash_profile
+/home/john/.bashrc
+/home/john/.profile
+/home/john/.vimrc

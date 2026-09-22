@@ -21,4 +21,3 @@
 /usr/share/doc/jq/NEWS.md
 /usr/share/doc/jq/README.md
 /usr/share/man/man1/jq.1
-/var/lib/systemd/timesync/clock

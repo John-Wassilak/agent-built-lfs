@@ -1,0 +1,9 @@
+/usr/bin/SvtAv1EncApp
+/usr/lib/cmake/SVT-AV1/SVT-AV1-sharedTargets-release.cmake
+/usr/lib/cmake/SVT-AV1/SVT-AV1-sharedTargets.cmake
+/usr/lib/cmake/SVT-AV1/SVT-AV1Config.cmake
+/usr/lib/cmake/SVT-AV1/SVT-AV1ConfigVersion.cmake
+/usr/lib/libSvtAv1Enc.so
+/usr/lib/libSvtAv1Enc.so.4
+/usr/lib/libSvtAv1Enc.so.4.0.1
+/usr/lib/pkgconfig/SvtAv1Enc.pc

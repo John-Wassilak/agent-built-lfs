@@ -1,0 +1,13 @@
+running 2 step(s), 4 jobs
+
+  RUN   120/133 ch08-stripping               [chroot] src=-
+        OK  0.4 min   manifest: 1204 files
+  RUN   121/133 ch08-cleanup                 [chroot] src=-
+        OK  0.0 min   manifest: 0 files
+
+all selected steps complete
+completed: 121/133
+next     : 122 (9.2) ch09-network [chroot]
+free     : 50.6 GB on /mnt/lfs
+vkfs     : /dev=up, /dev/pts=up, /proc=up, /sys=up, /run=up
+buildtime: 8.13 h so far

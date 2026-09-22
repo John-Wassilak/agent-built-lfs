@@ -1,0 +1,21 @@
+# blfs-lfsmaint  context=chroot  Tue Aug 25 14:10:01 2026
+# argv: sudo chroot /mnt/lfs /usr/bin/env -i HOME=/root TERM=screen.xterm-256color PS1=(lfs chroot) \u:\w\$  PATH=/usr/bin:/usr/sbin MAKEFLAGS=-j4 TESTSUITEFLAGS=-j4 /bin/bash --login -c /bin/bash "/sources/.build/blfs-lfsmaint.sh"
+
+removed '/usr/sbin/lfsmaint'
+'lfsmaint' -> '/usr/sbin/lfsmaint'
+removed '/usr/share/doc/lfsmaint/README'
+'README' -> '/usr/share/doc/lfsmaint/README'
+removed '/usr/lib/systemd/system/lfsmaint-check.service'
+'units/lfsmaint-check.service' -> '/usr/lib/systemd/system/lfsmaint-check.service'
+removed '/usr/lib/systemd/system/lfsmaint-check.timer'
+'units/lfsmaint-check.timer' -> '/usr/lib/systemd/system/lfsmaint-check.timer'
+'/etc/systemd/system/timers.target.wants/lfsmaint-check.timer' -> '/usr/lib/systemd/system/lfsmaint-check.timer'
+=== lfsmaint report for / ===
+
+packages tracked : 127  (BLFS: 16, LFS: 111)
+files tracked    : 53754
+book release     : 13.0
+
+largest packages by file count:
+  openssl-3.6.1: 9627
+manifest: 5 files

@@ -1,0 +1,18 @@
+# ch08-wheel  context=chroot  Tue Aug 25 08:31:28 2026
+# argv: sudo chroot /mnt/lfs /usr/bin/env -i HOME=/root TERM=screen.xterm-256color PS1=(lfs chroot) \u:\w\$  PATH=/usr/bin:/usr/sbin MAKEFLAGS=-j4 TESTSUITEFLAGS=-j4 /bin/bash --login -c /bin/bash "/sources/.build/ch08-wheel.sh"
+
+Processing /sources/wheel-0.46.3
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Building wheels for collected packages: wheel
+  Building wheel for wheel (pyproject.toml): started
+  Building wheel for wheel (pyproject.toml): finished with status 'done'
+  Created wheel for wheel: filename=wheel-0.46.3-py3-none-any.whl size=30557 sha256=c342dc30eb1b8e19161eb37306b20b3c20ea4f5164a021d221a70995efbc67fd
+  Stored in directory: /tmp/pip-ephem-wheel-cache-mrkkcxmu/wheels/63/97/28/392b34ddb4cc10519ad6c4fd44690f9d4f02b6c32a75148cd7
+Successfully built wheel
+Looking in links: dist
+Processing ./dist/wheel-0.46.3-py3-none-any.whl
+Requirement already satisfied: packaging>=24.0 in /usr/lib/python3.14/site-packages (from wheel) (26.0)
+Installing collected packages: wheel
+Successfully installed wheel-0.46.3
+manifest: 36 files

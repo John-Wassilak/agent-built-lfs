@@ -1,0 +1,6 @@
+/etc/skel/.vimrc
+/root/.bash_logout
+/root/.bash_profile
+/root/.bashrc
+/root/.profile
+/root/.vimrc

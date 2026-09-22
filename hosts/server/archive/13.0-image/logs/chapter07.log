@@ -1,0 +1,35 @@
+running 12 step(s), 4 jobs
+
+  RUN    26/133 ch07-changingowner           [root-host] src=-
+        OK  0.0 min
+  RUN    27/133 ch07-kernfs                  [root-host] src=-
+        OK  0.0 min
+  OK    ch07-chroot  (chroot entry verification)
+        chroot-ok
+        x86_64
+        /usr/bin
+  RUN    29/133 ch07-creatingdirs            [chroot] src=-
+        OK  0.0 min
+  RUN    30/133 ch07-createfiles             [chroot] src=-
+        OK  0.7 min
+  RUN    31/133 ch07-gettext                 [chroot] src=gettext-1.0
+        OK  5.6 min
+  RUN    32/133 ch07-bison                   [chroot] src=bison-3.8.2
+        OK  0.7 min
+  RUN    33/133 ch07-perl                    [chroot] src=perl-5.42.0
+        OK  2.3 min
+  RUN    34/133 ch07-Python                  [chroot] src=Python-3.14.3
+        OK  2.3 min
+  RUN    35/133 ch07-texinfo                 [chroot] src=texinfo-7.2
+        OK  0.9 min
+  RUN    36/133 ch07-util-linux              [chroot] src=util-linux-2.41.3
+        OK  1.0 min
+  RUN    37/133 ch07-cleanup                 [chroot] src=-
+        OK  0.0 min
+
+all selected steps complete
+completed: 37/133
+next     : 38 (8.2) ch08-pkgmgt [chroot]
+free     : 51.6 GB on /mnt/lfs
+vkfs     : /dev=up, /dev/pts=up, /proc=up, /sys=up, /run=up
+buildtime: 1.21 h so far

@@ -25,8 +25,8 @@
 /usr/share/locale/nb/LC_MESSAGES/popt.mo
 /usr/share/locale/nl/LC_MESSAGES/popt.mo
 /usr/share/locale/pl/LC_MESSAGES/popt.mo
-/usr/share/locale/pt/LC_MESSAGES/popt.mo
 /usr/share/locale/pt_BR/LC_MESSAGES/popt.mo
+/usr/share/locale/pt/LC_MESSAGES/popt.mo
 /usr/share/locale/ro/LC_MESSAGES/popt.mo
 /usr/share/locale/ru/LC_MESSAGES/popt.mo
 /usr/share/locale/si/LC_MESSAGES/popt.mo
@@ -41,5 +41,3 @@
 /usr/share/locale/zh_CN/LC_MESSAGES/popt.mo
 /usr/share/locale/zh_TW/LC_MESSAGES/popt.mo
 /usr/share/man/man3/popt.3
-/var/lib/systemd/timesync/clock
-/var/log/journal/fa41fba8515b4edca48224e5e93c9251/system.journal

@@ -1,0 +1,15 @@
+# blfs-claude-code  context=chroot  Tue Aug 25 12:05:05 2026
+# argv: sudo chroot /mnt/lfs /usr/bin/env -i HOME=/root TERM=screen.xterm-256color PS1=(lfs chroot) \u:\w\$  PATH=/usr/bin:/usr/sbin MAKEFLAGS=-j4 TESTSUITEFLAGS=-j4 /bin/bash --login -c /bin/bash "/sources/.build/blfs-claude-code.sh"
+
+
+added 2 packages in 13s
+npm notice
+npm notice New major version of npm available! 10.9.4 -> 12.0.2
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2
+npm notice To update run: npm install -g npm@12.0.2
+npm notice
+### versions
+v22.22.0
+10.9.4
+2.1.245 (Claude Code)
+manifest: 37 files

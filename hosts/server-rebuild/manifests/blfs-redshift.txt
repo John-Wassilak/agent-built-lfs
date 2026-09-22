@@ -1,4 +1,0 @@
-/usr/bin/redshift
-/usr/lib/systemd/user/redshift-gtk.service
-/usr/lib/systemd/user/redshift.service
-/usr/share/man/man1/redshift.1

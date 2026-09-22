@@ -1,0 +1,50 @@
+running 11 step(s), 4 jobs
+
+  RUN   111/133 ch08-vim                     [chroot] src=vim-9.2.0078
+        OK  1.1 min   manifest: 2555 files
+  RUN   112/133 ch08-markupsafe              [chroot] src=markupsafe-3.0.3
+        OK  0.0 min   manifest: 15 files
+  RUN   113/133 ch08-jinja2                  [chroot] src=jinja2-3.1.6
+        OK  0.0 min   manifest: 58 files
+  RUN   114/133 ch08-systemd                 [chroot] src=systemd-259.1
+        OK  3.3 min   manifest: 474 files
+  RUN   115/133 ch08-dbus                    [chroot] src=dbus-1.16.2
+        OK  0.2 min   manifest: 35 files
+  RUN   116/133 ch08-man-db                  [chroot] src=man-db-2.13.1
+        OK  0.9 min   manifest: 110 files
+  RUN   117/133 ch08-procps-ng               [chroot] src=procps-ng-4.0.6
+        OK  0.3 min   manifest: 170 files
+  RUN   118/133 ch08-util-linux              [chroot] src=util-linux-2.41.3
+        OK  1.1 min   manifest: 434 files
+  RUN   119/133 ch08-e2fsprogs               [chroot] src=e2fsprogs-1.47.3
+        OK  0.6 min   manifest: 140 files
+  RUN   120/133 ch08-stripping               [chroot] src=-
+        FAILED rc=1 after 0.0 min -- see /home/john/lfs/logs/ch08-stripping.log
+        last lines:
+        | removed '/usr/lib/libreadline.so.8.3'
+        | '/tmp/libreadline.so.8.3' -> '/usr/lib/libreadline.so.8.3'
+        | removed '/usr/lib/libz.so.1.3.2'
+        | '/tmp/libz.so.1.3.2' -> '/usr/lib/libz.so.1.3.2'
+        | removed '/usr/lib/libzstd.so.1.5.7'
+        | '/tmp/libzstd.so.1.5.7' -> '/usr/lib/libzstd.so.1.5.7'
+        | removed '/usr/lib/libnss_compat.so.2'
+        | '/tmp/libnss_compat.so.2' -> '/usr/lib/libnss_compat.so.2'
+        | removed '/usr/lib/libnss_db.so.2'
+        | '/tmp/libnss_db.so.2' -> '/usr/lib/libnss_db.so.2'
+        | removed '/usr/lib/libnss_dns.so.2'
+        | '/tmp/libnss_dns.so.2' -> '/usr/lib/libnss_dns.so.2'
+        | removed '/usr/lib/libnss_files.so.2'
+        | '/tmp/libnss_files.so.2' -> '/usr/lib/libnss_files.so.2'
+        | removed '/usr/lib/libnss_hesiod.so.2'
+        | '/tmp/libnss_hesiod.so.2' -> '/usr/lib/libnss_hesiod.so.2'
+        | removed '/usr/lib/libnss_myhostname.so.2'
+        | '/tmp/libnss_myhostname.so.2' -> '/usr/lib/libnss_myhostname.so.2'
+        | removed '/usr/lib/libnss_mymachines.so.2'
+        | '/tmp/libnss_mymachines.so.2' -> '/usr/lib/libnss_mymachines.so.2'
+        | removed '/usr/lib/libnss_resolve.so.2'
+        | '/tmp/libnss_resolve.so.2' -> '/usr/lib/libnss_resolve.so.2'
+        | removed '/usr/lib/libnss_systemd.so.2'
+        | '/tmp/libnss_systemd.so.2' -> '/usr/lib/libnss_systemd.so.2'
+        | strip: /usr/lib/libgcc_s.so: file format not recognized
+
+STOPPED at ch08-stripping

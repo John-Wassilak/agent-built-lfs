@@ -17,10 +17,11 @@
 /usr/sbin/ss
 /usr/sbin/tc
 /usr/share/bash-completion/completions/devlink
+/usr/share/bash-completion/completions/dpll
 /usr/share/bash-completion/completions/tc
-/usr/share/doc/iproute2-6.18.0/COPYING
-/usr/share/doc/iproute2-6.18.0/README
-/usr/share/doc/iproute2-6.18.0/README.devel
+/usr/share/doc/iproute2-7.1.0/COPYING
+/usr/share/doc/iproute2-7.1.0/README
+/usr/share/doc/iproute2-7.1.0/README.devel
 /usr/share/iproute2/bpf_pinning
 /usr/share/iproute2/ematch_map
 /usr/share/iproute2/group
@@ -55,6 +56,7 @@
 /usr/share/man/man8/devlink-sb.8
 /usr/share/man/man8/devlink-trap.8
 /usr/share/man/man8/devlink.8
+/usr/share/man/man8/dpll.8
 /usr/share/man/man8/genl.8
 /usr/share/man/man8/ifstat.8
 /usr/share/man/man8/ip-address.8

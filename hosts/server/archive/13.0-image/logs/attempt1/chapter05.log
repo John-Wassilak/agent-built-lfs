@@ -1,0 +1,19 @@
+running 5 step(s), 4 jobs
+
+  RUN     4/133 ch05-binutils-pass1          [lfs] src=binutils-2.46.0
+        OK  1.6 min
+  RUN     5/133 ch05-gcc-pass1               [lfs] src=gcc-15.2.0
+        OK  17.1 min
+  RUN     6/133 ch05-linux-headers           [lfs] src=linux-6.18.10
+        OK  0.2 min
+  RUN     7/133 ch05-glibc                   [lfs] src=glibc-2.43
+        OK  5.9 min
+  RUN     8/133 ch05-gcc-libstdc++           [lfs] src=gcc-15.2.0
+        OK  1.3 min
+
+all selected steps complete
+completed: 8/133
+next     : 9 (6.2) ch06-m4 [lfs]
+free     : 53.3 GB on /mnt/lfs
+vkfs     : /dev=down, /dev/pts=down, /proc=down, /sys=down, /run=down
+buildtime: 0.44 h so far

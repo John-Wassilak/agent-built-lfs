@@ -1,0 +1,32 @@
+running 2 step(s), 4 jobs
+
+  RUN   120/133 ch08-stripping               [chroot] src=-
+        FAILED rc=1 after 0.0 min -- see /home/john/lfs/logs/ch08-stripping.log
+        last lines:
+        | removed '/usr/lib/libreadline.so.8.3'
+        | '/tmp/libreadline.so.8.3' -> '/usr/lib/libreadline.so.8.3'
+        | removed '/usr/lib/libz.so.1.3.2'
+        | '/tmp/libz.so.1.3.2' -> '/usr/lib/libz.so.1.3.2'
+        | removed '/usr/lib/libzstd.so.1.5.7'
+        | '/tmp/libzstd.so.1.5.7' -> '/usr/lib/libzstd.so.1.5.7'
+        | removed '/usr/lib/libnss_compat.so.2'
+        | '/tmp/libnss_compat.so.2' -> '/usr/lib/libnss_compat.so.2'
+        | removed '/usr/lib/libnss_db.so.2'
+        | '/tmp/libnss_db.so.2' -> '/usr/lib/libnss_db.so.2'
+        | removed '/usr/lib/libnss_dns.so.2'
+        | '/tmp/libnss_dns.so.2' -> '/usr/lib/libnss_dns.so.2'
+        | removed '/usr/lib/libnss_files.so.2'
+        | '/tmp/libnss_files.so.2' -> '/usr/lib/libnss_files.so.2'
+        | removed '/usr/lib/libnss_hesiod.so.2'
+        | '/tmp/libnss_hesiod.so.2' -> '/usr/lib/libnss_hesiod.so.2'
+        | removed '/usr/lib/libnss_myhostname.so.2'
+        | '/tmp/libnss_myhostname.so.2' -> '/usr/lib/libnss_myhostname.so.2'
+        | removed '/usr/lib/libnss_mymachines.so.2'
+        | '/tmp/libnss_mymachines.so.2' -> '/usr/lib/libnss_mymachines.so.2'
+        | removed '/usr/lib/libnss_resolve.so.2'
+        | '/tmp/libnss_resolve.so.2' -> '/usr/lib/libnss_resolve.so.2'
+        | removed '/usr/lib/libnss_systemd.so.2'
+        | '/tmp/libnss_systemd.so.2' -> '/usr/lib/libnss_systemd.so.2'
+        | strip: /usr/lib/libgcc_s.so: file format not recognized
+
+STOPPED at ch08-stripping

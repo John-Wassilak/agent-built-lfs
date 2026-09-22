@@ -1,0 +1,10 @@
+/usr/include/SDL3/SDL_revision.h
+/usr/lib/cmake/SDL3/SDL3Config.cmake
+/usr/lib/cmake/SDL3/SDL3ConfigVersion.cmake
+/usr/lib/cmake/SDL3/SDL3headersTargets.cmake
+/usr/lib/cmake/SDL3/SDL3sharedTargets-release.cmake
+/usr/lib/cmake/SDL3/SDL3sharedTargets.cmake
+/usr/lib/libSDL3.so
+/usr/lib/libSDL3.so.0
+/usr/lib/libSDL3.so.0.4.0
+/usr/lib/pkgconfig/sdl3.pc

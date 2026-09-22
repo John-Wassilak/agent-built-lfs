@@ -1,0 +1,17 @@
+mount guard: clean, no virtual filesystems under /mnt/lfs
+mode: FINAL deliverable
+archiving /mnt/lfs -> lfs-13.0-systemd-claude-20260825.tar.gz
+
+=== archive report ===
+file    : lfs-13.0-systemd-claude-20260825.tar.gz
+size    : 759M
+elapsed : 94s
+entries : 75100
+sha256  : f8352835a088dfedeefb6ddd1e0677cc841cce27e7586609c6c45a17617bb9e0
+
+=== preservation check ===
+setuid/setgid entries in archive: 18
+hardlinked entries in archive   : 2440
+
+=== leak check (must be empty) ===
+clean: no proc/, sys/, or dev/pts entries

@@ -1,0 +1,11 @@
+running 1 step(s), 4 jobs
+
+  RUN    73 ch08-bash                    [chroot] src=bash-5.3
+        OK  2.3 min   manifest: 163 files
+
+all selected steps complete
+completed: 148/133
+next     : -- all steps complete --
+free     : 66.1 GB on /mnt/lfs
+vkfs     : /dev=up, /dev/pts=up, /proc=up, /sys=up, /run=up
+buildtime: 10.03 h so far

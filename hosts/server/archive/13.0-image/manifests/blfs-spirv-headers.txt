@@ -1,0 +1,6 @@
+/etc/mtab
+/etc/udev/hwdb.bin
+/usr/share/cmake/SPIRV-Headers/SPIRV-HeadersConfig.cmake
+/usr/share/cmake/SPIRV-Headers/SPIRV-HeadersConfigVersion.cmake
+/usr/share/pkgconfig/SPIRV-Headers.pc
+/var/log/README

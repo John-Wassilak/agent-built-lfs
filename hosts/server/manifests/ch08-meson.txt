@@ -1,12 +1,12 @@
 /usr/bin/meson
-/usr/lib/python3.14/site-packages/meson-1.10.1.dist-info/INSTALLER
-/usr/lib/python3.14/site-packages/meson-1.10.1.dist-info/METADATA
-/usr/lib/python3.14/site-packages/meson-1.10.1.dist-info/RECORD
-/usr/lib/python3.14/site-packages/meson-1.10.1.dist-info/REQUESTED
-/usr/lib/python3.14/site-packages/meson-1.10.1.dist-info/WHEEL
-/usr/lib/python3.14/site-packages/meson-1.10.1.dist-info/entry_points.txt
-/usr/lib/python3.14/site-packages/meson-1.10.1.dist-info/licenses/COPYING
-/usr/lib/python3.14/site-packages/meson-1.10.1.dist-info/top_level.txt
+/usr/lib/python3.14/site-packages/meson-1.12.0.dist-info/INSTALLER
+/usr/lib/python3.14/site-packages/meson-1.12.0.dist-info/METADATA
+/usr/lib/python3.14/site-packages/meson-1.12.0.dist-info/RECORD
+/usr/lib/python3.14/site-packages/meson-1.12.0.dist-info/REQUESTED
+/usr/lib/python3.14/site-packages/meson-1.12.0.dist-info/WHEEL
+/usr/lib/python3.14/site-packages/meson-1.12.0.dist-info/entry_points.txt
+/usr/lib/python3.14/site-packages/meson-1.12.0.dist-info/licenses/COPYING
+/usr/lib/python3.14/site-packages/meson-1.12.0.dist-info/top_level.txt
 /usr/lib/python3.14/site-packages/mesonbuild/__init__.py
 /usr/lib/python3.14/site-packages/mesonbuild/__pycache__/__init__.cpython-314.pyc
 /usr/lib/python3.14/site-packages/mesonbuild/__pycache__/_pathlib.cpython-314.pyc
@@ -247,6 +247,7 @@
 /usr/lib/python3.14/site-packages/mesonbuild/interpreter/__init__.py
 /usr/lib/python3.14/site-packages/mesonbuild/interpreter/__pycache__/__init__.cpython-314.pyc
 /usr/lib/python3.14/site-packages/mesonbuild/interpreter/__pycache__/compiler.cpython-314.pyc
+/usr/lib/python3.14/site-packages/mesonbuild/interpreter/__pycache__/decorators.cpython-314.pyc
 /usr/lib/python3.14/site-packages/mesonbuild/interpreter/__pycache__/dependencyfallbacks.cpython-314.pyc
 /usr/lib/python3.14/site-packages/mesonbuild/interpreter/__pycache__/interpreter.cpython-314.pyc
 /usr/lib/python3.14/site-packages/mesonbuild/interpreter/__pycache__/interpreterobjects.cpython-314.pyc
@@ -254,6 +255,7 @@
 /usr/lib/python3.14/site-packages/mesonbuild/interpreter/__pycache__/mesonmain.cpython-314.pyc
 /usr/lib/python3.14/site-packages/mesonbuild/interpreter/__pycache__/type_checking.cpython-314.pyc
 /usr/lib/python3.14/site-packages/mesonbuild/interpreter/compiler.py
+/usr/lib/python3.14/site-packages/mesonbuild/interpreter/decorators.py
 /usr/lib/python3.14/site-packages/mesonbuild/interpreter/dependencyfallbacks.py
 /usr/lib/python3.14/site-packages/mesonbuild/interpreter/interpreter.py
 /usr/lib/python3.14/site-packages/mesonbuild/interpreter/interpreterobjects.py
@@ -401,6 +403,7 @@
 /usr/lib/python3.14/site-packages/mesonbuild/scripts/__pycache__/pickle_env.cpython-314.pyc
 /usr/lib/python3.14/site-packages/mesonbuild/scripts/__pycache__/pycompile.cpython-314.pyc
 /usr/lib/python3.14/site-packages/mesonbuild/scripts/__pycache__/python_info.cpython-314.pyc
+/usr/lib/python3.14/site-packages/mesonbuild/scripts/__pycache__/rc.cpython-314.pyc
 /usr/lib/python3.14/site-packages/mesonbuild/scripts/__pycache__/regen_checker.cpython-314.pyc
 /usr/lib/python3.14/site-packages/mesonbuild/scripts/__pycache__/reprotest.cpython-314.pyc
 /usr/lib/python3.14/site-packages/mesonbuild/scripts/__pycache__/run_tool.cpython-314.pyc
@@ -436,6 +439,7 @@
 /usr/lib/python3.14/site-packages/mesonbuild/scripts/pickle_env.py
 /usr/lib/python3.14/site-packages/mesonbuild/scripts/pycompile.py
 /usr/lib/python3.14/site-packages/mesonbuild/scripts/python_info.py
+/usr/lib/python3.14/site-packages/mesonbuild/scripts/rc.py
 /usr/lib/python3.14/site-packages/mesonbuild/scripts/regen_checker.py
 /usr/lib/python3.14/site-packages/mesonbuild/scripts/reprotest.py
 /usr/lib/python3.14/site-packages/mesonbuild/scripts/run_tool.py

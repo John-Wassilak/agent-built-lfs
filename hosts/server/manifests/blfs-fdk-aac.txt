@@ -1,6 +1,6 @@
-/usr/include/fdk-aac/FDK_audio.h
 /usr/include/fdk-aac/aacdecoder_lib.h
 /usr/include/fdk-aac/aacenc_lib.h
+/usr/include/fdk-aac/FDK_audio.h
 /usr/include/fdk-aac/genericStds.h
 /usr/include/fdk-aac/machine_type.h
 /usr/include/fdk-aac/syslib_channelMapDescr.h

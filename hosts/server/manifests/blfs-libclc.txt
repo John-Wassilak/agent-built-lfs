@@ -8,8 +8,8 @@
 /usr/share/clc/carrizo-amdgcn-mesa-mesa3d.bc
 /usr/share/clc/cayman-r600--.bc
 /usr/share/clc/cedar-r600--.bc
-/usr/share/clc/clspv--.bc
 /usr/share/clc/clspv64--.bc
+/usr/share/clc/clspv--.bc
 /usr/share/clc/cypress-r600--.bc
 /usr/share/clc/fiji-amdgcn--.bc
 /usr/share/clc/fiji-amdgcn-mesa-mesa3d.bc
@@ -95,10 +95,10 @@
 /usr/share/clc/kaveri-amdgcn-mesa-mesa3d.bc
 /usr/share/clc/mullins-amdgcn--.bc
 /usr/share/clc/mullins-amdgcn-mesa-mesa3d.bc
-/usr/share/clc/nvptx--.bc
-/usr/share/clc/nvptx--nvidiacl.bc
 /usr/share/clc/nvptx64--.bc
 /usr/share/clc/nvptx64--nvidiacl.bc
+/usr/share/clc/nvptx--.bc
+/usr/share/clc/nvptx--nvidiacl.bc
 /usr/share/clc/oland-amdgcn--.bc
 /usr/share/clc/oland-amdgcn-mesa-mesa3d.bc
 /usr/share/clc/palm-r600--.bc
@@ -109,12 +109,12 @@
 /usr/share/clc/polaris11-amdgcn--.bc
 /usr/share/clc/polaris11-amdgcn-mesa-mesa3d.bc
 /usr/share/clc/redwood-r600--.bc
-/usr/share/clc/spirv-mesa3d-.spv
 /usr/share/clc/spirv64-mesa3d-.spv
+/usr/share/clc/spirv-mesa3d-.spv
 /usr/share/clc/stoney-amdgcn--.bc
 /usr/share/clc/stoney-amdgcn-mesa-mesa3d.bc
-/usr/share/clc/sumo-r600--.bc
 /usr/share/clc/sumo2-r600--.bc
+/usr/share/clc/sumo-r600--.bc
 /usr/share/clc/tahiti-amdgcn--.bc
 /usr/share/clc/tahiti-amdgcn-mesa-mesa3d.bc
 /usr/share/clc/tonga-amdgcn--.bc
@@ -124,3 +124,4 @@
 /usr/share/clc/turks-r600--.bc
 /usr/share/clc/verde-amdgcn--.bc
 /usr/share/clc/verde-amdgcn-mesa-mesa3d.bc
+/usr/share/pkgconfig/libclc.pc

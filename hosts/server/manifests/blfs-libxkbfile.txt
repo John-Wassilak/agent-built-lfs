@@ -1,5 +1,10 @@
+/usr/include/X11/extensions/XKBbells.h
+/usr/include/X11/extensions/XKBconfig.h
+/usr/include/X11/extensions/XKBfile.h
+/usr/include/X11/extensions/XKBrules.h
+/usr/include/X11/extensions/XKMformat.h
+/usr/include/X11/extensions/XKM.h
 /usr/lib/libxkbfile.so
 /usr/lib/libxkbfile.so.1
 /usr/lib/libxkbfile.so.1.0.2
 /usr/lib/pkgconfig/xkbfile.pc
-/var/log/journal/fa41fba8515b4edca48224e5e93c9251/system.journal

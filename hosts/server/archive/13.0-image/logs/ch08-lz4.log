@@ -1,0 +1,23 @@
+# ch08-lz4  context=chroot  Tue Aug 25 03:44:38 2026
+# argv: sudo chroot /mnt/lfs /usr/bin/env -i HOME=/root TERM=screen.xterm-256color PS1=(lfs chroot) \u:\w\$  PATH=/usr/bin:/usr/sbin MAKEFLAGS=-j4 TESTSUITEFLAGS=-j4 /bin/bash --login -c /bin/bash "/sources/.build/ch08-lz4.sh"
+
+make[1]: Entering directory '/sources/lz4-1.10.0/lib'
+compiling dynamic library 1.10.0
+creating pkgconfig
+creating versioned links
+make[1]: Leaving directory '/sources/lz4-1.10.0/lib'
+make[1]: Entering directory '/sources/lz4-1.10.0/programs'
+==> building with multithreading support
+make[1]: Leaving directory '/sources/lz4-1.10.0/programs'
+lz4 build completed
+make[1]: Entering directory '/sources/lz4-1.10.0/lib'
+Installing libraries in /usr/lib
+Installing headers in /usr/include
+lz4 libraries installed
+make[1]: Leaving directory '/sources/lz4-1.10.0/lib'
+make[1]: Entering directory '/sources/lz4-1.10.0/programs'
+Installing binaries in /usr/bin
+Installing man pages in /usr/share/man/man1
+lz4 installation completed
+make[1]: Leaving directory '/sources/lz4-1.10.0/programs'
+manifest: 15 files

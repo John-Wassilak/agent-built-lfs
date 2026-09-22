@@ -1,0 +1,19 @@
+# ch08-meson  context=chroot  Tue Aug 25 08:32:32 2026
+# argv: sudo chroot /mnt/lfs /usr/bin/env -i HOME=/root TERM=screen.xterm-256color PS1=(lfs chroot) \u:\w\$  PATH=/usr/bin:/usr/sbin MAKEFLAGS=-j4 TESTSUITEFLAGS=-j4 /bin/bash --login -c /bin/bash "/sources/.build/ch08-meson.sh"
+
+Processing /sources/meson-1.10.1
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Building wheels for collected packages: meson
+  Building wheel for meson (pyproject.toml): started
+  Building wheel for meson (pyproject.toml): finished with status 'done'
+  Created wheel for meson: filename=meson-1.10.1-py3-none-any.whl size=1057724 sha256=55c24ebc9c4df21954f9d8ec66e953fa0eb6ccb35374430583d77fb20affafad
+  Stored in directory: /tmp/pip-ephem-wheel-cache-egrs6xcj/wheels/b1/ee/4d/7062ad8c659260aed8a295ac842f99092bd5e47b75375f4651
+Successfully built meson
+Looking in links: dist
+Processing ./dist/meson-1.10.1-py3-none-any.whl
+Installing collected packages: meson
+Successfully installed meson-1.10.1
+'data/shell-completions/bash/meson' -> '/usr/share/bash-completion/completions/meson'
+'data/shell-completions/zsh/_meson' -> '/usr/share/zsh/site-functions/_meson'
+manifest: 500 files

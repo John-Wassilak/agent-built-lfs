@@ -1,6 +1,0 @@
-/usr/include/lcms2.h
-/usr/include/lcms2_plugin.h
-/usr/lib/liblcms2.so
-/usr/lib/liblcms2.so.2
-/usr/lib/liblcms2.so.2.0.19
-/usr/lib/pkgconfig/lcms2.pc

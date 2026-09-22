@@ -1,0 +1,9 @@
+REFUSING: virtual kernel filesystems still mounted:
+  /mnt/lfs/dev/pts
+  /mnt/lfs/dev/shm
+  /mnt/lfs/dev
+  /mnt/lfs/proc
+  /mnt/lfs/sys
+  /mnt/lfs/run
+
+Unmount them first:  sudo bin/lfs-umount

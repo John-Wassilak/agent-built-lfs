@@ -1,0 +1,7 @@
+running 17 step(s), 4 jobs
+
+  RUN     9/133 ch06-m4                      [lfs] src=m4-1.4.21
+        OK  0.6 min
+  RUN    10/133 ch06-ncurses                 [lfs] src=ncurses-6.6
+        OK  1.3 min
+  RUN    11/133 ch06-bash                    [lfs] src=bash-5.3

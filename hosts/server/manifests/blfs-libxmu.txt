@@ -31,3 +31,5 @@
 /usr/lib/libXmuu.so.1.0.0
 /usr/lib/pkgconfig/xmu.pc
 /usr/lib/pkgconfig/xmuu.pc
+/usr/share/doc/libXmu/xlogo.svg
+/usr/share/doc/libXmu/Xmu.xml

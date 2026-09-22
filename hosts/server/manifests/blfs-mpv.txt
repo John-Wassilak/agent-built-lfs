@@ -1,7 +1,7 @@
 /usr/bin/mpv
 /usr/include/mpv/client.h
-/usr/include/mpv/render.h
 /usr/include/mpv/render_gl.h
+/usr/include/mpv/render.h
 /usr/include/mpv/stream_cb.h
 /usr/lib/libmpv.so
 /usr/lib/libmpv.so.2

@@ -1,0 +1,37 @@
+running 84 step(s), 4 jobs
+
+  SKIP  ch08-pkgmgt  (informational / deferred)
+  RUN    39/133 ch08-man-pages               [chroot] src=man-pages-6.17
+        OK  0.2 min   manifest: 3098 files
+  RUN    40/133 ch08-iana-etc                [chroot] src=iana-etc-20260202
+        OK  0.0 min   manifest: 2 files
+  RUN    41/133 ch08-glibc                   [chroot] src=glibc-2.43
+        FAILED rc=1 after 44.4 min -- see /home/john/lfs/logs/ch08-glibc.log
+        last lines:
+        |  done
+        | make[2]: Leaving directory '/sources/glibc-2.43/localedata'
+        | make[1]: Leaving directory '/sources/glibc-2.43'
+        | mkdir: created directory '/usr/share/zoneinfo/posix'
+        | mkdir: created directory '/usr/share/zoneinfo/right'
+        | 'zone.tab' -> '/usr/share/zoneinfo/zone.tab'
+        | 'zone1970.tab' -> '/usr/share/zoneinfo/zone1970.tab'
+        | 'iso3166.tab' -> '/usr/share/zoneinfo/iso3166.tab'
+        | Please identify a location so that time zone rules can be set correctly.
+        | Please select a continent, ocean, "coord", "TZ", "time", or "now".
+        |  1) Africa
+        |  2) Americas
+        |  3) Antarctica
+        |  4) Arctic Ocean
+        |  5) Asia
+        |  6) Atlantic Ocean
+        |  7) Australia
+        |  8) Europe
+        |  9) Indian Ocean
+        | 10) Pacific Ocean
+        | 11) coord - I want to use geographical coordinates.
+        | 12) TZ - I want to specify the timezone using a proleptic TZ string.
+        | 13) time - I know local time already.
+        | 14) now - Like "time", but configure only for timestamps from now on.
+        | #? 
+
+STOPPED at ch08-glibc

@@ -1,4 +1,0 @@
-/var/log/btmp
-/var/log/faillog
-/var/log/lastlog
-/var/log/wtmp

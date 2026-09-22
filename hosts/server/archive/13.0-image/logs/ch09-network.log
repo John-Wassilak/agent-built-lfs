@@ -1,0 +1,4 @@
+# ch09-network  context=chroot  Tue Aug 25 09:15:00 2026
+# argv: sudo chroot /mnt/lfs /usr/bin/env -i HOME=/root TERM=screen.xterm-256color PS1=(lfs chroot) \u:\w\$  PATH=/usr/bin:/usr/sbin MAKEFLAGS=-j4 TESTSUITEFLAGS=-j4 /bin/bash --login -c /bin/bash "/sources/.build/ch09-network.sh"
+
+'/etc/resolv.conf' -> '/run/systemd/resolve/stub-resolv.conf'

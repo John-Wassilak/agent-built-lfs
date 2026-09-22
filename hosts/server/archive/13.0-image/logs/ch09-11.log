@@ -1,0 +1,13 @@
+running 12 step(s), 4 jobs
+
+  RUN   122/133 ch09-network                 [chroot] src=-
+        OK  0.0 min
+  RUN   123/133 ch09-symlinks                [chroot] src=-
+        FAILED rc=1 after 0.0 min -- see /home/john/lfs/logs/ch09-symlinks.log
+        last lines:
+        | # ch09-symlinks  context=chroot  Tue Aug 25 09:15:00 2026
+        | # argv: sudo chroot /mnt/lfs /usr/bin/env -i HOME=/root TERM=screen.xterm-256color PS1=(lfs chroot) \u:\w\$  PATH=/usr/bin:/usr/sbin MAKEFLAGS=-j4 TESTSUITEFLAGS=-j4 /bin/bash --login -c /bin/bash "/sources/.build/ch09-symlinks.sh"
+        | 
+        | Unknown device "/sys/class/video4linux/video0": No such device
+
+STOPPED at ch09-symlinks

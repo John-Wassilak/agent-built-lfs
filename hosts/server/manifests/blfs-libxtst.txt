@@ -1,5 +1,5 @@
-/usr/include/X11/extensions/XTest.h
 /usr/include/X11/extensions/record.h
+/usr/include/X11/extensions/XTest.h
 /usr/lib/libXtst.la
 /usr/lib/libXtst.so
 /usr/lib/libXtst.so.6

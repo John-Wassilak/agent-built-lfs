@@ -2,6 +2,14 @@
 /usr/bin/p11-kit
 /usr/bin/trust
 /usr/bin/update-ca-certificates
+/usr/include/p11-kit-1/p11-kit/deprecated.h
+/usr/include/p11-kit-1/p11-kit/iter.h
+/usr/include/p11-kit-1/p11-kit/p11-kit.h
+/usr/include/p11-kit-1/p11-kit/pin.h
+/usr/include/p11-kit-1/p11-kit/pkcs11.h
+/usr/include/p11-kit-1/p11-kit/pkcs11x.h
+/usr/include/p11-kit-1/p11-kit/remote.h
+/usr/include/p11-kit-1/p11-kit/uri.h
 /usr/include/p11-kit-1/p11-kit/version.h
 /usr/libexec/p11-kit/p11-kit-remote
 /usr/libexec/p11-kit/p11-kit-server
@@ -9,12 +17,13 @@
 /usr/lib/libnssckbi.so
 /usr/lib/libp11-kit.so
 /usr/lib/libp11-kit.so.0
-/usr/lib/libp11-kit.so.0.4.8
+/usr/lib/libp11-kit.so.0.4.11
 /usr/lib/p11-kit-proxy.so
 /usr/lib/pkcs11/p11-kit-client.so
 /usr/lib/pkcs11/p11-kit-trust.so
 /usr/lib/pkgconfig/p11-kit-1.pc
 /usr/lib/systemd/user/p11-kit-server.service
+/usr/lib/systemd/user/p11-kit-server.socket
 /usr/share/locale/ar/LC_MESSAGES/p11-kit.mo
 /usr/share/locale/as/LC_MESSAGES/p11-kit.mo
 /usr/share/locale/ast/LC_MESSAGES/p11-kit.mo
@@ -86,3 +95,6 @@
 /usr/share/locale/zh_CN/LC_MESSAGES/p11-kit.mo
 /usr/share/locale/zh_HK/LC_MESSAGES/p11-kit.mo
 /usr/share/locale/zh_TW/LC_MESSAGES/p11-kit.mo
+/usr/share/p11-kit/modules/p11-kit-trust.module
+/usr/share/zsh/site-functions/_p11-kit
+/usr/share/zsh/site-functions/_trust

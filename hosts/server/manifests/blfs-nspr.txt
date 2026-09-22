@@ -57,8 +57,8 @@
 /usr/include/nspr/prproces.h
 /usr/include/nspr/prrng.h
 /usr/include/nspr/prrwlock.h
-/usr/include/nspr/prshm.h
 /usr/include/nspr/prshma.h
+/usr/include/nspr/prshm.h
 /usr/include/nspr/prsystem.h
 /usr/include/nspr/prthread.h
 /usr/include/nspr/prtime.h

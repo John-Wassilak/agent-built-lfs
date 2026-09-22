@@ -1,0 +1,9 @@
+/etc/mtab
+/etc/udev/hwdb.bin
+/usr/include/pixman-1/pixman-version.h
+/usr/lib/libpixman-1.so
+/usr/lib/libpixman-1.so.0
+/usr/lib/libpixman-1.so.0.46.4
+/usr/lib/pkgconfig/pixman-1.pc
+/var/lib/systemd/timesync/clock
+/var/log/README

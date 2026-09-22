@@ -1,0 +1,7 @@
+/etc/mtab
+/etc/udev/hwdb.bin
+/usr/share/aclocal/xorg-macros.m4
+/usr/share/pkgconfig/xorg-macros.pc
+/usr/share/util-macros/INSTALL
+/var/log/README
+/var/log/journal/fa41fba8515b4edca48224e5e93c9251/system.journal

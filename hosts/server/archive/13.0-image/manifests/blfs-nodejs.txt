@@ -1,0 +1,6 @@
+/usr/bin/corepack
+/usr/bin/node
+/usr/bin/npm
+/usr/bin/npx
+/usr/include/node/config.gypi
+/usr/share/doc/node-22.22.0

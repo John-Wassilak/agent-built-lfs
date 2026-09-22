@@ -8,4 +8,3 @@
 /usr/lib/pkgconfig/sm.pc
 /usr/share/doc/libSM/SMlib.xml
 /usr/share/doc/libSM/xsmp.xml
-/var/lib/systemd/timesync/clock

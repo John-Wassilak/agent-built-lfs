@@ -1,0 +1,59 @@
+# blfs-libpsl  context=chroot  Tue Aug 25 13:17:12 2026
+# argv: sudo chroot /mnt/lfs /usr/bin/env -i HOME=/root TERM=screen.xterm-256color PS1=(lfs chroot) \u:\w\$  PATH=/usr/bin:/usr/sbin MAKEFLAGS=-j4 TESTSUITEFLAGS=-j4 /bin/bash --login -c /bin/bash "/sources/.build/blfs-libpsl.sh"
+
+The Meson build system
+Version: 1.10.1
+Source dir: /sources/libpsl-0.21.5
+Build dir: /sources/libpsl-0.21.5/build
+Build type: native build
+Project name: libpsl
+Project version: 0.21.5
+C compiler for the host machine: cc (gcc 15.2.0 "cc (GCC) 15.2.0")
+C linker for the host machine: cc ld.bfd 2.46.0.20260210
+Host machine cpu family: x86_64
+Host machine cpu: x86_64
+Found pkg-config: YES (/usr/bin/pkg-config) 2.5.1
+Run-time dependency libidn2 found: YES 2.3.8
+Library unistring found: YES
+Run-time dependency iconv found: YES
+Check usable header "unistd.h" : YES 
+Check usable header "stdint.h" : YES 
+Check usable header "alloca.h" : YES 
+Check usable header "dirent.h" : YES 
+Checking for function "alloca" : YES 
+Checking for function "strndup" : YES 
+Checking for function "clock_gettime" : YES 
+Checking for function "fmemopen" : YES 
+Checking for function "nl_langinfo" : YES 
+Compiler for C supports function attribute visibility: YES 
+Configuring config.h using configuration
+Program python3 found: YES (/usr/bin/python3.14)
+Configuring libpsl.h using configuration
+Found pkg-config: YES (/usr/bin/pkg-config) 2.5.1
+Build targets in project: 13
+
+libpsl 0.21.5
+
+  User defined options
+    buildtype: release
+    prefix   : /usr
+
+Found ninja-1.13.2 at /usr/bin/ninja
+[1/7] Compiling C object tools/psl.p/psl.c.o
+[2/7] Generating src/suffixes_dafsa.h with a custom command
+[3/7] Compiling C object src/libpsl.so.5.3.5.p/lookup_string_in_fixed_set.c.o
+[4/7] Compiling C object src/libpsl.so.5.3.5.p/psl.c.o
+[5/7] Linking target src/libpsl.so.5.3.5
+[6/7] Generating symbol file src/libpsl.so.5.3.5.p/libpsl.so.5.3.5.symbols
+[7/7] Linking target tools/psl
+[0/1] Installing files
+Installing src/libpsl.so.5.3.5 to /usr/lib
+Installing tools/psl to /usr/bin
+Installing /sources/libpsl-0.21.5/build/include/libpsl.h to /usr/include
+Installing /sources/libpsl-0.21.5/src/psl-make-dafsa.1 to /usr/share/man/man1
+Installing /sources/libpsl-0.21.5/tools/psl.1 to /usr/share/man/man1
+Installing /sources/libpsl-0.21.5/build/meson-private/libpsl.pc to /usr/lib/pkgconfig
+Installing /sources/libpsl-0.21.5/src/psl-make-dafsa to /usr/bin
+Installing symlink pointing to libpsl.so.5.3.5 to /usr/lib/libpsl.so.5
+Installing symlink pointing to libpsl.so.5 to /usr/lib/libpsl.so
+manifest: 6 files

@@ -1,5 +1,4 @@
 /etc/e2scrub.conf
-/etc/ld.so.cache
 /etc/mke2fs.conf
 /usr/bin/chattr
 /usr/bin/compile_et
@@ -137,4 +136,3 @@
 /usr/share/man/man8/tune2fs.8
 /usr/share/ss/ct_c.awk
 /usr/share/ss/ct_c.sed
-/var/cache/ldconfig/aux-cache

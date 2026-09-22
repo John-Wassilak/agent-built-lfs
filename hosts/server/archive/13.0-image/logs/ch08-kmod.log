@@ -1,0 +1,178 @@
+# ch08-kmod  context=chroot  Tue Aug 25 08:32:36 2026
+# argv: sudo chroot /mnt/lfs /usr/bin/env -i HOME=/root TERM=screen.xterm-256color PS1=(lfs chroot) \u:\w\$  PATH=/usr/bin:/usr/sbin MAKEFLAGS=-j4 TESTSUITEFLAGS=-j4 /bin/bash --login -c /bin/bash "/sources/.build/ch08-kmod.sh"
+
+The Meson build system
+Version: 1.10.1
+Source dir: /sources/kmod-34.2
+Build dir: /sources/kmod-34.2/build
+Build type: native build
+Project name: kmod
+Project version: 34.2
+C compiler for the host machine: cc (gcc 15.2.0 "cc (GCC) 15.2.0")
+C linker for the host machine: cc ld.bfd 2.46.0.20260210
+Host machine cpu family: x86_64
+Host machine cpu: x86_64
+Checking for function "open64" : YES 
+Checking for function "stat64" : YES 
+Checking for function "fopen64" : YES 
+Checking for function "__stat64_time64" : NO 
+Checking for function "secure_getenv" : YES 
+Checking whether type "struct stat" has member "st_mtim" : YES 
+Header "string.h" has symbol "basename" : YES 
+Header "sys/stat.h" has symbol "__xstat" : NO 
+Checking if "_Static_assert" compiles: YES 
+Checking if "_Noreturn" compiles: YES 
+Compiler for C supports arguments -fdata-sections: YES 
+Compiler for C supports arguments -fdiagnostics-show-option: YES 
+Compiler for C supports arguments -ffunction-sections: YES 
+Compiler for C supports arguments -fno-common: YES 
+Compiler for C supports arguments -Wchar-subscripts: YES 
+Compiler for C supports arguments -Wdeclaration-after-statement: YES 
+Compiler for C supports arguments -Wendif-labels: YES 
+Compiler for C supports arguments -Wfloat-equal: YES 
+Compiler for C supports arguments -Wformat=2: YES 
+Compiler for C supports arguments -Wformat-nonliteral: YES 
+Compiler for C supports arguments -Wformat-security: YES 
+Compiler for C supports arguments -Winit-self: YES 
+Compiler for C supports arguments -Wlogical-op: YES 
+Compiler for C supports arguments -Wmissing-declarations: YES 
+Compiler for C supports arguments -Wmissing-include-dirs: YES 
+Compiler for C supports arguments -Wmissing-noreturn: YES 
+Compiler for C supports arguments -Wmissing-prototypes: YES 
+Compiler for C supports arguments -Wnested-externs: YES 
+Compiler for C supports arguments -Wno-unused-parameter: YES 
+Compiler for C supports arguments -Wno-attributes=clang::suppress: YES 
+Compiler for C supports arguments -Wold-style-definition: YES 
+Compiler for C supports arguments -Wpointer-arith: YES 
+Compiler for C supports arguments -Wredundant-decls: YES 
+Compiler for C supports arguments -Wshadow: YES 
+Compiler for C supports arguments -Wsign-compare: YES 
+Compiler for C supports arguments -Wstrict-aliasing=3: YES 
+Compiler for C supports arguments -Wstrict-prototypes: YES 
+Compiler for C supports arguments -Wtype-limits: YES 
+Compiler for C supports arguments -Wundef: YES 
+Compiler for C supports arguments -Wuninitialized: YES 
+Compiler for C supports arguments -Wvla: YES 
+Compiler for C supports arguments -Wwrite-strings: YES 
+Compiler for C supports link arguments -Wl,--gc-sections: YES 
+Found pkg-config: YES (/usr/bin/pkg-config) 2.5.1
+Did not find CMake 'cmake'
+Found CMake: NO
+Run-time dependency bash-completion found: NO (tried pkgconfig and cmake)
+Run-time dependency fish found: NO (tried pkgconfig and cmake)
+Run-time dependency libzstd found: YES 1.5.7
+Run-time dependency liblzma found: YES 5.8.2
+Run-time dependency zlib found: YES 1.3.2
+Run-time dependency libcrypto found: YES 3.6.1
+Configuring config.h using configuration
+Checking for function "dlopen" : YES 
+Found pkg-config: YES (/usr/bin/pkg-config) 2.5.1
+Build targets in project: 10
+
+kmod 34.2
+
+  Directories
+    prefix           : /usr
+    sysconfdir       : /etc
+    bindir           : /usr/bin
+    sbindir          : /usr/sbin
+    includedir       : /usr/include
+    libdir           : /usr/lib
+    datadir          : /usr/share
+
+  Kmod specific
+    distconfdir      : /usr/lib
+    moduledir        : /lib/modules
+
+  Shell completions
+    bashcompletiondir: /usr/share/bash-completion/completions
+    fishcompletiondir: /usr/share/fish/vendor_functions.d
+    zshcompletiondir : /usr/share/zsh/site-functions
+
+  Options
+    tools            : true
+    logging          : true
+    debug-messages   : false
+    build-tests      : false
+    manpages         : false
+    docs             : false
+    dlopen           :
+
+    features         : +ZSTD +XZ +ZLIB +OPENSSL
+
+  User defined options
+    buildtype        : release
+    manpages         : false
+    prefix           : /usr
+
+Found ninja-1.13.2 at /usr/bin/ninja
+[1/36] Compiling C object libshared.a.p/shared_array.c.o
+[2/36] Compiling C object libshared.a.p/shared_strbuf.c.o
+[3/36] Compiling C object libkmod.so.2.5.1.p/libkmod_libkmod-builtin.c.o
+[4/36] Compiling C object libshared.a.p/shared_hash.c.o
+[5/36] Compiling C object libkmod.so.2.5.1.p/libkmod_libkmod.c.o
+[6/36] Compiling C object libkmod.so.2.5.1.p/libkmod_libkmod-file.c.o
+[7/36] Compiling C object libshared.a.p/shared_util.c.o
+../shared/util.c: In function 'mkdir_parents':
+../shared/util.c:470:21: warning: initialization discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+  470 |         char *end = strrchr(path, '/');
+      |                     ^~~~~~~
+[8/36] Compiling C object libkmod.so.2.5.1.p/libkmod_libkmod-list.c.o
+[9/36] Compiling C object libkmod.so.2.5.1.p/libkmod_libkmod-signature.c.o
+[10/36] Compiling C object libkmod.so.2.5.1.p/libkmod_libkmod-file-xz.c.o
+[11/36] Compiling C object libkmod.so.2.5.1.p/libkmod_libkmod-file-zstd.c.o
+[12/36] Compiling C object libkmod.so.2.5.1.p/libkmod_libkmod-index.c.o
+[13/36] Linking static target libshared.a
+[14/36] Compiling C object libkmod.so.2.5.1.p/libkmod_libkmod-file-zlib.c.o
+[15/36] Compiling C object kmod.p/tools_kmod.c.o
+[16/36] Compiling C object kmod.p/tools_insmod.c.o
+[17/36] Compiling C object kmod.p/tools_log.c.o
+[18/36] Compiling C object kmod.p/tools_lsmod.c.o
+[19/36] Compiling C object kmod.p/tools_modinfo.c.o
+[20/36] Compiling C object libkmod.so.2.5.1.p/libkmod_libkmod-config.c.o
+[21/36] Compiling C object kmod.p/tools_opt.c.o
+[22/36] Compiling C object kmod.p/tools_rmmod.c.o
+[23/36] Compiling C object kmod.p/tools_static-nodes.c.o
+[24/36] Compiling C object libkmod.so.2.5.1.p/libkmod_libkmod-module.c.o
+[25/36] Compiling C object libkmod.so.2.5.1.p/libkmod_libkmod-elf.c.o
+[26/36] Linking static target libkmod-internal.a
+[27/36] Compiling C object kmod.p/tools_modprobe.c.o
+[28/36] Linking target libkmod.so.2.5.1
+[29/36] Compiling C object kmod.p/tools_depmod.c.o
+[30/36] Linking target kmod
+[31/36] Generating depmod with a custom command
+[32/36] Generating insmod with a custom command
+[33/36] Generating lsmod with a custom command
+[34/36] Generating modinfo with a custom command
+[35/36] Generating modprobe with a custom command
+[36/36] Generating rmmod with a custom command
+[0/1] Installing files
+Installing libkmod.so.2.5.1 to /usr/lib
+Installing kmod to /usr/bin
+Installing /sources/kmod-34.2/libkmod/libkmod.h to /usr/include
+Installing new directory /etc/depmod.d
+Installing new directory /etc/modprobe.d
+Installing new directory /usr/lib/depmod.d
+Installing new directory /usr/lib/modprobe.d
+Installing /sources/kmod-34.2/shell-completion/bash/insmod to /usr/share/bash-completion/completions
+Installing /sources/kmod-34.2/shell-completion/bash/lsmod to /usr/share/bash-completion/completions
+Installing /sources/kmod-34.2/shell-completion/bash/rmmod to /usr/share/bash-completion/completions
+Installing /sources/kmod-34.2/shell-completion/fish/insmod.fish to /usr/share/fish/vendor_functions.d
+Installing /sources/kmod-34.2/shell-completion/fish/lsmod.fish to /usr/share/fish/vendor_functions.d
+Installing /sources/kmod-34.2/shell-completion/fish/rmmod.fish to /usr/share/fish/vendor_functions.d
+Installing /sources/kmod-34.2/shell-completion/zsh/_insmod to /usr/share/zsh/site-functions
+Installing /sources/kmod-34.2/shell-completion/zsh/_lsmod to /usr/share/zsh/site-functions
+Installing /sources/kmod-34.2/shell-completion/zsh/_rmmod to /usr/share/zsh/site-functions
+Installing /sources/kmod-34.2/shell-completion/bash/kmod to /usr/share/bash-completion/completions
+Installing /sources/kmod-34.2/build/meson-private/libkmod.pc to /usr/lib/pkgconfig
+Installing /sources/kmod-34.2/build/meson-private/kmod.pc to /usr/share/pkgconfig
+Installing symlink pointing to libkmod.so.2.5.1 to /usr/lib/libkmod.so.2
+Installing symlink pointing to libkmod.so.2 to /usr/lib/libkmod.so
+Running custom install script '/usr/bin/sh -c mkdir -p "$DESTDIR/usr/sbin"'
+Running custom install script '/usr/bin/sh -c ln -sfr "$DESTDIR/usr/bin/kmod" "$DESTDIR/usr/sbin/depmod"'
+Running custom install script '/usr/bin/sh -c ln -sfr "$DESTDIR/usr/bin/kmod" "$DESTDIR/usr/sbin/insmod"'
+Running custom install script '/usr/bin/sh -c ln -sfr "$DESTDIR/usr/bin/kmod" "$DESTDIR/usr/sbin/lsmod"'
+Running custom install script '/usr/bin/sh -c ln -sfr "$DESTDIR/usr/bin/kmod" "$DESTDIR/usr/sbin/modinfo"'
+Running custom install script '/usr/bin/sh -c ln -sfr "$DESTDIR/usr/bin/kmod" "$DESTDIR/usr/sbin/modprobe"'
+Running custom install script '/usr/bin/sh -c ln -sfr "$DESTDIR/usr/bin/kmod" "$DESTDIR/usr/sbin/rmmod"'
+manifest: 12 files

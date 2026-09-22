@@ -1,0 +1,9 @@
+# ch07-kernfs  context=root-host  Tue Aug 25 14:08:28 2026
+# argv: sudo LFS=/mnt/lfs LFS_TGT=x86_64-lfs-linux-gnu MAKEFLAGS=-j4 /bin/bash /mnt/lfs/sources/.build/ch07-kernfs.sh
+
+mount: /dev bound on /mnt/lfs/dev.
+mount: devpts mounted on /mnt/lfs/dev/pts.
+mount: proc mounted on /mnt/lfs/proc.
+mount: sysfs mounted on /mnt/lfs/sys.
+mount: tmpfs mounted on /mnt/lfs/run.
+mount: tmpfs mounted on /mnt/lfs/dev/shm.

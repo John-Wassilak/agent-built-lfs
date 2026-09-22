@@ -8,11 +8,11 @@
 /usr/lib/libattr.la
 /usr/lib/libattr.so
 /usr/lib/libattr.so.1
-/usr/lib/libattr.so.1.1.2502
+/usr/lib/libattr.so.1.1.2600
 /usr/lib/pkgconfig/libattr.pc
-/usr/share/doc/attr-2.5.2/CHANGES
-/usr/share/doc/attr-2.5.2/COPYING
-/usr/share/doc/attr-2.5.2/COPYING.LGPL
+/usr/share/doc/attr-2.6.0/CHANGES
+/usr/share/doc/attr-2.6.0/COPYING
+/usr/share/doc/attr-2.6.0/COPYING.LGPL
 /usr/share/locale/cs/LC_MESSAGES/attr.mo
 /usr/share/locale/de/LC_MESSAGES/attr.mo
 /usr/share/locale/en@boldquot/LC_MESSAGES/attr.mo

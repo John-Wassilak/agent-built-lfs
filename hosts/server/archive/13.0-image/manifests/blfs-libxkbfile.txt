@@ -1,0 +1,5 @@
+/usr/lib/libxkbfile.so
+/usr/lib/libxkbfile.so.1
+/usr/lib/libxkbfile.so.1.0.2
+/usr/lib/pkgconfig/xkbfile.pc
+/var/log/journal/fa41fba8515b4edca48224e5e93c9251/system.journal

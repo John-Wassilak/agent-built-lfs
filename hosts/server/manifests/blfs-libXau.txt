@@ -1,5 +1,3 @@
-/etc/mtab
-/etc/udev/hwdb.bin
 /usr/include/X11/Xauth.h
 /usr/lib/libXau.la
 /usr/lib/libXau.so
@@ -15,5 +13,3 @@
 /usr/share/man/man3/XauReadAuth.3
 /usr/share/man/man3/XauUnlockAuth.3
 /usr/share/man/man3/XauWriteAuth.3
-/var/lib/systemd/timesync/clock
-/var/log/README

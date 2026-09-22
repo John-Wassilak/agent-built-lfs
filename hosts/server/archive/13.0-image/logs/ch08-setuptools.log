@@ -1,0 +1,17 @@
+# ch08-setuptools  context=chroot  Tue Aug 25 08:31:30 2026
+# argv: sudo chroot /mnt/lfs /usr/bin/env -i HOME=/root TERM=screen.xterm-256color PS1=(lfs chroot) \u:\w\$  PATH=/usr/bin:/usr/sbin MAKEFLAGS=-j4 TESTSUITEFLAGS=-j4 /bin/bash --login -c /bin/bash "/sources/.build/ch08-setuptools.sh"
+
+Processing /sources/setuptools-82.0.0
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Building wheels for collected packages: setuptools
+  Building wheel for setuptools (pyproject.toml): started
+  Building wheel for setuptools (pyproject.toml): finished with status 'done'
+  Created wheel for setuptools: filename=setuptools-82.0.0-py3-none-any.whl size=1003468 sha256=f0be739b999a6593595c232c21c3c4a4c73232d59c64ea845a195d4ea1857093
+  Stored in directory: /tmp/pip-ephem-wheel-cache-4crx0r65/wheels/4c/06/25/9617ba6bc352f6bf27c39761f36fabe8d2424196714b36a685
+Successfully built setuptools
+Looking in links: dist
+Processing ./dist/setuptools-82.0.0-py3-none-any.whl
+Installing collected packages: setuptools
+Successfully installed setuptools-82.0.0
+manifest: 760 files

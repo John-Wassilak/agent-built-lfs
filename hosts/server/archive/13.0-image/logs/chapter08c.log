@@ -1,0 +1,138 @@
+running 64 step(s), 4 jobs
+
+  RUN    58/133 ch08-gmp                     [chroot] src=gmp-6.3.0
+        OK  0.7 min   manifest: 162 files
+  RUN    59/133 ch08-mpfr                    [chroot] src=mpfr-4.2.2
+        OK  0.4 min   manifest: 71 files
+  RUN    60/133 ch08-mpc                     [chroot] src=mpc-1.3.1
+        OK  0.1 min   manifest: 34 files
+  RUN    61/133 ch08-attr                    [chroot] src=attr-2.5.2
+        OK  0.1 min   manifest: 39 files
+  RUN    62/133 ch08-acl                     [chroot] src=acl-2.3.2
+        OK  0.1 min   manifest: 67 files
+  RUN    63/133 ch08-libcap                  [chroot] src=libcap-2.77
+        OK  0.0 min   manifest: 97 files
+  RUN    64/133 ch08-libxcrypt               [chroot] src=libxcrypt-4.5.2
+        OK  0.1 min   manifest: 17 files
+  RUN    65/133 ch08-shadow                  [chroot] src=shadow-4.19.3
+        OK  0.3 min   manifest: 133 files
+  RUN    66/133 ch08-gcc                     [chroot] src=gcc-15.2.0
+        OK  226.0 min   manifest: 1751 files
+  RUN    67/133 ch08-ncurses                 [chroot] src=ncurses-6.6
+        OK  1.2 min   manifest: 4140 files
+  RUN    68/133 ch08-sed                     [chroot] src=sed-4.9
+        OK  0.9 min   manifest: 45 files
+  RUN    69/133 ch08-psmisc                  [chroot] src=psmisc-23.7
+        OK  0.1 min   manifest: 106 files
+  RUN    70/133 ch08-gettext                 [chroot] src=gettext-1.0
+        OK  6.1 min   manifest: 2569 files
+  RUN    71/133 ch08-bison                   [chroot] src=bison-3.8.2
+        OK  0.8 min   manifest: 201 files
+  RUN    72/133 ch08-grep                    [chroot] src=grep-3.12
+        OK  0.8 min   manifest: 51 files
+  RUN    73/133 ch08-bash                    [chroot] src=bash-5.3
+        OK  2.7 min
+  RUN    74/133 ch08-libtool                 [chroot] src=libtool-2.5.4
+        OK  0.1 min   manifest: 65 files
+  RUN    75/133 ch08-gdbm                    [chroot] src=gdbm-1.26
+        OK  0.2 min   manifest: 36 files
+  RUN    76/133 ch08-gperf                   [chroot] src=gperf-3.3
+        OK  0.2 min   manifest: 4 files
+  RUN    77/133 ch08-expat                   [chroot] src=expat-2.7.4
+        OK  0.2 min   manifest: 19 files
+  RUN    78/133 ch08-inetutils               [chroot] src=inetutils-2.7
+        OK  1.0 min   manifest: 22 files
+  RUN    79/133 ch08-less                    [chroot] src=less-692
+        OK  0.1 min   manifest: 6 files
+  RUN    80/133 ch08-perl                    [chroot] src=perl-5.42.0
+        OK  9.4 min   manifest: 1047 files
+  RUN    81/133 ch08-xml-parser              [chroot] src=XML-Parser-2.47
+        OK  0.1 min   manifest: 10 files
+  RUN    82/133 ch08-intltool                [chroot] src=intltool-0.51.0
+        OK  0.0 min   manifest: 13 files
+  RUN    83/133 ch08-autoconf                [chroot] src=autoconf-2.72
+        OK  0.0 min   manifest: 64 files
+  RUN    84/133 ch08-automake                [chroot] src=automake-1.18.1
+        OK  0.0 min   manifest: 126 files
+  RUN    85/133 ch08-openssl                 [chroot] src=openssl-3.6.1
+        OK  7.8 min   manifest: 9627 files
+  RUN    86/133 ch08-libelf                  [chroot] src=elfutils-0.194
+        OK  0.3 min   manifest: 8 files
+  RUN    87/133 ch08-libffi                  [chroot] src=libffi-3.5.2
+        OK  0.1 min   manifest: 13 files
+  RUN    88/133 ch08-sqlite                  [chroot] src=sqlite-autoconf-3510200
+        OK  1.5 min   manifest: 1017 files
+  RUN    89/133 ch08-Python                  [chroot] src=Python-3.14.3
+        OK  7.5 min   manifest: 9185 files
+  RUN    90/133 ch08-flit-core               [chroot] src=flit_core-3.12.0
+        OK  0.0 min   manifest: 37 files
+  RUN    91/133 ch08-packaging               [chroot] src=packaging-26.0
+        OK  0.0 min   manifest: 43 files
+  RUN    92/133 ch08-wheel                   [chroot] src=wheel-0.46.3
+        OK  0.0 min   manifest: 36 files
+  RUN    93/133 ch08-setuptools              [chroot] src=setuptools-82.0.0
+        OK  0.1 min   manifest: 760 files
+  RUN    94/133 ch08-ninja                   [chroot] src=ninja-1.13.2
+        OK  1.0 min   manifest: 3 files
+  RUN    95/133 ch08-meson                   [chroot] src=meson-1.10.1
+        OK  0.1 min   manifest: 500 files
+  RUN    96/133 ch08-kmod                    [chroot] src=kmod-34.2
+        OK  0.1 min   manifest: 12 files
+  RUN    97/133 ch08-coreutils               [chroot] src=coreutils-9.10
+        OK  4.3 min   manifest: 302 files
+  RUN    98/133 ch08-diffutils               [chroot] src=diffutils-3.12
+        OK  0.8 min   manifest: 46 files
+  RUN    99/133 ch08-gawk                    [chroot] src=gawk-5.3.2
+        OK  0.6 min   manifest: 126 files
+  RUN   100/133 ch08-findutils               [chroot] src=findutils-4.10.0
+        OK  1.9 min   manifest: 53 files
+  RUN   101/133 ch08-groff                   [chroot] src=groff-1.23.0
+        OK  0.7 min   manifest: 598 files
+  RUN   102/133 ch08-grub                    [chroot] src=grub-2.14
+        OK  1.4 min   manifest: 714 files
+  RUN   103/133 ch08-gzip                    [chroot] src=gzip-1.14
+        OK  0.4 min   manifest: 27 files
+  RUN   104/133 ch08-iproute2                [chroot] src=iproute2-6.18.0
+        OK  0.3 min   manifest: 169 files
+  RUN   105/133 ch08-kbd                     [chroot] src=kbd-2.9.0
+        OK  0.3 min   manifest: 637 files
+  RUN   106/133 ch08-libpipeline             [chroot] src=libpipeline-1.5.8
+        OK  0.4 min   manifest: 74 files
+  RUN   107/133 ch08-make                    [chroot] src=make-4.4.1
+        OK  1.1 min   manifest: 38 files
+  RUN   108/133 ch08-patch                   [chroot] src=patch-2.8
+        OK  0.5 min   manifest: 2 files
+  RUN   109/133 ch08-tar                     [chroot] src=tar-1.35
+        OK  0.9 min   manifest: 456 files
+  RUN   110/133 ch08-texinfo                 [chroot] src=texinfo-7.2
+        OK  0.9 min   manifest: 605 files
+  RUN   111/133 ch08-vim                     [chroot] src=vim-9.2.0078
+        FAILED rc=2 after 11.4 min -- see /home/john/lfs/logs/ch08-vim.log
+        last lines:
+        | gcc -c -I. -Ilibvterm/include -Iproto -DHAVE_CONFIG_H     -g -O2 -D_REENTRANT -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1        -DINLINE="" -DVSNPRINTF=vim_vsnprintf -DSNPRINTF=vim_snprintf -DIS_COMBINING_FUNCTION=utf_iscomposing_uint -DWCWIDTH_FUNCTION=utf_uint2cells -o objects/vterm_mouse.o libvterm/src/mouse.c
+        | gcc -c -I. -Ilibvterm/include -Iproto -DHAVE_CONFIG_H     -g -O2 -D_REENTRANT -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1        -DINLINE="" -DVSNPRINTF=vim_vsnprintf -DSNPRINTF=vim_snprintf -DIS_COMBINING_FUNCTION=utf_iscomposing_uint -DWCWIDTH_FUNCTION=utf_uint2cells -o objects/vterm_parser.o libvterm/src/parser.c
+        | gcc -c -I. -Ilibvterm/include -Iproto -DHAVE_CONFIG_H     -g -O2 -D_REENTRANT -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1        -DINLINE="" -DVSNPRINTF=vim_vsnprintf -DSNPRINTF=vim_snprintf -DIS_COMBINING_FUNCTION=utf_iscomposing_uint -DWCWIDTH_FUNCTION=utf_uint2cells -o objects/vterm_pen.o libvterm/src/pen.c
+        | gcc -c -I. -Ilibvterm/include -Iproto -DHAVE_CONFIG_H     -g -O2 -D_REENTRANT -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1        -DINLINE="" -DVSNPRINTF=vim_vsnprintf -DSNPRINTF=vim_snprintf -DIS_COMBINING_FUNCTION=utf_iscomposing_uint -DWCWIDTH_FUNCTION=utf_uint2cells -o objects/vterm_screen.o libvterm/src/screen.c
+        | gcc -c -I. -Ilibvterm/include -Iproto -DHAVE_CONFIG_H     -g -O2 -D_REENTRANT -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1        -DINLINE="" -DVSNPRINTF=vim_vsnprintf -DSNPRINTF=vim_snprintf -DIS_COMBINING_FUNCTION=utf_iscomposing_uint -DWCWIDTH_FUNCTION=utf_uint2cells -o objects/vterm_state.o libvterm/src/state.c
+        | gcc -c -I. -Ilibvterm/include -Iproto -DHAVE_CONFIG_H     -g -O2 -D_REENTRANT -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1        -DINLINE="" -DVSNPRINTF=vim_vsnprintf -DSNPRINTF=vim_snprintf -DIS_COMBINING_FUNCTION=utf_iscomposing_uint -DWCWIDTH_FUNCTION=utf_uint2cells -o objects/vterm_unicode.o libvterm/src/unicode.c
+        | gcc -c -I. -Ilibvterm/include -Iproto -DHAVE_CONFIG_H     -g -O2 -D_REENTRANT -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1        -DINLINE="" -DVSNPRINTF=vim_vsnprintf -DSNPRINTF=vim_snprintf -DIS_COMBINING_FUNCTION=utf_iscomposing_uint -DWCWIDTH_FUNCTION=utf_uint2cells -o objects/vterm_vterm.o libvterm/src/vterm.c
+        | gcc -c -I. -Iproto -DHAVE_CONFIG_H     -g -O2 -D_REENTRANT -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1        -o objects/netbeans.o netbeans.c
+        | gcc -c -I. -Iproto -DHAVE_CONFIG_H     -g -O2 -D_REENTRANT -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1        -o objects/job.o job.c
+        | gcc -c -I. -Iproto -DHAVE_CONFIG_H     -g -O2 -D_REENTRANT -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1        -o objects/channel.o channel.c
+        | gcc -c -I. -Iproto -DHAVE_CONFIG_H     -g -O2 -D_REENTRANT -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1        -o objects/xdiffi.o xdiff/xdiffi.c
+        | gcc -c -I. -Iproto -DHAVE_CONFIG_H     -g -O2 -D_REENTRANT -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1        -o objects/xemit.o xdiff/xemit.c
+        | gcc -c -I. -Iproto -DHAVE_CONFIG_H     -g -O2 -D_REENTRANT -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1        -o objects/xprepare.o xdiff/xprepare.c
+        | gcc -c -I. -Iproto -DHAVE_CONFIG_H     -g -O2 -D_REENTRANT -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1        -o objects/xutils.o xdiff/xutils.c
+        | gcc -c -I. -Iproto -DHAVE_CONFIG_H     -g -O2 -D_REENTRANT -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1        -o objects/xhistogram.o xdiff/xhistogram.c
+        | gcc -c -I. -Iproto -DHAVE_CONFIG_H     -g -O2 -D_REENTRANT -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1        -o objects/xpatience.o xdiff/xpatience.c
+        | gcc -c -I. -Iproto -DHAVE_CONFIG_H     -g -O2 -D_REENTRANT -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1        -o objects/charset.o charset.c
+        | gcc -c -I. -Iproto -DHAVE_CONFIG_H     -g -O2 -D_REENTRANT -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1        -o objects/json.o json.c
+        | gcc -c -I. -Iproto -DHAVE_CONFIG_H     -g -O2 -D_REENTRANT -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1        -o objects/main.o main.c
+        | gcc -c -I. -Iproto -DHAVE_CONFIG_H     -g -O2 -D_REENTRANT -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1        -o objects/memfile.o memfile.c
+        | gcc -c -I. -Iproto -DHAVE_CONFIG_H     -g -O2 -D_REENTRANT -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1        -o objects/message.o message.c
+        | link.sh: $LINK_AS_NEEDED set to 'yes': invoking linker directly.
+        |   gcc   -L/usr/local/lib -Wl,--as-needed 	-o vim objects/alloc.o objects/arabic.o objects/arglist.o objects/autocmd.o objects/beval.o objects/buffer.o objects/change.o objects/blob.o objects/blowfish.o objects/cindent.o objects/clientserver.o objects/clipboard.o objects/cmdexpand.o objects/cmdhist.o objects/crypt.o objects/crypt_zip.o objects/debugger.o objects/dict.o objects/diff.o objects/digraph.o objects/drawline.o objects/drawscreen.o objects/edit.o objects/eval.o objects/evalbuffer.o objects/evalfunc.o objects/evalvars.o objects/evalwindow.o objects/ex_cmds.o objects/ex_cmds2.o objects/ex_docmd.o objects/ex_eval.o objects/ex_getln.o objects/fileio.o objects/filepath.o objects/findfile.o objects/float.o objects/fold.o objects/fuzzy.o objects/getchar.o objects/gc.o objects/gui_xim.o objects/hardcopy.o objects/hashtab.o objects/help.o objects/highlight.o objects/if_cscope.o objects/if_xcmdsrv.o objects/indent.o objects/insexpand.o objects/linematch.o objects/list.o objects/locale.o objects/logfile.o objects/map.o objects/mark.o objects/match.o objects/mbyte.o objects/memline.o objects/menu.o objects/misc1.o objects/misc2.o objects/mouse.o objects/move.o objects/normal.o objects/ops.o objects/option.o objects/optionstr.o objects/os_unix.o objects/pathdef.o objects/popupmenu.o objects/popupwin.o objects/profiler.o objects/pty.o objects/quickfix.o objects/regexp.o objects/register.o objects/screen.o objects/scriptfile.o objects/search.o objects/session.o objects/sha256.o objects/sign.o objects/sound.o objects/spell.o objects/spellfile.o objects/spellsuggest.o objects/strings.o objects/syntax.o objects/tabpanel.o objects/tag.o objects/term.o objects/terminal.o objects/testing.o objects/textformat.o objects/textobject.o objects/textprop.o objects/time.o objects/tuple.o objects/typval.o objects/ui.o objects/undo.o objects/usercmd.o objects/userfunc.o objects/version.o objects/vim9class.o objects/vim9cmds.o objects/vim9compile.o objects/vim9execute.o objects/vim9expr.o objects/vim9generics.o objects/vim9instr.o objects/vim9script.o objects/vim9type.o objects/viminfo.o objects/window.o objects/bufwrite.o  objects/vterm_encoding.o objects/vterm_keyboard.o objects/vterm_mouse.o objects/vterm_parser.o objects/vterm_pen.o objects/vterm_screen.o objects/vterm_state.o objects/vterm_unicode.o objects/vterm_vterm.o         objects/netbeans.o objects/job.o objects/channel.o objects/xdiffi.o objects/xemit.o objects/xprepare.o objects/xutils.o objects/xhistogram.o objects/xpatience.o   objects/charset.o objects/json.o objects/main.o objects/memfile.o objects/message.o         -lm -lncurses  -lacl -lattr           
+        | link.sh: Linked fine
+        | make[1]: Leaving directory '/sources/vim-9.2.0078/src'
+
+STOPPED at ch08-vim

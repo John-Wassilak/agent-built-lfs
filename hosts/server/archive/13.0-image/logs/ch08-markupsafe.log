@@ -1,0 +1,17 @@
+# ch08-markupsafe  context=chroot  Tue Aug 25 09:01:14 2026
+# argv: sudo chroot /mnt/lfs /usr/bin/env -i HOME=/root TERM=screen.xterm-256color PS1=(lfs chroot) \u:\w\$  PATH=/usr/bin:/usr/sbin MAKEFLAGS=-j4 TESTSUITEFLAGS=-j4 /bin/bash --login -c /bin/bash "/sources/.build/ch08-markupsafe.sh"
+
+Processing /sources/markupsafe-3.0.3
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Building wheels for collected packages: MarkupSafe
+  Building wheel for MarkupSafe (pyproject.toml): started
+  Building wheel for MarkupSafe (pyproject.toml): finished with status 'done'
+  Created wheel for MarkupSafe: filename=markupsafe-3.0.3-cp314-cp314-linux_x86_64.whl size=22523 sha256=2d80434dfe3c63651c01833dba24be41952901744122d65c3d42aacee8ba48d5
+  Stored in directory: /tmp/pip-ephem-wheel-cache-tdr2b3dm/wheels/31/b0/70/59a6c3fb6eda2dc68d04f60af92d7dd71b3bfb5a188ea4e7a6
+Successfully built MarkupSafe
+Looking in links: dist
+Processing ./dist/markupsafe-3.0.3-cp314-cp314-linux_x86_64.whl
+Installing collected packages: Markupsafe
+Successfully installed Markupsafe-3.0.3
+manifest: 15 files

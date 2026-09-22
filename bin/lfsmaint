@@ -559,6 +559,25 @@ def advisory_cache(root, release):
     return os.path.join(home, "lfsmaint", f"advisories-{release}.json")
 
 
+def lists_dir(root, for_write=False):
+    """Where the fetched wget-lists live.
+
+    Same rule as advisory_cache(): the shared /var/lib/lfsmaint when this process can
+    write there, otherwise the caller's own cache. `fetch-lists` and `drift` have to
+    agree on this, and an unprivileged `drift` also has to find a shared copy a root
+    `fetch-lists` wrote earlier -- so reads prefer the shared directory if it exists and
+    fall back to the private one, while writes go wherever this process can write.
+    """
+    shared = os.path.join(state_dir(root), "lists")
+    home = os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache")
+    private = os.path.join(home, "lfsmaint", "lists")
+    if for_write:
+        parent = os.path.dirname(shared)
+        return shared if os.access(parent, os.W_OK) or os.access(shared, os.W_OK) \
+            else private
+    return shared if os.path.isdir(shared) else private
+
+
 def cmd_advisories(a):
     con = connect(a.root)
     release = con.execute(
@@ -612,8 +631,11 @@ LIST_URLS = {
 
 
 def cmd_fetch_lists(a):
-    d = os.path.join(state_dir(a.root), "lists")
-    os.makedirs(d, exist_ok=True)
+    d = lists_dir(a.root, for_write=True)
+    try:
+        os.makedirs(d, exist_ok=True)
+    except OSError as e:
+        sys.exit(f"cannot create {d}: {e}")
     for name, url in LIST_URLS.items():
         dest = os.path.join(d, name + ".wget-list")
         try:
@@ -640,7 +662,7 @@ def cmd_drift(a):
     if not sources:
         # Default to whatever fetch-lists has already downloaded, so the timer unit
         # and interactive use both work with no arguments.
-        d = os.path.join(state_dir(a.root), "lists")
+        d = lists_dir(a.root)
         if os.path.isdir(d):
             sources = sorted(os.path.join(d, f) for f in os.listdir(d)
                              if f.endswith(".wget-list"))

@@ -1,4 +1,3 @@
-/etc/ld.so.cache
 /etc/ld.so.conf
 /etc/localtime
 /etc/nsswitch.conf
@@ -38,6 +37,7 @@
 /usr/include/bits/argp-ldbl.h
 /usr/include/bits/atomic_wide_counter.h
 /usr/include/bits/byteswap.h
+/usr/include/bits/cloexec.h
 /usr/include/bits/cmathcalls.h
 /usr/include/bits/confname.h
 /usr/include/bits/cpu-set.h
@@ -781,7 +781,7 @@
 /usr/lib/libdl.a
 /usr/lib/libdl.so.2
 /usr/lib/libg.a
-/usr/lib/libm-2.43.a
+/usr/lib/libm-2.44.a
 /usr/lib/libm.a
 /usr/lib/libm.so
 /usr/lib/libm.so.6
@@ -1227,6 +1227,7 @@
 /usr/share/i18n/locales/hif_FJ
 /usr/share/i18n/locales/hne_IN
 /usr/share/i18n/locales/hr_HR
+/usr/share/i18n/locales/hrx_BR
 /usr/share/i18n/locales/hsb_DE
 /usr/share/i18n/locales/ht_HT
 /usr/share/i18n/locales/hu_HU
@@ -1445,6 +1446,7 @@
 /usr/share/info/libc.info-7
 /usr/share/info/libc.info-8
 /usr/share/info/libc.info-9
+/usr/share/locale/ar/LC_MESSAGES/libc.mo
 /usr/share/locale/be/LC_MESSAGES/libc.mo
 /usr/share/locale/bg/LC_MESSAGES/libc.mo
 /usr/share/locale/ca/LC_MESSAGES/libc.mo
@@ -3280,5 +3282,4 @@
 /usr/share/zoneinfo/right/Zulu
 /usr/share/zoneinfo/zone.tab
 /usr/share/zoneinfo/zone1970.tab
-/var/cache/ldconfig/aux-cache
 /var/lib/nss_db/Makefile

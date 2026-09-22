@@ -7,8 +7,8 @@
 /usr/share/bash-completion/completions/dunstctl
 /usr/share/bash-completion/completions/dunstify
 /usr/share/dbus-1/services/dunst.service
-/usr/share/fish/vendor_completions.d/dunst.fish
 /usr/share/fish/vendor_completions.d/dunstctl.fish
+/usr/share/fish/vendor_completions.d/dunst.fish
 /usr/share/fish/vendor_completions.d/dunstify.fish
 /usr/share/man/man1/dunst.1
 /usr/share/man/man1/dunstctl.1

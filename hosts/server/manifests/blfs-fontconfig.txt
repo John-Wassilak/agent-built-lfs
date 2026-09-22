@@ -8,6 +8,7 @@
 /etc/fonts/conf.d/40-nonlatin.conf
 /etc/fonts/conf.d/45-generic.conf
 /etc/fonts/conf.d/45-latin.conf
+/etc/fonts/conf.d/48-guessfamily.conf
 /etc/fonts/conf.d/48-spacing.conf
 /etc/fonts/conf.d/49-sansserif.conf
 /etc/fonts/conf.d/50-user.conf
@@ -22,8 +23,6 @@
 /etc/fonts/conf.d/90-synthetic.conf
 /etc/fonts/conf.d/README
 /etc/fonts/fonts.conf
-/etc/mtab
-/etc/udev/hwdb.bin
 /usr/bin/fc-cache
 /usr/bin/fc-cat
 /usr/bin/fc-conflist
@@ -41,17 +40,17 @@
 /usr/lib/libfontconfig.so.1
 /usr/lib/libfontconfig.so.1.16.1
 /usr/lib/pkgconfig/fontconfig.pc
-/usr/share/doc/fontconfig-2.17.1/cache-version.sgml
-/usr/share/doc/fontconfig-2.17.1/fontconfig-devel.html
-/usr/share/doc/fontconfig-2.17.1/fontconfig-devel.pdf
-/usr/share/doc/fontconfig-2.17.1/fontconfig-devel.sgml
-/usr/share/doc/fontconfig-2.17.1/fontconfig-devel.txt
-/usr/share/doc/fontconfig-2.17.1/fontconfig-user.html
-/usr/share/doc/fontconfig-2.17.1/fontconfig-user.pdf
-/usr/share/doc/fontconfig-2.17.1/fontconfig-user.sgml
-/usr/share/doc/fontconfig-2.17.1/fontconfig-user.txt
-/usr/share/doc/fontconfig-2.17.1/func.sgml
-/usr/share/doc/fontconfig-2.17.1/version.sgml
+/usr/share/doc/fontconfig-2.18.3/cache-version.sgml
+/usr/share/doc/fontconfig-2.18.3/fontconfig-devel.html
+/usr/share/doc/fontconfig-2.18.3/fontconfig-devel.pdf
+/usr/share/doc/fontconfig-2.18.3/fontconfig-devel.sgml
+/usr/share/doc/fontconfig-2.18.3/fontconfig-devel.txt
+/usr/share/doc/fontconfig-2.18.3/fontconfig-user.html
+/usr/share/doc/fontconfig-2.18.3/fontconfig-user.pdf
+/usr/share/doc/fontconfig-2.18.3/fontconfig-user.sgml
+/usr/share/doc/fontconfig-2.18.3/fontconfig-user.txt
+/usr/share/doc/fontconfig-2.18.3/func.sgml
+/usr/share/doc/fontconfig-2.18.3/version.sgml
 /usr/share/fontconfig/conf.avail/05-reset-dirs-sample.conf
 /usr/share/fontconfig/conf.avail/09-autohint-if-no-hinting.conf
 /usr/share/fontconfig/conf.avail/10-autohint.conf
@@ -91,8 +90,8 @@
 /usr/share/fontconfig/conf.avail/65-nonlatin.conf
 /usr/share/fontconfig/conf.avail/69-unifont.conf
 /usr/share/fontconfig/conf.avail/70-no-bitmaps-and-emoji.conf
-/usr/share/fontconfig/conf.avail/70-no-bitmaps-except-emoji.conf
 /usr/share/fontconfig/conf.avail/70-no-bitmaps.conf
+/usr/share/fontconfig/conf.avail/70-no-bitmaps-except-emoji.conf
 /usr/share/fontconfig/conf.avail/70-yes-bitmaps.conf
 /usr/share/fontconfig/conf.avail/80-delicious.conf
 /usr/share/fontconfig/conf.avail/90-synthetic.conf
@@ -105,6 +104,7 @@
 /usr/share/man/man1/fc-cache.1
 /usr/share/man/man1/fc-cat.1
 /usr/share/man/man1/fc-conflist.1
+/usr/share/man/man1/fc-genconf.1
 /usr/share/man/man1/fc-list.1
 /usr/share/man/man1/fc-match.1
 /usr/share/man/man1/fc-pattern.1
@@ -148,6 +148,7 @@
 /usr/share/man/man3/FcCharSetSubtract.3
 /usr/share/man/man3/FcCharSetSubtractCount.3
 /usr/share/man/man3/FcCharSetUnion.3
+/usr/share/man/man3/FcConfigAcceptFilename.3
 /usr/share/man/man3/FcConfigAcceptFilter.3
 /usr/share/man/man3/FcConfigAcceptFont.3
 /usr/share/man/man3/FcConfigAppFontAddDir.3
@@ -157,6 +158,7 @@
 /usr/share/man/man3/FcConfigCreate.3
 /usr/share/man/man3/FcConfigDestroy.3
 /usr/share/man/man3/FcConfigEnableHome.3
+/usr/share/man/man3/FcConfigFileGenerate.3
 /usr/share/man/man3/FcConfigFileInfoIterGet.3
 /usr/share/man/man3/FcConfigFileInfoIterInit.3
 /usr/share/man/man3/FcConfigFileInfoIterNext.3
@@ -173,6 +175,7 @@
 /usr/share/man/man3/FcConfigGetFonts.3
 /usr/share/man/man3/FcConfigGetRescanInterval.3
 /usr/share/man/man3/FcConfigGetSysRoot.3
+/usr/share/man/man3/FcConfigGetWarningFlags.3
 /usr/share/man/man3/FcConfigHome.3
 /usr/share/man/man3/FcConfigParseAndLoad.3
 /usr/share/man/man3/FcConfigParseAndLoadFromMemory.3
@@ -183,6 +186,7 @@
 /usr/share/man/man3/FcConfigSetFontSetFilter.3
 /usr/share/man/man3/FcConfigSetRescanInterval.3
 /usr/share/man/man3/FcConfigSetSysRoot.3
+/usr/share/man/man3/FcConfigSetWarningFlags.3
 /usr/share/man/man3/FcConfigSubstitute.3
 /usr/share/man/man3/FcConfigSubstituteWithPat.3
 /usr/share/man/man3/FcConfigUptoDate.3
@@ -202,6 +206,7 @@
 /usr/share/man/man3/FcFileIsDir.3
 /usr/share/man/man3/FcFileScan.3
 /usr/share/man/man3/FcFini.3
+/usr/share/man/man3/FcFontationsQueryAll.3
 /usr/share/man/man3/FcFontList.3
 /usr/share/man/man3/FcFontMatch.3
 /usr/share/man/man3/FcFontRenderPrepare.3
@@ -214,7 +219,6 @@
 /usr/share/man/man3/FcFontSetSort.3
 /usr/share/man/man3/FcFontSetSortDestroy.3
 /usr/share/man/man3/FcFontSort.3
-/usr/share/man/man3/FcFontationsQueryAll.3
 /usr/share/man/man3/FcFreeTypeCharIndex.3
 /usr/share/man/man3/FcFreeTypeCharSet.3
 /usr/share/man/man3/FcFreeTypeCharSetAndSpacing.3
@@ -242,8 +246,8 @@
 /usr/share/man/man3/FcLangSetDestroy.3
 /usr/share/man/man3/FcLangSetEqual.3
 /usr/share/man/man3/FcLangSetGetLangs.3
-/usr/share/man/man3/FcLangSetHasLang.3
 /usr/share/man/man3/FcLangSetHash.3
+/usr/share/man/man3/FcLangSetHasLang.3
 /usr/share/man/man3/FcLangSetSubtract.3
 /usr/share/man/man3/FcLangSetUnion.3
 /usr/share/man/man3/FcMatrixCopy.3
@@ -256,6 +260,7 @@
 /usr/share/man/man3/FcNameConstant.3
 /usr/share/man/man3/FcNameGetConstant.3
 /usr/share/man/man3/FcNameGetConstantFor.3
+/usr/share/man/man3/FcNameGetConstantNameFrom.3
 /usr/share/man/man3/FcNameGetObjectType.3
 /usr/share/man/man3/FcNameParse.3
 /usr/share/man/man3/FcNameRegisterConstants.3
@@ -267,8 +272,8 @@
 /usr/share/man/man3/FcObjectSetBuild.3
 /usr/share/man/man3/FcObjectSetCreate.3
 /usr/share/man/man3/FcObjectSetDestroy.3
-/usr/share/man/man3/FcPatternAdd-Type.3
 /usr/share/man/man3/FcPatternAdd.3
+/usr/share/man/man3/FcPatternAdd-Type.3
 /usr/share/man/man3/FcPatternAddWeak.3
 /usr/share/man/man3/FcPatternBuild.3
 /usr/share/man/man3/FcPatternCreate.3
@@ -280,8 +285,8 @@
 /usr/share/man/man3/FcPatternFilter.3
 /usr/share/man/man3/FcPatternFindIter.3
 /usr/share/man/man3/FcPatternFormat.3
-/usr/share/man/man3/FcPatternGet-Type.3
 /usr/share/man/man3/FcPatternGet.3
+/usr/share/man/man3/FcPatternGet-Type.3
 /usr/share/man/man3/FcPatternGetWithBinding.3
 /usr/share/man/man3/FcPatternHash.3
 /usr/share/man/man3/FcPatternIterEqual.3
@@ -339,5 +344,3 @@
 /usr/share/man/man3/FcWeightToOpenTypeDouble.3
 /usr/share/man/man5/fonts-conf.5
 /usr/share/xml/fontconfig/fonts.dtd
-/var/cache/fontconfig/CACHEDIR.TAG
-/var/log/README

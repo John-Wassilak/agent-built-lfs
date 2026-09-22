@@ -4112,3 +4112,108 @@ in prose while the procedure still issues the old command has not actually been 
 - Carried forward untouched: `hosts/server/manifests/` still describing the 13.0 install,
   the 14 BLFS recipes `--check` would create under `recipes/blfs-13.1/`, and the
   `ch08-dbus` docdir rename worked around in `verify` rather than in the manifest.
+
+## The state move finally ran, and what it was hiding (2026-09-21)
+
+`BOOTSTRAP.md` step 6 has carried a four-item post-deploy checklist since 2026-09-07, and
+`hosts/server-rebuild/host.toml` has said the same thing in its own header since the day
+that directory was created. Three of the four were done on the 09-21 deploy: `host.toml`'s
+kernel, the `BUILD-REPORT` entry, the native `--check` runs. The fourth -- *"then the
+state move, which is what makes the repo describe reality again"* -- was not, and it is
+the one every subsequent session kept tripping over without naming.
+
+**What was wrong.** `hosts/server/manifests/` (302 files, 105,666 paths) and
+`hosts/server/state/completed` were the records of the **13.0** install that `sdb2` held
+until it was re-imaged. The records of the tree that was actually deployed sat in
+`hosts/server-rebuild/` (304 files, 107,214 paths). Since every `bin/` tool resolves
+`hosts/<host>/manifests` for `--host server`, the entire toolchain was reading a 13.0
+install's file list while describing a 13.1 machine. `lfsmaint verify` came out clean only
+because the live database had been rebuilt by hand with an explicit
+`--manifests hosts/server-rebuild/manifests`; nothing about the default path was correct,
+and the next routine `lfsmaint db` would have silently regressed it.
+
+Done now. `manifests/`, `completed`, `timings.tsv` and `logs/` promoted from
+`server-rebuild`; the 13.0 copies archived under `hosts/server/archive/13.0-image/` with a
+README. `server-rebuild`'s own bookkeeping is under `hosts/server/archive/server-rebuild/`,
+and with its `host.toml` moved there `lfshost.known()` is back to `['laptop', 'server']`.
+Six now-dead symlinks are still at `hosts/server-rebuild/` awaiting a `git rm -r`.
+
+### Two packages the re-image silently dropped
+
+Diffing the two `completed` files is the check that should have run at deploy time. Nine
+steps appear in the 13.0 record but not the 13.1 one; checked file-by-file against the
+live root rather than assumed:
+
+| step | manifest | missing on the 13.1 root | verdict |
+|---|---|---|---|
+| `blfs-unixodbc` | 95 | **95** | gone -- real loss |
+| `slfs-htop` (as `blfs-htop`) | 10 | **7** | gone -- real loss |
+| `ch08-intltool` | 13 | 13 | correct: LFS 13.1 dropped the page |
+| `ch08-xml-parser` | 10 | 10 | correct: LFS 13.1 dropped the page |
+| `blfs-libglvnd` | 27 | 1 | became `glfs-libglvnd` (seq 49.8); only `/var/log/README` |
+| `blfs-ffmpeg`, `blfs-rsync`, `blfs-lfsmaint`, `ch08-bash` | 281/5/5/163 | 0 | present |
+
+`unixODBC` (seq 254) and `htop` (seq 175) were both built *natively on the 13.0 root*
+after the rebuild chroot had already finished on 09-09, so they were never in the image
+and vanished with the re-image. Nothing flagged it because the completion record that said
+they were installed was the 13.0 one. `/usr/bin/isql` and `/usr/bin/htop` are absent and
+the database correctly disowns them. After the move the repo is honest about this: both
+are in `packages.py`, neither is in `state/completed`, so a `--resume` run rebuilds them.
+
+`book/13.1/chapter08/` contains neither `intltool.html` nor `xml-parser.html` -- verified
+directly, not inferred from the diff.
+
+### The real reason the box is not "all 13.1": eleven packages at their 13.0 versions
+
+`lfsmaint drift` is the tool for this question and it could not run at all: `fetch-lists`
+died with `PermissionError` on `/var/lib/lfsmaint/lists`, the same defect the audit fixed
+for `advisories` one function away and did not generalise. `lists_dir()` now applies the
+same rule -- shared when writable, `~/.cache/lfsmaint` otherwise, reads preferring a
+shared copy a root run left behind -- and `fetch-lists`/`drift` share the resolver so they
+cannot disagree.
+
+Against the 13.1 wget-lists: **287 packages compared, 205 identical, 12 behind the book,
+2 ahead.** Eleven of the twelve are not merely behind -- they sit at *exactly* their BLFS
+13.0 version:
+
+```
+cbindgen 0.29.2/0.29.4   ffmpeg 8.0.1/9.0.1        libarchive 3.8.5/3.8.9
+nspr 4.38.2/4.40         nss 3.120.1/3.126         pciutils 3.14.0/3.15.0
+pipewire 1.6.0/1.6.8     rsync 3.4.1/3.5.0         SPIRV-LLVM-Translator 21.1.4/22.1.5
+wireplumber 0.5.13/0.5.15   xorg-server 21.1.21/21.1.24
+```
+(firefox is the twelfth, 140.8.0esr against 140.14.0esr -- behind, but not a 13.0 pin.)
+The two "ahead of book" are `lua` 5.4.9 and `libevdev` 1.13.7, both deliberate.
+
+The mechanism, traced rather than guessed. `recipes/blfs-13.0/` holds **199** generated
+recipes; `recipes/blfs-13.1/` holds **113**. `blfs-nspr`, `blfs-nss`, `blfs-libarchive`
+and `blfs-spirv-llvm-translator` resolve to **no recipe in any of the three layers** --
+they are four of the 14 `extract-blfs.py --check` reports as "would be CREATED". The 13.1
+chroot rebuild ran 09-07/09-09, *before* the one-directory-per-release split landed on
+09-21 (`db416ba`); at that time `recipes/` was flat and held 13.0-extracted content, so
+the "13.1 rebuild" built those packages from 13.0 recipes and the versions came out 13.0.
+The split then moved that content to `recipes/blfs-13.0/` and left `blfs-13.1` without it.
+`blfs-ffmpeg` and `blfs-pipewire` are the other shape: hand-authored host recipes whose
+headers still read `source: book/blfs-13.0/...`. All four of those book pages changed
+between releases, and root `CLAUDE.md` is explicit that carrying a decision across a
+release is a re-read, not a copy.
+
+This is why the answer to "is this box 13.1?" kept coming back yes *and* the 13.0
+references kept reappearing. Both were true. The identity is 13.1 everywhere it is
+declared -- `/etc/lfs-release`, `/etc/os-release`, `vmlinuz-7.1.8-lfs-13.1-systemd`, the
+GRUB menuentry, `host.toml`, the database's `book_release` -- while eleven packages'
+*contents* are 13.0, because the recipes that built them were.
+
+### Open, and in dependency order
+
+1. **`git rm -r hosts/server-rebuild`** -- six dead symlinks, nothing else left.
+2. **Generate the 14 missing `recipes/blfs-13.1/` recipes.** `extract-blfs.py` writes
+   them, but each arrives as a *candidate*: `recipes/blfs-13.0/overrides.json` decisions
+   name blocks by index and are not automatically true of 13.1. This is a review session,
+   not a command.
+3. **Re-read the four hand-authored host recipes** (`blfs-ffmpeg`, `blfs-pipewire`,
+   `blfs-mpv`, `blfs-firefox`) against their 13.1 pages. `mpv` is 0.41.0 in both books and
+   should come out unchanged; the other three move.
+4. **Rebuild**: the eleven drifted packages, plus `unixODBC` and `htop`. `nss`/`nspr` and
+   `pipewire`/`wireplumber` move as pairs. `xorg-server` and `ffmpeg` are the risky ones
+   on this host -- the NVIDIA 470 stack and the VDPAU/NVENC path both sit on top of them.

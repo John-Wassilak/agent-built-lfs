@@ -1,0 +1,11 @@
+running 1 step(s), 4 jobs
+
+  RUN    12 blfs-git                     [chroot] src=git-2.53.0
+        OK  1.5 min   manifest: 345 files
+
+all selected steps complete
+completed: 147/133
+next     : -- all steps complete --
+free     : 47.9 GB on /mnt/lfs
+vkfs     : /dev=up, /dev/pts=up, /proc=up, /sys=up, /run=up
+buildtime: 9.95 h so far

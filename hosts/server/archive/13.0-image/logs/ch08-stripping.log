@@ -1,0 +1,271 @@
+# ch08-stripping  context=chroot  Tue Aug 25 09:13:20 2026
+# argv: sudo chroot /mnt/lfs /usr/bin/env -i HOME=/root TERM=screen.xterm-256color PS1=(lfs chroot) \u:\w\$  PATH=/usr/bin:/usr/sbin MAKEFLAGS=-j4 TESTSUITEFLAGS=-j4 /bin/bash --login -c /bin/bash "/sources/.build/ch08-stripping.sh"
+
+objcopy: /tmp/ld-linux-x86-64.so.2: debuglink section already exists
+removed '/usr/lib/ld-linux-x86-64.so.2'
+'/tmp/ld-linux-x86-64.so.2' -> '/usr/lib/ld-linux-x86-64.so.2'
+objcopy: /tmp/libc.so.6: debuglink section already exists
+removed '/usr/lib/libc.so.6'
+'/tmp/libc.so.6' -> '/usr/lib/libc.so.6'
+objcopy: /tmp/libthread_db.so.1: debuglink section already exists
+removed '/usr/lib/libthread_db.so.1'
+'/tmp/libthread_db.so.1' -> '/usr/lib/libthread_db.so.1'
+objcopy: /tmp/libquadmath.so.0.0.0: debuglink section already exists
+removed '/usr/lib/libquadmath.so.0.0.0'
+'/tmp/libquadmath.so.0.0.0' -> '/usr/lib/libquadmath.so.0.0.0'
+objcopy: /tmp/libstdc++.so.6.0.34: debuglink section already exists
+removed '/usr/lib/libstdc++.so.6.0.34'
+'/tmp/libstdc++.so.6.0.34' -> '/usr/lib/libstdc++.so.6.0.34'
+objcopy: /tmp/libitm.so.1.0.0: debuglink section already exists
+removed '/usr/lib/libitm.so.1.0.0'
+'/tmp/libitm.so.1.0.0' -> '/usr/lib/libitm.so.1.0.0'
+objcopy: /tmp/libatomic.so.1.2.0: debuglink section already exists
+removed '/usr/lib/libatomic.so.1.2.0'
+'/tmp/libatomic.so.1.2.0' -> '/usr/lib/libatomic.so.1.2.0'
+removed '/usr/bin/bash'
+'/tmp/bash' -> '/usr/bin/bash'
+removed '/usr/bin/find'
+'/tmp/find' -> '/usr/bin/find'
+removed '/usr/bin/strip'
+'/tmp/strip' -> '/usr/bin/strip'
+removed '/usr/lib/libbfd-2.46.0.20260210.so'
+'/tmp/libbfd-2.46.0.20260210.so' -> '/usr/lib/libbfd-2.46.0.20260210.so'
+removed '/usr/lib/libsframe.so.3.0.0'
+'/tmp/libsframe.so.3.0.0' -> '/usr/lib/libsframe.so.3.0.0'
+removed '/usr/lib/libhistory.so.8.3'
+'/tmp/libhistory.so.8.3' -> '/usr/lib/libhistory.so.8.3'
+removed '/usr/lib/libncursesw.so.6.6'
+'/tmp/libncursesw.so.6.6' -> '/usr/lib/libncursesw.so.6.6'
+removed '/usr/lib/libm.so.6'
+'/tmp/libm.so.6' -> '/usr/lib/libm.so.6'
+removed '/usr/lib/libreadline.so.8.3'
+'/tmp/libreadline.so.8.3' -> '/usr/lib/libreadline.so.8.3'
+removed '/usr/lib/libz.so.1.3.2'
+'/tmp/libz.so.1.3.2' -> '/usr/lib/libz.so.1.3.2'
+removed '/usr/lib/libzstd.so.1.5.7'
+'/tmp/libzstd.so.1.5.7' -> '/usr/lib/libzstd.so.1.5.7'
+removed '/usr/lib/libnss_compat.so.2'
+'/tmp/libnss_compat.so.2' -> '/usr/lib/libnss_compat.so.2'
+removed '/usr/lib/libnss_db.so.2'
+'/tmp/libnss_db.so.2' -> '/usr/lib/libnss_db.so.2'
+removed '/usr/lib/libnss_dns.so.2'
+'/tmp/libnss_dns.so.2' -> '/usr/lib/libnss_dns.so.2'
+removed '/usr/lib/libnss_files.so.2'
+'/tmp/libnss_files.so.2' -> '/usr/lib/libnss_files.so.2'
+removed '/usr/lib/libnss_hesiod.so.2'
+'/tmp/libnss_hesiod.so.2' -> '/usr/lib/libnss_hesiod.so.2'
+removed '/usr/lib/libnss_myhostname.so.2'
+'/tmp/libnss_myhostname.so.2' -> '/usr/lib/libnss_myhostname.so.2'
+removed '/usr/lib/libnss_mymachines.so.2'
+'/tmp/libnss_mymachines.so.2' -> '/usr/lib/libnss_mymachines.so.2'
+removed '/usr/lib/libnss_resolve.so.2'
+'/tmp/libnss_resolve.so.2' -> '/usr/lib/libnss_resolve.so.2'
+removed '/usr/lib/libnss_systemd.so.2'
+'/tmp/libnss_systemd.so.2' -> '/usr/lib/libnss_systemd.so.2'
+strip: /usr/lib/libgcc_s.so: file format not recognized
+strip: /usr/lib/systemd/user/dbus.socket: file format not recognized
+strip: /usr/lib/systemd/user/systemd-machined.socket: file format not recognized
+strip: /usr/lib/systemd/user/systemd-ask-password.socket: file format not recognized
+strip: /usr/lib/systemd/system/uuidd.socket: file format not recognized
+strip: /usr/lib/systemd/system/systemd-hostnamed.socket: file format not recognized
+strip: /usr/lib/systemd/system/systemd-factory-reset.socket: file format not recognized
+strip: /usr/lib/systemd/system/systemd-journald-dev-log.socket: file format not recognized
+strip: /usr/lib/systemd/system/systemd-udevd-control.socket: file format not recognized
+strip: /usr/lib/systemd/system/systemd-creds.socket: file format not recognized
+strip: /usr/lib/systemd/system/systemd-journald@.socket: file format not recognized
+strip: /usr/lib/systemd/system/systemd-logind-varlink.socket: file format not recognized
+strip: /usr/lib/systemd/system/systemd-networkd-resolve-hook.socket: file format not recognized
+strip: /usr/lib/systemd/system/dbus.socket: file format not recognized
+strip: /usr/lib/systemd/system/systemd-sysext.socket: file format not recognized
+strip: /usr/lib/systemd/system/systemd-journald-audit.socket: file format not recognized
+strip: /usr/lib/systemd/system/systemd-repart.socket: file format not recognized
+strip: /usr/lib/systemd/system/systemd-networkd-varlink.socket: file format not recognized
+strip: /usr/lib/systemd/system/systemd-mute-console.socket: file format not recognized
+strip: /usr/lib/systemd/system/systemd-journald-varlink@.socket: file format not recognized
+strip: /usr/lib/systemd/system/systemd-mountfsd.socket: file format not recognized
+strip: /usr/lib/systemd/system/systemd-nsresourced.socket: file format not recognized
+strip: /usr/lib/systemd/system/systemd-udevd-kernel.socket: file format not recognized
+strip: /usr/lib/systemd/system/systemd-udevd-varlink.socket: file format not recognized
+strip: /usr/lib/systemd/system/systemd-networkd.socket: file format not recognized
+strip: /usr/lib/systemd/system/systemd-machined.socket: file format not recognized
+strip: /usr/lib/systemd/system/systemd-journald.socket: file format not recognized
+strip: /usr/lib/systemd/system/systemd-userdbd.socket: file format not recognized
+strip: /usr/lib/systemd/system/syslog.socket: file format not recognized
+strip: /usr/lib/systemd/system/systemd-ask-password.socket: file format not recognized
+strip: /usr/lib/systemd/system/systemd-resolved-varlink.socket: file format not recognized
+strip: /usr/lib/systemd/system/systemd-resolved-monitor.socket: file format not recognized
+strip: /usr/lib/systemd/system/systemd-oomd.socket: file format not recognized
+strip: /usr/lib/systemd/system/systemd-rfkill.socket: file format not recognized
+strip: /usr/lib/systemd/system/systemd-coredump.socket: file format not recognized
+strip: /usr/lib/libm.a: file format not recognized
+strip: /usr/bin/gdiffmk: file format not recognized
+strip: /usr/bin/encguess: file format not recognized
+strip: /usr/bin/xzgrep: file format not recognized
+strip: /usr/bin/unbuffer: file format not recognized
+strip: /usr/bin/python3.14-config: file format not recognized
+strip: /usr/bin/pic2graph: file format not recognized
+strip: /usr/bin/bashbug: file format not recognized
+strip: /usr/bin/aclocal-1.18: file format not recognized
+strip: /usr/bin/xpstat: file format not recognized
+strip: /usr/bin/perlthanks: file format not recognized
+strip: /usr/bin/uncompress: file format not recognized
+strip: /usr/bin/pydoc3.14: file format not recognized
+strip: /usr/bin/piconv: file format not recognized
+strip: /usr/bin/mtrace: file format not recognized
+strip: /usr/bin/updatedb: file format not recognized
+strip: /usr/bin/mkpasswd: file format not recognized
+strip: /usr/bin/pdfroff: file format not recognized
+strip: /usr/bin/pod2man: file format not recognized
+strip: /usr/bin/cryptdir: file format not recognized
+strip: /usr/bin/compile_et: file format not recognized
+strip: /usr/bin/pdfmom: file format not recognized
+strip: /usr/bin/zfgrep: file format not recognized
+strip: /usr/bin/xkibitz: file format not recognized
+strip: /usr/bin/zcat: file format not recognized
+strip: /usr/bin/znew: file format not recognized
+strip: /usr/bin/po-fetch: file format not recognized
+strip: /usr/bin/runtest: file format not recognized
+strip: /usr/bin/json_pp: file format not recognized
+strip: /usr/bin/perlivp: file format not recognized
+strip: /usr/bin/passmass: file format not recognized
+strip: /usr/bin/zforce: file format not recognized
+strip: /usr/bin/gawkbug: file format not recognized
+strip: /usr/bin/autoheader: file format not recognized
+strip: /usr/bin/ifnames: file format not recognized
+strip: /usr/bin/zgrep: file format not recognized
+strip: /usr/bin/enc2xs: file format not recognized
+strip: /usr/bin/zstdgrep: file format not recognized
+strip: /usr/bin/pod2html: file format not recognized
+strip: /usr/bin/grepc_mk: file format not recognized
+strip: /usr/bin/intltool-prepare: file format not recognized
+strip: /usr/bin/tzselect: file format not recognized
+strip: /usr/bin/perlbug: file format not recognized
+strip: /usr/bin/autopoint: file format not recognized
+strip: /usr/bin/grog: file format not recognized
+strip: /usr/bin/zipdetails: file format not recognized
+strip: /usr/bin/gettext.sh: file format not recognized
+strip: /usr/bin/yacc: file format not recognized
+strip: /usr/bin/tkpasswd: file format not recognized
+strip: /usr/bin/texi2dvi: file format not recognized
+strip: /usr/bin/timed-run: file format not recognized
+strip: /usr/bin/meson: file format not recognized
+strip: /usr/bin/zless: file format not recognized
+strip: /usr/bin/mansectf: file format not recognized
+strip: /usr/bin/mk_cmds: file format not recognized
+strip: /usr/bin/autoscan: file format not recognized
+strip: /usr/bin/sortman: file format not recognized
+strip: /usr/bin/zegrep: file format not recognized
+strip: /usr/bin/unicode_stop: file format not recognized
+strip: /usr/bin/libnetcfg: file format not recognized
+strip: /usr/bin/kibitz: file format not recognized
+strip: /usr/bin/zcmp: file format not recognized
+strip: /usr/bin/xzdiff: file format not recognized
+strip: /usr/bin/autoreconf: file format not recognized
+strip: /usr/bin/shasum: file format not recognized
+strip: /usr/bin/ftp-rfc: file format not recognized
+strip: /usr/bin/egrep: file format not recognized
+strip: /usr/bin/ptar: file format not recognized
+strip: /usr/bin/spit: file format not recognized
+strip: /usr/bin/pcre2-config: file format not recognized
+strip: /usr/bin/timed-read: file format not recognized
+strip: /usr/bin/ldd: file format not recognized
+strip: /usr/bin/zstdless: file format not recognized
+strip: /usr/bin/zmore: file format not recognized
+strip: /usr/bin/pip3: file format not recognized
+strip: /usr/bin/dejagnu: file format not recognized
+strip: /usr/bin/glilypond: file format not recognized
+strip: /usr/bin/h2ph: file format not recognized
+strip: /usr/bin/bzgrep: file format not recognized
+strip: /usr/bin/mmroff: file format not recognized
+strip: /usr/bin/rftp: file format not recognized
+strip: /usr/bin/vimtutor: file format not recognized
+strip: /usr/bin/ncursesw6-config: file format not recognized
+strip: /usr/bin/idle3.14: file format not recognized
+strip: /usr/bin/gperl: file format not recognized
+strip: /usr/bin/pdftexi2dvi: file format not recognized
+strip: /usr/bin/sqlite3_analyzer: file format not recognized
+strip: /usr/bin/diffman-git: file format not recognized
+strip: /usr/bin/pod2texi: file format not recognized
+strip: /usr/bin/neqn: file format not recognized
+strip: /usr/bin/fgrep: file format not recognized
+strip: /usr/bin/h2xs: file format not recognized
+strip: /usr/bin/texi2any: file format not recognized
+strip: /usr/bin/streamzip: file format not recognized
+strip: /usr/bin/automake: file format not recognized
+strip: /usr/bin/wheel: file format not recognized
+strip: /usr/bin/pip3.14: file format not recognized
+strip: /usr/bin/rlogin-cwd: file format not recognized
+strip: /usr/bin/dislocate: file format not recognized
+strip: /usr/bin/gettextize: file format not recognized
+strip: /usr/bin/grub-kbdcomp: file format not recognized
+strip: /usr/bin/decryptdir: file format not recognized
+strip: /usr/bin/automake-1.18: file format not recognized
+strip: /usr/bin/weather: file format not recognized
+strip: /usr/bin/sotruss: file format not recognized
+strip: /usr/bin/cpan: file format not recognized
+strip: /usr/bin/ptargrep: file format not recognized
+strip: /usr/bin/multixterm: file format not recognized
+strip: /usr/bin/bzdiff: file format not recognized
+strip: /usr/bin/corelist: file format not recognized
+strip: /usr/bin/afmtodit: file format not recognized
+strip: /usr/bin/pod2text: file format not recognized
+strip: /usr/bin/grepc_c: file format not recognized
+strip: /usr/bin/lpunlock: file format not recognized
+strip: /usr/bin/bzmore: file format not recognized
+strip: /usr/bin/xzless: file format not recognized
+strip: /usr/bin/texi2pdf: file format not recognized
+strip: /usr/bin/podchecker: file format not recognized
+strip: /usr/bin/autoconf: file format not recognized
+strip: /usr/bin/intltool-update: file format not recognized
+strip: /usr/bin/mansect: file format not recognized
+strip: /usr/bin/intltoolize: file format not recognized
+strip: /usr/bin/pdfman: file format not recognized
+strip: /usr/bin/gzexe: file format not recognized
+strip: /usr/bin/libtoolize: file format not recognized
+strip: /usr/bin/gropdf: file format not recognized
+strip: /usr/bin/eqn2graph: file format not recognized
+strip: /usr/bin/pl2pm: file format not recognized
+strip: /usr/bin/prove: file format not recognized
+strip: /usr/bin/nroff: file format not recognized
+strip: /usr/bin/instmodsh: file format not recognized
+strip: /usr/bin/aclocal: file format not recognized
+strip: /usr/bin/libtool: file format not recognized
+strip: /usr/bin/ptardiff: file format not recognized
+strip: /usr/bin/gpinyin: file format not recognized
+strip: /usr/bin/xsubpp: file format not recognized
+strip: /usr/bin/intltool-extract: file format not recognized
+strip: /usr/bin/splain: file format not recognized
+strip: /usr/bin/unicode_start: file format not recognized
+strip: /usr/bin/xtrace: file format not recognized
+strip: /usr/bin/intltool-merge: file format not recognized
+strip: /usr/bin/autoexpect: file format not recognized
+strip: /usr/bin/grap2graph: file format not recognized
+strip: /usr/bin/autopasswd: file format not recognized
+strip: /usr/bin/autom4te: file format not recognized
+strip: /usr/bin/c_rehash: file format not recognized
+strip: /usr/bin/gunzip: file format not recognized
+strip: /usr/bin/perldoc: file format not recognized
+strip: /usr/bin/pod2usage: file format not recognized
+strip: /usr/bin/chem: file format not recognized
+strip: /usr/bin/autoupdate: file format not recognized
+strip: /usr/bin/zdiff: file format not recognized
+strip: /usr/bin/tknewsbiff: file format not recognized
+strip: /usr/bin/texindex: file format not recognized
+strip: /usr/bin/xzmore: file format not recognized
+strip: /usr/bin/grepc: file format not recognized
+strip: /usr/bin/gprofng-display-html: file format not recognized
+strip: /usr/sbin/grub-set-default: file format not recognized
+strip: /usr/sbin/grub-mkconfig: file format not recognized
+strip: /usr/sbin/e2scrub: file format not recognized
+strip: /usr/sbin/grub-reboot: file format not recognized
+strip: /usr/sbin/routel: file format not recognized
+strip: /usr/sbin/e2scrub_all: file format not recognized
+strip: /usr/libexec/gcc/x86_64-lfs-linux-gnu/15.2.0/install-tools/fixinc.sh: file format not recognized
+strip: /usr/libexec/gcc/x86_64-lfs-linux-gnu/15.2.0/install-tools/mkinstalldirs: file format not recognized
+strip: /usr/libexec/gcc/x86_64-lfs-linux-gnu/15.2.0/install-tools/mkheaders: file format not recognized
+strip: /usr/libexec/gcc/x86_64-pc-linux-gnu/15.2.0/install-tools/mkinstalldirs: file format not recognized
+strip: /usr/libexec/gcc/x86_64-pc-linux-gnu/15.2.0/liblto_plugin.la: file format not recognized
+strip: /usr/libexec/gettext/project-id: file format not recognized
+strip: /usr/libexec/gettext/user-email: file format not recognized
+strip: /usr/libexec/e2fsprogs/e2scrub_fail: file format not recognized
+manifest: 1204 files

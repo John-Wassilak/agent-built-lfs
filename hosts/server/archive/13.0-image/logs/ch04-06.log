@@ -1,0 +1,59 @@
+running 25 step(s), 4 jobs
+
+  RUN     1/133 ch04-creatingminlayout       [root-host] src=-
+        OK  0.0 min
+  RUN     2/133 ch04-addinguser              [root-host] src=-
+        OK  0.0 min
+  RUN     3/133 ch04-settingenvironment      [lfs] src=-
+        OK  0.0 min
+  RUN     4/133 ch05-binutils-pass1          [lfs] src=binutils-2.46.0
+        OK  1.6 min
+  RUN     5/133 ch05-gcc-pass1               [lfs] src=gcc-15.2.0
+        OK  18.0 min
+  RUN     6/133 ch05-linux-headers           [lfs] src=linux-6.18.10
+        OK  0.3 min
+  RUN     7/133 ch05-glibc                   [lfs] src=glibc-2.43
+        OK  5.9 min
+  RUN     8/133 ch05-gcc-libstdc++           [lfs] src=gcc-15.2.0
+        OK  1.3 min
+  RUN     9/133 ch06-m4                      [lfs] src=m4-1.4.21
+        OK  0.6 min
+  RUN    10/133 ch06-ncurses                 [lfs] src=ncurses-6.6
+        OK  1.3 min
+  RUN    11/133 ch06-bash                    [lfs] src=bash-5.3
+        OK  0.7 min
+  RUN    12/133 ch06-coreutils               [lfs] src=coreutils-9.10
+        OK  1.4 min
+  RUN    13/133 ch06-diffutils               [lfs] src=diffutils-3.12
+        OK  0.5 min
+  RUN    14/133 ch06-file                    [lfs] src=file-5.46
+        OK  0.4 min
+  RUN    15/133 ch06-findutils               [lfs] src=findutils-4.10.0
+        OK  0.7 min
+  RUN    16/133 ch06-gawk                    [lfs] src=gawk-5.3.2
+        OK  0.5 min
+  RUN    17/133 ch06-grep                    [lfs] src=grep-3.12
+        OK  0.5 min
+  RUN    18/133 ch06-gzip                    [lfs] src=gzip-1.14
+        OK  0.4 min
+  RUN    19/133 ch06-make                    [lfs] src=make-4.4.1
+        OK  0.2 min
+  RUN    20/133 ch06-patch                   [lfs] src=patch-2.8
+        OK  0.3 min
+  RUN    21/133 ch06-sed                     [lfs] src=sed-4.9
+        OK  0.4 min
+  RUN    22/133 ch06-tar                     [lfs] src=tar-1.35
+        OK  0.6 min
+  RUN    23/133 ch06-xz                      [lfs] src=xz-5.8.2
+        OK  0.3 min
+  RUN    24/133 ch06-binutils-pass2          [lfs] src=binutils-2.46.0
+        OK  1.7 min
+  RUN    25/133 ch06-gcc-pass2               [lfs] src=gcc-15.2.0
+        OK  21.4 min
+
+all selected steps complete
+completed: 25/133
+next     : 26 (7.2) ch07-changingowner [root-host]
+free     : 51.6 GB on /mnt/lfs
+vkfs     : /dev=down, /dev/pts=down, /proc=down, /sys=down, /run=down
+buildtime: 0.98 h so far

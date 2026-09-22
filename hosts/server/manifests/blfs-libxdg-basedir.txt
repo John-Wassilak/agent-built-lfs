@@ -1,5 +1,5 @@
-/usr/include/basedir.h
 /usr/include/basedir_fs.h
+/usr/include/basedir.h
 /usr/lib/libxdg-basedir.la
 /usr/lib/libxdg-basedir.so
 /usr/lib/libxdg-basedir.so.1

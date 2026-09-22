@@ -1,0 +1,18 @@
+# ch08-jinja2  context=chroot  Tue Aug 25 09:01:16 2026
+# argv: sudo chroot /mnt/lfs /usr/bin/env -i HOME=/root TERM=screen.xterm-256color PS1=(lfs chroot) \u:\w\$  PATH=/usr/bin:/usr/sbin MAKEFLAGS=-j4 TESTSUITEFLAGS=-j4 /bin/bash --login -c /bin/bash "/sources/.build/ch08-jinja2.sh"
+
+Processing /sources/jinja2-3.1.6
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Building wheels for collected packages: Jinja2
+  Building wheel for Jinja2 (pyproject.toml): started
+  Building wheel for Jinja2 (pyproject.toml): finished with status 'done'
+  Created wheel for Jinja2: filename=jinja2-3.1.6-py3-none-any.whl size=134897 sha256=19c8cb5583d734d03cc76d095a5391d0b8fa1a04015d1556ea2803493e54b152
+  Stored in directory: /tmp/pip-ephem-wheel-cache-2q1aqk4v/wheels/0d/a4/18/b6656fce4f1662096507dbe6cf8b3e01a9eb7138756e34aa5e
+Successfully built Jinja2
+Looking in links: dist
+Processing ./dist/jinja2-3.1.6-py3-none-any.whl
+Requirement already satisfied: MarkupSafe>=2.0 in /usr/lib/python3.14/site-packages (from Jinja2) (3.0.3)
+Installing collected packages: Jinja2
+Successfully installed Jinja2-3.1.6
+manifest: 58 files

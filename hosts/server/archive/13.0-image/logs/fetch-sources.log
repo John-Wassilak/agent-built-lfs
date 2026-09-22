@@ -1,0 +1,8 @@
+fetching 92 sources -> /home/john/lfs/sources-staging (jobs=5)
+
+=== verifying md5 (authoritative list: /home/john/lfs/book/md5sums, 92 entries) ===
+FAIL:
+dejagnu-1.6.3.tar.gz: FAILED
+md5sum: WARNING: 1 computed checksum did NOT match
+
+missing/mismatched: 2

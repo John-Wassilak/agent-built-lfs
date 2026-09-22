@@ -1,0 +1,4680 @@
+# ch08-coreutils  context=chroot  Tue Aug 25 08:32:43 2026
+# argv: sudo chroot /mnt/lfs /usr/bin/env -i HOME=/root TERM=screen.xterm-256color PS1=(lfs chroot) \u:\w\$  PATH=/usr/bin:/usr/sbin MAKEFLAGS=-j4 TESTSUITEFLAGS=-j4 /bin/bash --login -c /bin/bash "/sources/.build/ch08-coreutils.sh"
+
+patching file bootstrap.conf
+patching file configure.ac
+patching file lib/linebuffer.h
+patching file lib/mbfile.c
+patching file lib/mbfile.h
+patching file m4/mbfile.m4
+patching file src/cut.c
+patching file src/expand.c
+patching file src/expand-common.c
+patching file src/expand-common.h
+patching file src/local.mk
+patching file src/pr.c
+patching file src/sort.c
+patching file src/unexpand.c
+patching file tests/Coreutils.pm
+patching file tests/expand/expand.pl
+patching file tests/expand/mb.sh
+patching file tests/i18n/sort.sh
+patching file tests/local.mk
+patching file tests/misc/sort-mb-tests.sh
+patching file tests/pr/pr-tests.pl
+patching file tests/sort/sort-merge.pl
+patching file tests/sort/sort.pl
+patching file tests/unexpand/mb.sh
+patching file tests/unexpand/unexpand.pl
+autoreconf: export WARNINGS=
+autoreconf: Entering directory '.'
+autoreconf: configure.ac: not running autopoint: --install not given
+autoreconf: running: aclocal --force -I m4
+autoreconf: configure.ac: tracing
+autoreconf: configure.ac: not using Libtool
+autoreconf: configure.ac: not using Intltool
+autoreconf: configure.ac: not using Gtkdoc
+autoreconf: running: /usr/bin/autoconf --force
+autoreconf: running: /usr/bin/autoheader --force
+autoreconf: running: automake --force-missing
+autoreconf: Leaving directory '.'
+checking for a BSD-compatible install... /usr/bin/install -c
+checking whether sleep supports fractional seconds... yes
+checking filesystem timestamp resolution... 0.01
+checking whether build environment is sane... yes
+checking for a race-free mkdir -p... /usr/bin/mkdir -p
+checking for gawk... gawk
+checking whether make sets $(MAKE)... yes
+checking whether make supports nested variables... yes
+checking xargs -n works... yes
+checking whether UID '0' is supported by ustar format... yes
+checking whether GID '0' is supported by ustar format... yes
+checking how to create a ustar tar archive... gnutar
+checking for gcc... gcc
+checking whether the C compiler works... yes
+checking for C compiler default output file name... a.out
+checking for suffix of executables... 
+checking whether we are cross compiling... no
+checking for suffix of object files... o
+checking whether the compiler supports GNU C... yes
+checking whether gcc accepts -g... yes
+checking for gcc option to enable C11 features... none needed
+checking whether gcc understands -c and -o together... yes
+checking whether the compiler is clang... no
+checking for compiler option needed when checking for declarations... none
+checking whether make supports the include directive... yes (GNU style)
+checking dependency style of gcc... gcc3
+checking how to run the C preprocessor... gcc -E
+checking for ranlib... ranlib
+checking for grep that handles long lines and -e... /usr/bin/grep
+checking for egrep... /usr/bin/grep -E
+checking whether ln -s works... yes
+checking for stdio.h... yes
+checking for stdlib.h... yes
+checking for string.h... yes
+checking for inttypes.h... yes
+checking for stdint.h... yes
+checking for strings.h... yes
+checking for sys/stat.h... yes
+checking for sys/types.h... yes
+checking for unistd.h... yes
+checking for wchar.h... yes
+checking for minix/config.h... no
+checking for arpa/inet.h... yes
+checking for features.h... yes
+checking for sys/socket.h... yes
+checking for stdbool.h... yes
+checking for byteswap.h... yes
+checking for xlocale.h... no
+checking for uchar.h... yes
+checking for sys/param.h... yes
+checking for dirent.h... yes
+checking for endian.h... yes
+checking for sys/endian.h... no
+checking for error.h... yes
+checking for linux/xattr.h... yes
+checking for selinux/selinux.h... no
+checking for fnmatch.h... yes
+checking for stdio_ext.h... yes
+checking for sys/vfs.h... yes
+checking for sys/fs_types.h... no
+checking for netdb.h... yes
+checking for netinet/in.h... yes
+checking for threads.h... yes
+checking for langinfo.h... yes
+checking for getopt.h... yes
+checking for sys/process.h... no
+checking for sys/time.h... yes
+checking for grp.h... yes
+checking for iconv.h... yes
+checking for limits.h... yes
+checking for crtdefs.h... no
+checking for wctype.h... yes
+checking for math.h... yes
+checking for sys/mman.h... yes
+checking for sys/statvfs.h... yes
+checking for obstack.h... yes
+checking for priv.h... no
+checking for sys/select.h... yes
+checking for pthread.h... yes
+checking for utmp.h... yes
+checking for utmpx.h... yes
+checking for OS.h... no
+checking for malloc.h... yes
+checking for spawn.h... yes
+checking for stdbit.h... yes
+checking for stdckdint.h... yes
+checking for stdcountof.h... no
+checking for sys/ioctl.h... yes
+checking for sys/random.h... yes
+checking for sys/resource.h... yes
+checking for sys/uio.h... yes
+checking for sys/utsname.h... yes
+checking for sys/wait.h... yes
+checking for termios.h... yes
+checking for utime.h... yes
+checking for semaphore.h... yes
+checking for sys/un.h... yes
+checking for hurd.h... no
+checking for linux/falloc.h... yes
+checking for linux/fs.h... yes
+checking for paths.h... yes
+checking for stropts.h... no
+checking for sys/mtio.h... yes
+checking for sys/systeminfo.h... no
+checking for syslog.h... yes
+checking for pwd.h... yes
+checking for vfork.h... no
+checking whether it is safe to define __EXTENSIONS__... yes
+checking whether _XOPEN_SOURCE should be defined... no
+checking build system type... x86_64-pc-linux-gnu
+checking host system type... x86_64-pc-linux-gnu
+checking for egrep -e... (cached) /usr/bin/grep -E
+checking for Minix Amsterdam compiler... no
+checking for ar... ar
+checking for gcc option to support large files... none needed
+checking for gcc option to support timestamps after 2038... none needed
+configure: autobuild project... GNU coreutils
+configure: autobuild revision... 9.10
+configure: autobuild hostname... server
+configure: autobuild timestamp... 20260825T133309Z
+checking for lstat... yes
+checking for fchmod... yes
+checking for pathconf... yes
+checking for btowc... yes
+checking for mbrtowc... yes
+checking for mbsinit... yes
+checking for canonicalize_file_name... yes
+checking for realpath... yes
+checking for chown... yes
+checking for fchown... yes
+checking for _set_invalid_parameter_handler... no
+checking for fchdir... yes
+checking for explicit_bzero... yes
+checking for posix_fadvise... yes
+checking for fchmodat... yes
+checking for lchmod... yes
+checking for fcntl... yes
+checking for symlink... yes
+checking for fdopendir... yes
+checking for listxattr... yes
+checking for fnmatch... yes
+checking for mbsrtowcs... yes
+checking for fpurge... no
+checking for __freadptr... no
+checking for __freadptrinc... no
+checking for fstatat... yes
+checking for fsync... yes
+checking for openat... yes
+checking for fstatfs... yes
+checking for getdtablesize... yes
+checking for microuptime... no
+checking for nanouptime... no
+checking for getlocalename_l... no
+checking for getlogin... yes
+checking for flockfile... yes
+checking for funlockfile... yes
+checking for getexecname... no
+checking for gettimeofday... yes
+checking for isblank... yes
+checking for iswcntrl... yes
+checking for link... yes
+checking for readlink... yes
+checking for mbrlen... yes
+checking for mbslen... no
+checking for mprotect... yes
+checking for memset_s... no
+checking for getgrouplist... yes
+checking for mkdirat... yes
+checking for mknod... yes
+checking for mkstemp... yes
+checking for strftime_z... no
+checking for pipe... yes
+checking for pselect... yes
+checking for pthread_sigmask... yes
+checking for utmpname... yes
+checking for utmpxname... yes
+checking for iswctype... yes
+checking for renameat... yes
+checking for fpathconf... yes
+checking for secure_getenv... yes
+checking for getuid... yes
+checking for geteuid... yes
+checking for getgid... yes
+checking for getegid... yes
+checking for setenv... yes
+checking for settimeofday... yes
+checking for stime... no
+checking for sigaction... yes
+checking for sigaltstack... yes
+checking for siginterrupt... yes
+checking for snprintf... yes
+checking for __xpg_strerror_r... yes
+checking for strtoimax... yes
+checking for strtold... yes
+checking for strtoumax... yes
+checking for localtime_r... yes
+checking for unlinkat... yes
+checking for utimens... no
+checking for lutimens... no
+checking for vasnprintf... no
+checking for wcrtomb... yes
+checking for wcwidth... yes
+checking for pause... yes
+checking for getrusage... yes
+checking for sleep... yes
+checking for shutdown... yes
+checking for usleep... yes
+checking for mquery... no
+checking for pstat_getprocvm... no
+checking for wctob... yes
+checking for directio... no
+checking for nl_langinfo... yes
+checking for setitimer... yes
+checking for setrlimit... yes
+checking for prctl... yes
+checking for endgrent... yes
+checking for endpwent... yes
+checking for fallocate... yes
+checking for setgroups... yes
+checking for sethostname... yes
+checking for sync... yes
+checking for sysinfo... yes
+checking for tcgetpgrp... yes
+checking for getgrgid_nomembers... no
+checking for getgrnam_nomembers... no
+checking for getgrent_nomembers... no
+checking for fork... yes
+checking for vfork... yes
+checking for sys/acl.h... yes
+checking for library containing acl_get_file... -lacl
+checking for acl_get_file... yes
+checking for acl_get_fd... yes
+checking for acl_set_file... yes
+checking for acl_set_fd... yes
+checking for acl_get_link_np... no
+checking for acl_free... yes
+checking for acl_from_mode... yes
+checking for acl_from_text... yes
+checking for acl_delete_def_file... yes
+checking for acl_extended_file... yes
+checking for acl_delete_fd_np... no
+checking for acl_delete_file_np... no
+checking for acl_copy_ext_native... no
+checking for acl_create_entry_np... no
+checking for acl_to_short_text... no
+checking for acl_free_text... no
+checking for working acl_get_file... yes
+checking for acl/libacl.h... yes
+checking for acl_entries... yes
+checking for ACL_FIRST_ENTRY... yes
+checking for ACL_TYPE_EXTENDED... no
+checking for gcc options needed to detect all undeclared functions... none needed
+checking for size_t... yes
+checking for working alloca.h... yes
+checking for alloca... yes
+checking whether the preprocessor supports include_next... yes
+checking whether source code line length is unlimited... yes
+checking for d_ino member in directory struct... yes
+checking for long file names... yes
+checking for C/C++ restrict keyword... __restrict__
+checking for wint_t... yes
+checking whether wint_t is large enough... yes
+checking whether <wchar.h> uses 'inline' correctly... yes
+checking for nl_langinfo and CODESET... yes
+checking for a traditional french locale... fr_FR
+checking for uselocale... yes
+checking whether uselocale works... yes
+checking whether char8_t is correctly defined... yes
+checking whether char16_t is correctly defined... yes
+checking whether char32_t is correctly defined... yes
+checking whether the C++ compiler has <uchar.h>... no
+checking for bit size of wchar_t... 32
+checking for mbstate_t... yes
+checking for a traditional japanese locale... ja_JP
+checking for an english Unicode locale... en_US.UTF-8
+checking for a transitional chinese locale... zh_CN.GB18030
+checking whether mbrtowc handles incomplete characters... yes
+checking whether mbrtowc works as well as mbtowc... yes
+checking whether mbrtoc32 is declared... yes
+checking for mbrtoc32... yes
+checking whether mbrtoc32 works as well as mbrtowc... yes
+checking whether c32rtomb is declared... yes
+checking for c32rtomb... yes
+checking whether c32rtomb works as well as wcrtomb... yes
+checking whether malloc is ptrdiff_t safe... yes
+checking whether malloc, calloc set errno on failure... yes
+checking whether lstat correctly handles trailing slash... yes
+checking whether // is distinct from /... no
+checking whether realpath works... yes
+checking for uid_t... yes
+checking for gid_t... yes
+checking for unistd.h... (cached) yes
+checking for working chown... yes
+checking whether chown dereferences symlinks... yes
+checking whether chown honors trailing slash... yes
+checking whether chown updates ctime per POSIX... yes
+checking for inline... inline
+checking whether to enable CRC slice-by-8 algorithm... yes
+checking if pclmul intrinsic exists... yes
+checking whether <sys/socket.h> is self-contained... yes
+checking for shutdown... (cached) yes
+checking whether <sys/socket.h> defines the SHUT_* macros... yes
+checking for struct sockaddr_storage... yes
+checking for sa_family_t... yes
+checking for struct sockaddr_storage.ss_family... yes
+checking whether linux/if_alg.h has struct sockaddr_alg.... yes
+checking whether byte ordering is bigendian... no
+checking if endian.h defines stdint types... no
+checking if endian.h defines functions and macros... yes
+checking if environ is properly declared... yes
+checking for complete errno.h... yes
+checking for error... yes
+checking whether error_at_line is declared... yes
+checking for error_at_line... yes
+checking for working error function... yes
+checking whether strerror_r is declared... yes
+checking whether strerror_r returns char *... yes
+checking type of array argument to getgroups... gid_t
+checking whether ctype.h defines __header_inline... no
+checking whether fchdir is declared... yes
+checking whether fflush works on input streams... yes
+checking whether fclose works on input streams... yes
+checking for working fcntl.h... yes
+checking for pid_t... yes
+checking for mode_t... yes
+checking for promoted mode_t type... mode_t
+checking whether fdatasync is declared... yes
+checking for library containing getfilecon_raw... no
+checking whether strmode is declared... no
+checking for mempcpy... yes
+checking for eaccess... yes
+checking whether fopen recognizes a trailing slash... yes
+checking whether frexp() can be used without linking with libm... yes
+checking whether alarm is declared... yes
+checking whether long double and double are the same... no
+checking whether stdin defaults to large file offsets... yes
+checking for off64_t... yes
+checking for blksize_t... yes
+checking for blkcnt_t... yes
+checking whether fseeko is declared... yes
+checking for fseeko... yes
+checking whether fflush works on input streams... (cached) yes
+checking whether stat file-mode macros are broken... no
+checking for nlink_t... yes
+checking whether ftello is declared... yes
+checking whether ungetc works on arbitrary bytes... yes
+checking for ftello... yes
+checking whether ftello works... yes
+checking for O_CLOEXEC... yes
+checking for glibc-compatible sys/cdefs.h... yes
+checking for library containing gethostbyname... none required
+checking for gethostbyname... yes
+checking for library containing getservbyname... none required
+checking for getservbyname... yes
+checking for library containing inet_ntop... none required
+checking whether inet_ntop is declared... yes
+checking for IPv4 sockets... yes
+checking for IPv6 sockets... yes
+checking whether getcwd (NULL, 0) allocates memory for result... yes
+checking for getcwd with POSIX signature... yes
+checking whether getcwd is declared... yes
+checking whether getdelim is declared... yes
+checking whether getdtablesize is declared... yes
+checking for arithmetic hrtime_t... no
+checking whether getline is declared... yes
+checking for pthread.h... (cached) yes
+checking for pthread_kill in -lpthread... yes
+checking whether POSIX threads API is available... yes
+checking whether setlocale (LC_ALL, NULL) is multithread-safe... yes
+checking whether setlocale (category, NULL) is multithread-safe... yes
+checking whether locale.h defines locale_t... yes
+checking for uselocale... (cached) yes
+checking whether uselocale works... (cached) yes
+checking for fake locale system (OpenBSD, Android)... no
+checking for Solaris 11.4 locale system... no
+checking whether getlogin is declared... yes
+checking for ssize_t... yes
+checking for getopt.h... (cached) yes
+checking for getopt_long_only... yes
+checking whether getopt is POSIX compatible... yes
+checking for working GNU getopt function... yes
+checking for working GNU getopt_long function... yes
+checking whether timespec_get is declared... yes
+checking for timespec_get... yes
+checking for struct timeval... yes
+checking for wide-enough struct timeval.tv_sec member... yes
+checking for ld used by gcc... /usr/bin/ld
+checking if the linker (/usr/bin/ld) is GNU ld... yes
+checking for shared library run path origin... done
+checking 32-bit host C ABI... no
+checking for ELF binary format... yes
+checking for the common suffixes of directories in the library search path... lib,lib,lib
+checking for iconv... yes
+checking for working iconv... yes
+checking whether iconv is compatible with its POSIX signature... yes
+checking for off_t... yes
+checking whether limits.h has WORD_BIT, BOOL_WIDTH etc.... yes
+checking whether limits.h has SSIZE_MAX... yes
+checking whether the compiler produces multi-arch binaries... no
+checking whether stdint.h conforms to C99... yes
+checking whether stdint.h works without ISO C predefines... yes
+checking whether stdint.h has UINTMAX_WIDTH etc.... yes
+checking whether INT32_MAX < INTMAX_MAX... yes
+checking whether INT64_MAX == LONG_MAX... yes
+checking whether UINT32_MAX < UINTMAX_MAX... yes
+checking whether UINT64_MAX == ULONG_MAX... yes
+checking where to find the exponent in a 'double'... word 1 bit 20
+checking where to find the exponent in a 'float'... word 0 bit 23
+checking where to find the exponent in a 'long double'... word 2 bit 0
+checking whether iswcntrl works... yes
+checking for towlower... yes
+checking for wctype_t... yes
+checking for wctrans_t... yes
+checking whether wctype supports the "blank" and "punct" character classes... yes
+checking whether langinfo.h defines CODESET... yes
+checking whether langinfo.h defines ALTMON_1... yes
+checking whether langinfo.h defines ABALTMON_1... no
+checking whether langinfo.h defines ERA... yes
+checking for good max_align_t... yes
+checking whether NULL can be used in arbitrary expressions... yes
+checking for unreachable in C... yes
+checking whether nullptr_t needs <stddef.h>... yes
+checking whether <stddef.h> is idempotent... guessing yes
+checking whether locale.h defines _locale_t... no
+checking whether locale.h conforms to POSIX:2001... yes
+checking whether struct lconv is properly defined... yes
+checking for CFPreferencesCopyAppValue... no
+checking for CFLocaleCopyPreferredLanguages... no
+checking for LC_MESSAGES... yes
+checking whether imported symbols can be declared weak... yes
+checking for multithread API to use... posix
+checking for a sed that does not truncate output... /usr/bin/sed
+checking whether malloc (0) returns nonnull... yes
+checking whether NAN macro works... yes
+checking whether HUGE_VAL works... yes
+checking whether mbrtowc handles a NULL pwc argument... yes
+checking whether mbrtowc has a correct return value... yes
+checking whether mbrtowc returns 0 when parsing a NUL character... yes
+checking whether mbrtowc stores incomplete characters... no
+checking whether mbrtowc works on empty input... yes
+checking whether the C locale is free of encoding errors... no
+checking for MAP_ANONYMOUS... yes
+checking whether memchr works... yes
+checking whether memrchr is declared... yes
+checking whether <limits.h> defines MIN and MAX... no
+checking whether <sys/param.h> defines MIN and MAX... yes
+checking for compiler option needed when checking for future declarations... none
+checking whether time_t is signed... yes
+checking for working mktime... yes
+checking for struct tm.tm_gmtoff... yes
+checking for struct tm.tm_zone... yes
+checking for obstacks that work with any size object... no
+checking for compound literals... yes
+checking for external symbol _system_configuration... no
+checking for library containing posix_spawn... none required
+checking for posix_spawn... yes
+checking whether posix_spawn is declared... yes
+checking whether posix_spawn works... yes
+checking whether posix_spawn rejects scripts without shebang... yes
+checking whether posix_spawnp rejects scripts without shebang... yes
+checking whether posix_spawnattr_setschedpolicy is supported... yes
+checking whether posix_spawnattr_setschedparam is supported... yes
+checking for desired default level of POSIX conformance... none-specified
+checking whether <sys/select.h> is self-contained... yes
+checking for pthread_t... yes
+checking for pthread_spinlock_t... yes
+checking for pthread_spin_init... yes
+checking for PTHREAD_CREATE_DETACHED... yes
+checking for PTHREAD_MUTEX_RECURSIVE... yes
+checking for PTHREAD_MUTEX_ROBUST... yes
+checking for PTHREAD_PROCESS_SHARED... yes
+checking whether _putenv is declared... no
+checking for sigset_t... yes
+checking whether to use systemd APIs... no
+checking whether endutent is declared... yes
+checking for struct utmpx.ut_user... yes
+checking for struct utmp.ut_user... yes
+checking for struct utmpx.ut_name... yes
+checking for struct utmp.ut_name... yes
+checking for struct utmpx.ut_type... yes
+checking for struct utmp.ut_type... yes
+checking for struct utmpx.ut_pid... yes
+checking for struct utmp.ut_pid... yes
+checking for struct utmp.ut_tv... yes
+checking for struct utmpx.ut_host... yes
+checking for struct utmp.ut_host... yes
+checking for struct utmpx.ut_id... yes
+checking for struct utmp.ut_id... yes
+checking for struct utmpx.ut_session... yes
+checking for struct utmp.ut_session... yes
+checking for struct utmpx.ut_exit... yes
+checking for struct utmp.ut_exit... yes
+checking for struct utmpx.ut_exit.e_exit... yes
+checking for struct utmp.ut_exit.e_exit... yes
+checking for struct utmpx.ut_exit.e_termination... yes
+checking for struct utmp.ut_exit.e_termination... yes
+checking whether sysinfo is declared... yes
+checking for sys/sysctl.h... no
+checking for sysctl... no
+checking whether realloc should abort upon undefined behaviour... no
+checking whether rmdir works... yes
+checking whether unlink honors trailing slashes... yes
+checking whether unlink of a parent directory fails as it should... guessing yes
+checking for sched.h... yes
+checking for struct sched_param... yes
+checking for library containing setsockopt... none needed
+checking whether setenv is declared... yes
+checking for search.h... yes
+checking for tsearch... yes
+checking for volatile sig_atomic_t... yes
+checking for sighandler_t... yes
+checking whether snprintf returns a byte count as in C99... yes
+checking whether printf supports POSIX/XSI format strings with positions... yes
+checking whether snprintf is declared... yes
+checking for posix_spawnattr_t... yes
+checking for posix_spawn_file_actions_t... yes
+checking whether stdckdint.h can be included in C... yes
+checking checking for an ISO C23 compliant stdckdint.h in C... yes
+checking whether stdckdint.h can be included in C++... no
+checking whether the C++ compiler has <stdcountof.h>... no
+checking whether fcloseall is declared... yes
+checking whether getw is declared... yes
+checking whether putw is declared... yes
+checking which flavor of printf attribute matches inttypes macros... system
+checking whether ecvt is declared... yes
+checking whether fcvt is declared... yes
+checking whether gcvt is declared... yes
+checking whether MB_CUR_MAX is correct... yes
+checking whether strdup is declared... yes
+checking whether strerror(0) succeeds... yes
+checking for strerror_r... yes
+checking for strerror_r with POSIX signature... no
+checking whether __xpg_strerror_r works... yes
+checking whether streq is declared... no
+checking whether memeq is declared... no
+checking whether strncpy works... yes
+checking whether strnlen is declared... yes
+checking whether strsignal is declared... yes
+checking whether ldexp() can be used without linking with libm... yes
+checking whether strtoimax is declared... yes
+checking whether strtoumax is declared... yes
+checking whether <sys/ioctl.h> declares ioctl... yes
+checking for struct utsname... yes
+checking for struct winsize in <termios.h>... no
+checking for struct winsize in <sys/ioctl.h>... yes
+checking for struct timespec in <time.h>... yes
+checking for TIME_UTC in <time.h>... yes
+checking whether execvpe is declared... yes
+checking whether clearerr_unlocked is declared... yes
+checking whether feof_unlocked is declared... yes
+checking whether ferror_unlocked is declared... yes
+checking whether fflush_unlocked is declared... yes
+checking whether fgets_unlocked is declared... yes
+checking whether fileno_unlocked is declared... yes
+checking whether fputc_unlocked is declared... yes
+checking whether fputs_unlocked is declared... yes
+checking whether fread_unlocked is declared... yes
+checking whether fwrite_unlocked is declared... yes
+checking whether getc_unlocked is declared... yes
+checking whether getchar_unlocked is declared... yes
+checking whether putc_unlocked is declared... yes
+checking whether putchar_unlocked is declared... yes
+checking whether unsetenv is declared... yes
+checking whether the utimes function works... yes
+checking for inttypes.h... yes
+checking for stdint.h... yes
+checking for intmax_t... yes
+checking whether snprintf truncates the result as in C99... yes
+checking for wcslen... yes
+checking for snprintf... (cached) yes
+checking for strnlen... yes
+checking for wcrtomb... (cached) yes
+checking whether _snprintf is declared... no
+checking whether printf supports size specifiers as in C99... yes
+checking whether printf supports size specifiers as in C23... yes
+checking whether printf supports 'long double' arguments... yes
+checking whether printf supports infinite 'double' arguments... yes
+checking whether printf supports infinite 'long double' arguments... yes
+checking whether printf supports the 'a' and 'A' directives... yes
+checking whether printf supports the 'b' directive... yes
+checking whether printf supports the 'F' directive... yes
+checking whether printf supports the 'ls' directive... yes
+checking whether printf supports the 'lc' directive correctly... yes
+checking whether printf supports the grouping flag... yes
+checking whether printf supports grouping on integers with a precision... yes
+checking whether printf supports grouping with a multibyte separator... yes
+checking whether printf supports the left-adjust flag correctly... yes
+checking whether printf supports the zero flag correctly... yes
+checking whether printf supports the alternative flag with a zero precision... yes
+checking whether printf supports large precisions... yes
+checking whether printf survives out-of-memory conditions... yes
+checking for vasprintf... yes
+checking whether wcsdup is declared... yes
+checking POSIX termios... yes
+checking whether use of TIOCGWINSZ requires termios.h... no
+checking for strerrorname_np... yes
+checking whether strerrorname_np works... yes
+checking for C compiler option to allow warnings... -Wno-error
+checking for a french Unicode locale... fr_FR.UTF-8
+checking for a turkish Unicode locale... tr_TR.UTF-8
+checking whether frexp works... yes
+checking whether frexpl is declared... yes
+checking whether frexpl() can be used without linking with libm... yes
+checking whether frexpl works... yes
+checking for library needed for semaphore functions... none
+checking whether initstate is declared... yes
+checking whether setstate is declared... yes
+checking whether access honors trailing slash... yes
+checking for posix_memalign... yes
+checking for alignas and alignof... yes, keywords
+checking for alloca as a compiler built-in... yes
+checking whether to enable assertions... yes
+checking for static_assert... yes, a keyword
+checking for bool, true, false... yes
+checking whether btowc(0) is correct... yes
+checking whether btowc is consistent with mbrtowc in the C locale... no
+checking for __builtin_expect... yes
+checking for working bswap_16, bswap_32, bswap_64... yes
+checking for nl_langinfo... yes
+checking for strtod_l... yes
+checking for nl_langinfo... (cached) yes
+checking for strtold_l... yes
+checking whether calloc (0, n) and calloc (n, 0) return nonnull... yes
+checking for faccessat... yes
+checking for readlinkat... yes
+checking whether this system supports file names of any length... no
+checking whether chmod works... yes
+checking for library containing clock_gettime... none required
+checking for clock_getres... yes
+checking for clock_gettime... yes
+checking for clock_settime... yes
+checking for closedir... yes
+checking for copy_file_range... yes
+checking whether openssl is GPL compatible... yes
+checking for MD5 in -lcrypto... yes
+checking for openssl/md5.h... yes
+checking whether openssl is GPL compatible... (cached) yes
+checking for SHA1 in -lcrypto... yes
+checking for openssl/sha.h... yes
+checking whether openssl is GPL compatible... (cached) yes
+checking for SHA256 in -lcrypto... yes
+checking for openssl/sha.h... (cached) yes
+checking whether openssl is GPL compatible... (cached) yes
+checking for EVP_sha3_224 in -lcrypto... yes
+checking whether openssl is GPL compatible... (cached) yes
+checking for SHA512 in -lcrypto... yes
+checking for openssl/sha.h... (cached) yes
+checking for d_ino member in directory struct... (cached) yes
+checking for d_type member in directory struct... yes
+checking for dirfd... yes
+checking whether dirfd is declared... yes
+checking whether dirfd is a macro... no
+checking whether // is distinct from /... (cached) no
+checking whether dup works... yes
+checking whether dup2 works... yes
+checking for euidaccess... yes
+checking for faccessat... (cached) yes
+checking whether fchmodat works... yes
+checking for fchownat... yes
+checking whether fchownat works with AT_SYMLINK_NOFOLLOW... yes
+checking whether fchownat works with an empty file name... yes
+checking whether fcntl handles F_DUPFD correctly... yes
+checking whether fcntl understands F_DUPFD_CLOEXEC... needs runtime check
+checking for fdatasync... yes
+checking whether fdopen sets errno... yes
+checking whether fdopendir is declared... yes
+checking whether fdopendir works... yes
+checking whether fflush works on input streams... (cached) yes
+checking for sys/smack.h... no
+checking for struct stat.st_blocks... yes
+checking for mempcpy... (cached) yes
+checking for flexible array member... yes
+checking whether float.h conforms to ISO C23... yes
+checking whether conversion from 'int' to 'long double' works... yes
+checking for working GNU fnmatch... yes
+checking whether fopen supports the mode character 'x'... yes
+checking whether fopen supports the mode character 'e'... yes
+checking for __fpending... yes
+checking whether __fpending is declared... yes
+checking for __fpurge... yes
+checking whether fpurge is declared... no
+checking for __freadahead... no
+checking for __freading... yes
+checking whether free is known to preserve errno... yes
+checking whether freopen works on closed fds... yes
+checking whether frexp works... (cached) yes
+checking whether frexpl is declared... (cached) yes
+checking whether frexpl() can be used without linking with libm... (cached) yes
+checking whether frexpl works... (cached) yes
+checking for fseeko... (cached) yes
+checking whether fflush works on input streams... (cached) yes
+checking for __fseterr... no
+checking whether fstatat (..., 0) works... yes
+checking for sys/mount.h... yes
+checking for statvfs function (SVR4)... yes
+checking whether to use statvfs64... no
+checking for two-argument statfs with statfs.f_frsize member... yes
+checking for sys/fs/s5param.h... no
+checking for sys/statfs.h... yes
+checking for statfs that truncates block counts... no
+checking for ftello... (cached) yes
+checking whether ftello works... (cached) yes
+checking for strtof... yes
+checking for ftruncate... yes
+checking for struct statfs.f_type... yes
+checking for __fsword_t... yes
+checking for fts_open... yes
+checking for futimens... yes
+checking whether futimens works... yes
+checking for library containing getaddrinfo... none required
+checking for getaddrinfo... yes
+checking whether getaddrinfo supports AI_NUMERICHOST and AI_NUMERICSERV... yes
+checking whether gai_strerror is declared... yes
+checking whether gai_strerrorA is declared... no
+checking for gai_strerror with POSIX signature... yes
+checking for struct sockaddr.sa_len... no
+checking whether getaddrinfo is declared... yes
+checking whether freeaddrinfo is declared... yes
+checking whether getnameinfo is declared... yes
+checking for struct addrinfo... yes
+checking whether getcwd handles long file names properly... yes
+checking whether getcwd succeeds when 4k < cwd_length < 16k... yes
+checking for getdelim... yes
+checking for working getdelim function... yes
+checking whether getdtablesize works... yes
+checking for getgroups... yes
+checking for working getgroups... yes
+checking whether getgroups handles negative values... yes
+checking for gethostname... yes
+checking for HOST_NAME_MAX... yes
+checking whether gethrtime is declared... no
+checking whether CLOCK_MONOTONIC or CLOCK_REALTIME is defined... yes
+checking for getline... yes
+checking for working getline function... yes
+checking for getloadavg... yes
+checking for sys/loadavg.h... no
+checking whether getloadavg is declared... yes
+checking for newlocale... yes
+checking for duplocale... yes
+checking for freelocale... yes
+checking for newlocale... (cached) yes
+checking for duplocale... (cached) yes
+checking for freelocale... (cached) yes
+checking whether getlogin works... yes
+checking for getpagesize... yes
+checking whether getpagesize is declared... yes
+checking for getprogname... no
+checking whether program_invocation_name is declared... yes
+checking whether program_invocation_name is declared... (cached) yes
+checking whether program_invocation_short_name is declared... yes
+checking whether __argv is declared... no
+checking for getrandom... yes
+checking whether getrandom is compatible with its GNU+BSD signature... yes
+checking for timespec_getres... yes
+checking for gettimeofday with POSIX signature... yes
+checking for group_member... yes
+checking host operating system... GNU/Linux
+checking for library containing gethostbyname... (cached) none required
+checking for gethostbyname... (cached) yes
+checking for library containing inet_ntop... (cached) none required
+checking whether inet_ntop is declared... (cached) yes
+checking for library containing inet_pton... none required
+checking whether inet_pton is declared... yes
+checking whether the compiler generally respects inline... yes
+checking for isapipe... no
+checking whether pipes are FIFOs (and for their link count)... yes (1)
+checking whether isinf is declared... yes
+checking whether isinf(long double) works... yes
+checking whether isnan(double) can be used without linking with libm... yes
+checking whether isnan(float) can be used without linking with libm... yes
+checking whether isnan(float) works... yes
+checking whether isnan(long double) can be used without linking with libm... yes
+checking whether isnanl works... yes
+checking for iswblank... yes
+checking whether iswblank is declared... yes
+checking whether iswdigit is ISO C compliant... yes
+checking whether iswpunct is consistent with ispunct... yes
+checking whether iswxdigit is ISO C compliant... yes
+checking for lchmod... yes
+checking for lchmod... (cached) yes
+checking for lchown... yes
+checking for C compiler flag to ignore unused libraries... -Wl,--as-needed
+checking whether the compiler supports the __inline keyword... yes
+checking for gmp.h... yes
+checking for libgmp... yes
+checking how to link with libgmp... /usr/lib/libgmp.so
+checking for gmp.h... (cached) yes
+checking for libgmp... (cached) yes
+checking how to link with libgmp... /usr/lib/libgmp.so
+checking whether link obeys POSIX... yes
+checking for __xpg4... no
+checking whether link(2) dereferences a symlink... no
+checking for linkat... yes
+checking whether linkat() can link symlinks... yes
+checking whether linkat handles trailing slash correctly... yes
+checking whether localeconv works... yes
+checking for pthread_rwlock_t... yes
+checking whether pthread_rwlock_rdlock prefers a writer to a reader... no
+checking whether lseek detects pipes... yes
+checking whether SEEK_DATA works but is incompatible with GNU... no
+checking whether mbrtoc32 works on empty input... yes
+checking whether the C locale is free of encoding errors... no
+checking whether mbrtoc32 works in an UTF-8 locale... yes
+checking whether mbrtowc handles a NULL pwc argument... (cached) yes
+checking whether mbrtowc has a correct return value... (cached) yes
+checking whether mbrtowc returns 0 when parsing a NUL character... (cached) yes
+checking whether mbrtowc stores incomplete characters... (cached) no
+checking whether mbrtowc works on empty input... (cached) yes
+checking whether the C locale is free of encoding errors... (cached) no
+checking whether mbsrtowcs works... yes
+checking whether the C locale is free of encoding errors... (cached) no
+checking whether mbswidth is declared in <wchar.h>... no
+checking for mbstate_t... (cached) yes
+checking for mbtowc... yes
+checking for mempcpy... (cached) yes
+checking for memrchr... yes
+checking for memset_explicit... yes
+checking whether mkdir handles trailing slash... yes
+checking whether mkdir handles trailing dot... yes
+checking for mkfifo... yes
+checking whether mkfifo rejects trailing slashes... yes
+checking for mknodat... yes
+checking for mkfifoat... yes
+checking whether mkfifoat rejects trailing slashes... yes
+checking whether mknod can create fifo without root privileges... no
+checking for mkostemp... yes
+checking for working mkstemp... yes
+checking for __mktime_internal... no
+checking for listmntent... no
+checking for sys/ucred.h... no
+checking for sys/mount.h... (cached) yes
+checking for mntent.h... yes
+checking for sys/fs_types.h... (cached) no
+checking for struct fsstat.f_fstypename... no
+checking for library containing getmntent... none required
+checking for getmntent... yes
+checking for mntctl function and struct vmount... no
+checking for one-argument getmntent function... yes
+checking for setmntent... yes
+checking for endmntent... yes
+checking for hasmntopt... yes
+checking for sys/mntent.h... no
+checking for sys/mkdev.h... no
+checking for sys/sysmacros.h... yes
+checking for struct statfs.f_fstypename... no
+checking for library containing nanosleep... none required
+checking for working nanosleep... no (mishandles large arguments)
+checking whether <netinet/in.h> is self-contained... yes
+checking for nl_langinfo... (cached) yes
+checking for mntent.h... (cached) yes
+checking for sys/pstat.h... no
+checking for sys/param.h... (cached) yes
+checking for setmntent... (cached) yes
+checking for sys/sysctl.h... (cached) no
+checking for sched_getaffinity_np... no
+checking for pstat_getdynamic... no
+checking for sysctl... (cached) no
+checking for sched_getaffinity... yes
+checking for glibc compatible sched_getaffinity... yes
+checking for C nullptr... yes
+checking whether open recognizes a trailing slash... yes
+checking for opendir... yes
+checking for bison... bison
+checking for bison 2.4 or newer... 3.8.2, ok
+checking for Perl 5.005 or newer... perl
+checking for sys/pstat.h... (cached) no
+checking for sys/sysinfo.h... yes
+checking for machine/hal_sysinfo.h... no
+checking for sys/table.h... no
+checking for sys/param.h... (cached) yes
+checking for sys/systemcfg.h... no
+checking for sys/sysctl.h... (cached) no
+checking for pstat_getstatic... no
+checking for pstat_getdynamic... (cached) no
+checking for getsysinfo... no
+checking for sysctl... (cached) no
+checking for table... no
+checking for sysinfo... (cached) yes
+checking for struct sysinfo.mem_unit... yes
+checking for pipe2... yes
+checking for a shell that conforms to POSIX... /bin/sh
+checking for posix_memalign... (cached) yes
+checking whether posix_memalign works for large alignment or zero size... no
+checking whether posix_spawn_file_actions_addclose works... yes
+checking whether posix_spawn_file_actions_adddup2 works... yes
+checking whether frexp works... (cached) yes
+checking whether ldexp can be used without linking with libm... (cached) yes
+checking whether frexpl() can be used without linking with libm... (cached) yes
+checking whether frexpl works... (cached) yes
+checking whether frexpl is declared... (cached) yes
+checking whether ldexpl() can be used without linking with libm... yes
+checking whether ldexpl works... yes
+checking whether ldexpl is declared... yes
+checking for getppriv... no
+checking whether program_invocation_name is declared... (cached) yes
+checking whether program_invocation_short_name is declared... (cached) yes
+checking whether signature of pselect conforms to POSIX... yes
+checking whether pselect detects invalid fds... yes
+checking for PTHREAD_CREATE_DETACHED... (cached) yes
+checking for PTHREAD_MUTEX_RECURSIVE... (cached) yes
+checking for PTHREAD_MUTEX_ROBUST... (cached) yes
+checking for PTHREAD_PROCESS_SHARED... (cached) yes
+checking for pthread_mutexattr_getrobust... yes
+checking whether pthread_once works... yes
+checking whether pthread_create exists as a global function... yes
+checking whether pthread_mutex_timedlock is declared... yes
+checking for pthread_mutex_timedlock... yes
+checking whether pthread_sigmask is a macro... no
+checking whether pthread_sigmask works without -lpthread... yes
+checking whether pthread_sigmask returns error numbers... yes
+checking for putenv compatible with GNU and SVID... yes
+checking for xattr library with ATTR_ACTION_PERMISSIONS... -lattr
+checking for qsort_r... yes
+checking for qsort_r signature... GNU
+checking for raise... yes
+checking for sigprocmask... yes
+checking for rawmemchr... yes
+checking for readdir... yes
+checking whether readlink signature is correct... yes
+checking whether readlink handles trailing slash correctly... yes
+checking whether readlink truncates results correctly... yes
+checking for readlinkat... (cached) yes
+checking whether readlinkat signature is correct... yes
+checking whether realloc sets errno on failure... yes
+checking whether realloc (..., 0) returns nonnull... no
+checking for reallocarray... yes
+checking for working re_compile_pattern... yes
+checking whether remove handles directories... yes
+checking whether rename honors trailing slash on destination... yes
+checking whether rename honors trailing slash on source... yes
+checking whether rename manages hard links correctly... yes
+checking whether rename manages existing destinations correctly... yes
+checking for linux/fs.h... (cached) yes
+checking for renameat2... yes
+checking whether renameat2 works... yes
+checking for linux/fs.h... (cached) yes
+checking for renameat2... (cached) yes
+checking whether renameat2 works... (cached) yes
+checking for rewinddir... yes
+checking whether rmdir works... (cached) yes
+checking for rpmatch... yes
+checking whether select supports a 0 argument... yes
+checking whether select detects invalid fds... yes
+checking for selinux/flask.h... no
+checking for library containing getservbyname... (cached) none required
+checking for getservbyname... (cached) yes
+checking whether setenv validates arguments... yes
+checking for sig2str... no
+checking for str2sig... no
+checking for struct sigaction.sa_sigaction... yes
+checking for signbit macro... yes
+checking for signbit compiler built-ins... yes
+checking for sigprocmask... (cached) yes
+checking for stdint.h... (cached) yes
+checking for SIZE_MAX... yes
+checking for smack_new_label_from_self in -lsmack... no
+checking for snprintf... (cached) yes
+checking whether snprintf respects a size of 1... yes
+checking for socklen_t... yes
+checking for ssize_t... (cached) yes
+checking whether stat handles trailing slashes on files... yes
+checking for struct stat.st_atim.tv_nsec... yes
+checking whether struct stat.st_atim is of type struct timespec... yes
+checking for struct stat.st_birthtimespec.tv_nsec... no
+checking for struct stat.st_birthtimensec... no
+checking for struct stat.st_birthtim.tv_nsec... no
+checking for va_copy... yes
+checking for vasprintf... (cached) yes
+checking for stpcpy... yes
+checking for strchrnul... yes
+checking whether strchrnul works... yes
+checking for working strerror function... yes
+checking for working strnlen... yes
+checking for strsignal... yes
+checking whether strsignal always returns a string... yes
+checking whether strstr works... yes
+checking whether strtod obeys C99... yes
+checking whether strtoimax works... yes
+checking whether strtold obeys POSIX... yes
+checking for strtoll... yes
+checking whether strtoll works... yes
+checking for strtoull... yes
+checking whether strtoull works... yes
+checking whether symlink handles trailing slash correctly... yes
+checking for symlinkat... yes
+checking whether symlinkat handles trailing slash correctly... yes
+checking for sys/single_threaded.h... yes
+checking whether time() works... guessing no
+checking whether localtime_r is declared... yes
+checking whether localtime_r is compatible with its POSIX signature... yes
+checking whether localtime works even near extrema... yes
+checking for timezone_t... no
+checking for tzalloc... no
+checking for timegm... yes
+checking whether timer_settime is declared... yes
+checking for library containing timer_settime... none required
+checking for timer_settime... yes
+checking for uname... yes
+checking whether unlink honors trailing slashes... (cached) yes
+checking whether unlink of a parent directory fails as it should... (cached) guessing yes
+checking whether a running program can be unlinked... yes
+checking for unsetenv... yes
+checking for unsetenv() return type... int
+checking whether unsetenv obeys POSIX... yes
+checking for utime... yes
+checking whether utime handles trailing slashes on files... yes
+checking for futimes... yes
+checking for futimesat... yes
+checking for lutimes... yes
+checking for futimens... (cached) yes
+checking for utimensat... yes
+checking for utimensat... (cached) yes
+checking whether utimensat works... yes
+checking for variable-length arrays... yes
+checking for ptrdiff_t... yes
+checking for vasprintf... (cached) yes
+checking whether wcrtomb works in the C locale... yes
+checking whether wcrtomb return value is correct... yes
+checking whether wcwidth is declared... yes
+checking whether wcwidth works reasonably in UTF-8 locales... yes
+checking whether use of TIOCGWINSZ requires sys/ioctl.h... yes
+checking whether use of TIOCGWINSZ requires termios.h... (cached) no
+checking whether use of struct winsize requires sys/ptem.h... no
+checking for wmemchr... yes
+checking for wmempcpy... yes
+checking for stdint.h... (cached) yes
+checking for atoll... yes
+checking whether c32rtomb return value is correct... yes
+checking whether open recognizes a trailing slash... (cached) yes
+checking for duplocale... (cached) yes
+checking whether htons is declared... yes
+checking whether htonl is declared... yes
+checking whether ntohs is declared... yes
+checking whether ntohl is declared... yes
+checking whether byte ordering is bigendian... (cached) no
+checking whether byte ordering is bigendian... (cached) no
+checking for ioctl... yes
+checking for ioctl with POSIX signature... no
+checking for newlocale... (cached) yes
+checking for newlocale... (cached) yes
+checking for uselocale... (cached) yes
+checking whether uselocale works... (cached) yes
+checking whether perror matches strerror... yes
+checking whether posix_spawn_file_actions_addopen works... yes
+checking for pthread_rwlock_init... yes
+checking whether pthread_rwlock_timedrdlock is declared... yes
+checking for reasonable pthread_rwlock wait queue handling... no
+checking for random... yes
+checking for initstate... yes
+checking for setstate... yes
+checking for random.h... no
+checking for struct random_data... yes
+checking for random_r... yes
+checking whether sched_yield is declared... yes
+checking whether sleep is declared... yes
+checking for working sleep... yes
+checking for catgets... yes
+checking for IPv4 sockets... (cached) yes
+checking for IPv6 sockets... (cached) yes
+checking for UNIX domain sockets... yes
+checking for pthread_atfork... yes
+checking for struct tm.tm_gmtoff... (cached) yes
+checking for struct tm.tm_zone... (cached) yes
+checking whether tmpfile works... yes
+checking whether trunc is declared... yes
+checking whether truncl is declared... yes
+checking for useconds_t... yes
+checking whether usleep allows large arguments... yes
+checking whether wctob works... yes
+checking for working volatile... yes
+checking for sys/sysctl.h... (cached) no
+checking whether geteuid is declared... yes
+checking whether getuid is declared... yes
+checking whether getgrgid is declared... yes
+checking whether getpwuid is declared... yes
+checking whether ttyname is declared... yes
+checking whether setregid is declared... yes
+checking for declarations of fseeko and ftello... yes
+checking for struct stat.st_author... no
+checking for ino_t... yes
+checking for major_t... no
+checking for minor_t... no
+checking for mode_to_security_class... no
+checking for inotify_init... yes
+checking for syncfs... yes
+checking for nfs/vfs.h... no
+checking for struct statvfs.f_basetype... no
+checking for struct statvfs.f_fstypename... no
+checking for struct statvfs.f_type... yes
+checking for struct statvfs.f_namemax... yes
+checking for cap_get_file in -lcap... yes
+checking for sys/capability.h... yes
+checking for working fork... yes
+checking for working vfork... (cached) yes
+checking for chroot... yes
+checking for gethostid... yes
+checking for sigsuspend... yes
+checking whether use of struct winsize requires sys/ptem.h... (cached) no
+checking whether localtime caches TZ... no
+checking for library containing dlopen... none required
+checking for dlopen and whether libcrypto is linked dynamically... libcrypto.so.3
+checking for fclonefileat... no
+checking for getattrat... no
+checking for statx... yes
+checking for initgroups... yes
+checking for syslog... yes
+checking for 3-argument setpriority function... yes
+checking POSIX termios... (cached) yes
+checking whether use of TIOCGWINSZ requires sys/ioctl.h... (cached) yes
+checking whether termios.h needs _XOPEN_SOURCE... no
+checking c_line in struct termios... yes
+checking whether use of struct winsize requires sys/ptem.h... (cached) no
+checking whether use of TIOCGWINSZ requires termios.h... (cached) no
+checking whether C compiler handles -Werror... yes
+checking whether C compiler handles -errwarn... no
+checking whether this system supports stdbuf... yes
+checking IEEE 16 bit floating point... yes
+checking Brain 16 bit floating point... yes
+checking if vmull intrinsic exists... no
+checking if pclmul intrinsic exists... yes
+checking if avx2 pclmul intrinsic exists... yes
+checking if avx512 pclmul intrinsic exists... yes
+checking for avx2 intrinsics... yes
+checking for avx512 intrinsics... yes
+checking whether NLS is requested... yes
+checking for msgfmt... /usr/bin/msgfmt
+checking for gmsgfmt... /usr/bin/msgfmt
+checking for xgettext... /usr/bin/xgettext
+checking for msgmerge... /usr/bin/msgmerge
+checking for CFPreferencesCopyAppValue... (cached) no
+checking for CFLocaleCopyPreferredLanguages... (cached) no
+checking for GNU gettext in libc... yes
+checking whether to use NLS... yes
+checking where the gettext function comes from... libc
+checking that generated files are newer than configure... done
+configure: creating ./config.status
+config.status: creating Makefile
+config.status: creating po/Makefile.in
+config.status: creating gnulib-tests/Makefile
+config.status: creating build-aux/makeinfo-wrapper.sh
+config.status: creating lib/config.h
+config.status: executing depfiles commands
+config.status: executing po-directories commands
+config.status: creating po/POTFILES
+config.status: creating po/Makefile
+  GEN      src/single-binary.mk
+ cd . && /bin/sh /sources/coreutils-9.10/build-aux/missing automake-1.18 --gnu Makefile
+ cd . && /bin/sh ./config.status Makefile depfiles
+config.status: creating Makefile
+config.status: executing depfiles commands
+  GEN      lib/alloca.h
+  GEN      lib/arpa/inet.h
+  GEN      lib/configmake.h
+  GEN      lib/ctype.h
+  GEN      lib/dirent.h
+  GEN      lib/endian.h
+  GEN      lib/error.h
+  GEN      lib/fcntl.h
+  GEN      lib/fts_.h
+  GEN      lib/malloc/dynarray-skeleton.gl.h
+  GEN      lib/malloc/dynarray.gl.h
+  GEN      lib/malloc/scratch_buffer.gl.h
+  GEN      lib/iconv.h
+  GEN      lib/inttypes.h
+  GEN      lib/langinfo.h
+  GEN      lib/limits.h
+  GEN      lib/locale.h
+  GEN      lib/math.h
+  GEN      lib/netdb.h
+  GEN      lib/obstack.h
+  GEN      lib/pthread.h
+  GEN      lib/sched.h
+  GEN      lib/selinux/selinux.h
+  GEN      lib/selinux/context.h
+  GEN      lib/selinux/label.h
+  GEN      lib/signal.h
+  GEN      lib/spawn.h
+  GEN      lib/stdckdint.h
+  GEN      lib/stdcountof.h
+  GEN      lib/stddef.h
+  GEN      lib/stdio.h
+  GEN      lib/stdlib.h
+  GEN      lib/string.h
+  GEN      lib/sys/ioctl.h
+  GEN      lib/sys/random.h
+  GEN      lib/sys/resource.h
+  GEN      lib/sys/select.h
+  GEN      lib/sys/socket.h
+  GEN      lib/sys/stat.h
+  GEN      lib/sys/time.h
+  GEN      lib/sys/types.h
+  GEN      lib/sys/uio.h
+  GEN      lib/sys/utsname.h
+  GEN      lib/sys/wait.h
+  GEN      lib/termios.h
+  GEN      lib/time.h
+  GEN      lib/uchar.h
+  GEN      lib/unicase.h
+  GEN      lib/unictype.h
+  GEN      lib/uninorm.h
+  GEN      lib/unistd.h
+  GEN      lib/unistr.h
+  GEN      lib/unitypes.h
+  GEN      lib/uniwidth.h
+  GEN      lib/utime.h
+  GEN      lib/wchar.h
+  GEN      lib/wctype.h
+  GEN      src/coreutils.h
+  GEN      src/version.c
+  GEN      src/version.h
+  GEN      src/speedlist.h
+make  all-recursive
+make[1]: Entering directory '/sources/coreutils-9.10'
+Making all in po
+make[2]: Entering directory '/sources/coreutils-9.10/po'
+make[2]: Nothing to be done for 'all'.
+make[2]: Leaving directory '/sources/coreutils-9.10/po'
+Making all in .
+make[2]: Entering directory '/sources/coreutils-9.10'
+  CC       lib/libcoreutils_a-long-options.o
+  CC       lib/libcoreutils_a-malloca.o
+  CC       lib/libcoreutils_a-math.o
+make[3]: Entering directory '/sources/coreutils-9.10'
+  CC       lib/libcoreutils_a-mbbuf.o
+make[3]: Leaving directory '/sources/coreutils-9.10'
+  CC       lib/libcoreutils_a-mbchar.o
+  CC       lib/libcoreutils_a-mbiter.o
+  CC       lib/libcoreutils_a-mbiterf.o
+  CC       lib/libcoreutils_a-mbrlen.o
+  CC       lib/libcoreutils_a-mbrtoc32.o
+  CC       lib/libcoreutils_a-mbrtowc.o
+  CC       lib/libcoreutils_a-mbs_endswith.o
+  CC       lib/libcoreutils_a-mbscasecmp.o
+  CC       lib/libcoreutils_a-mbschr.o
+  CC       lib/libcoreutils_a-mbslen.o
+  CC       lib/libcoreutils_a-mbsnlen.o
+  CC       lib/libcoreutils_a-mbsrtoc32s.o
+  CC       lib/libcoreutils_a-mbsrtowcs.o
+  CC       lib/libcoreutils_a-mbsstr.o
+  CC       lib/libcoreutils_a-mbswidth.o
+  CC       lib/libcoreutils_a-mbszero.o
+  CC       lib/libcoreutils_a-mcel.o
+  CC       lib/libcoreutils_a-memcasecmp.o
+  CC       lib/libcoreutils_a-memchr2.o
+  CC       lib/libcoreutils_a-memcmp2.o
+  CC       lib/libcoreutils_a-memcoll.o
+  CC       lib/libcoreutils_a-mgetgroups.o
+  CC       lib/libcoreutils_a-mkancesdirs.o
+  CC       lib/libcoreutils_a-dirchownmod.o
+  CC       lib/libcoreutils_a-mkdir-p.o
+  CC       lib/libcoreutils_a-mknod.o
+  CC       lib/libcoreutils_a-modechange.o
+  CC       lib/libcoreutils_a-mountlist.o
+  CC       lib/libcoreutils_a-mpsort.o
+  CC       lib/libcoreutils_a-nanosleep.o
+  CC       lib/libcoreutils_a-next-prime.o
+  CC       lib/libcoreutils_a-nl_langinfo.o
+  CC       lib/libcoreutils_a-nproc.o
+  CC       lib/libcoreutils_a-nstrftime.o
+  CC       lib/libcoreutils_a-obstack.o
+  CC       lib/glthread/libcoreutils_a-once.o
+  CC       lib/libcoreutils_a-openat-die.o
+  CC       lib/libcoreutils_a-openat-safer.o
+  CC       lib/libcoreutils_a-opendirat.o
+  CC       lib/libcoreutils_a-parse-datetime.o
+  CC       lib/libcoreutils_a-physmem.o
+  CC       lib/libcoreutils_a-pipe2.o
+  CC       lib/libcoreutils_a-posix_memalign.o
+  CC       lib/libcoreutils_a-posixtm.o
+  CC       lib/libcoreutils_a-posixver.o
+  CC       lib/libcoreutils_a-printf-frexp.o
+  CC       lib/libcoreutils_a-printf-frexpl.o
+  CC       lib/libcoreutils_a-priv-set.o
+  CC       lib/libcoreutils_a-progname.o
+  CC       lib/libcoreutils_a-propername-lite.o
+  CC       lib/libcoreutils_a-qcopy-acl.o
+  CC       lib/libcoreutils_a-qset-acl.o
+  CC       lib/libcoreutils_a-quotearg.o
+  CC       lib/libcoreutils_a-randint.o
+  CC       lib/libcoreutils_a-randperm.o
+  CC       lib/libcoreutils_a-randread.o
+  CC       lib/libcoreutils_a-rand-isaac.o
+  CC       lib/libcoreutils_a-read-file.o
+  CC       lib/libcoreutils_a-readtokens.o
+  CC       lib/libcoreutils_a-readtokens0.o
+  CC       lib/libcoreutils_a-readutmp.o
+  CC       lib/libcoreutils_a-realloc.o
+  CC       lib/libcoreutils_a-reallocarray.o
+  CC       lib/libcoreutils_a-renameatu.o
+  CC       lib/libcoreutils_a-root-dev-ino.o
+  CC       lib/libcoreutils_a-safe-read.o
+  CC       lib/libcoreutils_a-safe-write.o
+  CC       lib/libcoreutils_a-same.o
+  CC       lib/libcoreutils_a-same-inode.o
+  CC       lib/libcoreutils_a-save-cwd.o
+  CC       lib/libcoreutils_a-savedir.o
+  CC       lib/libcoreutils_a-savewd.o
+  CC       lib/libcoreutils_a-selinux-at.o
+  CC       lib/libcoreutils_a-se-context.o
+  CC       lib/libcoreutils_a-se-label.o
+  CC       lib/libcoreutils_a-se-selinux.o
+  CC       lib/libcoreutils_a-setlocale_null.o
+  CC       lib/libcoreutils_a-setlocale_null-unlocked.o
+  CC       lib/libcoreutils_a-settime.o
+  CC       lib/libcoreutils_a-sig2str.o
+  CC       lib/libcoreutils_a-sig-handler.o
+  CC       lib/libcoreutils_a-skipchars.o
+  CC       lib/libcoreutils_a-sockets.o
+  CC       lib/libcoreutils_a-stat-time.o
+  CC       lib/libcoreutils_a-stdlib.o
+  CC       lib/libcoreutils_a-mkstemp-safer.o
+  CC       lib/libcoreutils_a-str_endswith.o
+  CC       lib/libcoreutils_a-string.o
+  CC       lib/libcoreutils_a-strnlen1.o
+  CC       lib/libcoreutils_a-strintcmp.o
+  CC       lib/libcoreutils_a-strnumcmp.o
+  CC       lib/libcoreutils_a-sys_socket.o
+  CC       lib/libcoreutils_a-targetdir.o
+  CC       lib/libcoreutils_a-tempname.o
+  CC       lib/glthread/libcoreutils_a-threadlib.o
+  CC       lib/libcoreutils_a-time.o
+  CC       lib/libcoreutils_a-time_rz.o
+  CC       lib/libcoreutils_a-timespec.o
+  CC       lib/glthread/libcoreutils_a-tls.o
+  CC       lib/libcoreutils_a-tmpdir.o
+  CC       lib/libcoreutils_a-u64.o
+  CC       lib/libcoreutils_a-unicodeio.o
+  CC       lib/libcoreutils_a-unistd.o
+  CC       lib/libcoreutils_a-dup-safer.o
+  CC       lib/libcoreutils_a-fd-safer.o
+  CC       lib/libcoreutils_a-pipe-safer.o
+  CC       lib/libcoreutils_a-unlinkdir.o
+  CC       lib/libcoreutils_a-userspec.o
+  CC       lib/libcoreutils_a-utimecmp.o
+  CC       lib/libcoreutils_a-utimens.o
+  CC       lib/libcoreutils_a-vaszprintf.o
+  CC       lib/libcoreutils_a-aszprintf.o
+  CC       lib/libcoreutils_a-version-etc.o
+  CC       lib/libcoreutils_a-version-etc-fsf.o
+  CC       lib/libcoreutils_a-vfzprintf.o
+  CC       lib/libcoreutils_a-vsnzprintf.o
+  CC       lib/libcoreutils_a-vzprintf.o
+  CC       lib/libcoreutils_a-wctype-h.o
+  CC       lib/libcoreutils_a-write-any-file.o
+  CC       lib/libcoreutils_a-xalignalloc.o
+  CC       lib/libcoreutils_a-xmalloc.o
+  CC       lib/libcoreutils_a-xalloc-die.o
+  CC       lib/libcoreutils_a-xbinary-io.o
+  CC       lib/libcoreutils_a-xdectoimax.o
+  CC       lib/libcoreutils_a-xdectoumax.o
+  CC       lib/libcoreutils_a-xfts.o
+  CC       lib/libcoreutils_a-xgetcwd.o
+  CC       lib/libcoreutils_a-xgetgroups.o
+  CC       lib/libcoreutils_a-xgethostname.o
+  CC       lib/libcoreutils_a-xmemcoll.o
+  CC       lib/libcoreutils_a-xmemdup0.o
+  CC       lib/libcoreutils_a-xnanosleep.o
+  CC       lib/libcoreutils_a-xprintf.o
+  CC       lib/libcoreutils_a-xreadlink.o
+  CC       lib/libcoreutils_a-xsetenv.o
+  CC       lib/libcoreutils_a-xsize.o
+  CC       lib/libcoreutils_a-xstrtod.o
+  CC       lib/libcoreutils_a-xstrtoimax.o
+  CC       lib/libcoreutils_a-xstrtol.o
+  CC       lib/libcoreutils_a-xstrtoul.o
+  CC       lib/libcoreutils_a-xstrtol-error.o
+  CC       lib/libcoreutils_a-xstrtold.o
+  CC       lib/libcoreutils_a-xstrtoumax.o
+  CC       lib/libcoreutils_a-xvasprintf.o
+  CC       lib/libcoreutils_a-xasprintf.o
+  CC       lib/libcoreutils_a-yesno.o
+  CC       lib/libcoreutils_a-asnprintf.o
+  CC       lib/libcoreutils_a-mbsrtoc32s-state.o
+  CC       lib/libcoreutils_a-mbsrtowcs-state.o
+  CC       lib/libcoreutils_a-mktime.o
+  CC       lib/libcoreutils_a-printf-args.o
+  CC       lib/libcoreutils_a-printf-parse.o
+  CC       lib/libcoreutils_a-vasnprintf.o
+  CC       src/hostid.o
+  CC       src/timeout.o
+  CC       src/operand2sig.o
+  CC       src/nice.o
+  CC       src/who.o
+  CC       src/users.o
+  CC       src/pinky.o
+  CC       src/stty.o
+  CC       src/df.o
+  CC       src/find-mount-point.o
+  CC       src/stdbuf.o
+  CC       src/lbracket.o
+  CC       src/b2sum-cksum.o
+  CC       src/base64-basenc.o
+  CC       src/base32-basenc.o
+  CC       src/basenc-basenc.o
+  CC       src/basename.o
+  CC       src/cat.o
+  CC       src/chown.o
+  CC       src/chown-core.o
+  CC       src/chown-chgrp.o
+  CC       src/chmod.o
+  CC       src/chown-chown.o
+  CC       src/cksum-cksum.o
+  CC       src/blake2/cksum-blake2b-ref.o
+  CC       src/blake2/cksum-b2sum.o
+  CC       src/cksum-sum.o
+  CC       src/cksum-cksum_crc.o
+  CC       src/cksum-crctab.o
+  CC       src/libcksum_avx512_a-cksum_avx512.o
+  CC       src/libcksum_avx2_a-cksum_avx2.o
+  CC       src/libcksum_pclmul_a-cksum_pclmul.o
+  CC       src/comm.o
+  CC       src/cp.o
+  CC       src/copy.o
+  CC       src/copy-file-data.o
+  CC       src/cp-hash.o
+  CC       src/force-link.o
+  CC       src/selinux.o
+  CC       src/csplit.o
+  CC       src/cut.o
+  CC       src/set-fields.o
+  CC       src/date.o
+  CC       src/show-date.o
+  CC       src/dd.o
+  CC       src/ls.o
+  CC       src/ls-dir.o
+  CC       src/dircolors.o
+  CC       src/dirname.o
+  CC       src/du.o
+  CC       src/echo.o
+  CC       src/env.o
+  CC       src/expand.o
+  CC       src/expand-common.o
+  CC       lib/mbfile.o
+  CC       lib/mbchar.o
+  CC       src/expr.o
+  CC       src/factor.o
+  CC       src/false.o
+  CC       src/fmt.o
+  CC       src/fold.o
+  CC       src/install.o
+  CC       src/prog-fprintf.o
+  CC       src/groups.o
+  CC       src/group-list.o
+  CC       src/head.o
+  CC       src/id.o
+  CC       src/join.o
+  CC       src/link.o
+  CC       src/ln.o
+  CC       src/relpath.o
+  CC       src/logname.o
+  CC       src/ls-ls.o
+  CC       src/md5sum-cksum.o
+  CC       src/mkdir.o
+  CC       src/mkfifo.o
+  CC       src/mknod.o
+  CC       src/mktemp.o
+  CC       src/mv.o
+  CC       src/remove.o
+  CC       src/nl.o
+  CC       src/nproc.o
+  CC       src/nohup.o
+  CC       src/numfmt.o
+  CC       src/od.o
+  CC       src/paste.o
+  CC       src/pathchk.o
+  CC       src/pr.o
+  CC       src/printenv.o
+  CC       src/printf.o
+  CC       src/ptx.o
+  CC       src/pwd.o
+  CC       src/readlink.o
+  CC       src/realpath.o
+  CC       src/rm.o
+  CC       src/rmdir.o
+  CC       src/seq.o
+  CC       src/sha1sum-cksum.o
+  CC       src/sha224sum-cksum.o
+  CC       src/sha256sum-cksum.o
+  CC       src/sha384sum-cksum.o
+  CC       src/sha512sum-cksum.o
+  CC       src/shred.o
+  CC       src/shuf.o
+  CC       src/sleep.o
+  CC       src/sort.o
+  CC       src/split.o
+  CC       src/temp-stream.o
+  CC       src/stat.o
+  CC       src/sum-sum.o
+  CC       src/sum-cksum.o
+  CC       src/sync.o
+  CC       src/tac.o
+  CC       src/tail.o
+  CC       src/iopoll.o
+  CC       src/tee.o
+  CC       src/test.o
+  CC       src/touch.o
+  CC       src/tr.o
+  CC       src/true.o
+  CC       src/truncate.o
+  CC       src/tsort.o
+  CC       src/tty.o
+  CC       src/uname.o
+  CC       src/uname-uname.o
+  CC       src/unexpand.o
+  CC       src/uniq.o
+  CC       src/unlink.o
+  CC       src/ls-vdir.o
+  CC       src/wc.o
+  CC       src/libwc_avx512_a-wc_avx512.o
+  CC       src/libwc_avx2_a-wc_avx2.o
+  CC       src/whoami.o
+  CC       src/yes.o
+  CC       src/getlimits.o
+  CC       src/libstdbuf_so-libstdbuf.o
+  CC       src/chroot.o
+  CC       src/version.o
+  CC       lib/libcoreutils_a-copy-acl.o
+  CC       lib/libcoreutils_a-set-acl.o
+  CC       lib/libcoreutils_a-acl-errno-valid.o
+  CC       lib/libcoreutils_a-acl-internal.o
+  CC       lib/libcoreutils_a-get-permissions.o
+  CC       lib/libcoreutils_a-set-permissions.o
+  CC       lib/libcoreutils_a-alignalloc.o
+  CC       lib/libcoreutils_a-allocator.o
+  CC       lib/libcoreutils_a-areadlink.o
+  CC       lib/libcoreutils_a-areadlink-with-size.o
+  CC       lib/libcoreutils_a-areadlinkat.o
+  CC       lib/libcoreutils_a-areadlinkat-with-size.o
+  CC       lib/libcoreutils_a-argmatch.o
+  CC       lib/libcoreutils_a-argv-iter.o
+  CC       lib/libcoreutils_a-arpa_inet.o
+  CC       lib/libcoreutils_a-openat-proc.o
+  CC       lib/libcoreutils_a-backupfile.o
+  CC       lib/libcoreutils_a-backup-rename.o
+  CC       lib/libcoreutils_a-backup-find.o
+  CC       lib/libcoreutils_a-base32.o
+  CC       lib/libcoreutils_a-base64.o
+  CC       lib/libcoreutils_a-basename-lgpl.o
+  CC       lib/libcoreutils_a-binary-io.o
+  CC       lib/libcoreutils_a-bitrotate.o
+  CC       lib/libcoreutils_a-btoc32.o
+  CC       lib/libcoreutils_a-btowc.o
+  CC       lib/libcoreutils_a-buffer-lcm.o
+  CC       lib/libcoreutils_a-c-ctype.o
+  CC       lib/libcoreutils_a-c-file-type.o
+  CC       lib/libcoreutils_a-c-strcasecmp.o
+  CC       lib/libcoreutils_a-c-strncasecmp.o
+  CC       lib/libcoreutils_a-c-strtod.o
+  CC       lib/libcoreutils_a-c-strtold.o
+  CC       lib/libcoreutils_a-c32_apply_type_test.o
+  CC       lib/libcoreutils_a-c32_get_type_test.o
+  CC       lib/libcoreutils_a-c32isalnum.o
+  CC       lib/libcoreutils_a-c32isalpha.o
+  CC       lib/libcoreutils_a-c32isblank.o
+  CC       lib/libcoreutils_a-c32iscntrl.o
+  CC       lib/libcoreutils_a-c32isdigit.o
+  CC       lib/libcoreutils_a-c32isgraph.o
+  CC       lib/libcoreutils_a-c32islower.o
+  CC       lib/libcoreutils_a-c32isprint.o
+  CC       lib/libcoreutils_a-c32ispunct.o
+  CC       lib/libcoreutils_a-c32isspace.o
+  CC       lib/libcoreutils_a-c32isupper.o
+  CC       lib/libcoreutils_a-c32isxdigit.o
+  CC       lib/libcoreutils_a-c32tolower.o
+  CC       lib/libcoreutils_a-c32width.o
+  CC       lib/libcoreutils_a-canon-host.o
+  CC       lib/libcoreutils_a-canonicalize.o
+  CC       lib/libcoreutils_a-careadlinkat.o
+  CC       lib/libcoreutils_a-chdir-long.o
+  CC       lib/libcoreutils_a-chmodat.o
+  CC       lib/libcoreutils_a-chownat.o
+  CC       lib/libcoreutils_a-cl-strtod.o
+  CC       lib/libcoreutils_a-cl-strtold.o
+  CC       lib/libcoreutils_a-cloexec.o
+  CC       lib/libcoreutils_a-close-stream.o
+  CC       lib/libcoreutils_a-closein.o
+  CC       lib/libcoreutils_a-closeout.o
+  CC       lib/libcoreutils_a-concat-filename.o
+  CC       lib/libcoreutils_a-copy-file-range.o
+  CC       lib/libcoreutils_a-cpu-supports.o
+  CC       lib/libcoreutils_a-crc.o
+  CC       lib/libcoreutils_a-crc-x86_64-pclmul.o
+  CC       lib/libcoreutils_a-af_alg.o
+  CC       lib/libcoreutils_a-md5-stream.o
+  CC       lib/libcoreutils_a-md5.o
+  CC       lib/libcoreutils_a-sha1-stream.o
+  CC       lib/libcoreutils_a-sha1.o
+  CC       lib/libcoreutils_a-sha256-stream.o
+  CC       lib/libcoreutils_a-sha256.o
+  CC       lib/libcoreutils_a-sha3-stream.o
+  CC       lib/libcoreutils_a-sha3.o
+  CC       lib/libcoreutils_a-sha512-stream.o
+  CC       lib/libcoreutils_a-sha512.o
+  CC       lib/libcoreutils_a-sm3-stream.o
+  CC       lib/libcoreutils_a-sm3.o
+  CC       lib/libcoreutils_a-cycle-check.o
+  CC       lib/libcoreutils_a-di-set.o
+  CC       lib/libcoreutils_a-dirname.o
+  CC       lib/libcoreutils_a-basename.o
+  CC       lib/libcoreutils_a-dirname-lgpl.o
+  CC       lib/libcoreutils_a-stripslash.o
+  CC       lib/libcoreutils_a-dtimespec-bound.o
+  CC       lib/libcoreutils_a-dtoastr.o
+  CC       lib/libcoreutils_a-dtotimespec.o
+  CC       lib/libcoreutils_a-endian.o
+  CC       lib/libcoreutils_a-error.o
+  CC       lib/libcoreutils_a-exclude.o
+  CC       lib/libcoreutils_a-exitfail.o
+  CC       lib/libcoreutils_a-fadvise.o
+  CC       lib/libcoreutils_a-fcntl.o
+  CC       lib/libcoreutils_a-creat-safer.o
+  CC       lib/libcoreutils_a-open-safer.o
+  CC       lib/libcoreutils_a-fd-hook.o
+  CC       lib/libcoreutils_a-fd-reopen.o
+  CC       lib/libcoreutils_a-fd-safer-flag.o
+  CC       lib/libcoreutils_a-dup-safer-flag.o
+  CC       lib/libcoreutils_a-fdutimensat.o
+  CC       lib/libcoreutils_a-file-has-acl.o
+  CC       lib/libcoreutils_a-file-set.o
+  CC       lib/libcoreutils_a-file-type.o
+  CC       lib/libcoreutils_a-filemode.o
+  CC       lib/libcoreutils_a-filenamecat.o
+  CC       lib/libcoreutils_a-filenamecat-lgpl.o
+  CC       lib/libcoreutils_a-filevercmp.o
+  CC       lib/libcoreutils_a-findprog-in.o
+  CC       lib/libcoreutils_a-fopen-safer.o
+  CC       lib/libcoreutils_a-fprintftime.o
+  CC       lib/libcoreutils_a-fpurge.o
+  CC       lib/libcoreutils_a-freadahead.o
+  CC       lib/libcoreutils_a-freading.o
+  CC       lib/libcoreutils_a-freadptr.o
+  CC       lib/libcoreutils_a-freadseek.o
+  CC       lib/libcoreutils_a-freopen-safer.o
+  CC       lib/libcoreutils_a-fseterr.o
+  CC       lib/libcoreutils_a-fsusage.o
+  CC       lib/libcoreutils_a-ftoastr.o
+  CC       lib/libcoreutils_a-fts.o
+  CC       lib/libcoreutils_a-full-read.o
+  CC       lib/libcoreutils_a-full-write.o
+  CC       lib/libcoreutils_a-gethrxtime.o
+  CC       lib/libcoreutils_a-xtime.o
+  CC       lib/libcoreutils_a-localename-table.o
+  CC       lib/libcoreutils_a-getlocalename_l-unsafe.o
+  CC       lib/libcoreutils_a-getndelim2.o
+  CC       lib/libcoreutils_a-getprogname.o
+  CC       lib/libcoreutils_a-gettime.o
+  CC       lib/libcoreutils_a-gettime-res.o
+  CC       lib/libcoreutils_a-getugroups.o
+  CC       lib/malloc/libcoreutils_a-dynarray_at_failure.o
+  CC       lib/malloc/libcoreutils_a-dynarray_emplace_enlarge.o
+  CC       lib/malloc/libcoreutils_a-dynarray_finalize.o
+  CC       lib/malloc/libcoreutils_a-dynarray_resize.o
+  CC       lib/malloc/libcoreutils_a-dynarray_resize_clear.o
+  CC       lib/malloc/libcoreutils_a-scratch_buffer_grow.o
+  CC       lib/malloc/libcoreutils_a-scratch_buffer_grow_preserve.o
+  CC       lib/malloc/libcoreutils_a-scratch_buffer_set_array_size.o
+  CC       lib/libcoreutils_a-hard-locale.o
+  CC       lib/libcoreutils_a-hash.o
+  CC       lib/libcoreutils_a-hashcode-file-inode.o
+  CC       lib/libcoreutils_a-hashcode-named-file.o
+  CC       lib/libcoreutils_a-hashcode-string1.o
+  CC       lib/libcoreutils_a-hashcode-string2.o
+  CC       lib/libcoreutils_a-heap.o
+  CC       lib/libcoreutils_a-human.o
+  CC       lib/libcoreutils_a-i-ring.o
+  CC       lib/libcoreutils_a-ialloc.o
+  CC       lib/libcoreutils_a-idcache.o
+  CC       lib/libcoreutils_a-ino-map.o
+  CC       lib/libcoreutils_a-imaxtostr.o
+  CC       lib/libcoreutils_a-inttostr.o
+  CC       lib/libcoreutils_a-offtostr.o
+  CC       lib/libcoreutils_a-uinttostr.o
+  CC       lib/libcoreutils_a-umaxtostr.o
+  CC       lib/libcoreutils_a-isapipe.o
+  CC       lib/libcoreutils_a-issymlink.o
+  CC       lib/libcoreutils_a-issymlinkat.o
+  CC       lib/libcoreutils_a-ldtoastr.o
+  CC       lib/libcoreutils_a-linebuffer.o
+  CC       lib/libcoreutils_a-localcharset.o
+  CC       lib/libcoreutils_a-localename-environ.o
+  CC       lib/libcoreutils_a-localename-unsafe.o
+  CC       lib/glthread/libcoreutils_a-lock.o
+  CC       lib/unicase/libcoreutils_a-tolower.o
+  CC       lib/unictype/libcoreutils_a-ctype_alpha.o
+  CC       lib/unictype/libcoreutils_a-ctype_alnum.o
+  CC       lib/unictype/libcoreutils_a-ctype_blank.o
+  CC       lib/unictype/libcoreutils_a-ctype_cntrl.o
+  CC       lib/unictype/libcoreutils_a-ctype_digit.o
+  CC       lib/unictype/libcoreutils_a-ctype_graph.o
+  CC       lib/unictype/libcoreutils_a-ctype_lower.o
+  CC       lib/unictype/libcoreutils_a-ctype_print.o
+  CC       lib/unictype/libcoreutils_a-ctype_punct.o
+  CC       lib/unictype/libcoreutils_a-ctype_space.o
+  CC       lib/unictype/libcoreutils_a-ctype_upper.o
+  CC       lib/unictype/libcoreutils_a-ctype_xdigit.o
+  CC       lib/unistr/libcoreutils_a-u32-chr.o
+  CC       lib/unistr/libcoreutils_a-u32-cpy.o
+  CC       lib/unistr/libcoreutils_a-u32-pcpy.o
+  CC       lib/unistr/libcoreutils_a-u32-strcat.o
+  CC       lib/unistr/libcoreutils_a-u32-strlen.o
+  CC       lib/unistr/libcoreutils_a-u8-mbtoucr.o
+  CC       lib/unistr/libcoreutils_a-u8-uctomb.o
+  CC       lib/unistr/libcoreutils_a-u8-uctomb-aux.o
+  CC       lib/uniwidth/libcoreutils_a-width.o
+  CC       src/blake2/b2sum-blake2b-ref.o
+  CC       src/blake2/b2sum-b2sum.o
+  AR       src/libcksum_avx512.a
+  AR       src/libcksum_avx2.a
+  AR       src/libcksum_pclmul.a
+  AR       src/libwc_avx512.a
+  AR       src/libwc_avx2.a
+  CCLD     src/libstdbuf.so
+  AR       src/libver.a
+  AR       lib/libcoreutils.a
+  CCLD     src/chroot
+  CCLD     src/hostid
+  CCLD     src/timeout
+  CCLD     src/nice
+  CCLD     src/who
+  CCLD     src/users
+  CCLD     src/pinky
+  CCLD     src/stty
+  CCLD     src/df
+  CCLD     src/stdbuf
+  CCLD     src/[
+  CCLD     src/base64
+  CCLD     src/base32
+  CCLD     src/basenc
+  CCLD     src/basename
+  CCLD     src/cat
+  CCLD     src/chgrp
+  CCLD     src/chmod
+  CCLD     src/chown
+  CCLD     src/cksum
+  CCLD     src/comm
+  CCLD     src/cp
+  CCLD     src/csplit
+  CCLD     src/cut
+  CCLD     src/date
+  CCLD     src/dd
+  CCLD     src/dir
+  CCLD     src/dircolors
+  CCLD     src/dirname
+  CCLD     src/du
+  CCLD     src/echo
+  CCLD     src/env
+  CCLD     src/expand
+  CCLD     src/expr
+  CCLD     src/factor
+  CCLD     src/false
+  CCLD     src/fmt
+  CCLD     src/fold
+  CCLD     src/ginstall
+  CCLD     src/groups
+  CCLD     src/head
+  CCLD     src/id
+  CCLD     src/join
+  CCLD     src/link
+  CCLD     src/ln
+  CCLD     src/logname
+  CCLD     src/ls
+  CCLD     src/md5sum
+  CCLD     src/mkdir
+  CCLD     src/mkfifo
+  CCLD     src/mknod
+  CCLD     src/mktemp
+  CCLD     src/mv
+  CCLD     src/nl
+  CCLD     src/nproc
+  CCLD     src/nohup
+  CCLD     src/numfmt
+  CCLD     src/od
+  CCLD     src/paste
+  CCLD     src/pathchk
+  CCLD     src/pr
+  CCLD     src/printenv
+  CCLD     src/printf
+  CCLD     src/ptx
+  CCLD     src/pwd
+  CCLD     src/readlink
+  CCLD     src/realpath
+  CCLD     src/rm
+  CCLD     src/rmdir
+  CCLD     src/seq
+  CCLD     src/sha1sum
+  CCLD     src/sha224sum
+  CCLD     src/sha256sum
+  CCLD     src/sha384sum
+  CCLD     src/sha512sum
+  CCLD     src/shred
+  CCLD     src/shuf
+  CCLD     src/sleep
+  CCLD     src/sort
+  CCLD     src/split
+  CCLD     src/stat
+  CCLD     src/sum
+  CCLD     src/sync
+  CCLD     src/tac
+  CCLD     src/tail
+  CCLD     src/tee
+  CCLD     src/test
+  CCLD     src/touch
+  CCLD     src/tr
+  CCLD     src/true
+  CCLD     src/truncate
+  CCLD     src/tsort
+  CCLD     src/tty
+  CCLD     src/uname
+  CCLD     src/unexpand
+  CCLD     src/uniq
+  CCLD     src/unlink
+  CCLD     src/vdir
+  CCLD     src/wc
+  CCLD     src/whoami
+  CCLD     src/yes
+  CCLD     src/getlimits
+  GEN      man/chroot.1
+  GEN      man/hostid.1
+  GEN      man/timeout.1
+  GEN      man/nice.1
+  GEN      man/who.1
+  GEN      man/users.1
+  GEN      man/pinky.1
+  GEN      man/stty.1
+  GEN      man/df.1
+  GEN      man/stdbuf.1
+  GEN      man/base64.1
+  GEN      man/base32.1
+  GEN      man/basenc.1
+  GEN      man/basename.1
+  GEN      man/cat.1
+  GEN      man/chgrp.1
+  GEN      man/chmod.1
+  GEN      man/chown.1
+  GEN      man/cksum.1
+  GEN      man/comm.1
+  GEN      man/cp.1
+  GEN      man/csplit.1
+  GEN      man/cut.1
+  GEN      man/date.1
+  GEN      man/dd.1
+  GEN      man/dir.1
+  GEN      man/dircolors.1
+  GEN      man/dirname.1
+  GEN      man/du.1
+  GEN      man/echo.1
+  GEN      man/env.1
+  GEN      man/expand.1
+  GEN      man/expr.1
+  GEN      man/factor.1
+  GEN      man/false.1
+  GEN      man/fmt.1
+  GEN      man/fold.1
+  GEN      man/install.1
+  GEN      man/groups.1
+  GEN      man/head.1
+  GEN      man/id.1
+  GEN      man/join.1
+  GEN      man/link.1
+  GEN      man/ln.1
+  GEN      man/logname.1
+  GEN      man/ls.1
+  GEN      man/md5sum.1
+  GEN      man/mkdir.1
+  GEN      man/mkfifo.1
+  GEN      man/mknod.1
+  GEN      man/mktemp.1
+  GEN      man/mv.1
+  GEN      man/nl.1
+  GEN      man/nproc.1
+  GEN      man/nohup.1
+  GEN      man/numfmt.1
+  GEN      man/od.1
+  GEN      man/paste.1
+  GEN      man/pathchk.1
+  GEN      man/pr.1
+  GEN      man/printenv.1
+  GEN      man/printf.1
+  GEN      man/ptx.1
+  GEN      man/pwd.1
+  GEN      man/readlink.1
+  GEN      man/realpath.1
+  GEN      man/rm.1
+  GEN      man/rmdir.1
+  GEN      man/seq.1
+  GEN      man/sha1sum.1
+  GEN      man/sha224sum.1
+  GEN      man/sha256sum.1
+  GEN      man/sha384sum.1
+  GEN      man/sha512sum.1
+  GEN      man/shred.1
+  GEN      man/shuf.1
+  GEN      man/sleep.1
+  GEN      man/sort.1
+  GEN      man/split.1
+  GEN      man/stat.1
+  GEN      man/sum.1
+  GEN      man/sync.1
+  GEN      man/tac.1
+  GEN      man/tail.1
+  GEN      man/tee.1
+  GEN      man/test.1
+  GEN      man/touch.1
+  GEN      man/tr.1
+  GEN      man/true.1
+  GEN      man/truncate.1
+  GEN      man/tsort.1
+  GEN      man/tty.1
+  GEN      man/uname.1
+  GEN      man/unexpand.1
+  GEN      man/uniq.1
+  GEN      man/unlink.1
+  GEN      man/vdir.1
+  GEN      man/wc.1
+  GEN      man/whoami.1
+  GEN      man/yes.1
+  CCLD     src/b2sum
+  GEN      man/b2sum.1
+make[2]: Leaving directory '/sources/coreutils-9.10'
+Making all in gnulib-tests
+make[2]: Entering directory '/sources/coreutils-9.10/gnulib-tests'
+  GEN      test-posix_spawn-dup2-stdout.sh
+## ---------------------------------------------------- ##
+  GEN      test-posix_spawn-dup2-stdin.sh
+## ------------------- Gnulib tests ------------------- ##
+## You can ignore compiler warnings in this directory.  ##
+## ---------------------------------------------------- ##
+make  all-recursive
+make[3]: Entering directory '/sources/coreutils-9.10/gnulib-tests'
+Making all in .
+make[4]: Entering directory '/sources/coreutils-9.10/gnulib-tests'
+  CC       bench_crc-bench-crc.o
+  CC       bench_crc-randomb.o
+  CC       c-strcasestr.o
+  CC       c32tob.o
+  CC       ioctl.o
+  CC       localename.o
+  CC       pthread-rwlock.o
+  CC       str_startswith.o
+  CC       timespec-add.o
+  CC       timespec-sub.o
+  CC       vma-iter.o
+  CC       xconcat-filename.o
+  CC       xgetcwd.o
+  CC       strerror_r.o
+  CC       bench_md5-bench-md5.o
+  CC       bench_sha1-bench-sha1.o
+  CC       bench_sha224-bench-sha224.o
+  CC       bench_sha256-bench-sha256.o
+  CC       bench_sha3_224-bench-sha3-224.o
+  CC       bench_sha3_256-bench-sha3-256.o
+  CC       bench_sha3_384-bench-sha3-384.o
+  CC       bench_sha3_512-bench-sha3-512.o
+  CC       bench_sha384-bench-sha384.o
+  CC       bench_sha512-bench-sha512.o
+  CC       locale.o
+  CC       test-localcharset.o
+  CC       glthread/thread.o
+  CC       unistr/u32-set.o
+  AR       libtests.a
+  CCLD     bench-crc
+  CCLD     bench-md5
+  CCLD     bench-sha1
+  CCLD     bench-sha224
+  CCLD     bench-sha256
+  CCLD     bench-sha3-224
+  CCLD     bench-sha3-256
+  CCLD     bench-sha3-384
+  CCLD     bench-sha3-512
+  CCLD     bench-sha384
+  CCLD     bench-sha512
+  CCLD     current-locale
+  CCLD     test-localcharset
+make[4]: Leaving directory '/sources/coreutils-9.10/gnulib-tests'
+make[3]: Leaving directory '/sources/coreutils-9.10/gnulib-tests'
+make[2]: Leaving directory '/sources/coreutils-9.10/gnulib-tests'
+make[1]: Leaving directory '/sources/coreutils-9.10'
+  GEN      public-submodule-commit
+make  check-recursive
+make[1]: Entering directory '/sources/coreutils-9.10'
+Making check in po
+make[2]: Entering directory '/sources/coreutils-9.10/po'
+make[2]: Nothing to be done for 'check'.
+make[2]: Leaving directory '/sources/coreutils-9.10/po'
+Making check in .
+make[2]: Entering directory '/sources/coreutils-9.10'
+make  check-TESTS check-local
+make[3]: Entering directory '/sources/coreutils-9.10'
+  GEN      check-README
+  GEN      check-duplicate-no-install
+  GEN      sc-avoid-builtin
+  GEN      sc-avoid-io
+  GEN      sc-avoid-non-zero
+  GEN      sc-avoid-path
+  GEN      sc-avoid-timezone
+  GEN      sc-avoid-zeroes
+  GEN      sc-exponent-grouping
+  GEN      sc-lower-case-var
+  GEN      check-texinfo
+make[4]: Entering directory '/sources/coreutils-9.10'
+  GEN      tests/factor/t00.sh
+  GEN      tests/factor/t01.sh
+  GEN      tests/factor/t02.sh
+  GEN      tests/factor/t03.sh
+  GEN      tests/factor/t04.sh
+  GEN      tests/factor/t05.sh
+  GEN      tests/factor/t06.sh
+  GEN      tests/factor/t07.sh
+  GEN      tests/factor/t08.sh
+  GEN      tests/factor/t09.sh
+  GEN      tests/factor/t10.sh
+  GEN      tests/factor/t11.sh
+  GEN      tests/factor/t12.sh
+  GEN      tests/factor/t13.sh
+  GEN      tests/factor/t14.sh
+  GEN      tests/factor/t15.sh
+  GEN      tests/factor/t16.sh
+  GEN      tests/factor/t17.sh
+  GEN      tests/factor/t18.sh
+  GEN      tests/factor/t19.sh
+  GEN      tests/factor/t20.sh
+  GEN      tests/factor/t21.sh
+  GEN      tests/factor/t22.sh
+  GEN      tests/factor/t23.sh
+  GEN      tests/factor/t24.sh
+  GEN      tests/factor/t25.sh
+  GEN      tests/factor/t26.sh
+  GEN      tests/factor/t27.sh
+  GEN      tests/factor/t28.sh
+  GEN      tests/factor/t29.sh
+  GEN      tests/factor/t30.sh
+  GEN      tests/factor/t31.sh
+  GEN      tests/factor/t32.sh
+  GEN      tests/factor/t33.sh
+  GEN      tests/factor/t34.sh
+  GEN      tests/factor/t35.sh
+  GEN      tests/factor/t36.sh
+  GEN      tests/factor/t37.sh
+  GEN      tests/factor/t38.sh
+  GEN      tests/factor/t39.sh
+  GEN      tests/factor/t40.sh
+inotify-race.sh: skipped test: can't run gdb
+inotify-race2.sh: skipped test: can't run gdb
+SKIP: tests/tail/inotify-race.sh
+SKIP: tests/tail/inotify-race2.sh
+ext3-perf.sh: skipped test: very expensive: disabled by default
+SKIP: tests/rm/ext3-perf.sh
+PASS: tests/rm/cycle.sh
+PASS: tests/help/help-version-getopt.sh
+no-ctx.sh: skipped test: this system lacks SELinux support
+SKIP: tests/cp/no-ctx.sh
+tty-eof.pl: this script requires Perl's Expect package >=1.11
+SKIP: tests/tty/tty-eof.pl
+PASS: tests/misc/invalid-opt.pl
+PASS: tests/misc/read-errors.sh
+PASS: tests/misc/write-errors.sh
+PASS: tests/tail/basic-seek.sh
+PASS: tests/misc/io-errors.sh
+PASS: tests/tail/inotify-hash-abuse.sh
+PASS: tests/tail/F-vs-missing.sh
+PASS: tests/tail/inotify-hash-abuse2.sh
+PASS: tests/tail/F-vs-rename.sh
+PASS: tests/tail/descriptor-vs-rename.sh
+PASS: tests/tail/F-headers.sh
+inotify-rotate-resources.sh: skipped test: no strace program
+SKIP: tests/tail/inotify-rotate-resources.sh
+PASS: tests/help/help-version.sh
+inotify-only-regular.sh: skipped test: no strace program
+SKIP: tests/tail/inotify-only-regular.sh
+PASS: tests/chmod/no-x.sh
+PASS: tests/tail/inotify-rotate.sh
+PASS: tests/tail/inotify-dir-recreate.sh
+PASS: tests/rm/dangling-symlink.sh
+PASS: tests/rm/d-1.sh
+PASS: tests/rm/d-2.sh
+PASS: tests/rm/d-3.sh
+PASS: tests/rm/deep-1.sh
+PASS: tests/chgrp/basic.sh
+PASS: tests/rm/deep-2.sh
+PASS: tests/rm/dir-no-w.sh
+PASS: tests/rm/dir-nonrecur.sh
+PASS: tests/rm/dot-rel.sh
+PASS: tests/rm/empty-inacc.sh
+PASS: tests/rm/empty-name.pl
+PASS: tests/cp/link-heap.sh
+PASS: tests/rm/f-1.sh
+PASS: tests/rm/fail-eacces.sh
+PASS: tests/tail/assert.sh
+PASS: tests/rm/i-1.sh
+PASS: tests/rm/i-never.sh
+PASS: tests/rm/i-no-r.sh
+PASS: tests/rm/ignorable.sh
+PASS: tests/rm/inaccessible.sh
+PASS: tests/rm/interactive-always.sh
+PASS: tests/rm/isatty.sh
+PASS: tests/rm/hash.sh
+PASS: tests/rm/interactive-once.sh
+PASS: tests/rm/ir-1.sh
+PASS: tests/rm/one-file-system2.sh
+PASS: tests/rm/r-1.sh
+PASS: tests/rm/r-2.sh
+PASS: tests/rm/r-4.sh
+PASS: tests/rm/r-3.sh
+r-root.sh: skipped test: can't run gdb
+SKIP: tests/rm/r-root.sh
+PASS: tests/rm/rm1.sh
+PASS: tests/rm/rm2.sh
+PASS: tests/rm/rm3.sh
+PASS: tests/rm/rm4.sh
+PASS: tests/rm/rm5.sh
+PASS: tests/rm/sunos-1.sh
+PASS: tests/rm/unread2.sh
+PASS: tests/rm/readdir-bug.sh
+PASS: tests/rm/unread3.sh
+PASS: tests/rm/unreadable.pl
+PASS: tests/rm/v-slash.sh
+PASS: tests/rm/rm-readdir-fail.sh
+PASS: tests/chgrp/default-no-deref.sh
+PASS: tests/chgrp/deref.sh
+PASS: tests/chgrp/no-x.sh
+PASS: tests/chgrp/posix-H.sh
+PASS: tests/chgrp/recurse.sh
+PASS: tests/fmt/base.pl
+PASS: tests/fmt/goal-option.sh
+PASS: tests/fmt/long-line.sh
+PASS: tests/fmt/non-space.sh
+PASS: tests/fmt/width.sh
+PASS: tests/misc/echo.sh
+PASS: tests/env/env.sh
+PASS: tests/ls/ls-time.sh
+PASS: tests/ptx/ptx.pl
+PASS: tests/env/env-signal-handler.sh
+PASS: tests/test/test.pl
+PASS: tests/seq/seq-epipe.sh
+PASS: tests/seq/seq-extra-number.sh
+PASS: tests/seq/seq.pl
+PASS: tests/seq/seq-io-errors.sh
+PASS: tests/seq/seq-locale.sh
+PASS: tests/touch/empty-file.sh
+PASS: tests/seq/seq-long-double.sh
+PASS: tests/head/head.pl
+PASS: tests/tail/tail-sysfs.sh
+PASS: tests/seq/seq-precision.sh
+PASS: tests/ls/ls-misc.pl
+PASS: tests/tail/tail-n0f.sh
+PASS: tests/date/date-next-dow.pl
+PASS: tests/ptx/ptx-overrun.sh
+PASS: tests/misc/xstrtol.pl
+PASS: tests/date/date.pl
+PASS: tests/rm/many-dir-entries-vs-OOM.sh
+PASS: tests/tail/pid-pipe.sh
+big-w.sh: skipped test: very expensive: disabled by default
+SKIP: tests/od/big-w.sh
+PASS: tests/od/od.pl
+PASS: tests/od/od-endian.sh
+PASS: tests/od/od-float.sh
+PASS: tests/mktemp/bad-unicode.sh
+PASS: tests/mktemp/mktemp.pl
+arch.sh: skipped test: required program(s) not built
+SKIP: tests/misc/arch.sh
+PASS: tests/head/head-elide-tail.pl
+PASS: tests/pr/bounded-memory.sh
+PASS: tests/pwd/pwd-option.sh
+chcon-fail.sh: skipped test: required program(s) not built
+SKIP: tests/chcon/chcon-fail.sh
+coreutils.sh: skipped test: required program(s) not built
+SKIP: tests/misc/coreutils.sh
+PASS: tests/tail/pid.sh
+overlay-headers.sh: skipped test: failed to detect stopped tail
+SKIP: tests/tail/overlay-headers.sh
+PASS: tests/cut/cut-huge-range.sh
+PASS: tests/wc/wc.pl
+PASS: tests/wc/wc-cpu.sh
+PASS: tests/wc/wc-files0-from.pl
+PASS: tests/wc/wc-files0.sh
+PASS: tests/wc/wc-nbsp.sh
+PASS: tests/wc/wc-parallel.sh
+PASS: tests/wc/wc-proc.sh
+PASS: tests/wc/wc-total.sh
+PASS: tests/cat/cat-E.sh
+PASS: tests/cat/cat-proc.sh
+PASS: tests/cat/cat-buf.sh
+PASS: tests/cat/cat-self.sh
+PASS: tests/misc/basename.pl
+PASS: tests/cut/bounded-memory.sh
+PASS: tests/basenc/basenc.pl
+PASS: tests/cut/cut.pl
+PASS: tests/basenc/large-input.sh
+PASS: tests/misc/close-stdout.sh
+PASS: tests/basenc/base64.pl
+PASS: tests/chroot/chroot-fail.sh
+PASS: tests/cksum/cksum-a.sh
+PASS: tests/cksum/cksum-c.sh
+PASS: tests/cksum/cksum.sh
+PASS: tests/cksum/cksum-base64.pl
+PASS: tests/cksum/cksum-base64-untagged.sh
+PASS: tests/cksum/cksum-raw.sh
+PASS: tests/misc/comm.pl
+PASS: tests/csplit/csplit.sh
+PASS: tests/csplit/csplit-1000.sh
+PASS: tests/csplit/csplit-io-err.sh
+PASS: tests/csplit/csplit-suppress-matched.pl
+PASS: tests/date/date-debug.sh
+PASS: tests/csplit/csplit-heap.sh
+PASS: tests/date/date-ethiopia.sh
+PASS: tests/date/date-iran.sh
+PASS: tests/date/date-locale-hour.sh
+PASS: tests/date/reference.sh
+PASS: tests/date/resolution.sh
+PASS: tests/date/date-sec.sh
+PASS: tests/date/date-thailand.sh
+PASS: tests/date/date-tz.sh
+PASS: tests/misc/dircolors.pl
+PASS: tests/date/percent-percent.sh
+PASS: tests/misc/dirname.pl
+PASS: tests/env/env-null.sh
+PASS: tests/env/env-S-script.sh
+PASS: tests/env/env-S.pl
+PASS: tests/pr/pr-tests.pl
+PASS: tests/basenc/bounded-memory.sh
+PASS: tests/expand/expand.pl
+PASS: tests/expand/bounded-memory.sh
+PASS: tests/factor/factor.pl
+PASS: tests/misc/false-status.sh
+PASS: tests/factor/factor-parallel.sh
+PASS: tests/expr/expr-multibyte.pl
+PASS: tests/fold/fold-nbsp.sh
+PASS: tests/fold/fold-spaces.sh
+PASS: tests/expr/expr.pl
+PASS: tests/fold/fold-zero-width.sh
+PASS: tests/groups/groups-dash.sh
+PASS: tests/fold/fold-characters.sh
+PASS: tests/fold/fold.pl
+PASS: tests/groups/groups-process-all.sh
+PASS: tests/groups/groups-version.sh
+PASS: tests/head/head-pos.sh
+PASS: tests/head/head-c.sh
+kill.sh: skipped test: required program(s) not built
+SKIP: tests/misc/kill.sh
+PASS: tests/head/head-write-error.sh
+PASS: tests/cksum/md5sum-bsd.sh
+PASS: tests/cksum/md5sum-newline.pl
+PASS: tests/cksum/b2sum.sh
+PASS: tests/cksum/md5sum.pl
+PASS: tests/cksum/md5sum-parallel.sh
+PASS: tests/join/join-utf8.sh
+PASS: tests/misc/mknod.sh
+PASS: tests/nice/nice-fail.sh
+PASS: tests/misc/nl.sh
+PASS: tests/misc/nohup.sh
+PASS: tests/nice/nice.sh
+PASS: tests/nproc/nproc-avail.sh
+PASS: tests/nproc/nproc-positive.sh
+PASS: tests/nproc/nproc-override.sh
+PASS: tests/numfmt/mb-non-utf8.sh
+PASS: tests/od/od-N.sh
+PASS: tests/od/od-j.sh
+PASS: tests/join/join.pl
+PASS: tests/od/od-x8.sh
+PASS: tests/misc/pathchk.sh
+PASS: tests/misc/printenv.sh
+PASS: tests/paste/paste.pl
+PASS: tests/paste/multi-byte.sh
+PASS: tests/misc/option-aliases.sh
+PASS: tests/printf/printf.sh
+PASS: tests/printf/printf-hex.sh
+PASS: tests/printf/printf-indexed.sh
+PASS: tests/printf/printf-cov.pl
+PASS: tests/printf/printf-mb.sh
+PASS: tests/printf/printf-surprise.sh
+PASS: tests/printf/printf-quote.sh
+PASS: tests/pwd/pwd-long.sh
+PASS: tests/readlink/readlink-fp-loop.sh
+PASS: tests/readlink/readlink-posix.sh
+PASS: tests/readlink/readlink-root.sh
+PASS: tests/misc/realpath.sh
+runcon-compute.sh: skipped test: required program(s) not built
+SKIP: tests/runcon/runcon-compute.sh
+runcon-no-reorder.sh: skipped test: required program(s) not built
+SKIP: tests/runcon/runcon-no-reorder.sh
+PASS: tests/cksum/sha1sum.pl
+PASS: tests/cksum/sha224sum.pl
+PASS: tests/cksum/sha256sum.pl
+PASS: tests/cksum/sha384sum.pl
+PASS: tests/numfmt/numfmt.pl
+PASS: tests/cksum/sha512sum.pl
+PASS: tests/cksum/cksum-sha3.sh
+PASS: tests/shred/shred-exact.sh
+PASS: tests/shred/shred-passes.sh
+PASS: tests/shred/shred-size.sh
+PASS: tests/cksum/sha1sum-vec.pl
+shuf-reservoir.sh: skipped test: requires a working valgrind
+SKIP: tests/shuf/shuf-reservoir.sh
+PASS: tests/shred/shred-remove.sh
+PASS: tests/shuf/shuf.sh
+PASS: tests/cksum/sm3sum.pl
+sort-benchmark-random.sh: skipped test: very expensive: disabled by default
+SKIP: tests/sort/sort-benchmark-random.sh
+PASS: tests/misc/sleep.sh
+PASS: tests/od/od-multiple-t.sh
+sort-compress-hang.sh: skipped test: very expensive: disabled by default
+SKIP: tests/sort/sort-compress-hang.sh
+PASS: tests/sort/sort-continue.sh
+PASS: tests/sort/sort-debug-keys.sh
+PASS: tests/sort/sort-debug-warn.sh
+PASS: tests/sort/sort-discrim.sh
+PASS: tests/sort/sort-compress.sh
+PASS: tests/sort/sort-field-limit.sh
+PASS: tests/sort/sort-files0-from.pl
+PASS: tests/sort/sort-float.sh
+PASS: tests/i18n/sort.sh
+PASS: tests/misc/sort-mb-tests.sh
+PASS: tests/sort/sort-h-thousands-sep.sh
+PASS: tests/sort/sort-merge.pl
+PASS: tests/sort/sort-locale.sh
+PASS: tests/sort/sort-merge-fdlimit.sh
+PASS: tests/sort/sort-month.sh
+PASS: tests/sort/sort-exit-early.sh
+sort-spinlock-abuse.sh: skipped test: very expensive: disabled by default
+SKIP: tests/sort/sort-spinlock-abuse.sh
+PASS: tests/sort/sort-rand.sh
+sort-stale-thread-mem.sh: skipped test: very expensive: disabled by default
+SKIP: tests/sort/sort-stale-thread-mem.sh
+PASS: tests/sort/sort-unique.sh
+PASS: tests/sort/sort-unique-segv.sh
+PASS: tests/sort/sort-version.sh
+sort-u-FMR.sh: skipped test: requires a working valgrind
+SKIP: tests/sort/sort-u-FMR.sh
+PASS: tests/sort/sort-NaN-infloop.sh
+PASS: tests/split/suffix-auto-length.sh
+PASS: tests/split/suffix-length.sh
+PASS: tests/split/additional-suffix.sh
+PASS: tests/split/filter.sh
+PASS: tests/split/b-chunk.sh
+PASS: tests/split/lines.sh
+PASS: tests/split/fail.sh
+PASS: tests/split/l-chunk.sh
+PASS: tests/sort/sort.pl
+PASS: tests/split/r-chunk.sh
+PASS: tests/split/numeric.sh
+PASS: tests/split/guard-input.sh
+PASS: tests/split/record-sep.sh
+PASS: tests/split/split-io-err.sh
+PASS: tests/stat/stat-fmt.sh
+PASS: tests/stat/stat-hyphen.sh
+PASS: tests/stat/stat-mount.sh
+PASS: tests/stat/stat-nanoseconds.sh
+PASS: tests/stat/stat-printf.pl
+PASS: tests/stat/stat-slash.sh
+PASS: tests/split/line-bytes.sh
+PASS: tests/misc/stdbuf.sh
+bad-speed.sh: skipped test: requires controlling input terminal
+SKIP: tests/stty/bad-speed.sh
+stty.sh: skipped test: requires controlling input terminal
+SKIP: tests/stty/stty.sh
+stty-invalid.sh: skipped test: requires controlling input terminal
+SKIP: tests/stty/stty-invalid.sh
+stty-pairs.sh: skipped test: requires controlling input terminal
+SKIP: tests/stty/stty-pairs.sh
+stty-row-col.sh: skipped test: requires controlling input terminal
+SKIP: tests/stty/stty-row-col.sh
+PASS: tests/cksum/sum-sysv.sh
+PASS: tests/cksum/sum.pl
+PASS: tests/stat/stat-birthtime.sh
+PASS: tests/misc/sync.sh
+PASS: tests/tac/tac-2-nonseekable.sh
+PASS: tests/tac/tac-locale.sh
+PASS: tests/tee/append.sh
+PASS: tests/tac/tac.pl
+PASS: tests/test/test-N.sh
+PASS: tests/test/test-diag.pl
+PASS: tests/tail/tail.pl
+PASS: tests/test/test-file.sh
+PASS: tests/tee/tee.sh
+PASS: tests/misc/time-style.sh
+PASS: tests/timeout/timeout-blocked.pl
+PASS: tests/timeout/timeout-group.sh
+PASS: tests/timeout/timeout-parameters.sh
+PASS: tests/sort/sort-compress-proc.sh
+PASS: tests/tr/tr.pl
+PASS: tests/tr/tr-case-class.sh
+PASS: tests/truncate/truncate-dangling-symlink.sh
+PASS: tests/truncate/truncate-dir-fail.sh
+PASS: tests/truncate/truncate-fail-diag.sh
+PASS: tests/truncate/truncate-fifo.sh
+PASS: tests/truncate/truncate-no-create-missing.sh
+PASS: tests/truncate/truncate-overflow.sh
+PASS: tests/truncate/truncate-parameters.sh
+PASS: tests/truncate/truncate-relative.sh
+PASS: tests/tty/tty.sh
+PASS: tests/misc/tsort.pl
+PASS: tests/timeout/timeout-large-parameters.sh
+PASS: tests/timeout/timeout.sh
+PASS: tests/unexpand/unexpand.pl
+PASS: tests/unexpand/bounded-memory.sh
+PASS: tests/misc/getopt_vs_usage.sh
+PASS: tests/uniq/uniq-perf.sh
+PASS: tests/uniq/uniq-collate.sh
+PASS: tests/misc/xattr.sh
+PASS: tests/misc/yes.sh
+PASS: tests/misc/usage_vs_refs.sh
+PASS: tests/tail/wait.sh
+PASS: tests/tail/symlink.sh
+PASS: tests/tail/tail-c.sh
+PASS: tests/misc/usage_vs_getopt.sh
+PASS: tests/chmod/c-option.sh
+PASS: tests/chmod/equal-x.sh
+PASS: tests/tail/truncate.sh
+PASS: tests/chmod/equals.sh
+PASS: tests/chmod/ignore-symlink.sh
+PASS: tests/chmod/inaccessible.sh
+PASS: tests/chmod/octal.sh
+PASS: tests/chmod/partial-fail.sh
+PASS: tests/chmod/setgid.sh
+PASS: tests/chmod/silent.sh
+PASS: tests/chmod/umask-x.sh
+PASS: tests/chmod/thru-dangling.sh
+PASS: tests/chmod/symlinks.sh
+PASS: tests/chown/deref.sh
+PASS: tests/chown/preserve-root.sh
+PASS: tests/chmod/usage.sh
+PASS: tests/chown/separator.sh
+PASS: tests/cp/abuse.sh
+PASS: tests/cp/acl.sh
+PASS: tests/cp/attr-existing.sh
+PASS: tests/cp/backup-1.sh
+PASS: tests/cp/backup-dir.sh
+PASS: tests/cp/backup-is-src.sh
+PASS: tests/tail/retry.sh
+PASS: tests/cp/cp-HL.sh
+PASS: tests/uniq/uniq.pl
+PASS: tests/cp/cp-deref.sh
+PASS: tests/cp/cp-parents.sh
+PASS: tests/cp/debug.sh
+PASS: tests/cp/cp-i.sh
+PASS: tests/cp/deref-slink.sh
+PASS: tests/cp/dir-rm-dest.sh
+PASS: tests/cp/dir-slash.sh
+PASS: tests/cp/dir-vs-file.sh
+PASS: tests/cp/existing-perm-dir.sh
+PASS: tests/cp/existing-perm-race.sh
+PASS: tests/cp/keep-directory-symlink.sh
+PASS: tests/cp/fail-perm.sh
+copy-FMR.sh: skipped test: requires a working valgrind
+SKIP: tests/cp/copy-FMR.sh
+PASS: tests/cp/cp-mv-backup.sh
+PASS: tests/cp/sparse-perf.sh
+PASS: tests/cp/sparse-2.sh
+PASS: tests/cp/file-perm-race.sh
+PASS: tests/cp/into-self.sh
+PASS: tests/cp/link.sh
+PASS: tests/cp/link-no-deref.sh
+PASS: tests/cp/link-symlink.sh
+PASS: tests/cp/link-preserve.sh
+PASS: tests/cp/no-deref-link1.sh
+PASS: tests/cp/no-deref-link2.sh
+PASS: tests/cp/nfs-removal-race.sh
+PASS: tests/cp/link-deref.sh
+PASS: tests/cp/no-deref-link3.sh
+PASS: tests/cp/parent-perm-race.sh
+PASS: tests/cp/parent-perm.sh
+perm.sh: skipped test: very expensive: disabled by default
+SKIP: tests/cp/perm.sh
+PASS: tests/cp/preserve-2.sh
+PASS: tests/cp/sparse-extents.sh
+PASS: tests/cp/preserve-link.sh
+PASS: tests/cp/preserve-mode.sh
+PASS: tests/cp/proc-short-read.sh
+PASS: tests/cp/proc-zero-len.sh
+PASS: tests/cp/r-vs-symlink.sh
+PASS: tests/cp/reflink-auto.sh
+PASS: tests/cp/reflink-perm.sh
+PASS: tests/cp/preserve-slink-time.sh
+PASS: tests/cp/slink-2-slink.sh
+PASS: tests/cp/sparse-to-pipe.sh
+PASS: tests/cp/special-f.sh
+PASS: tests/cp/src-base-dot.sh
+PASS: tests/cp/symlink-slash.sh
+PASS: tests/cp/thru-dangling.sh
+PASS: tests/df/header.sh
+PASS: tests/df/df-P.sh
+df-symlink.sh: skipped test: cannot get info for -
+SKIP: tests/df/df-symlink.sh
+PASS: tests/df/df-output.sh
+PASS: tests/df/unreadable.sh
+PASS: tests/df/total-unprocessed.sh
+no-mtab-status-masked-proc.sh: skipped test: User namespace sandbox is disabled
+SKIP: tests/df/no-mtab-status-masked-proc.sh
+skip-duplicates.sh: skipped test: no root file system found
+SKIP: tests/df/skip-duplicates.sh
+PASS: tests/df/no-mtab-status.sh
+skip-rootfs.sh: skipped test: no rootfs in mtab
+SKIP: tests/df/skip-rootfs.sh
+PASS: tests/dd/ascii.sh
+PASS: tests/dd/conv-case.sh
+PASS: tests/cp/sparse.sh
+PASS: tests/dd/fail-ftruncate-fstat.sh
+PASS: tests/dd/direct.sh
+PASS: tests/dd/no-allocate.sh
+nocache_eof.sh: skipped test: no strace program
+SKIP: tests/dd/nocache_eof.sh
+PASS: tests/dd/nocache.sh
+PASS: tests/dd/not-rewound.sh
+PASS: tests/dd/nocache_fail.sh
+PASS: tests/dd/skip-seek.pl
+PASS: tests/dd/skip-seek2.sh
+PASS: tests/cp/same-file.sh
+PASS: tests/dd/reblock.sh
+PASS: tests/dd/bytes.sh
+PASS: tests/dd/skip-seek-past-file.sh
+PASS: tests/dd/stderr.sh
+PASS: tests/dd/unblock-sync.sh
+PASS: tests/dd/unblock.pl
+PASS: tests/df/total-verify.sh
+PASS: tests/dd/sparse.sh
+2g.sh: skipped test: very expensive: disabled by default
+SKIP: tests/du/2g.sh
+PASS: tests/du/8gb.sh
+PASS: tests/du/apparent.sh
+PASS: tests/du/basic.sh
+file system at ./ or localtime mishandles big timestamps: -rw------- 1 tester tester 0 May 10  2446 ./future.7IywHz
+file system at /tmp or localtime mishandles big timestamps: -rw------- 1 tester tester 0 May 10  2446 /tmp/future.5o0Tqg
+PASS: tests/du/bigtime.sh
+PASS: tests/du/deref.sh
+PASS: tests/du/deref-args.sh
+PASS: tests/du/exclude.sh
+PASS: tests/du/files0-from.pl
+PASS: tests/du/fd-leak.sh
+PASS: tests/dd/misc.sh
+PASS: tests/du/files0-from-dir.sh
+PASS: tests/du/hard-link.sh
+PASS: tests/du/inacc-dest.sh
+PASS: tests/du/inacc-dir.sh
+PASS: tests/du/inaccessible-cwd.sh
+PASS: tests/du/long-from-unreadable.sh
+PASS: tests/du/max-depth.sh
+PASS: tests/du/inodes.sh
+move-dir-while-traversing.sh: skipped test: python inotify package not installed
+SKIP: tests/du/move-dir-while-traversing.sh
+PASS: tests/du/no-deref.sh
+PASS: tests/du/no-x.sh
+PASS: tests/du/restore-wd.sh
+PASS: tests/du/one-file-system.sh
+PASS: tests/du/slash.sh
+PASS: tests/du/trailing-slash.sh
+PASS: tests/du/two-args.sh
+PASS: tests/du/long-sloop.sh
+gnu-zero-uids.sh: skipped test: not running on GNU/Hurd
+SKIP: tests/id/gnu-zero-uids.sh
+PASS: tests/expand/mb.sh
+no-context.sh: skipped test: this system lacks SELinux support
+SKIP: tests/id/no-context.sh
+context.sh: skipped test: this system lacks SELinux support
+SKIP: tests/id/context.sh
+PASS: tests/id/uid.sh
+smack.sh: skipped test: this system lacks SMACK support
+SKIP: tests/id/smack.sh
+PASS: tests/dd/stats.sh
+PASS: tests/install/basic-1.sh
+PASS: tests/install/create-leading.sh
+PASS: tests/install/d-slashdot.sh
+PASS: tests/id/zero.sh
+install-C-selinux.sh: skipped test: this system lacks SELinux support
+SKIP: tests/install/install-C-selinux.sh
+PASS: tests/install/install-C.sh
+install-Z-selinux.sh: skipped test: this system lacks SELinux support
+SKIP: tests/install/install-Z-selinux.sh
+PASS: tests/ln/backup-1.sh
+PASS: tests/install/trap.sh
+PASS: tests/install/strip-program.sh
+PASS: tests/ln/hard-backup.sh
+PASS: tests/ln/hard-to-sym.sh
+PASS: tests/ln/relative.sh
+PASS: tests/ln/misc.sh
+PASS: tests/ln/sf-1.sh
+PASS: tests/ln/slash-decorated-nonexistent-dest.sh
+PASS: tests/ln/target-1.sh
+PASS: tests/ls/a-option.sh
+PASS: tests/ls/acl.sh
+PASS: tests/ls/birthtime.sh
+PASS: tests/ls/classify.sh
+PASS: tests/ls/color-clear-to-eol.sh
+PASS: tests/ls/block-size.sh
+PASS: tests/du/threshold.sh
+PASS: tests/ls/color-dtype-dir.sh
+PASS: tests/ls/color-term.sh
+PASS: tests/ls/color-norm.sh
+PASS: tests/ls/color-ext.sh
+PASS: tests/ls/dangle.sh
+PASS: tests/ls/dired.sh
+PASS: tests/ls/file-type.sh
+PASS: tests/ls/follow-slink.sh
+PASS: tests/ls/hex-option.sh
+PASS: tests/ls/group-dirs.sh
+PASS: tests/ls/getxattr-speedup.sh
+PASS: tests/ls/infloop.sh
+PASS: tests/ls/inode.sh
+PASS: tests/ls/m-option.sh
+PASS: tests/ls/hyperlink.sh
+PASS: tests/ls/w-option.sh
+PASS: tests/ls/no-arg.sh
+PASS: tests/ls/multihardlink.sh
+PASS: tests/ls/selinux-segfault.sh
+PASS: tests/ls/size-align.sh
+PASS: tests/ls/quote-align.sh
+PASS: tests/ls/removed-directory.sh
+PASS: tests/ls/recursive.sh
+PASS: tests/ls/readdir-mountpoint-inode.sh
+PASS: tests/ls/root-rel-symlink-color.sh
+PASS: tests/ls/rt-1.sh
+selinux.sh: skipped test: this system lacks SELinux support
+SKIP: tests/ls/selinux.sh
+PASS: tests/ls/slink-acl.sh
+PASS: tests/ls/stat-dtype.sh
+PASS: tests/ls/stat-failed.sh
+stat-free-color.sh: skipped test: no strace program
+SKIP: tests/ls/stat-free-color.sh
+stat-free-symlinks.sh: skipped test: no strace program
+SKIP: tests/ls/stat-free-symlinks.sh
+PASS: tests/ls/stat-vs-dirent.sh
+PASS: tests/ls/symlink-loop.sh
+PASS: tests/ls/symlink-quote.sh
+PASS: tests/ls/symlink-slash.sh
+PASS: tests/ls/time-style-diag.sh
+PASS: tests/ls/sort-width-option.sh
+PASS: tests/ls/x-option.sh
+PASS: tests/ls/zero-option.sh
+PASS: tests/mkdir/p-1.sh
+PASS: tests/mkdir/p-2.sh
+PASS: tests/mkdir/p-3.sh
+PASS: tests/mkdir/p-acl.sh
+PASS: tests/mkdir/p-slashdot.sh
+PASS: tests/mkdir/p-thru-slink.sh
+PASS: tests/mkdir/p-v.sh
+PASS: tests/ls/abmon-align.sh
+selinux.sh: skipped test: this system lacks SELinux support
+SKIP: tests/mkdir/selinux.sh
+PASS: tests/mkdir/parents.sh
+restorecon.sh: skipped test: this system lacks SELinux support
+SKIP: tests/mkdir/restorecon.sh
+PASS: tests/mkdir/special-1.sh
+PASS: tests/mkdir/t-slash.sh
+smack-no-root.sh: skipped test: this system lacks SMACK support
+SKIP: tests/mkdir/smack-no-root.sh
+atomic.sh: skipped test: no strace program
+SKIP: tests/mv/atomic.sh
+PASS: tests/mkdir/perm.sh
+PASS: tests/mv/acl.sh
+atomic2.sh: skipped test: no strace program
+SKIP: tests/mv/atomic2.sh
+PASS: tests/mv/backup-dir.sh
+PASS: tests/mv/backup-is-src.sh
+PASS: tests/mv/diag.sh
+PASS: tests/mv/childproof.sh
+PASS: tests/mv/dir-file.sh
+PASS: tests/mv/dir2dir.sh
+PASS: tests/mv/force.sh
+PASS: tests/mv/hard-2.sh
+PASS: tests/mv/hard-3.sh
+PASS: tests/mv/dup-source.sh
+PASS: tests/mv/hard-4.sh
+PASS: tests/mv/hard-link-1.sh
+PASS: tests/mv/i-1.pl
+i-3.sh: skipped test: requires controlling input terminal
+SKIP: tests/mv/i-3.sh
+PASS: tests/mv/i-2.sh
+PASS: tests/mv/i-4.sh
+PASS: tests/mv/i-5.sh
+PASS: tests/mv/into-self.sh
+PASS: tests/mv/i-link-no.sh
+PASS: tests/mv/into-self-2.sh
+PASS: tests/mv/into-self-4.sh
+PASS: tests/mv/into-self-3.sh
+PASS: tests/mv/mv-exchange.sh
+PASS: tests/mv/mv-n.sh
+PASS: tests/mv/mv-special-1.sh
+PASS: tests/mv/no-copy.sh
+PASS: tests/mv/no-target-dir.sh
+PASS: tests/mv/part-fail.sh
+PASS: tests/mv/part-hardlink.sh
+PASS: tests/mv/part-rename.sh
+PASS: tests/mv/partition-perm.sh
+PASS: tests/mv/perm-1.sh
+PASS: tests/mv/symlink-onto-hardlink.sh
+PASS: tests/mv/symlink-onto-hardlink-to-self.sh
+PASS: tests/mv/to-symlink.sh
+PASS: tests/mv/trailing-slash.sh
+PASS: tests/readlink/can-e.sh
+PASS: tests/mv/update.sh
+PASS: tests/readlink/can-m.sh
+PASS: tests/readlink/can-f.sh
+PASS: tests/readlink/multi.sh
+PASS: tests/readlink/rl-1.sh
+PASS: tests/rmdir/fail-perm.sh
+PASS: tests/rmdir/ignore.sh
+PASS: tests/rmdir/symlink-errors.sh
+PASS: tests/rmdir/t-slash.sh
+PASS: tests/tail/big-4gb.sh
+debug.sh: skipped test: no strace program
+PASS: tests/mv/part-symlink.sh
+SKIP: tests/tail/debug.sh
+PASS: tests/tail/flush-initial.sh
+PASS: tests/tail/follow-stdin.sh
+PASS: tests/mv/leak-fd.sh
+PASS: tests/tail/follow-name.sh
+PASS: tests/tail/assert-2.sh
+PASS: tests/tail/proc-ksyms.sh
+PASS: tests/touch/60-seconds.sh
+PASS: tests/tail/start-middle.sh
+PASS: tests/tail/pipe-f2.sh
+PASS: tests/touch/dir-1.sh
+PASS: tests/touch/dangling-symlink.sh
+PASS: tests/touch/fail-diag.sh
+PASS: tests/touch/fifo.sh
+PASS: tests/touch/no-create-missing.sh
+PASS: tests/tail/pipe-f.sh
+PASS: tests/touch/no-dereference.sh
+PASS: tests/touch/no-rights.sh
+PASS: tests/touch/not-owner.sh
+PASS: tests/touch/obsolescent.sh
+PASS: tests/touch/read-only.sh
+PASS: tests/touch/relative.sh
+basic.sh: skipped test: must be run as root
+SKIP: tests/chown/basic.sh
+from.sh: skipped test: must be run as root
+SKIP: tests/chgrp/from.sh
+PASS: tests/touch/trailing-slash.sh
+PASS: tests/unexpand/mb.sh
+cp-a-selinux.sh: skipped test: must be run as root
+special-bits.sh: skipped test: must be run as root
+SKIP: tests/cp/cp-a-selinux.sh
+preserve-gid.sh: skipped test: must be run as root
+SKIP: tests/cp/special-bits.sh
+SKIP: tests/cp/preserve-gid.sh
+cp-mv-enotsup-xattr.sh: skipped test: must be run as root
+capability.sh: skipped test: must be run as root
+SKIP: tests/cp/cp-mv-enotsup-xattr.sh
+SKIP: tests/cp/capability.sh
+cross-dev-symlink.sh: skipped test: must be run as root
+SKIP: tests/cp/cross-dev-symlink.sh
+skip-seek-past-dev.sh: skipped test: must be run as root
+SKIP: tests/dd/skip-seek-past-dev.sh
+problematic-chars.sh: skipped test: must be run as root
+sparse-extents-2.sh: skipped test: insufficient SEEK_DATA support
+over-mount-device.sh: skipped test: must be run as root
+SKIP: tests/df/problematic-chars.sh
+SKIP: tests/cp/sparse-extents-2.sh
+SKIP: tests/df/over-mount-device.sh
+bind-mount-dir-cycle.sh: skipped test: must be run as root
+SKIP: tests/du/bind-mount-dir-cycle.sh
+setgid.sh: skipped test: must be run as root
+install-C-root.sh: skipped test: must be run as root
+SKIP: tests/id/setgid.sh
+bind-mount-dir-cycle-v2.sh: skipped test: must be run as root
+SKIP: tests/install/install-C-root.sh
+SKIP: tests/du/bind-mount-dir-cycle-v2.sh
+capability.sh: skipped test: must be run as root
+nameless-uid.sh: skipped test: must be run as root
+SKIP: tests/ls/capability.sh
+no-cap.sh: skipped test: no strace program
+SKIP: tests/ls/nameless-uid.sh
+SKIP: tests/ls/no-cap.sh
+nproc-quota.sh: skipped test: must be run as root
+SKIP: tests/nproc/nproc-quota.sh
+nproc-quota-systemd.sh: skipped test: must be run as root
+SKIP: tests/nproc/nproc-quota-systemd.sh
+chroot-credentials.sh: skipped test: must be run as root
+chcon.sh: skipped test: required program(s) not built
+SKIP: tests/chroot/chroot-credentials.sh
+selinux.sh: skipped test: required program(s) not built
+SKIP: tests/chcon/chcon.sh
+SKIP: tests/misc/selinux.sh
+truncate-owned-by-other.sh: skipped test: must be run as root
+SKIP: tests/truncate/truncate-owned-by-other.sh
+writable-under-readonly.sh: skipped test: must be run as root
+SKIP: tests/mkdir/writable-under-readonly.sh
+hardlink-case.sh: skipped test: must be run as root
+smack-root.sh: skipped test: this system lacks SMACK support
+SKIP: tests/mv/hardlink-case.sh
+SKIP: tests/mkdir/smack-root.sh
+sticky-to-xpart.sh: skipped test: must be run as root
+meta-to-xpart.sh: skipped test: must be run as root
+SKIP: tests/mv/meta-to-xpart.sh
+SKIP: tests/mv/sticky-to-xpart.sh
+mv-special-2.sh: skipped test: must be run as root
+fail-2eperm.sh: skipped test: must be run as root
+SKIP: tests/mv/mv-special-2.sh
+SKIP: tests/rm/fail-2eperm.sh
+one-file-system.sh: skipped test: must be run as root
+no-give-up.sh: skipped test: must be run as root
+SKIP: tests/rm/one-file-system.sh
+read-only.sh: skipped test: must be run as root
+SKIP: tests/rm/no-give-up.sh
+SKIP: tests/rm/read-only.sh
+empty-immutable-skip.sh: skipped test: must be run as root
+SKIP: tests/rm/empty-immutable-skip.sh
+l-chunk-root.sh: skipped test: must be run as root
+SKIP: tests/split/l-chunk-root.sh
+tac-continue.sh: skipped test: must be run as root
+append-only.sh: skipped test: must be run as root
+SKIP: tests/tac/tac-continue.sh
+end-of-device.sh: skipped test: must be run as root
+SKIP: tests/tail/append-only.sh
+SKIP: tests/tail/end-of-device.sh
+now-owned-by-other.sh: skipped test: must be run as root
+t01.sh: skipped test: very expensive: disabled by default
+SKIP: tests/touch/now-owned-by-other.sh
+SKIP: tests/factor/t01.sh
+t00.sh: skipped test: very expensive: disabled by default
+SKIP: tests/factor/t00.sh
+t02.sh: skipped test: very expensive: disabled by default
+SKIP: tests/factor/t02.sh
+t04.sh: skipped test: very expensive: disabled by default
+t03.sh: skipped test: very expensive: disabled by default
+SKIP: tests/factor/t03.sh
+SKIP: tests/factor/t04.sh
+t05.sh: skipped test: very expensive: disabled by default
+SKIP: tests/factor/t05.sh
+t06.sh: skipped test: very expensive: disabled by default
+SKIP: tests/factor/t06.sh
+t07.sh: skipped test: very expensive: disabled by default
+t08.sh: skipped test: very expensive: disabled by default
+SKIP: tests/factor/t07.sh
+SKIP: tests/factor/t08.sh
+t09.sh: skipped test: very expensive: disabled by default
+SKIP: tests/factor/t09.sh
+t10.sh: skipped test: very expensive: disabled by default
+SKIP: tests/factor/t10.sh
+t11.sh: skipped test: very expensive: disabled by default
+t12.sh: skipped test: very expensive: disabled by default
+SKIP: tests/factor/t11.sh
+t13.sh: skipped test: very expensive: disabled by default
+SKIP: tests/factor/t12.sh
+SKIP: tests/factor/t13.sh
+t14.sh: skipped test: very expensive: disabled by default
+SKIP: tests/factor/t14.sh
+t15.sh: skipped test: very expensive: disabled by default
+t17.sh: skipped test: very expensive: disabled by default
+SKIP: tests/factor/t15.sh
+SKIP: tests/factor/t17.sh
+t16.sh: skipped test: very expensive: disabled by default
+SKIP: tests/factor/t16.sh
+t18.sh: skipped test: very expensive: disabled by default
+SKIP: tests/factor/t18.sh
+t19.sh: skipped test: very expensive: disabled by default
+SKIP: tests/factor/t19.sh
+t20.sh: skipped test: very expensive: disabled by default
+t22.sh: skipped test: very expensive: disabled by default
+SKIP: tests/factor/t20.sh
+t21.sh: skipped test: very expensive: disabled by default
+SKIP: tests/factor/t22.sh
+SKIP: tests/factor/t21.sh
+t23.sh: skipped test: very expensive: disabled by default
+SKIP: tests/factor/t23.sh
+t24.sh: skipped test: very expensive: disabled by default
+t26.sh: skipped test: very expensive: disabled by default
+SKIP: tests/factor/t24.sh
+t25.sh: skipped test: very expensive: disabled by default
+SKIP: tests/factor/t26.sh
+SKIP: tests/factor/t25.sh
+t27.sh: skipped test: very expensive: disabled by default
+SKIP: tests/factor/t27.sh
+t29.sh: skipped test: very expensive: disabled by default
+t28.sh: skipped test: very expensive: disabled by default
+t30.sh: skipped test: very expensive: disabled by default
+SKIP: tests/factor/t29.sh
+SKIP: tests/factor/t28.sh
+SKIP: tests/factor/t30.sh
+t31.sh: skipped test: very expensive: disabled by default
+SKIP: tests/factor/t31.sh
+t34.sh: skipped test: very expensive: disabled by default
+t33.sh: skipped test: very expensive: disabled by default
+t32.sh: skipped test: very expensive: disabled by default
+SKIP: tests/factor/t34.sh
+SKIP: tests/factor/t33.sh
+SKIP: tests/factor/t32.sh
+t35.sh: skipped test: very expensive: disabled by default
+SKIP: tests/factor/t35.sh
+t37.sh: skipped test: very expensive: disabled by default
+SKIP: tests/factor/t37.sh
+t38.sh: skipped test: very expensive: disabled by default
+t36.sh: skipped test: very expensive: disabled by default
+SKIP: tests/factor/t38.sh
+SKIP: tests/factor/t36.sh
+t39.sh: skipped test: very expensive: disabled by default
+SKIP: tests/factor/t39.sh
+t40.sh: skipped test: very expensive: disabled by default
+SKIP: tests/factor/t40.sh
+============================================================================
+Testsuite summary for GNU coreutils 9.10
+============================================================================
+# TOTAL: 711
+# PASS:  577
+# SKIP:  134
+# XFAIL: 0
+# FAIL:  0
+# XPASS: 0
+# ERROR: 0
+============================================================================
+make[4]: Leaving directory '/sources/coreutils-9.10'
+make[3]: Leaving directory '/sources/coreutils-9.10'
+make[2]: Leaving directory '/sources/coreutils-9.10'
+Making check in gnulib-tests
+make[2]: Entering directory '/sources/coreutils-9.10/gnulib-tests'
+make  check-recursive
+make[3]: Entering directory '/sources/coreutils-9.10/gnulib-tests'
+Making check in .
+make[4]: Entering directory '/sources/coreutils-9.10/gnulib-tests'
+## ---------------------------------------------------------------------- ##
+## ---------------------------- Gnulib tests ---------------------------- ##
+## Please report test failures in this directory to <bug-gnulib@gnu.org>. ##
+## ---------------------------------------------------------------------- ##
+make  test-accept test-access test-set-mode-acl test-copy-acl test-sameacls test-alignalloc test-alignasof test-alloca-opt test-areadlink test-areadlink-with-size test-areadlinkat test-areadlinkat-with-size test-argmatch test-argv-iter test-arpa_inet-h test-array-mergesort test-assert test-base32 test-base64 test-binary-io test-bind test-bitrotate test-bool test-btoc32 test-btowc test-byteswap test-c-ctype test-c-strcasecmp test-c-strcasestr test-c-strncasecmp test-c-strtod test-c-strtod1 test-c-strtod-mt test-c-strtold test-c-strtold1 test-c-strtold-mt test-c32_apply_type_test test-c32_get_type_test test-c32isalnum test-c32isalpha test-c32isblank test-c32iscntrl test-c32isdigit test-c32isgraph test-c32islower test-c32isprint test-c32ispunct test-c32isspace test-c32isupper test-c32isxdigit test-c32rtomb test-c32rtomb-w32 test-c32tolower test-c32width test-calloc-gnu test-calloc-posix test-canonicalize test-chdir test-chmod test-chown test-cloexec test-close test-closein test-connect test-cpu-supports test-crc test-creat test-md5-buffer test-md5-stream test-sha1-buffer test-sha1-stream test-sha224-buffer test-sha256-buffer test-sha256-stream test-sha3-224-buffer test-sha3-256-buffer test-sha3-384-buffer test-sha3-512-buffer test-sha384-buffer test-sha512-buffer test-sha512-stream test-sm3-buffer test-ctype-h test-di-set test-dirent-h test-dirfd test-dirname test-dup test-dup2 test-endian test-environ test-errno-h test-error test-euidaccess test-exclude test-explicit_bzero test-faccessat test-fadvise test-fchdir test-fchmodat test-fchownat test-fclose test-fcntl-h test-fcntl-safer test-fcntl test-fdatasync test-fdopen test-fdopendir test-fdutimensat test-fflush test-fflush2 test-fgetc test-file-has-acl test-filemode test-filenamecat test-filevercmp test-float-h test-fnmatch-h test-fnmatch test-fnmatch-w32 test-fopen-gnu test-fopen-safer test-fopen test-fpending test-fpurge test-fputc test-fread test-freadahead test-freading test-freadptr test-freadptr2 test-freadseek test-free test-freopen-safer test-freopen test-frexp-nolibm test-frexp test-frexpl-nolibm test-frexpl test-fseek test-fseeko test-fseeko3 test-fseeko4 test-fseterr test-fstat test-fstatat test-fsync test-ftell test-ftell3 test-ftello test-ftello3 test-ftello4 test-ftruncate test-futimens test-fwrite test-getaddrinfo test-getcwd-lgpl test-getcwd test-getdelim test-getdtablesize test-getgroups test-gethostname test-getline test-getloadavg test-getlogin test-getndelim2 test-getopt-gnu test-getopt-posix test-getprogname test-getrandom test-getrusage test-gettext-h test-gettime-res test-gettimeofday test-dynarray test-scratch-buffer test-hard-locale test-hash test-htonl test-i-ring test-iconv-h test-iconv test-ignore-value test-inet_ntop test-inet_pton test-ino-map test-intprops test-inttostr test-inttypes-h test-ioctl test-isatty test-isblank test-isinf test-isnand-nolibm test-isnanf-nolibm test-isnanl-nolibm test-iswblank test-iswctype test-iswdigit test-iswpunct test-iswxdigit test-langinfo-h test-largefile test-lchmod test-lchown test-libgmp-mpq test-libgmp-mpz test-limits-h test-link test-linkat test-listen test-locale-h test-localeconv test-localeconv-mt test-localename test-rwlock1 test-lock test-lseek test-lstat test-malloc-gnu test-malloc-posix test-malloca test-math-h test-mbrlen test-mbrlen-w32 test-mbrtoc32 test-mbrtoc32-w32 test-mbrtowc test-mbrtowc-w32 test-mbs_endswith1 test-mbs_endswith2 test-mbs_endswith3 test-mbscasecmp test-mbschr test-mbsinit test-mbslen test-mbsnlen test-mbsrtoc32s test-mbsrtowcs test-mbsstr1 test-mbsstr2 test-mbsstr3 test-mcel test-memcasecmp test-memchr test-memchr2 test-memcoll test-memrchr test-memset_explicit test-mkdir test-mkdirat test-mkfifo test-mkfifoat test-mknod test-mountlist test-nanosleep test-netdb-h test-netinet_in-h test-next-prime test-nl_langinfo1 test-nl_langinfo2 test-nl_langinfo-mt test-nstrftime test-nstrftime-DE test-nstrftime-TH test-nstrftime-IR test-nstrftime-ET test-nullptr test-once1 test-once2 test-open test-openat-safer test-openat test-parse-datetime test-pathmax test-perror test-perror2 test-physmem test-pipe test-pipe2 test-posix_memalign test-posix_spawn-open1 test-posix_spawn-open2 test-posix_spawn-inherit0 test-posix_spawn-inherit1 test-posix_spawn-script test-posix_spawn_file_actions_addclose test-posix_spawn_file_actions_adddup2 test-posix_spawn_file_actions_addopen test-posix_spawn-dup2-stdout test-posix_spawn-dup2-stdin test-posix_spawnp-script test-posix_spawnp-vfork test-posixtm test-printf-frexp test-printf-frexpl test-priv-set test-pselect test-pthread-cond test-pthread test-pthread-mutex test-pthread-mutex-type test-pthread-once1 test-pthread-once2 test-pthread-rwlock test-pthread-thread test-pthread_sigmask1 test-pthread_sigmask2 test-putenv test-qsort_r test-quotearg-simple test-raise test-random test-random-mt test-random_r test-rand-isaac test-rawmemchr test-read-file test-read test-readlink test-readlinkat test-readtokens test-readutmp test-realloc-posix test-reallocarray test-regex test-remove test-rename test-renameat test-renameatu test-rmdir test-savedir test-sched-h test-select test-select-fd test-select-stdin test-selinux-context-h test-selinux-label-h test-selinux-selinux-h test-servent test-setenv test-setlocale_null test-setlocale_null-mt-one test-setlocale_null-mt-all test-setlocale_null-unlocked test-setlocale1 test-setlocale2 test-setlocale-w32 test-setsockopt test-sig2str test-sigaction test-signal-h test-signbit test-sigprocmask test-sleep test-snprintf test-sockets test-spawn-h test-stat test-stat-time test-stdbit-h test-stdc_bit_width test-stdc_leading_zeros test-stdc_trailing_zeros test-stdckdint-h test-stdcountof-h test-stddef-h test-stdint-h test-stdio-h test-stdlib-h test-str_endswith test-str_startswith test-strchrnul test-strerror test-strerror_r test-string-h test-strncpy test-strnlen test-strsignal test-strtod test-strtod1 test-strtoimax test-strtold test-strtold1 test-strtoll test-strtoull test-strtoumax test-symlink test-symlinkat test-sys_ioctl-h test-sys_random-h test-sys_resource-h test-sys_select-h test-sys_socket-h test-sys_stat-h test-sys_time-h test-sys_types-h test-sys_uio-h test-sys_utsname-h test-sys_wait-h test-termios-h test-thread_self test-thread_create test-time-h test-time test-gmtime_r test-gmtime_r-mt test-localtime_r test-localtime_r-mt test-timespec test-tls test-trunc1 test-trunc2 test-truncl test-u64 test-uchar-h test-uname test-unicase-h test-uc_tolower test-unicodeio test-unictype-h test-ctype_alnum test-ctype_alpha test-ctype_blank test-ctype_cntrl test-ctype_digit test-ctype_graph test-ctype_lower test-ctype_print test-ctype_punct test-ctype_space test-ctype_upper test-ctype_xdigit test-uninorm-h test-unistd-h test-dup-safer test-unistr-h test-u32-chr test-u32-cpy test-u32-pcpy test-u32-set test-u32-strcat test-u32-strlen test-u8-mbtoucr test-u8-uctomb test-uniwidth-h test-uc_width test-uc_width2 test-unlink test-unlinkat test-unsetenv test-userspec test-usleep test-utime-h test-utime test-utimens test-utimensat test-vasnprintf test-vasprintf-posix test-vasprintf test-verify test-verror test-version-etc test-vfzprintf-posix test-vzprintf-posix test-wchar-h test-wcrtomb test-wcrtomb-w32 test-wctype-h test-wctype test-wcwidth test-windows-mutex-type test-windows-recmutex-type test-windows-timedmutex-type test-windows-timedrecmutex-type test-wmemchr test-write test-xalloc-die test-xmemdup0 test-xfprintf-posix test-xprintf-posix test-xstrtod test-xstrtoimax test-xstrtol test-xstrtoul test-xstrtold test-xstrtoumax test-xvasprintf test-year2038 test-yesno libtests.a
+make[5]: Entering directory '/sources/coreutils-9.10/gnulib-tests'
+  CC       test-accept.o
+  CC       test-access.o
+  CC       test-set-mode-acl.o
+  CC       test-copy-acl.o
+  CC       test-sameacls.o
+  CC       test-alignalloc.o
+  CC       test-alignasof.o
+  CC       test-alloca-opt.o
+  CC       test-areadlink.o
+  CC       test-areadlink-with-size.o
+  CC       test-areadlinkat.o
+  CC       test-areadlinkat-with-size.o
+  CC       test-argmatch.o
+  CC       test-argv-iter.o
+  CC       test-arpa_inet-h.o
+  CC       test-array-mergesort.o
+  CC       test-assert.o
+  CC       test-base32.o
+  CC       test-base64.o
+  CC       test-binary-io.o
+  CC       test-bind.o
+  CC       test-bitrotate.o
+  CC       test-bool.o
+  CC       test-btoc32.o
+  CC       test-btowc.o
+  CC       test-byteswap.o
+  CC       test-c-ctype.o
+  CC       test-c-strcasecmp.o
+  CC       test-c-strcasestr.o
+  CC       test-c-strncasecmp.o
+  CC       test-c-strtod.o
+  CC       test-c-strtod1.o
+  CC       test-c-strtod-mt.o
+  CC       test-c-strtold.o
+  CC       test-c-strtold1.o
+  CC       test-c-strtold-mt.o
+  CC       test-c32_apply_type_test.o
+  CC       test-c32_get_type_test.o
+  CC       test-c32isalnum.o
+  CC       test-c32isalpha.o
+  CC       test-c32isblank.o
+  CC       test-c32iscntrl.o
+  CC       test-c32isdigit.o
+  CC       test-c32isgraph.o
+  CC       test-c32islower.o
+  CC       test-c32isprint.o
+  CC       test-c32ispunct.o
+  CC       test-c32isspace.o
+  CC       test-c32isupper.o
+  CC       test-c32isxdigit.o
+  CC       test-c32rtomb.o
+  CC       test-c32rtomb-w32.o
+  CC       test-c32tolower.o
+  CC       test-c32width.o
+  CC       test-calloc-gnu.o
+  CC       test-calloc-posix.o
+  CC       test-canonicalize.o
+  CC       test-chdir.o
+  CC       test-chmod.o
+  CC       test-chown.o
+  CC       test-cloexec.o
+  CC       test-close.o
+  CC       test-closein.o
+  CC       test-connect.o
+  CC       test-cpu-supports.o
+  CC       test-crc.o
+  CC       randomb.o
+  CC       test-creat.o
+  CC       test-md5-buffer.o
+  CC       test-md5-stream.o
+  CC       test-sha1-buffer.o
+  CC       test-sha1-stream.o
+  CC       test-sha224-buffer.o
+  CC       test-sha256-buffer.o
+  CC       test-sha256-stream.o
+  CC       test-sha3-224-buffer.o
+  CC       test-sha3-256-buffer.o
+  CC       test-sha3-384-buffer.o
+  CC       test-sha3-512-buffer.o
+  CC       test-sha384-buffer.o
+  CC       test-sha512-buffer.o
+  CC       test-sha512-stream.o
+  CC       test-sm3-buffer.o
+  CC       test-ctype-h.o
+  CC       test-di-set.o
+  CC       test-dirent-h.o
+  CC       test-dirfd.o
+  CC       test-dirname.o
+  CC       test-dup.o
+  CC       test-dup2.o
+  CC       test-endian.o
+  CC       test-environ.o
+  CC       test-errno-h.o
+  CC       test-error.o
+  CC       test-euidaccess.o
+  CC       test-exclude.o
+  CC       test-explicit_bzero.o
+  CC       test-faccessat.o
+  CC       test-fadvise.o
+  CC       test-fchdir.o
+  CC       test-fchmodat.o
+  CC       test-fchownat.o
+  CC       test-fclose.o
+  CC       test-fcntl-h.o
+  CC       test-fcntl-safer.o
+  CC       test-fcntl.o
+  CC       test-fdatasync.o
+  CC       test-fdopen.o
+  CC       test-fdopendir.o
+  CC       test-fdutimensat.o
+  CC       test-fflush.o
+  CC       test-fflush2.o
+  CC       test-fgetc.o
+  CC       test-file-has-acl.o
+  CC       test-filemode.o
+  CC       test-filenamecat.o
+  CC       test-filevercmp.o
+  CC       test-float-h.o
+  CC       test-fnmatch-h.o
+  CC       test-fnmatch.o
+  CC       test-fnmatch-w32.o
+  CC       test-fopen-gnu.o
+  CC       test-fopen-safer.o
+  CC       test-fopen.o
+  CC       test-fpending.o
+  CC       test-fpurge.o
+  CC       test-fputc.o
+  CC       test-fread.o
+  CC       test-freadahead.o
+  CC       test-freading.o
+  CC       test-freadptr.o
+  CC       test-freadptr2.o
+  CC       test-freadseek.o
+  CC       test-free.o
+  CC       test-freopen-safer.o
+  CC       test-freopen.o
+  CC       test-frexp.o
+  CC       randomd.o
+  CC       test-frexpl.o
+  CC       randoml.o
+  CC       test-fseek.o
+  CC       test-fseeko.o
+  CC       test-fseeko3.o
+  CC       test-fseeko4.o
+  CC       test-fseterr.o
+  CC       test-fstat.o
+  CC       test-fstatat.o
+  CC       test-fsync.o
+  CC       test-ftell.o
+  CC       test-ftell3.o
+  CC       test-ftello.o
+  CC       test-ftello3.o
+  CC       test-ftello4.o
+  CC       test-ftruncate.o
+  CC       test-futimens.o
+  CC       test-fwrite.o
+  CC       test-getaddrinfo.o
+  CC       test-getcwd-lgpl.o
+  CC       test-getcwd.o
+  CC       test-getdelim.o
+  CC       test-getdtablesize.o
+  CC       test-getgroups.o
+  CC       test-gethostname.o
+  CC       test-getline.o
+  CC       test-getloadavg.o
+  CC       test-getlogin.o
+  CC       test-getndelim2.o
+  CC       test-getopt-gnu.o
+  CC       test-getopt-posix.o
+  CC       test-getprogname.o
+  CC       test-getrandom.o
+  CC       test-getrusage.o
+  CC       test-gettext-h.o
+  CC       test-gettime-res.o
+  CC       test-gettimeofday.o
+  CC       test-dynarray.o
+  CC       test-scratch-buffer.o
+  CC       test-hard-locale.o
+  CC       test-hash.o
+  CC       test-htonl.o
+  CC       test-i-ring.o
+  CC       test-iconv-h.o
+  CC       test-iconv.o
+  CC       test-ignore-value.o
+  CC       test-inet_ntop.o
+  CC       test-inet_pton.o
+  CC       test-ino-map.o
+  CC       test-intprops.o
+  CC       test-inttostr.o
+  CC       test-inttypes-h.o
+  CC       test-ioctl.o
+  CC       test-isatty.o
+  CC       test-isblank.o
+  CC       test-isinf.o
+  CC       test-isnand-nolibm.o
+  CC       test-isnanf-nolibm.o
+  CC       test-isnanl-nolibm.o
+  CC       test-iswblank.o
+  CC       test-iswctype.o
+  CC       test-iswdigit.o
+  CC       test-iswpunct.o
+  CC       test-iswxdigit.o
+  CC       test-langinfo-h.o
+  CC       test-largefile.o
+  CC       test-lchmod.o
+  CC       test-lchown.o
+  CC       test-libgmp-mpq.o
+  CC       test-libgmp-mpz.o
+  CC       test-limits-h.o
+  CC       test-link.o
+  CC       test-linkat.o
+  CC       test-listen.o
+  CC       test-locale-h.o
+  CC       test-localeconv.o
+  CC       test-localeconv-mt.o
+  CC       test-localename.o
+  CC       test-rwlock1.o
+  CC       test_lock-test-lock.o
+  CC       test-lseek.o
+  CC       test-lstat.o
+  CC       test-malloc-gnu.o
+  CC       test-malloc-posix.o
+  CC       test-malloca.o
+  CC       test-math-h.o
+  CC       test-mbrlen.o
+  CC       test-mbrlen-w32.o
+  CC       test-mbrtoc32.o
+  CC       test-mbrtoc32-w32.o
+  CC       test-mbrtowc.o
+  CC       test-mbrtowc-w32.o
+  CC       test-mbs_endswith1.o
+  CC       test-mbs_endswith2.o
+  CC       test-mbs_endswith3.o
+  CC       test-mbscasecmp.o
+  CC       test-mbschr.o
+  CC       test-mbsinit.o
+  CC       test-mbslen.o
+  CC       test-mbsnlen.o
+  CC       test-mbsrtoc32s.o
+  CC       test-mbsrtowcs.o
+  CC       test-mbsstr1.o
+  CC       test-mbsstr2.o
+  CC       test-mbsstr3.o
+  CC       test-mcel.o
+  CC       test-memcasecmp.o
+  CC       test-memchr.o
+  CC       test-memchr2.o
+  CC       test-memcoll.o
+  CC       test-memrchr.o
+  CC       test-memset_explicit.o
+  CC       test-mkdir.o
+  CC       test-mkdirat.o
+  CC       test-mkfifo.o
+  CC       test-mkfifoat.o
+  CC       test-mknod.o
+  CC       test-mountlist.o
+  CC       test-nanosleep.o
+  CC       test-netdb-h.o
+  CC       test-netinet_in-h.o
+  CC       test-next-prime.o
+  CC       test-nl_langinfo1.o
+  CC       test-nl_langinfo2.o
+  CC       test-nl_langinfo-mt.o
+  CC       test-nstrftime.o
+  CC       test-nstrftime-DE.o
+  CC       test-nstrftime-TH.o
+  CC       test-nstrftime-IR.o
+  CC       test-nstrftime-ET.o
+  CC       test-nullptr.o
+  CC       test-once.o
+  CC       test-open.o
+  CC       test-openat-safer.o
+  CC       test-openat.o
+  CC       test-parse-datetime.o
+  CC       test-pathmax.o
+  CC       test-perror.o
+  CC       test-perror2.o
+  CC       test-physmem.o
+  CC       test-pipe.o
+  CC       test-pipe2.o
+  CC       test-posix_memalign.o
+  CC       test-posix_spawn-open1.o
+  CC       test-posix_spawn-open2.o
+  CC       test-posix_spawn-inherit0.o
+  CC       test-posix_spawn-inherit1.o
+  CC       test_posix_spawn_script-test-posix_spawn-script.o
+  CC       test-posix_spawn_file_actions_addclose.o
+  CC       test-posix_spawn_file_actions_adddup2.o
+  CC       test-posix_spawn_file_actions_addopen.o
+  CC       test-posix_spawn-dup2-stdout.o
+  CC       test-posix_spawn-dup2-stdin.o
+  CC       test_posix_spawnp_script-test-posix_spawnp-script.o
+  CC       test-posix_spawnp-vfork.o
+  CC       test-posixtm.o
+  CC       test-printf-frexp.o
+  CC       test-printf-frexpl.o
+  CC       test-priv-set.o
+  CC       test-pselect.o
+  CC       test-pthread-cond.o
+  CC       test-pthread.o
+  CC       test-pthread-mutex.o
+  CC       test-pthread-mutex-type.o
+  CC       test-pthread-once1.o
+  CC       test-pthread-once2.o
+  CC       test-pthread-rwlock.o
+  CC       test-pthread-thread.o
+  CC       test-pthread_sigmask1.o
+  CC       test-pthread_sigmask2.o
+  CC       test-putenv.o
+  CC       test-qsort_r.o
+  CC       test-quotearg-simple.o
+  CC       test-raise.o
+  CC       test-random.o
+  CC       test-random-mt.o
+  CC       test-random_r.o
+  CC       test-rand-isaac.o
+  CC       test-rawmemchr.o
+  CC       test-read-file.o
+  CC       test-read.o
+  CC       test-readlink.o
+  CC       test-readlinkat.o
+  CC       test-readtokens.o
+  CC       test-readutmp.o
+  CC       test-realloc-posix.o
+  CC       test-reallocarray.o
+  CC       test-regex.o
+  CC       test-remove.o
+  CC       test-rename.o
+  CC       test-renameat.o
+  CC       test-renameatu.o
+  CC       test-rmdir.o
+  CC       test-savedir.o
+  CC       test-sched-h.o
+  CC       test-select.o
+  CC       test-select-fd.o
+  CC       test-select-stdin.o
+  CC       test-selinux-context-h.o
+  CC       test-selinux-label-h.o
+  CC       test-selinux-selinux-h.o
+  CC       test-servent.o
+  CC       test-setenv.o
+  CC       test-setlocale_null.o
+  CC       test-setlocale_null-mt-one.o
+  CC       test-setlocale_null-mt-all.o
+  CC       test-setlocale_null-unlocked.o
+  CC       test-setlocale1.o
+  CC       test-setlocale2.o
+  CC       test-setlocale-w32.o
+  CC       test-setsockopt.o
+  CC       test-sig2str.o
+  CC       test-sigaction.o
+  CC       test-signal-h.o
+  CC       test-signbit.o
+  CC       test-sigprocmask.o
+  CC       test-sleep.o
+  CC       test-snprintf.o
+  CC       test-sockets.o
+  CC       test-stat.o
+  CC       test-spawn-h.o
+  CC       test-stat-time.o
+  CC       test-stdbit-h.o
+  CC       test-stdckdint-h.o
+  CC       test-stdcountof-h.o
+  CC       test-stddef-h.o
+  CC       test-stdint-h.o
+  CC       test-stdio-h.o
+  CC       test-stdlib-h.o
+  CC       test-str_endswith.o
+  CC       test-str_startswith.o
+  CC       test-strchrnul.o
+  CC       test-strerror.o
+  CC       test-strerror_r.o
+  CC       test-string-h.o
+  CC       test-strncpy.o
+  CC       test-strnlen.o
+  CC       test-strsignal.o
+  CC       test-strtod.o
+  CC       test-strtod1.o
+  CC       test-strtoimax.o
+  CC       test-strtold.o
+  CC       test-strtold1.o
+  CC       test-strtoll.o
+  CC       test-strtoull.o
+  CC       test-strtoumax.o
+  CC       test-symlink.o
+  CC       test-symlinkat.o
+  CC       test-sys_ioctl-h.o
+  CC       test-sys_random-h.o
+  CC       test-sys_resource-h.o
+  CC       test-sys_select-h.o
+  CC       test-sys_socket-h.o
+  CC       test-sys_stat-h.o
+  CC       test-sys_time-h.o
+  CC       test-sys_types-h.o
+  CC       test-sys_uio-h.o
+  CC       test-sys_utsname-h.o
+  CC       test-sys_wait-h.o
+  CC       test-termios-h.o
+  CC       test-thread_self.o
+  CC       test-thread_create.o
+  CC       test-time-h.o
+  CC       test-time.o
+  CC       test-gmtime_r.o
+  CC       test-gmtime_r-mt.o
+  CC       test-localtime_r.o
+  CC       test-localtime_r-mt.o
+  CC       test-timespec.o
+  CC       test_tls-test-tls.o
+  CC       test-trunc1.o
+  CC       test-trunc2.o
+  CC       test-truncl.o
+  CC       test-u64.o
+  CC       test-uchar-h.o
+  CC       test-uname.o
+  CC       test-unicodeio.o
+  CC       test-unistd-h.o
+  CC       test-dup-safer.o
+  CC       unistr/test-unistr-h.o
+  CC       unistr/test-u32-chr.o
+  CC       unistr/test-u32-cpy.o
+  CC       unistr/test-u32-pcpy.o
+  CC       unistr/test-u32-set.o
+  CC       unistr/test-u32-strcat.o
+  CC       unistr/test-u32-strlen.o
+  CC       unistr/test-u8-mbtoucr.o
+  CC       unistr/test-u8-uctomb.o
+  CC       test-unlink.o
+  CC       test-unlinkat.o
+  CC       test-unsetenv.o
+  CC       test-userspec.o
+  CC       test-usleep.o
+  CC       test-utime-h.o
+  CC       test-utime.o
+  CC       test-utimens.o
+  CC       test-utimensat.o
+  CC       test-vasnprintf.o
+  CC       test-vasprintf-posix.o
+  CC       test-vasprintf.o
+  CC       test-verify.o
+  CC       test-verror.o
+  CC       test-version-etc.o
+  CC       test-vfzprintf-posix.o
+  CC       test-vzprintf-posix.o
+  CC       test-wchar-h.o
+  CC       test-wcrtomb.o
+  CC       test-wcrtomb-w32.o
+  CC       test-wctype-h.o
+  CC       test-wctype.o
+  CC       test-wcwidth.o
+  CC       test-windows-mutex-type.o
+  CC       test-windows-recmutex-type.o
+  CC       test-windows-timedmutex-type.o
+  CC       test-windows-timedrecmutex-type.o
+  CC       test-wmemchr.o
+  CC       test-write.o
+  CC       test-xalloc-die.o
+  CC       test-xmemdup0.o
+  CC       test-xfprintf-posix.o
+  CC       test-xprintf-posix.o
+  CC       test-xstrtod.o
+  CC       test-xstrtoimax.o
+  CC       test-xstrtol.o
+  CC       test-xstrtoul.o
+  CC       test-xstrtold.o
+  CC       test-xstrtoumax.o
+  CC       test_xvasprintf-test-xvasprintf.o
+  CC       test-year2038.o
+make[5]: 'libtests.a' is up to date.
+  CC       test-yesno.o
+  CCLD     test-accept
+  CCLD     test-access
+  CCLD     test-set-mode-acl
+  CCLD     test-copy-acl
+  CCLD     test-sameacls
+  CCLD     test-alignalloc
+  CCLD     test-alignasof
+  CCLD     test-alloca-opt
+  CCLD     test-areadlink
+  CCLD     test-areadlink-with-size
+  CCLD     test-areadlinkat
+  CCLD     test-areadlinkat-with-size
+  CCLD     test-argmatch
+  CCLD     test-argv-iter
+  CCLD     test-arpa_inet-h
+  CCLD     test-array-mergesort
+  CCLD     test-assert
+  CCLD     test-base32
+  CCLD     test-base64
+  CCLD     test-binary-io
+  CCLD     test-bind
+  CCLD     test-bitrotate
+  CCLD     test-bool
+  CCLD     test-btoc32
+  CCLD     test-btowc
+  CCLD     test-byteswap
+  CCLD     test-c-ctype
+  CCLD     test-c-strcasecmp
+  CCLD     test-c-strcasestr
+  CCLD     test-c-strncasecmp
+  CCLD     test-c-strtod
+  CCLD     test-c-strtod1
+  CCLD     test-c-strtod-mt
+  CCLD     test-c-strtold
+  CCLD     test-c-strtold1
+  CCLD     test-c-strtold-mt
+  CCLD     test-c32_apply_type_test
+  CCLD     test-c32_get_type_test
+  CCLD     test-c32isalnum
+  CCLD     test-c32isalpha
+  CCLD     test-c32isblank
+  CCLD     test-c32iscntrl
+  CCLD     test-c32isdigit
+  CCLD     test-c32isgraph
+  CCLD     test-c32islower
+  CCLD     test-c32isprint
+  CCLD     test-c32ispunct
+  CCLD     test-c32isspace
+  CCLD     test-c32isupper
+  CCLD     test-c32isxdigit
+  CCLD     test-c32rtomb
+  CCLD     test-c32rtomb-w32
+  CCLD     test-c32tolower
+  CCLD     test-c32width
+  CCLD     test-calloc-gnu
+  CCLD     test-calloc-posix
+  CCLD     test-canonicalize
+  CCLD     test-chdir
+  CCLD     test-chmod
+  CCLD     test-chown
+  CCLD     test-cloexec
+  CCLD     test-close
+  CCLD     test-closein
+  CCLD     test-connect
+  CCLD     test-cpu-supports
+  CCLD     test-crc
+  CCLD     test-creat
+  CCLD     test-md5-buffer
+  CCLD     test-md5-stream
+  CCLD     test-sha1-buffer
+  CCLD     test-sha1-stream
+  CCLD     test-sha224-buffer
+  CCLD     test-sha256-buffer
+  CCLD     test-sha256-stream
+  CCLD     test-sha3-224-buffer
+  CCLD     test-sha3-256-buffer
+  CCLD     test-sha3-384-buffer
+  CCLD     test-sha3-512-buffer
+  CCLD     test-sha384-buffer
+  CCLD     test-sha512-buffer
+  CCLD     test-sha512-stream
+  CCLD     test-sm3-buffer
+  CCLD     test-ctype-h
+  CCLD     test-di-set
+  CCLD     test-dirent-h
+  CCLD     test-dirfd
+  CCLD     test-dirname
+  CCLD     test-dup
+  CCLD     test-dup2
+  CCLD     test-endian
+  CCLD     test-environ
+  CCLD     test-errno-h
+  CCLD     test-error
+  CCLD     test-euidaccess
+  CCLD     test-exclude
+  CCLD     test-explicit_bzero
+  CCLD     test-faccessat
+  CCLD     test-fadvise
+  CCLD     test-fchdir
+  CCLD     test-fchmodat
+  CCLD     test-fchownat
+  CCLD     test-fclose
+  CCLD     test-fcntl-h
+  CCLD     test-fcntl
+  CCLD     test-fcntl-safer
+  CCLD     test-fdatasync
+  CCLD     test-fdopen
+  CCLD     test-fdopendir
+  CCLD     test-fdutimensat
+  CCLD     test-fflush
+  CCLD     test-fflush2
+  CCLD     test-fgetc
+  CCLD     test-file-has-acl
+  CCLD     test-filemode
+  CCLD     test-filenamecat
+  CCLD     test-filevercmp
+  CCLD     test-float-h
+  CCLD     test-fnmatch-h
+  CCLD     test-fnmatch
+  CCLD     test-fnmatch-w32
+  CCLD     test-fopen-gnu
+  CCLD     test-fopen-safer
+  CCLD     test-fopen
+  CCLD     test-fpending
+  CCLD     test-fpurge
+  CCLD     test-fputc
+  CCLD     test-fread
+  CCLD     test-freadahead
+  CCLD     test-freading
+  CCLD     test-freadptr
+  CCLD     test-freadptr2
+  CCLD     test-freadseek
+  CCLD     test-free
+  CCLD     test-freopen-safer
+  CCLD     test-freopen
+  CCLD     test-frexp-nolibm
+  CCLD     test-frexp
+  CCLD     test-frexpl-nolibm
+  CCLD     test-frexpl
+  CCLD     test-fseek
+  CCLD     test-fseeko
+  CCLD     test-fseeko3
+  CCLD     test-fseeko4
+  CCLD     test-fseterr
+  CCLD     test-fstat
+  CCLD     test-fstatat
+  CCLD     test-fsync
+  CCLD     test-ftell
+  CCLD     test-ftell3
+  CCLD     test-ftello
+  CCLD     test-ftello3
+  CCLD     test-ftello4
+  CCLD     test-ftruncate
+  CCLD     test-futimens
+  CCLD     test-fwrite
+  CCLD     test-getaddrinfo
+  CCLD     test-getcwd-lgpl
+  CCLD     test-getcwd
+  CCLD     test-getdelim
+  CCLD     test-getgroups
+  CCLD     test-getdtablesize
+  CCLD     test-gethostname
+  CCLD     test-getline
+  CCLD     test-getloadavg
+  CCLD     test-getlogin
+  CCLD     test-getndelim2
+  CCLD     test-getopt-gnu
+  CCLD     test-getopt-posix
+  CCLD     test-getprogname
+  CCLD     test-getrandom
+  CCLD     test-getrusage
+  CCLD     test-gettext-h
+  CCLD     test-gettime-res
+  CCLD     test-gettimeofday
+  CCLD     test-dynarray
+  CCLD     test-scratch-buffer
+  CCLD     test-hard-locale
+  CCLD     test-hash
+  CCLD     test-htonl
+  CCLD     test-i-ring
+  CCLD     test-iconv-h
+  CCLD     test-iconv
+  CCLD     test-ignore-value
+  CCLD     test-inet_ntop
+  CCLD     test-inet_pton
+  CCLD     test-ino-map
+  CCLD     test-intprops
+  CCLD     test-inttostr
+  CCLD     test-inttypes-h
+  CCLD     test-ioctl
+  CCLD     test-isatty
+  CCLD     test-isblank
+  CCLD     test-isinf
+  CCLD     test-isnand-nolibm
+  CCLD     test-isnanf-nolibm
+  CCLD     test-isnanl-nolibm
+  CCLD     test-iswblank
+  CCLD     test-iswctype
+  CCLD     test-iswdigit
+  CCLD     test-iswpunct
+  CCLD     test-iswxdigit
+  CCLD     test-langinfo-h
+  CCLD     test-largefile
+  CCLD     test-lchmod
+  CCLD     test-lchown
+  CCLD     test-libgmp-mpq
+  CCLD     test-libgmp-mpz
+  CCLD     test-limits-h
+  CCLD     test-link
+  CCLD     test-linkat
+  CCLD     test-listen
+  CCLD     test-locale-h
+  CCLD     test-localeconv
+  CCLD     test-localeconv-mt
+  CCLD     test-localename
+  CCLD     test-rwlock1
+  CCLD     test-lock
+  CCLD     test-lseek
+  CCLD     test-lstat
+  CCLD     test-malloc-gnu
+  CCLD     test-malloc-posix
+  CCLD     test-malloca
+  CCLD     test-math-h
+  CCLD     test-mbrlen
+  CCLD     test-mbrlen-w32
+  CCLD     test-mbrtoc32
+  CCLD     test-mbrtoc32-w32
+  CCLD     test-mbrtowc
+  CCLD     test-mbrtowc-w32
+  CCLD     test-mbs_endswith1
+  CCLD     test-mbs_endswith2
+  CCLD     test-mbs_endswith3
+  CCLD     test-mbscasecmp
+  CCLD     test-mbschr
+  CCLD     test-mbslen
+  CCLD     test-mbsinit
+  CCLD     test-mbsnlen
+  CCLD     test-mbsrtoc32s
+  CCLD     test-mbsrtowcs
+  CCLD     test-mbsstr1
+  CCLD     test-mbsstr2
+  CCLD     test-mbsstr3
+  CCLD     test-mcel
+  CCLD     test-memcasecmp
+  CCLD     test-memchr
+  CCLD     test-memchr2
+  CCLD     test-memcoll
+  CCLD     test-memrchr
+  CCLD     test-memset_explicit
+  CCLD     test-mkdir
+  CCLD     test-mkdirat
+  CCLD     test-mkfifo
+  CCLD     test-mkfifoat
+  CCLD     test-mknod
+  CCLD     test-mountlist
+  CCLD     test-nanosleep
+  CCLD     test-netdb-h
+  CCLD     test-netinet_in-h
+  CCLD     test-next-prime
+  CCLD     test-nl_langinfo1
+  CCLD     test-nl_langinfo2
+  CCLD     test-nl_langinfo-mt
+  CCLD     test-nstrftime
+  CCLD     test-nstrftime-DE
+  CCLD     test-nstrftime-IR
+  CCLD     test-nstrftime-TH
+  CCLD     test-nstrftime-ET
+  CCLD     test-nullptr
+  CCLD     test-once1
+  CCLD     test-once2
+  CCLD     test-open
+  CCLD     test-openat-safer
+  CCLD     test-openat
+  CCLD     test-parse-datetime
+  CCLD     test-pathmax
+  CCLD     test-perror
+  CCLD     test-perror2
+  CCLD     test-physmem
+  CCLD     test-pipe
+  CCLD     test-pipe2
+  CCLD     test-posix_memalign
+  CCLD     test-posix_spawn-open1
+  CCLD     test-posix_spawn-open2
+  CCLD     test-posix_spawn-inherit0
+  CCLD     test-posix_spawn-inherit1
+  CCLD     test-posix_spawn-script
+  CCLD     test-posix_spawn_file_actions_addclose
+  CCLD     test-posix_spawn_file_actions_adddup2
+  CCLD     test-posix_spawn_file_actions_addopen
+  CCLD     test-posix_spawn-dup2-stdout
+  CCLD     test-posix_spawn-dup2-stdin
+  CCLD     test-posix_spawnp-script
+  CCLD     test-posix_spawnp-vfork
+  CCLD     test-posixtm
+  CCLD     test-printf-frexp
+  CCLD     test-printf-frexpl
+  CCLD     test-priv-set
+  CCLD     test-pselect
+  CCLD     test-pthread-cond
+  CCLD     test-pthread
+  CCLD     test-pthread-mutex
+  CCLD     test-pthread-mutex-type
+  CCLD     test-pthread-once1
+  CCLD     test-pthread-once2
+  CCLD     test-pthread-rwlock
+  CCLD     test-pthread-thread
+  CCLD     test-pthread_sigmask1
+  CCLD     test-pthread_sigmask2
+  CCLD     test-putenv
+  CCLD     test-qsort_r
+  CCLD     test-quotearg-simple
+  CCLD     test-raise
+  CCLD     test-random
+  CCLD     test-random-mt
+  CCLD     test-random_r
+  CCLD     test-rand-isaac
+  CCLD     test-rawmemchr
+  CCLD     test-read-file
+  CCLD     test-read
+  CCLD     test-readlink
+  CCLD     test-readlinkat
+  CCLD     test-readtokens
+  CCLD     test-readutmp
+  CCLD     test-realloc-posix
+  CCLD     test-reallocarray
+  CCLD     test-regex
+  CCLD     test-remove
+  CCLD     test-rename
+  CCLD     test-renameat
+  CCLD     test-renameatu
+  CCLD     test-rmdir
+  CCLD     test-savedir
+  CCLD     test-sched-h
+  CCLD     test-select
+  CCLD     test-select-fd
+  CCLD     test-select-stdin
+  CCLD     test-selinux-context-h
+  CCLD     test-selinux-label-h
+  CCLD     test-selinux-selinux-h
+  CCLD     test-servent
+  CCLD     test-setenv
+  CCLD     test-setlocale_null
+  CCLD     test-setlocale_null-mt-one
+  CCLD     test-setlocale_null-mt-all
+  CCLD     test-setlocale_null-unlocked
+  CCLD     test-setlocale1
+  CCLD     test-setlocale2
+  CCLD     test-setlocale-w32
+  CCLD     test-setsockopt
+  CCLD     test-sig2str
+  CCLD     test-sigaction
+  CCLD     test-signal-h
+  CCLD     test-signbit
+  CCLD     test-sigprocmask
+  CCLD     test-sleep
+  CCLD     test-snprintf
+  CCLD     test-sockets
+  CCLD     test-spawn-h
+  CCLD     test-stat
+  CCLD     test-stat-time
+  CC       from-glibc/test_stdc_bit_width-tst-stdc_bit_width.o
+  CCLD     test-stdbit-h
+  CC       from-glibc/test_stdc_leading_zeros-tst-stdc_leading_zeros.o
+  CC       from-glibc/test_stdc_trailing_zeros-tst-stdc_trailing_zeros.o
+  CCLD     test-stdckdint-h
+  CCLD     test-stdcountof-h
+  CCLD     test-stddef-h
+  CCLD     test-stdint-h
+  CCLD     test-stdio-h
+  CCLD     test-stdlib-h
+  CCLD     test-str_endswith
+  CCLD     test-str_startswith
+  CCLD     test-strchrnul
+  CCLD     test-strerror
+  CCLD     test-strerror_r
+  CCLD     test-string-h
+  CCLD     test-strncpy
+  CCLD     test-strnlen
+  CCLD     test-strsignal
+  CCLD     test-strtod
+  CCLD     test-strtoimax
+  CCLD     test-strtod1
+  CCLD     test-strtold
+  CCLD     test-strtold1
+  CCLD     test-strtoll
+  CCLD     test-strtoull
+  CCLD     test-strtoumax
+  CCLD     test-symlink
+  CCLD     test-symlinkat
+  CCLD     test-sys_ioctl-h
+  CCLD     test-sys_random-h
+  CCLD     test-sys_resource-h
+  CCLD     test-sys_select-h
+  CCLD     test-sys_socket-h
+  CCLD     test-sys_stat-h
+  CCLD     test-sys_time-h
+  CCLD     test-sys_types-h
+  CCLD     test-sys_uio-h
+  CCLD     test-sys_utsname-h
+  CCLD     test-sys_wait-h
+  CCLD     test-termios-h
+  CCLD     test-thread_self
+  CCLD     test-thread_create
+  CCLD     test-time-h
+  CCLD     test-time
+  CCLD     test-gmtime_r
+  CCLD     test-gmtime_r-mt
+  CCLD     test-localtime_r
+  CCLD     test-localtime_r-mt
+  CCLD     test-timespec
+  CCLD     test-tls
+  CCLD     test-trunc1
+  CCLD     test-trunc2
+  CCLD     test-truncl
+  CCLD     test-u64
+  CCLD     test-uchar-h
+  CCLD     test-uname
+  CC       unicase/test-unicase-h.o
+  CC       unicase/test-uc_tolower.o
+  CCLD     test-unicodeio
+  CC       unictype/test-unictype-h.o
+  CC       unictype/test-ctype_alnum.o
+  CC       unictype/test-ctype_alpha.o
+  CC       unictype/test-ctype_blank.o
+  CC       unictype/test-ctype_cntrl.o
+  CC       unictype/test-ctype_digit.o
+  CC       unictype/test-ctype_graph.o
+  CC       unictype/test-ctype_lower.o
+  CC       unictype/test-ctype_print.o
+  CC       unictype/test-ctype_punct.o
+  CC       unictype/test-ctype_space.o
+  CC       unictype/test-ctype_upper.o
+  CC       unictype/test-ctype_xdigit.o
+  CC       uninorm/test-uninorm-h.o
+  CCLD     test-unistd-h
+  CCLD     test-dup-safer
+  CCLD     test-unistr-h
+  CCLD     test-u32-chr
+  CCLD     test-u32-cpy
+  CCLD     test-u32-pcpy
+  CCLD     test-u32-set
+  CCLD     test-u32-strcat
+  CCLD     test-u32-strlen
+  CCLD     test-u8-mbtoucr
+  CCLD     test-u8-uctomb
+  CC       uniwidth/test-uniwidth-h.o
+  CC       uniwidth/test-uc_width.o
+  CC       uniwidth/test-uc_width2.o
+  CCLD     test-unlink
+  CCLD     test-unlinkat
+  CCLD     test-unsetenv
+  CCLD     test-userspec
+  CCLD     test-usleep
+  CCLD     test-utime-h
+  CCLD     test-utime
+  CCLD     test-utimens
+  CCLD     test-utimensat
+  CCLD     test-vasnprintf
+  CCLD     test-vasprintf-posix
+  CCLD     test-vasprintf
+  CCLD     test-verify
+  CCLD     test-verror
+  CCLD     test-version-etc
+  CCLD     test-vfzprintf-posix
+  CCLD     test-vzprintf-posix
+  CCLD     test-wchar-h
+  CCLD     test-wcrtomb
+  CCLD     test-wcrtomb-w32
+  CCLD     test-wctype-h
+  CCLD     test-wctype
+  CCLD     test-wcwidth
+  CCLD     test-windows-mutex-type
+  CCLD     test-windows-recmutex-type
+  CCLD     test-windows-timedmutex-type
+  CCLD     test-windows-timedrecmutex-type
+  CCLD     test-wmemchr
+  CCLD     test-write
+  CCLD     test-xalloc-die
+  CCLD     test-xmemdup0
+  CCLD     test-xfprintf-posix
+  CCLD     test-xprintf-posix
+  CCLD     test-xstrtod
+  CCLD     test-xstrtoimax
+  CCLD     test-xstrtol
+  CCLD     test-xstrtoul
+  CCLD     test-xstrtold
+  CCLD     test-xstrtoumax
+  CCLD     test-xvasprintf
+  CCLD     test-year2038
+  CCLD     test-yesno
+  CCLD     test-stdc_bit_width
+  CCLD     test-stdc_leading_zeros
+  CCLD     test-stdc_trailing_zeros
+  CCLD     test-unicase-h
+  CCLD     test-uc_tolower
+  CCLD     test-unictype-h
+  CCLD     test-ctype_alnum
+  CCLD     test-ctype_alpha
+  CCLD     test-ctype_blank
+  CCLD     test-ctype_cntrl
+  CCLD     test-ctype_digit
+  CCLD     test-ctype_graph
+  CCLD     test-ctype_lower
+  CCLD     test-ctype_print
+  CCLD     test-ctype_punct
+  CCLD     test-ctype_space
+  CCLD     test-ctype_upper
+  CCLD     test-ctype_xdigit
+  CCLD     test-uninorm-h
+  CCLD     test-uniwidth-h
+  CCLD     test-uc_width
+  CCLD     test-uc_width2
+make[5]: Leaving directory '/sources/coreutils-9.10/gnulib-tests'
+make  check-TESTS
+make[5]: Entering directory '/sources/coreutils-9.10/gnulib-tests'
+make[6]: Entering directory '/sources/coreutils-9.10/gnulib-tests'
+PASS: test-access
+PASS: test-accept
+PASS: test-copy-acl.sh
+PASS: test-set-mode-acl.sh
+PASS: test-set-mode-acl-1.sh
+PASS: test-set-mode-acl-2.sh
+PASS: test-alignalloc
+PASS: test-alignasof
+PASS: test-alloca-opt
+PASS: test-areadlink
+PASS: test-copy-acl-1.sh
+PASS: test-areadlink-with-size
+PASS: test-areadlinkat
+PASS: test-areadlinkat-with-size
+PASS: test-argmatch
+PASS: test-argv-iter
+PASS: test-arpa_inet-h
+PASS: test-assert
+PASS: test-array-mergesort
+PASS: test-base32
+PASS: test-base64
+PASS: test-bind
+PASS: test-binary-io.sh
+PASS: test-bitrotate
+PASS: test-bool
+PASS: test-btoc32-1.sh
+PASS: test-btoc32-2.sh
+PASS: test-btoc32-3.sh
+PASS: test-btowc-1.sh
+PASS: test-btowc-2.sh
+PASS: test-btowc-3.sh
+PASS: test-byteswap
+PASS: test-c-ctype
+PASS: test-c-strcasecmp.sh
+PASS: test-copy-acl-2.sh
+PASS: test-c-strncasecmp.sh
+PASS: test-c-strtod
+PASS: test-c-strtod1.sh
+PASS: test-c-strtold
+PASS: test-c-strtold1.sh
+PASS: test-c-strcasestr
+PASS: test-c32_apply_type_test
+PASS: test-c32_get_type_test
+PASS: test-c32isalnum.sh
+PASS: test-c32isalpha.sh
+PASS: test-c32isblank.sh
+PASS: test-c32iscntrl.sh
+PASS: test-c32isdigit.sh
+PASS: test-c32isgraph.sh
+PASS: test-c32islower.sh
+PASS: test-c32isprint.sh
+PASS: test-c32ispunct.sh
+PASS: test-c32isspace.sh
+PASS: test-c32isupper.sh
+PASS: test-c32isxdigit.sh
+PASS: test-c32rtomb.sh
+SKIP: test-c32rtomb-w32-2.sh
+SKIP: test-c32rtomb-w32-3.sh
+SKIP: test-c32rtomb-w32-4.sh
+SKIP: test-c32rtomb-w32-5.sh
+SKIP: test-c32rtomb-w32-6.sh
+SKIP: test-c32rtomb-w32-7.sh
+SKIP: test-c32rtomb-w32-8.sh
+PASS: test-c32width
+PASS: test-calloc-gnu
+PASS: test-c32tolower.sh
+PASS: test-calloc-posix
+PASS: test-canonicalize
+PASS: test-chdir
+PASS: test-chmod
+PASS: test-chown
+PASS: test-cloexec
+PASS: test-close
+PASS: test-connect
+PASS: test-cpu-supports
+PASS: test-crc
+PASS: test-creat
+PASS: test-md5-buffer
+PASS: test-closein.sh
+PASS: test-sha1-buffer
+PASS: test-md5-stream
+PASS: test-sha224-buffer
+PASS: test-sha256-buffer
+PASS: test-sha1-stream
+PASS: test-sha3-224-buffer
+PASS: test-sha3-256-buffer
+PASS: test-sha3-384-buffer
+PASS: test-sha3-512-buffer
+PASS: test-c-strtod-mt.sh
+PASS: test-sha384-buffer
+PASS: test-c-strtold-mt.sh
+PASS: test-sha512-buffer
+PASS: test-sm3-buffer
+PASS: test-ctype-h
+PASS: test-di-set
+PASS: test-dirent-h
+PASS: test-dirfd
+PASS: test-dirname
+PASS: test-dup
+PASS: test-dup2
+PASS: test-endian
+PASS: test-environ
+PASS: test-errno-h
+PASS: test-euidaccess
+PASS: test-error.sh
+PASS: test-exclude1.sh
+PASS: test-exclude2.sh
+PASS: test-exclude3.sh
+PASS: test-exclude4.sh
+PASS: test-exclude5.sh
+PASS: test-exclude6.sh
+PASS: test-exclude7.sh
+PASS: test-explicit_bzero
+PASS: test-faccessat
+PASS: test-fadvise
+PASS: test-fchdir
+PASS: test-exclude8.sh
+PASS: test-fchmodat
+PASS: test-fclose
+PASS: test-fchownat
+PASS: test-fcntl-h
+PASS: test-fcntl-safer
+PASS: test-fcntl
+PASS: test-fdopen
+PASS: test-fdopendir
+PASS: test-fdutimensat
+PASS: test-fflush
+PASS: test-fflush2.sh
+PASS: test-fgetc
+PASS: test-file-has-acl.sh
+PASS: test-file-has-acl-1.sh
+PASS: test-file-has-acl-2.sh
+PASS: test-filemode
+PASS: test-filenamecat
+PASS: test-filevercmp
+PASS: test-float-h
+PASS: test-fnmatch-h
+PASS: test-fnmatch-1.sh
+PASS: test-fnmatch-2.sh
+PASS: test-fnmatch-3.sh
+PASS: test-fnmatch-4.sh
+PASS: test-fnmatch-5.sh
+SKIP: test-fnmatch-w32-2.sh
+SKIP: test-fnmatch-w32-3.sh
+SKIP: test-fnmatch-w32-4.sh
+SKIP: test-fnmatch-w32-5.sh
+SKIP: test-fnmatch-w32-6.sh
+SKIP: test-fnmatch-w32-7.sh
+SKIP: test-fnmatch-w32-8.sh
+PASS: test-fopen-gnu
+PASS: test-fopen-safer
+PASS: test-fopen
+PASS: test-fpending.sh
+PASS: test-fpurge
+PASS: test-fputc
+PASS: test-fread
+PASS: test-freadahead.sh
+PASS: test-freading
+PASS: test-freadptr.sh
+PASS: test-freadptr2.sh
+PASS: test-freadseek.sh
+PASS: test-sha256-stream
+PASS: test-freopen-safer
+PASS: test-freopen
+PASS: test-frexp-nolibm
+PASS: test-frexp
+PASS: test-frexpl-nolibm
+PASS: test-frexpl
+PASS: test-fdatasync
+PASS: test-fseek2.sh
+PASS: test-fseek.sh
+PASS: test-fseeko.sh
+PASS: test-fseeko2.sh
+PASS: test-fseeko3.sh
+PASS: test-fseterr
+PASS: test-fseeko4.sh
+PASS: test-fstat
+PASS: test-free
+PASS: test-fstatat
+PASS: test-ftell.sh
+PASS: test-ftell2.sh
+PASS: test-ftell3
+PASS: test-ftello.sh
+PASS: test-ftello2.sh
+PASS: test-ftello3
+PASS: test-ftello4.sh
+PASS: test-ftruncate.sh
+PASS: test-futimens
+PASS: test-fwrite
+PASS: test-getcwd-lgpl
+SKIP: test-getaddrinfo
+PASS: test-getdelim
+PASS: test-getdtablesize
+PASS: test-getgroups
+PASS: test-gethostname
+PASS: test-getline
+PASS: test-getloadavg
+SKIP: test-getlogin
+PASS: test-getndelim2
+PASS: test-getopt-gnu
+PASS: test-getopt-posix
+PASS: test-getprogname
+PASS: test-getcwd.sh
+PASS: test-getrandom
+PASS: test-gettext-h
+PASS: test-gettime-res
+PASS: test-gettimeofday
+PASS: test-dynarray
+PASS: test-scratch-buffer
+PASS: test-hard-locale
+PASS: test-fsync
+PASS: test-sha512-stream
+PASS: test-htonl
+PASS: test-i-ring
+PASS: test-iconv-h
+PASS: test-iconv
+PASS: test-ignore-value
+PASS: test-inet_ntop
+PASS: test-inet_pton
+PASS: test-ino-map
+PASS: test-intprops
+PASS: test-inttostr
+PASS: test-inttypes-h
+PASS: test-ioctl
+PASS: test-isatty
+PASS: test-isblank
+PASS: test-isinf
+PASS: test-isnand-nolibm
+PASS: test-isnanf-nolibm
+PASS: test-isnanl-nolibm
+PASS: test-iswblank
+PASS: test-iswctype
+PASS: test-iswpunct.sh
+PASS: test-iswdigit.sh
+PASS: test-langinfo-h
+PASS: test-largefile
+PASS: test-iswxdigit.sh
+PASS: test-lchmod
+PASS: test-lchown
+PASS: test-libgmp-mpq
+PASS: test-libgmp-mpz
+PASS: test-limits-h
+PASS: test-link
+PASS: test-linkat
+PASS: test-listen
+PASS: test-locale-h
+PASS: test-localeconv
+PASS: test-localename
+PASS: test-hash
+PASS: test-rwlock1
+PASS: test-lseek.sh
+PASS: test-lstat
+PASS: test-malloc-gnu
+PASS: test-malloc-posix
+PASS: test-malloca
+PASS: test-math-h
+PASS: test-mbrlen-1.sh
+PASS: test-mbrlen-2.sh
+PASS: test-mbrlen-3.sh
+PASS: test-getrusage
+PASS: test-mbrlen-4.sh
+PASS: test-mbrlen-5.sh
+SKIP: test-mbrlen-w32-2.sh
+SKIP: test-mbrlen-w32-3.sh
+SKIP: test-mbrlen-w32-4.sh
+SKIP: test-mbrlen-w32-6.sh
+SKIP: test-mbrlen-w32-5.sh
+SKIP: test-mbrlen-w32-7.sh
+SKIP: test-mbrlen-w32-8.sh
+PASS: test-mbrtoc32-1.sh
+PASS: test-mbrtoc32-2.sh
+PASS: test-mbrtoc32-3.sh
+PASS: test-mbrtoc32-4.sh
+PASS: test-mbrtoc32-5.sh
+SKIP: test-mbrtoc32-w32-2.sh
+SKIP: test-mbrtoc32-w32-3.sh
+SKIP: test-mbrtoc32-w32-4.sh
+SKIP: test-mbrtoc32-w32-5.sh
+SKIP: test-mbrtoc32-w32-6.sh
+SKIP: test-mbrtoc32-w32-7.sh
+SKIP: test-mbrtoc32-w32-8.sh
+PASS: test-mbrtowc-1.sh
+PASS: test-mbrtowc-2.sh
+PASS: test-mbrtowc-3.sh
+PASS: test-mbrtowc-4.sh
+PASS: test-mbrtowc-5.sh
+SKIP: test-mbrtowc-w32-2.sh
+SKIP: test-mbrtowc-w32-3.sh
+SKIP: test-mbrtowc-w32-5.sh
+SKIP: test-mbrtowc-w32-4.sh
+SKIP: test-mbrtowc-w32-6.sh
+SKIP: test-mbrtowc-w32-7.sh
+SKIP: test-mbrtowc-w32-8.sh
+PASS: test-mbs_endswith1
+PASS: test-mbs_endswith2.sh
+PASS: test-mbs_endswith3.sh
+PASS: test-mbscasecmp.sh
+PASS: test-mbschr.sh
+PASS: test-mbsinit.sh
+PASS: test-mbslen.sh
+PASS: test-mbsrtoc32s-1.sh
+PASS: test-mbsnlen.sh
+PASS: test-mbsrtoc32s-2.sh
+PASS: test-mbsrtoc32s-3.sh
+PASS: test-mbsrtoc32s-4.sh
+PASS: test-mbsrtoc32s-5.sh
+PASS: test-mbsrtowcs-1.sh
+PASS: test-mbsrtowcs-2.sh
+PASS: test-mbsrtowcs-3.sh
+PASS: test-mbsrtowcs-4.sh
+PASS: test-mbsrtowcs-5.sh
+PASS: test-mbsstr1
+PASS: test-mbsstr3.sh
+PASS: test-mbsstr2.sh
+PASS: test-localeconv-mt
+PASS: test-mcel-2.sh
+PASS: test-mcel-3.sh
+PASS: test-mcel-1.sh
+PASS: test-memcasecmp
+PASS: test-memchr
+PASS: test-memchr2
+PASS: test-memcoll
+PASS: test-memrchr
+PASS: test-memset_explicit
+PASS: test-mkdir
+PASS: test-mkdirat
+PASS: test-mkfifo
+PASS: test-mkfifoat
+PASS: test-mknod
+PASS: test-mountlist
+PASS: test-mcel-4.sh
+PASS: test-netdb-h
+PASS: test-netinet_in-h
+PASS: test-next-prime
+PASS: test-nl_langinfo1.sh
+PASS: test-nl_langinfo2.sh
+PASS: test-nanosleep
+PASS: test-nstrftime-1.sh
+PASS: test-nstrftime-2.sh
+PASS: test-nstrftime-DE
+PASS: test-nstrftime-TH
+PASS: test-nstrftime-IR
+PASS: test-nstrftime-ET
+PASS: test-nullptr
+PASS: test-once1
+PASS: test-mcel-5.sh
+PASS: test-once2
+PASS: test-open
+PASS: test-openat-safer
+PASS: test-openat
+PASS: test-parse-datetime
+PASS: test-pathmax
+PASS: test-perror2
+PASS: test-physmem
+PASS: test-pipe
+PASS: test-pipe2
+PASS: test-posix_memalign
+PASS: test-posix_spawn-open1
+PASS: test-perror.sh
+PASS: test-posix_spawn-open2
+PASS: test-posix_spawn-inherit0
+PASS: test-posix_spawn-inherit1
+PASS: test-posix_spawn-script
+PASS: test-posix_spawn_file_actions_addclose
+PASS: test-posix_spawn_file_actions_adddup2
+PASS: test-posix_spawn-dup2-stdout
+PASS: test-posix_spawn_file_actions_addopen
+PASS: test-posix_spawn-dup2-stdin
+PASS: test-posix_spawnp-script
+PASS: test-posixtm
+PASS: test-posix_spawnp-vfork
+PASS: test-printf-frexp
+PASS: test-priv-set
+PASS: test-printf-frexpl
+PASS: test-pselect
+PASS: test-pthread
+PASS: test-nl_langinfo-mt
+PASS: test-pthread-mutex-type
+PASS: test-pthread-once1
+PASS: test-pthread-mutex
+PASS: test-lock
+PASS: test-pthread-thread
+PASS: test-pthread-once2
+PASS: test-pthread-rwlock
+PASS: test-putenv
+PASS: test-qsort_r
+PASS: test-quotearg-simple
+PASS: test-raise
+PASS: test-random
+PASS: test-random-mt
+PASS: test-random_r
+PASS: test-rand-isaac
+PASS: test-rawmemchr
+PASS: test-read-file
+PASS: test-read
+PASS: test-readlink
+PASS: test-readlinkat
+PASS: test-readtokens.sh
+PASS: test-readutmp
+PASS: test-realloc-posix
+PASS: test-reallocarray
+PASS: test-pthread_sigmask1
+PASS: test-remove
+PASS: test-rename
+PASS: test-renameat
+PASS: test-renameatu
+PASS: test-pthread_sigmask2
+PASS: test-rmdir
+PASS: test-sched-h
+PASS: test-savedir
+PASS: test-select
+PASS: test-pthread-cond
+PASS: test-selinux-context-h
+PASS: test-selinux-label-h
+PASS: test-selinux-selinux-h
+PASS: test-servent
+PASS: test-setenv
+PASS: test-setlocale_null
+PASS: test-select-out.sh
+PASS: test-select-in.sh
+PASS: test-setlocale_null-unlocked
+PASS: test-setlocale1.sh
+PASS: test-setlocale2.sh
+SKIP: test-setlocale-w32
+PASS: test-setsockopt
+PASS: test-sig2str
+PASS: test-sigaction
+PASS: test-signal-h
+PASS: test-signbit
+PASS: test-setlocale_null-mt-one
+PASS: test-sigprocmask
+PASS: test-snprintf
+PASS: test-sockets
+PASS: test-spawn-h
+PASS: test-stat
+PASS: test-stat-time
+PASS: test-stdbit-h
+PASS: test-stdc_bit_width
+PASS: test-stdc_leading_zeros
+PASS: test-stdc_trailing_zeros
+PASS: test-stdckdint-h
+PASS: test-stdcountof-h
+PASS: test-stddef-h
+PASS: test-stdint-h
+PASS: test-stdio-h
+PASS: test-stdlib-h
+PASS: test-str_endswith
+PASS: test-str_startswith
+PASS: test-strchrnul
+PASS: test-strerror
+PASS: test-strerror_r
+PASS: test-string-h
+PASS: test-strncpy
+PASS: test-strnlen
+PASS: test-strsignal
+PASS: test-strtod
+PASS: test-strtod1.sh
+PASS: test-strtoimax
+PASS: test-strtold
+PASS: test-strtold1.sh
+PASS: test-strtoll
+PASS: test-strtoull
+PASS: test-strtoumax
+PASS: test-symlink
+PASS: test-sleep
+PASS: test-symlinkat
+PASS: test-sys_ioctl-h
+PASS: test-sys_random-h
+PASS: test-sys_resource-h
+PASS: test-sys_select-h
+PASS: test-sys_stat-h
+PASS: test-sys_socket-h
+PASS: test-sys_types-h
+PASS: test-sys_time-h
+PASS: test-sys_uio-h
+PASS: test-sys_utsname-h
+PASS: test-sys_wait-h
+PASS: test-termios-h
+PASS: test-thread_self
+PASS: test-thread_create
+PASS: test-time-h
+PASS: test-init.sh
+PASS: test-gmtime_r
+PASS: test-time
+PASS: test-localtime_r
+PASS: test-gmtime_r-mt
+PASS: test-timespec
+PASS: test-localtime_r-mt
+PASS: test-setlocale_null-mt-all
+PASS: test-trunc1
+PASS: test-trunc2
+PASS: test-truncl
+PASS: test-u64
+PASS: test-uchar-h
+PASS: test-uname
+PASS: test-unicase-h
+PASS: test-uc_tolower
+PASS: test-unicodeio1.sh
+PASS: test-unicodeio3.sh
+PASS: test-unicodeio2.sh
+PASS: test-unictype-h
+PASS: test-ctype_alnum
+PASS: test-ctype_alpha
+PASS: test-ctype_blank
+PASS: test-ctype_digit
+PASS: test-ctype_cntrl
+PASS: test-ctype_graph
+PASS: test-ctype_lower
+PASS: test-ctype_print
+PASS: test-ctype_punct
+PASS: test-ctype_space
+PASS: test-ctype_upper
+PASS: test-ctype_xdigit
+PASS: test-uninorm-h
+PASS: test-unistd-h
+PASS: test-dup-safer
+PASS: test-unistr-h
+PASS: test-u32-cpy
+PASS: test-u32-chr
+PASS: test-u32-pcpy
+PASS: test-u32-set
+PASS: test-u32-strcat
+PASS: test-u8-mbtoucr
+PASS: test-u32-strlen
+PASS: test-u8-uctomb
+PASS: test-uniwidth-h
+PASS: test-uc_width
+PASS: test-unlink
+PASS: test-unlinkat
+PASS: uniwidth/test-uc_width2.sh
+PASS: test-unsetenv
+PASS: test-userspec
+PASS: test-tls
+PASS: test-utime-h
+PASS: test-utime
+PASS: test-utimens
+PASS: test-utimensat
+PASS: test-vasnprintf
+PASS: test-vasprintf-posix
+PASS: test-vasprintf
+SKIP: test-vc-list-files-git.sh
+SKIP: test-vc-list-files-cvs.sh
+PASS: test-verify
+PASS: test-update-copyright.sh
+PASS: test-verror.sh
+PASS: test-version-etc.sh
+PASS: test-vfzprintf-posix.sh
+PASS: test-vzprintf-posix.sh
+PASS: test-wchar-h
+PASS: test-wcrtomb.sh
+SKIP: test-wcrtomb-w32-2.sh
+SKIP: test-wcrtomb-w32-3.sh
+SKIP: test-wcrtomb-w32-4.sh
+SKIP: test-wcrtomb-w32-5.sh
+SKIP: test-wcrtomb-w32-6.sh
+SKIP: test-wcrtomb-w32-7.sh
+SKIP: test-wcrtomb-w32-8.sh
+PASS: test-wctype-h
+PASS: test-wctype
+PASS: test-wcwidth
+SKIP: test-windows-mutex-type
+SKIP: test-windows-recmutex-type
+SKIP: test-windows-timedmutex-type
+SKIP: test-windows-timedrecmutex-type
+PASS: test-wmemchr
+PASS: test-write
+PASS: test-xalloc-die.sh
+PASS: test-xmemdup0
+PASS: test-xprintf-posix.sh
+PASS: test-xstrtod
+PASS: test-xstrtoimax.sh
+PASS: test-xstrtol.sh
+PASS: test-xstrtold
+PASS: test-xstrtoumax.sh
+PASS: test-xvasprintf
+PASS: test-year2038
+PASS: test-usleep
+PASS: test-yesno.sh
+PASS: test-verify.sh
+PASS: test-regex
+============================================================================
+Testsuite summary for GNU coreutils 9.10
+============================================================================
+# TOTAL: 580
+# PASS:  529
+# SKIP:  51
+# XFAIL: 0
+# FAIL:  0
+# XPASS: 0
+# ERROR: 0
+============================================================================
+make[6]: Leaving directory '/sources/coreutils-9.10/gnulib-tests'
+make[5]: Leaving directory '/sources/coreutils-9.10/gnulib-tests'
+make[4]: Leaving directory '/sources/coreutils-9.10/gnulib-tests'
+make[3]: Leaving directory '/sources/coreutils-9.10/gnulib-tests'
+make[2]: Leaving directory '/sources/coreutils-9.10/gnulib-tests'
+make[1]: Leaving directory '/sources/coreutils-9.10'
+make  install-recursive
+make[1]: Entering directory '/sources/coreutils-9.10'
+Making install in po
+make[2]: Entering directory '/sources/coreutils-9.10/po'
+installing af.gmo as /usr/share/locale/af/LC_MESSAGES/coreutils.mo
+installing af.gmo link as /usr/share/locale/af/LC_TIME/coreutils.mo
+installing ar.gmo as /usr/share/locale/ar/LC_MESSAGES/coreutils.mo
+installing ar.gmo link as /usr/share/locale/ar/LC_TIME/coreutils.mo
+installing be.gmo as /usr/share/locale/be/LC_MESSAGES/coreutils.mo
+installing be.gmo link as /usr/share/locale/be/LC_TIME/coreutils.mo
+installing bg.gmo as /usr/share/locale/bg/LC_MESSAGES/coreutils.mo
+installing bg.gmo link as /usr/share/locale/bg/LC_TIME/coreutils.mo
+installing ca.gmo as /usr/share/locale/ca/LC_MESSAGES/coreutils.mo
+installing ca.gmo link as /usr/share/locale/ca/LC_TIME/coreutils.mo
+installing cs.gmo as /usr/share/locale/cs/LC_MESSAGES/coreutils.mo
+installing cs.gmo link as /usr/share/locale/cs/LC_TIME/coreutils.mo
+installing da.gmo as /usr/share/locale/da/LC_MESSAGES/coreutils.mo
+installing da.gmo link as /usr/share/locale/da/LC_TIME/coreutils.mo
+installing de.gmo as /usr/share/locale/de/LC_MESSAGES/coreutils.mo
+installing de.gmo link as /usr/share/locale/de/LC_TIME/coreutils.mo
+installing el.gmo as /usr/share/locale/el/LC_MESSAGES/coreutils.mo
+installing el.gmo link as /usr/share/locale/el/LC_TIME/coreutils.mo
+installing eo.gmo as /usr/share/locale/eo/LC_MESSAGES/coreutils.mo
+installing eo.gmo link as /usr/share/locale/eo/LC_TIME/coreutils.mo
+installing es.gmo as /usr/share/locale/es/LC_MESSAGES/coreutils.mo
+installing es.gmo link as /usr/share/locale/es/LC_TIME/coreutils.mo
+installing et.gmo as /usr/share/locale/et/LC_MESSAGES/coreutils.mo
+installing et.gmo link as /usr/share/locale/et/LC_TIME/coreutils.mo
+installing eu.gmo as /usr/share/locale/eu/LC_MESSAGES/coreutils.mo
+installing eu.gmo link as /usr/share/locale/eu/LC_TIME/coreutils.mo
+installing fi.gmo as /usr/share/locale/fi/LC_MESSAGES/coreutils.mo
+installing fi.gmo link as /usr/share/locale/fi/LC_TIME/coreutils.mo
+installing fr.gmo as /usr/share/locale/fr/LC_MESSAGES/coreutils.mo
+installing fr.gmo link as /usr/share/locale/fr/LC_TIME/coreutils.mo
+installing ga.gmo as /usr/share/locale/ga/LC_MESSAGES/coreutils.mo
+installing ga.gmo link as /usr/share/locale/ga/LC_TIME/coreutils.mo
+installing gl.gmo as /usr/share/locale/gl/LC_MESSAGES/coreutils.mo
+installing gl.gmo link as /usr/share/locale/gl/LC_TIME/coreutils.mo
+installing hr.gmo as /usr/share/locale/hr/LC_MESSAGES/coreutils.mo
+installing hr.gmo link as /usr/share/locale/hr/LC_TIME/coreutils.mo
+installing hu.gmo as /usr/share/locale/hu/LC_MESSAGES/coreutils.mo
+installing hu.gmo link as /usr/share/locale/hu/LC_TIME/coreutils.mo
+installing ia.gmo as /usr/share/locale/ia/LC_MESSAGES/coreutils.mo
+installing ia.gmo link as /usr/share/locale/ia/LC_TIME/coreutils.mo
+installing id.gmo as /usr/share/locale/id/LC_MESSAGES/coreutils.mo
+installing id.gmo link as /usr/share/locale/id/LC_TIME/coreutils.mo
+installing it.gmo as /usr/share/locale/it/LC_MESSAGES/coreutils.mo
+installing it.gmo link as /usr/share/locale/it/LC_TIME/coreutils.mo
+installing ja.gmo as /usr/share/locale/ja/LC_MESSAGES/coreutils.mo
+installing ja.gmo link as /usr/share/locale/ja/LC_TIME/coreutils.mo
+installing ka.gmo as /usr/share/locale/ka/LC_MESSAGES/coreutils.mo
+installing ka.gmo link as /usr/share/locale/ka/LC_TIME/coreutils.mo
+installing kk.gmo as /usr/share/locale/kk/LC_MESSAGES/coreutils.mo
+installing kk.gmo link as /usr/share/locale/kk/LC_TIME/coreutils.mo
+installing ko.gmo as /usr/share/locale/ko/LC_MESSAGES/coreutils.mo
+installing ko.gmo link as /usr/share/locale/ko/LC_TIME/coreutils.mo
+installing lg.gmo as /usr/share/locale/lg/LC_MESSAGES/coreutils.mo
+installing lg.gmo link as /usr/share/locale/lg/LC_TIME/coreutils.mo
+installing lt.gmo as /usr/share/locale/lt/LC_MESSAGES/coreutils.mo
+installing lt.gmo link as /usr/share/locale/lt/LC_TIME/coreutils.mo
+installing ms.gmo as /usr/share/locale/ms/LC_MESSAGES/coreutils.mo
+installing ms.gmo link as /usr/share/locale/ms/LC_TIME/coreutils.mo
+installing nb.gmo as /usr/share/locale/nb/LC_MESSAGES/coreutils.mo
+installing nb.gmo link as /usr/share/locale/nb/LC_TIME/coreutils.mo
+installing nl.gmo as /usr/share/locale/nl/LC_MESSAGES/coreutils.mo
+installing nl.gmo link as /usr/share/locale/nl/LC_TIME/coreutils.mo
+installing pl.gmo as /usr/share/locale/pl/LC_MESSAGES/coreutils.mo
+installing pl.gmo link as /usr/share/locale/pl/LC_TIME/coreutils.mo
+installing pt.gmo as /usr/share/locale/pt/LC_MESSAGES/coreutils.mo
+installing pt.gmo link as /usr/share/locale/pt/LC_TIME/coreutils.mo
+installing pt_BR.gmo as /usr/share/locale/pt_BR/LC_MESSAGES/coreutils.mo
+installing pt_BR.gmo link as /usr/share/locale/pt_BR/LC_TIME/coreutils.mo
+installing ro.gmo as /usr/share/locale/ro/LC_MESSAGES/coreutils.mo
+installing ro.gmo link as /usr/share/locale/ro/LC_TIME/coreutils.mo
+installing ru.gmo as /usr/share/locale/ru/LC_MESSAGES/coreutils.mo
+installing ru.gmo link as /usr/share/locale/ru/LC_TIME/coreutils.mo
+installing sk.gmo as /usr/share/locale/sk/LC_MESSAGES/coreutils.mo
+installing sk.gmo link as /usr/share/locale/sk/LC_TIME/coreutils.mo
+installing sl.gmo as /usr/share/locale/sl/LC_MESSAGES/coreutils.mo
+installing sl.gmo link as /usr/share/locale/sl/LC_TIME/coreutils.mo
+installing sr.gmo as /usr/share/locale/sr/LC_MESSAGES/coreutils.mo
+installing sr.gmo link as /usr/share/locale/sr/LC_TIME/coreutils.mo
+installing sv.gmo as /usr/share/locale/sv/LC_MESSAGES/coreutils.mo
+installing sv.gmo link as /usr/share/locale/sv/LC_TIME/coreutils.mo
+installing ta.gmo as /usr/share/locale/ta/LC_MESSAGES/coreutils.mo
+installing ta.gmo link as /usr/share/locale/ta/LC_TIME/coreutils.mo
+installing tr.gmo as /usr/share/locale/tr/LC_MESSAGES/coreutils.mo
+installing tr.gmo link as /usr/share/locale/tr/LC_TIME/coreutils.mo
+installing uk.gmo as /usr/share/locale/uk/LC_MESSAGES/coreutils.mo
+installing uk.gmo link as /usr/share/locale/uk/LC_TIME/coreutils.mo
+installing vi.gmo as /usr/share/locale/vi/LC_MESSAGES/coreutils.mo
+installing vi.gmo link as /usr/share/locale/vi/LC_TIME/coreutils.mo
+installing zh_CN.gmo as /usr/share/locale/zh_CN/LC_MESSAGES/coreutils.mo
+installing zh_CN.gmo link as /usr/share/locale/zh_CN/LC_TIME/coreutils.mo
+installing zh_TW.gmo as /usr/share/locale/zh_TW/LC_MESSAGES/coreutils.mo
+installing zh_TW.gmo link as /usr/share/locale/zh_TW/LC_TIME/coreutils.mo
+if test "coreutils" = "gettext-tools"; then \
+  /usr/bin/mkdir -p /usr/share/gettext/po; \
+  for file in Makefile.in.in remove-potcdate.sin quot.sed boldquot.sed en@quot.header en@boldquot.header insert-header.sin Rules-quot   Makevars.template; do \
+    /usr/bin/install -c -m 644 ./$file \
+		    /usr/share/gettext/po/$file; \
+  done; \
+  for file in Makevars; do \
+    rm -f /usr/share/gettext/po/$file; \
+  done; \
+else \
+  : ; \
+fi
+make[2]: Leaving directory '/sources/coreutils-9.10/po'
+Making install in .
+make[2]: Entering directory '/sources/coreutils-9.10'
+make[3]: Entering directory '/sources/coreutils-9.10'
+ /usr/bin/mkdir -p '/usr/share/info'
+ /usr/bin/mkdir -p '/usr/bin'
+ /usr/bin/mkdir -p '/usr/libexec/coreutils'
+ /usr/bin/mkdir -p '/usr/share/man/man1'
+  src/ginstall -c src/libstdbuf.so '/usr/libexec/coreutils'
+ src/ginstall -c -m 644 ./doc/coreutils.info '/usr/share/info'
+  src/ginstall -c src/ginstall '/usr/bin/./install'
+  src/ginstall -c src/chroot src/hostid src/timeout src/nice src/who src/users src/pinky src/stty src/df src/stdbuf src/[ src/b2sum src/base64 src/base32 src/basenc src/basename src/cat src/chgrp src/chmod src/chown src/cksum src/comm src/cp src/csplit src/cut src/date src/dd src/dir src/dircolors src/dirname src/du src/echo src/env src/expand src/expr src/factor src/false src/fmt src/fold src/groups src/head src/id src/join src/link src/ln src/logname src/ls src/md5sum src/mkdir src/mkfifo src/mknod src/mktemp src/mv src/nl src/nproc src/nohup src/numfmt src/od src/paste src/pathchk src/pr src/printenv src/printf src/ptx src/pwd src/readlink src/realpath src/rm src/rmdir src/seq src/sha1sum src/sha224sum src/sha256sum src/sha384sum src/sha512sum src/shred src/shuf src/sleep src/sort src/split src/stat src/sum src/sync src/tac src/tail src/tee src/test src/touch src/tr src/true src/truncate src/tsort src/tty src/uname src/unexpand src/uniq src/unlink src/vdir src/wc src/whoami src/yes '/usr/bin'
+ install-info --info-dir='/usr/share/info' '/usr/share/info/coreutils.info'
+ src/ginstall -c -m 644 man/chroot.1 man/hostid.1 man/timeout.1 man/nice.1 man/who.1 man/users.1 man/pinky.1 man/stty.1 man/df.1 man/stdbuf.1 man/b2sum.1 man/base64.1 man/base32.1 man/basenc.1 man/basename.1 man/cat.1 man/chgrp.1 man/chmod.1 man/chown.1 man/cksum.1 man/comm.1 man/cp.1 man/csplit.1 man/cut.1 man/date.1 man/dd.1 man/dir.1 man/dircolors.1 man/dirname.1 man/du.1 man/echo.1 man/env.1 man/expand.1 man/expr.1 man/factor.1 man/false.1 man/fmt.1 man/fold.1 man/install.1 man/groups.1 '/usr/share/man/man1'
+ src/ginstall -c -m 644 man/head.1 man/id.1 man/join.1 man/link.1 man/ln.1 man/logname.1 man/ls.1 man/md5sum.1 man/mkdir.1 man/mkfifo.1 man/mknod.1 man/mktemp.1 man/mv.1 man/nl.1 man/nproc.1 man/nohup.1 man/numfmt.1 man/od.1 man/paste.1 man/pathchk.1 man/pr.1 man/printenv.1 man/printf.1 man/ptx.1 man/pwd.1 man/readlink.1 man/realpath.1 man/rm.1 man/rmdir.1 man/seq.1 man/sha1sum.1 man/sha224sum.1 man/sha256sum.1 man/sha384sum.1 man/sha512sum.1 man/shred.1 man/shuf.1 man/sleep.1 man/sort.1 man/split.1 '/usr/share/man/man1'
+ src/ginstall -c -m 644 man/stat.1 man/sum.1 man/sync.1 man/tac.1 man/tail.1 man/tee.1 man/test.1 man/touch.1 man/tr.1 man/true.1 man/truncate.1 man/tsort.1 man/tty.1 man/uname.1 man/unexpand.1 man/uniq.1 man/unlink.1 man/vdir.1 man/wc.1 man/whoami.1 man/yes.1 '/usr/share/man/man1'
+make  install-exec-hook
+make[4]: Entering directory '/sources/coreutils-9.10'
+make[4]: Leaving directory '/sources/coreutils-9.10'
+make[3]: Leaving directory '/sources/coreutils-9.10'
+make[2]: Leaving directory '/sources/coreutils-9.10'
+Making install in gnulib-tests
+make[2]: Entering directory '/sources/coreutils-9.10/gnulib-tests'
+make  install-recursive
+make[3]: Entering directory '/sources/coreutils-9.10/gnulib-tests'
+Making install in .
+make[4]: Entering directory '/sources/coreutils-9.10/gnulib-tests'
+make[5]: Entering directory '/sources/coreutils-9.10/gnulib-tests'
+make[5]: Leaving directory '/sources/coreutils-9.10/gnulib-tests'
+make[4]: Leaving directory '/sources/coreutils-9.10/gnulib-tests'
+make[3]: Leaving directory '/sources/coreutils-9.10/gnulib-tests'
+make[2]: Leaving directory '/sources/coreutils-9.10/gnulib-tests'
+make[1]: Leaving directory '/sources/coreutils-9.10'
+renamed '/usr/bin/chroot' -> '/usr/sbin/chroot'
+renamed '/usr/share/man/man1/chroot.1' -> '/usr/share/man/man8/chroot.8'
+manifest: 302 files
