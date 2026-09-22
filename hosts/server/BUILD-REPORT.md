@@ -4217,3 +4217,130 @@ GRUB menuentry, `host.toml`, the database's `book_release` -- while eleven packa
 4. **Rebuild**: the eleven drifted packages, plus `unixODBC` and `htop`. `nss`/`nspr` and
    `pipewire`/`wireplumber` move as pairs. `xorg-server` and `ffmpeg` are the risky ones
    on this host -- the NVIDIA 470 stack and the VDPAU/NVENC path both sit on top of them.
+
+## Putting every package on 13.1: the repo half (2026-09-21)
+
+Following the entry above, which established that the identity was 13.1 everywhere it is
+declared while eleven packages' *contents* were still 13.0. This is the repo work that
+makes the rebuild possible; the builds themselves are staged but not run, because they
+need root.
+
+### `extract-blfs.py` had not written a plan since the bump, and the error hid two bugs
+
+Seven steps reported `hand-authored, but no recipe at recipes/<step>.sh`, and the
+extractor refuses to write a partial plan -- which is why `blfs-plan.json` was stale and
+why the previous entry's "regenerating it needs `book/blfs-13.1`" diagnosis was wrong.
+The book was present the whole time. `db416ba`'s per-release split had moved all seven
+files into `recipes/blfs-13.0/`, which is precisely where `hand()` does not look.
+
+They are not one problem. Splitting them by whether the book has a per-package command
+block to extract:
+
+- **`xorg-server`, `xinit`, `imagemagick`** have real single-package pages. Converted to
+  `book()`, generated into `recipes/blfs-13.1/`, and the output is clean -- xinit keeps
+  `--with-xinitdir=/etc/X11/app-defaults`, imagemagick keeps its full configure line.
+- **`libxt`, `libxmu`, `xauth`, `xf86-input-libinput`** are carved out of the *grouped*
+  pages `x7lib`, `x7app` and `x7driver`, which build their whole set in one `for` loop
+  over an embedded md5 list. Converting these to `book()` and extracting produced a
+  `blfs-libxt.sh` containing **the entire 32-library x7lib loop** -- its own `wget`, its
+  own `as_root`, `bash -e`, and builds of libX11, libXext, libpciaccess and the rest,
+  all under a step named for libXt. Caught by diffing the generated file against the
+  13.0 one before anything was built. Reverted to `hand()`; the correct single-package
+  files moved from `recipes/blfs-13.0/` to shared `recipes/`, where `hand()` looks.
+  Nothing in them names a version (`./configure $XORG_CONFIG && make && make install` is
+  release-neutral) and `laptop` declares none of the four, so shared is the right home.
+  Their headers now carry the reason they cannot be `book()`, and their original
+  rationale -- xauth being the direct `startx` blocker, libXt/libXmu's chain to it --
+  is preserved inline rather than lost to the move.
+
+### `-D sha1=libgcrypt` was nearly lost, the same way it was lost before
+
+`xorg-server`'s conversion to `book()` re-extracted its recipe from the book and dropped
+the hand-added `-D sha1=libgcrypt`, along with the comment explaining it. That flag is
+not cosmetic: meson defaults this option to `auto`, which selects libnettle, whose
+`xsha1.c` does `#include <nettle/sha.h>`. Re-verified on the live tree rather than taken
+from the old comment -- the installed nettle-4.0 (13.1's own pin; 13.0 pinned 3.10.2)
+ships `sha1.h`, `sha2.h` and `sha3.h` under `/usr/include/nettle/` and no `sha.h` at
+all, so the nettle branch cannot compile. It is now a `replace` decision in the shared
+`recipes/blfs-13.1/overrides.json`, which survives re-extraction; the comment in a
+generated file did not. This is `6aad09a`'s lesson recurring within one session of
+`PRACTICES.md` gaining the section about it.
+
+### `firefox` is 153.2.0esr, and `drift` was wrong about that
+
+`lfsmaint drift` reported the book version as 140.14.0esr. BLFS 13.1's wget-list does
+contain `firefox-140.14.0esr.source.tar.xz`, but it belongs to
+`general/spidermonkey.html`, which builds its JS engine from an ESR source drop.
+`xsoft/firefox.html` documents **153.2.0esr**, and spidermonkey is not in `packages.py`
+and not installed. So the real gap is two ESR lines, not a point release. The recipe was
+rewritten from the 13.1 page: all three 140.8.0esr patches and the system-ICU
+`LineBreaker.cpp` sed are gone, because 13.1's page references no patch at all. Both
+host deltas are kept and marked inline -- the alsa audio backend, and `--enable-rust-simd`
+left off. That second one was a real 140.8.0esr build failure against Rust-1.97.1
+(`no method named 'select' for struct Mask<T, N>` in the vendored encoding_rs 0.8.35);
+153.2.0esr vendors a newer crate and may well build with it, but that cannot be known
+without building, and the option is a pure text-decoding optimization.
+
+`cbindgen`'s host fork is deleted for the same reason. It existed only to pin 0.29.2,
+because 0.29.4 broke Firefox 140.8.0esr's webrender FFI generation. That Firefox no
+longer exists here, 13.1 pairs 0.29.4 with 153.2.0esr, and the generated 13.1 recipe
+already carries the `resolv.conf` workaround that was the fork's only other content.
+
+### Re-reads, not copies
+
+Root `CLAUDE.md` is explicit that carrying a decision across a release is a re-read.
+Each hand-authored recipe was diffed against its 13.1 page:
+
+- **rsync** loses its security patch -- 3.5.0 carries the fix (upstream 797e17f)
+  upstream and the 13.1 page lists no patch. Losing that versioned patch filename is
+  also what keeps the file legitimately shared: no command in it names a version now.
+- **ffmpeg** gets the renamed `chromium_method` patch and the 9.0.1 docdir, and **drops
+  the book's `sed -e '/adaptive/c\ param->aq_mode = 0;' -i libavcodec/libsvtav1.c`**.
+  That was a real 13.0 book command, not a local addition, and 13.1 has no sed against
+  that file. Carrying it forward would have been worse than useless: a `c\` sed whose
+  address no longer matches its intended line rewrites whatever line does match.
+- **wireplumber** gets a `hosts/server/` copy. Its one version-bearing command is the
+  `mv` to a versioned docdir, and `laptop` builds 0.5.13 from the shared file, so
+  editing that file in place would install a 0.5.15 path on a 0.5.13 tree.
+- **pipewire**, **cbindgen** and **mpv** are command-identical to their 13.1 pages and
+  got corrected provenance only. mpv is 0.41.0 in both books and is not part of this
+  sweep; its recipe's omission of the book's `gtk-update-icon-cache`/
+  `update-desktop-database` block is now recorded in the file rather than silent.
+- The `as_root()` helper on the grouped x7lib/x7app pages is dropped by decision in the
+  shared 13.1 overrides: it defines a shell function for a human building by hand, and
+  `lfsbuild` supplies the privilege context itself.
+
+### `lfsmaint drift` could not run at all
+
+`fetch-lists` died with `PermissionError` on `/var/lib/lfsmaint/lists` -- the same defect
+the audit fixed for `advisories` one function away without generalising it. `lists_dir()`
+now applies the same rule, and `fetch-lists`/`drift` share the resolver so they cannot
+disagree about where the lists are.
+
+### State after the repo work
+
+`blfs-plan.json` writes for the first time since the 13.1 bump: **222 steps, 0 awaiting
+review**. All four extractors report zero drift and zero problems. `recipes/blfs-13.1/`
+is 130 generated recipes, up from 113.
+
+### Staged, not yet built
+
+All fourteen sources are downloaded and md5-verified against the book pages into
+`/home/john/lfs-sources-13.1/` (878 MB, of which firefox is 770 MB), with
+`ffmpeg-9.0.1-chromium_method-1.patch` and
+`xorg-server-21.1.24-tearfree_backport-1.patch`. `/sources` does not exist on the
+re-imaged root, so creating it is part of the build step.
+
+`rebuild.sh` in that directory runs the fourteen `lfsbuild --only <step> --force` steps
+in seq order, which is also dependency order, and takes step names as arguments to
+resume after a failure.
+
+**Checked before writing that script, because getting it wrong costs this box its
+display:** xorg-server 21.1.21 -> 21.1.24 does *not* orphan the proprietary NVIDIA DDX.
+`/usr/include/xorg/xf86Module.h` from the installed server and the same header inside the
+21.1.24 tarball both define `ABI_VIDEODRV_VERSION` 25.2 and `ABI_XINPUT_VERSION` 24.4, so
+`nvidia_drv.so` keeps loading and `blfs-nvidia-470xx` needs no rebuild. X does need a
+restart to pick up the new binary.
+
+Two of the fourteen are not upgrades but restorations: `blfs-unixodbc` and `slfs-htop`
+are the packages the re-image dropped, absent from the running root entirely.
