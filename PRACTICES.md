@@ -1084,3 +1084,47 @@ Same shape as the strip incident above, one layer out: there, a practice stated 
 while the skill still issued the old command; here, a decision stated in a tracked file
 while the procedure still issued the old hand-edit. In both cases the write-up read as
 done and nothing that executes had changed.
+
+## A carried-over review decision fails silently, and the manifest is what tells you
+
+Root `CLAUDE.md` already says a decision names a block by index and that carrying one
+across a book release is a re-read, not a copy. What it does not say is what the failure
+*looks like*, and the answer is: like success.
+
+On `server`, 2026-09-22. BLFS 13.0's nss page had four command blocks -- build, test
+suite, install, p11-kit symlink -- and a `drop` on index 1 recorded that the test suite
+hard-failed 564/606 tests in 20.9 minutes. BLFS 13.1 removed the test-suite block from
+the page. Everything below it shifted up one, so index 1 became the install:
+`cd ../dist && install -v -m755 Linux*/lib/*.so /usr/lib && ...`. The decisions had been
+copied release-to-release when `overrides.json` was split per release, so "skip the
+tests" silently became "skip the install".
+
+`blfs-nss` then built NSS 3.126 from source, installed none of it, **exited 0**, and was
+marked complete. It could not have reported otherwise: dropping a block is a legitimate
+outcome, and every block that remained -- the build, and the p11-kit symlink -- really
+did succeed. Nothing was broken, nothing was missing, and the wrong thing had been
+skipped on purpose. It surfaced two steps later when Firefox's configure demanded
+`nss >= 3.125` and pkg-config answered `3.120.1`, the version from the previous install
+still sitting on disk.
+
+- **The manifest file count is the detector.** `blfs-nss` captured a **one-file**
+  manifest where its neighbours captured 73 (nspr), 285 (ffmpeg), 713 (mesa), 3960
+  (llvm). A step that compiles for eight minutes and installs one file is not a
+  plausible package. Check it after any build whose recipe was regenerated against a new
+  book, and be suspicious of any manifest that shrank.
+- **Compare block counts before trusting carried decisions.** For each recipe, the number
+  of command blocks in the old release's generated file against the new one. Equal counts
+  mean the indices still line up and the decisions are probably still aimed at what they
+  name; a change means every decision on that recipe needs re-reading against the actual
+  block text. Across 17 recipes regenerated for 13.1 this isolated exactly two, and both
+  were real.
+- **A block count can grow, too, and that is the quieter direction.** `glad` gained a
+  test-suite block at index 1 in 13.1, between building the wheel and installing it. The
+  existing `replace` on index 0 still landed correctly, so nothing looked wrong -- but the
+  new block arrived *enabled*, because the extractor only queues a block for review when
+  the surrounding prose carries "if you want" framing. A newly inserted required-looking
+  step is invisible to both the decision check and the review queue.
+- **Neither `--check` nor the review queue can see any of this.** Both compare the
+  generated file against what the overrides say to generate. They agreed perfectly the
+  whole time, because the recipe on disk *was* exactly what the decisions asked for. Zero
+  drift and zero blocks awaiting review were both true and both meaningless here.

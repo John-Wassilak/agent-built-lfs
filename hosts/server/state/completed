@@ -362,3 +362,9 @@ blfs-cbindgen
 blfs-llvm
 blfs-spirv-llvm-translator
 blfs-libclc
+blfs-mesa
+slfs-htop
+blfs-ffmpeg
+blfs-nspr
+blfs-nss
+blfs-libarchive

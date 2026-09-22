@@ -2194,8 +2194,8 @@
     "tarball": "glad-2.0.8.tar.gz",
     "manifest": true,
     "blocks": 3,
-    "enabled": 3,
-    "disabled": 0
+    "enabled": 2,
+    "disabled": 1
   },
   {
     "seq": 179,
@@ -2334,8 +2334,8 @@
     "tarball": "nss-3.126.tar.gz",
     "manifest": true,
     "blocks": 3,
-    "enabled": 2,
-    "disabled": 1
+    "enabled": 3,
+    "disabled": 0
   },
   {
     "seq": 187,

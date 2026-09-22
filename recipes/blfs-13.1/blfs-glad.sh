@@ -16,7 +16,10 @@ pip3 wheel -w dist --no-build-isolation --no-deps --no-cache-dir "$PWD"
 # --- block 1 --------------------------------------------------
 #   ctx: To test the results, you need the optional dependencies above. If you only install
 #   ctx: dependencies that are in the book, then 12 tests out of 100 fail. Issue:
-PYTHON=python3 utility/test.sh
+#   REVIEWED [drop]: Glad's test suite, `PYTHON=python3 utility/test.sh`. New in 13.1 -- the 13.0 page had two command blocks (build the wheel, install it) and 13.1 has three, with the tests inserted between them. The extractor did not flag it for review, the same classifier gap the nss and libevent entries record: the surrounding prose has no 'if you want' framing, so it reads as a required step. Dropped to match this project's BLFS test policy, and because the book's own text on this page says 12 of 100 tests fail unless pytest, rustc, Xorg Libraries, glfw and WINE are all installed -- WINE is not in this build and will not be.
+
+Found 2026-09-22 while auditing every newly generated 13.1 recipe after the nss index shift. glad is not in that date's rebuild list (2.0.8 in both books), so this had not fired yet; it would have failed the next glad build.
+# PYTHON=python3 utility/test.sh
 
 # --- block 2 --------------------------------------------------
 #   ctx: Now, as the root user:

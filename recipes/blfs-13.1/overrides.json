@@ -749,14 +749,7 @@
       "cmd": "patch -Np1 -i ../nss-standalone-1.patch &&\n\ncd nss &&\n\nmake BUILD_OPT=1                      \\\n  NSPR_INCLUDE_DIR=/usr/include/nspr  \\\n  USE_SYSTEM_ZLIB=1                   \\\n  ZLIB_LIBS=-lz                       \\\n  NSS_ENABLE_WERROR=0                 \\\n  NSS_USE_SYSTEM_SQLITE=1             \\\n  $([ \"$(uname -m)\" = x86_64 ] && echo USE_64=1)",
       "reason": "Same unquoted $(uname -m) as the NSPR page, same reason. Recovered 2026-09-15: this hardening existed in the hand-authored recipe server carried before the recipe was declared book(), and was silently lost when laptop's book() entry made the extractor the owner of the shared file. Re-recorded as a decision, which is the mechanism that should have held it. NOTE: a replace decision pins this whole block, so a BLFS release that changes it will be masked rather than picked up -- re-read this block against the book on any book bump."
     },
-    "1": {
-      "action": "drop",
-      "reason": "The test suite ('To run the tests, execute the following commands') -- not flagged optional by the extractor since the surrounding prose has no 'if you want' framing, the same classifier gap as vulkan-loader/libei/xwayland/ffmpeg. Skipped, matches every other package in this build; the book's own text for this suite (block 2's ctx) warns it 'fails to spin down test servers... leads to an infinite loop', and it hard-failed here with 564/606 tests failing after 20.9 minutes, confirming it is not worth running unattended."
-    },
-    "3": {
-      "action": "drop",
-      "reason": "'If p11-kit is installed, the p11-kit trust module can be used as a drop-in replacement...' -- p11-kit is not part of this build, so the symlink target (./pkcs11/p11-kit-trust.so) does not exist and this would create a dangling link. True of any host without p11-kit, not laptop-specific."
-    }
+    "_note": "Blocks 1 and 3 carried drop decisions inherited verbatim from the BLFS 13.0 entry when db416ba split overrides.json per release. Both were re-read against 13.1 on 2026-09-22 and removed, after the copied index-1 drop silently disabled NSS's INSTALL.\n\n13.0's page had four blocks: build, test suite, install, p11-kit symlink. The index-1 drop was written for the TEST SUITE. 13.1's page has three -- the test-suite block is gone entirely -- so everything below it shifted down and index 1 is now `cd ../dist && install -v -m755 Linux*/lib/*.so /usr/lib && ...`. The recipe therefore built NSS 3.126 and installed none of it, exited 0, and captured a one-file manifest. It was caught only because Firefox 153.2.0esr's configure demands nss >= 3.125 and pkg-config still reported 3.120.1 from the 13.0 install on disk.\n\nIndex 3 no longer exists on the 13.1 page. Its reason -- 'p11-kit is not part of this build, so the symlink target does not exist' -- is also no longer true: p11-kit-0.26.5 is installed and /usr/lib/pkcs11/p11-kit-trust.so is present, so 13.1's block 2 symlink is correct and is left enabled.\n\nThis is exactly what root CLAUDE.md means by 'a decision names a block by index' and 'carrying it forward is a re-read, not a copy'."
   },
   "blfs-libevent": {
     "2": {
@@ -805,6 +798,10 @@
       "action": "replace",
       "cmd": "pip3 wheel -w dist --no-build-isolation --no-deps --no-cache-dir \"$PWD\"",
       "reason": "The book's command leaves $PWD unquoted. /sources has no spaces today, so this is defensive rather than a live bug, but an unquoted $PWD makes pip silently see two arguments if the build tree is ever unpacked under a path with one. Recovered 2026-09-15: this hardening existed in the hand-authored recipe server carried before the recipe was declared book(), and was silently lost when laptop's book() entry made the extractor the owner of the shared file. Re-recorded as a decision, which is the mechanism that should have held it. NOTE: a replace decision pins this whole block, so a BLFS release that changes it will be masked rather than picked up -- re-read this block against the book on any book bump."
+    },
+    "1": {
+      "action": "drop",
+      "reason": "Glad's test suite, `PYTHON=python3 utility/test.sh`. New in 13.1 -- the 13.0 page had two command blocks (build the wheel, install it) and 13.1 has three, with the tests inserted between them. The extractor did not flag it for review, the same classifier gap the nss and libevent entries record: the surrounding prose has no 'if you want' framing, so it reads as a required step. Dropped to match this project's BLFS test policy, and because the book's own text on this page says 12 of 100 tests fail unless pytest, rustc, Xorg Libraries, glfw and WINE are all installed -- WINE is not in this build and will not be.\n\nFound 2026-09-22 while auditing every newly generated 13.1 recipe after the nss index shift. glad is not in that date's rebuild list (2.0.8 in both books), so this had not fired yet; it would have failed the next glad build."
     }
   },
   "blfs-nspr": {

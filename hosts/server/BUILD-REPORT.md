@@ -4459,3 +4459,98 @@ fast with a complete list beats discovering missing sources one build at a time,
 what the last two stops were.
 
 Remaining: 13 steps from `blfs-mesa`, with firefox still the long pole.
+
+## A copied review decision silently disabled NSS's install (2026-09-22)
+
+Firefox 153.2.0esr stopped in `configure`, 48 seconds in:
+
+```
+0:48.60 checking for nss >= 3.125... no
+0:48.60 E ERROR: Package 'nss' has version '3.120.1', required version is '>= 3.125'
+```
+
+`blfs-nss` had reported **success** two minutes earlier. It had built NSS 3.126 from
+source, installed none of it, exited 0, and captured a one-file manifest. `libnss3.so` on
+disk was still dated 2026-09-09 and `pkg-config --modversion nss` still said 3.120.1 --
+the 13.0 install.
+
+### The mechanism, which is the one root `CLAUDE.md` warns about by name
+
+`recipes/blfs-13.1/overrides.json` was created by `db416ba` as a **copy** of the 13.0
+decisions, and a decision names a block by *index*.
+
+BLFS 13.0's nss page had four command blocks: build, test suite, install, p11-kit
+symlink. A `drop` on index 1 was written for the **test suite**, with a reason recording
+that it hard-failed 564/606 tests in 20.9 minutes.
+
+BLFS 13.1's page has **three**. The test-suite block is gone from the page entirely, so
+everything below it shifted down by one, and index 1 is now:
+
+```sh
+cd ../dist                                         &&
+install -v -m755 Linux*/lib/*.so  /usr/lib         &&
+install -v -m644 Linux*/lib/*.chk /usr/lib         &&
+install -v -m755 -d               /usr/include/nss &&
+cp -v -RL {public,private}/nss/*  /usr/include/nss &&
+install -v -m755 Linux*/bin/{certutil,nss-config,pk12util} /usr/bin &&
+install -v -m644 Linux*/lib/pkgconfig/nss.pc  /usr/lib/pkgconfig
+```
+
+"Skip the tests" became "skip the install". The step still exits 0 because dropping a
+block is a legitimate outcome, and the recipe's remaining blocks -- the build, and the
+p11-kit symlink -- both succeed. `blfs-nss` was never going to report this.
+
+The index-3 drop was dead for the same reason, and its stated reason ("p11-kit is not
+part of this build, so the symlink target does not exist") is no longer true either:
+p11-kit-0.26.5 is installed and `/usr/lib/pkcs11/p11-kit-trust.so` is present. 13.1's
+block 2 symlink is correct and stays enabled. Both stale decisions removed, with the
+re-read written into the entry.
+
+### Auditing the rest, because the copy was wholesale
+
+Every one of the 17 recipes newly generated for 13.1 in this sweep had its decisions
+applied to 13.1 block indices for the first time. Comparing 13.0 and 13.1 block counts
+per recipe isolates the ones that can have shifted:
+
+| recipe | 13.0 blocks | 13.1 blocks | verdict |
+|---|---|---|---|
+| `blfs-nss` | 4 | 3 | **shifted -- the bug above** |
+| `blfs-glad` | 2 | 3 | **shifted -- see below** |
+| `blfs-xorg-server` | n/a | 3 | its index-1 decision was written today against 13.1 |
+| the other 14 | equal | equal | decisions land on the same blocks |
+
+`blfs-glad` was the second real one, and it fails the other way: 13.1 **inserted** a test
+block at index 1, between building the wheel and installing it. The single existing
+decision is a `replace` on index 0 and still lands correctly, but the new
+`PYTHON=python3 utility/test.sh` arrived **enabled**, with no decision, and the
+extractor did not queue it for review -- the same classifier gap the nss and libevent
+reasons already record, where prose without "if you want" framing reads as required. The
+book's own text on that page says 12 of 100 tests fail unless pytest, rustc, Xorg
+Libraries, glfw *and WINE* are installed, and WINE is not in this build. Dropped.
+glad is 2.0.8 in both books so it was not in this rebuild; it would have failed the next
+one.
+
+`libevent`'s drops on 2 and 4 were checked by hand and still hit the two doxygen
+documentation blocks with `make install` enabled at 3; `libnotify`'s 0 and 1 still hit
+the meson line and the Gi-DocGen block with `ninja install` enabled at 2.
+
+### Verified, not assumed, for everything else built today
+
+The one-file manifest is the signal that caught this, so every step built today was
+checked the same way rather than trusted:
+
+| step | manifest | installed version |
+|---|---|---|
+| `blfs-llvm` | 3960 | `llvm-config` 22.1.8 |
+| `blfs-spirv-llvm-translator` | 7 | |
+| `blfs-libclc` | 19 | |
+| `blfs-mesa` | 713 | relinked |
+| `slfs-htop` | 5 | htop 3.5.3 |
+| `blfs-ffmpeg` | 285 | ffmpeg 9.0.1 |
+| `blfs-nspr` | 73 | pkg-config 4.40.0 |
+| `blfs-libarchive` | 57 | libarchive 3.8.9 |
+| `blfs-nss` | **1** | **still 3.120.1 -- the bug** |
+
+Every newly generated 13.1 recipe was also grepped for an install command; all 17 have
+one. The two that looked bare (`luajit`, `imagemagick`) put a variable assignment before
+`install` and were false positives of the check, not of the recipes.

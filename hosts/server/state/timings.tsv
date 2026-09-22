@@ -423,3 +423,10 @@ blfs-spirv-llvm-translator	native	3.2	1
 blfs-llvm	native	8262.0	0
 blfs-spirv-llvm-translator	native	158.1	0
 blfs-libclc	native	247.0	0
+blfs-mesa	native	519.1	0
+slfs-htop	native	11.7	0
+blfs-ffmpeg	native	475.7	0
+blfs-nspr	native	9.5	0
+blfs-nss	native	262.2	0
+blfs-libarchive	native	45.0	0
+blfs-firefox	native	115.8	1

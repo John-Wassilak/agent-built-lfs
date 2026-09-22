@@ -26,18 +26,17 @@ make BUILD_OPT=1                      \
 # --- block 1 --------------------------------------------------
 #   ctx: The test suite is known to hang indefinitely so the BLFS editors don't recommend to run
 #   ctx: it. Now, as the root user:
-#   REVIEWED [drop]: The test suite ('To run the tests, execute the following commands') -- not flagged optional by the extractor since the surrounding prose has no 'if you want' framing, the same classifier gap as vulkan-loader/libei/xwayland/ffmpeg. Skipped, matches every other package in this build; the book's own text for this suite (block 2's ctx) warns it 'fails to spin down test servers... leads to an infinite loop', and it hard-failed here with 564/606 tests failing after 20.9 minutes, confirming it is not worth running unattended.
-# cd ../dist                                         &&
-# 
-# install -v -m755 Linux*/lib/*.so  /usr/lib         &&
-# install -v -m644 Linux*/lib/*.chk /usr/lib         &&
-# 
-# install -v -m755 -d               /usr/include/nss &&
-# cp -v -RL {public,private}/nss/*  /usr/include/nss &&
-# 
-# install -v -m755 Linux*/bin/{certutil,nss-config,pk12util} /usr/bin &&
-# 
-# install -v -m644 Linux*/lib/pkgconfig/nss.pc  /usr/lib/pkgconfig
+cd ../dist                                         &&
+
+install -v -m755 Linux*/lib/*.so  /usr/lib         &&
+install -v -m644 Linux*/lib/*.chk /usr/lib         &&
+
+install -v -m755 -d               /usr/include/nss &&
+cp -v -RL {public,private}/nss/*  /usr/include/nss &&
+
+install -v -m755 Linux*/bin/{certutil,nss-config,pk12util} /usr/bin &&
+
+install -v -m644 Linux*/lib/pkgconfig/nss.pc  /usr/lib/pkgconfig
 
 # --- block 2 --------------------------------------------------
 #   ctx: ion of tests and save some build time. Configuring NSS If p11-kit-0.26.5 is installed,
