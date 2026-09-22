@@ -420,3 +420,6 @@ blfs-rsync	chroot	38.5	0
 blfs-bash-completion	chroot	5.5	0
 blfs-cbindgen	native	91.4	0
 blfs-spirv-llvm-translator	native	3.2	1
+blfs-llvm	native	8262.0	0
+blfs-spirv-llvm-translator	native	158.1	0
+blfs-libclc	native	247.0	0

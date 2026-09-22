@@ -359,3 +359,6 @@ blfs-opentofu
 blfs-rsync
 blfs-bash-completion
 blfs-cbindgen
+blfs-llvm
+blfs-spirv-llvm-translator
+blfs-libclc

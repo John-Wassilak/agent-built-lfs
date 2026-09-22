@@ -4425,3 +4425,37 @@ go through it.
 `blfs-llvm` (55.3) -> `blfs-spirv-llvm-translator` (55.8) -> `blfs-libclc` (55.9) ->
 `blfs-mesa` (56) as the leading unit, and the caution written into the file rather than
 left in a commit message. `blfs-cbindgen` is dropped from the list, being done.
+
+### The LLVM chain landed; mesa stopped on a file I never staged (2026-09-22)
+
+`blfs-llvm`, `blfs-spirv-llvm-translator` and `blfs-libclc` all built. Verified on the
+live system rather than from the build log: `llvm-config --version` and `clang --version`
+both report **22.1.8**, `/usr/lib/libLLVM.so.22.1` and `/usr/lib/libLLVMSPIRVLib.so.22.1`
+exist, and `/etc/clang/clang.cfg` and `clang++.cfg` now exist with
+`-fstack-protector-strong` -- the directory the 13.0 recipe had referenced for a year
+without ever creating.
+
+`/usr/lib/libLLVM.so.21.1` is still on disk beside the new one. Nothing removed it, which
+is why mesa is not currently broken: it is still bound to a library that still exists. It
+is stale, not dangling, and the relink is still owed.
+
+`blfs-mesa` then stopped before building at all -- `mesa-26.1.7.tar.xz not found in
+/sources`. My error, and worth naming precisely: I built the download list from the
+*version sweep*, and mesa is not a version bump. Its tarball was never fetched because
+nothing about its version had changed, even though the step obviously still needs the
+source to rebuild from. Staged now, md5 `1a3ea044…` against the book.
+
+Auditing the rest of the queue the same way turned up one more: `nss-standalone-1.patch`
+is applied on a live command line in `blfs-nss` and was not staged either. It would have
+stopped the run at step 8 of 16. Fetched from the 13.1 patches directory; byte-identical
+to the 13.0 copy already in `blfs-staging/`, so no behaviour changes, but it is now where
+the driver looks.
+
+`rebuild.sh` gains a **pre-flight**: before anything builds, it resolves each step's
+tarball from the plan and each patch its recipe applies on a non-comment line, and
+refuses to start if any is absent from `/sources`, printing the whole list. Exercised
+against a stubbed copy -- it reported exactly those two files and nothing else. Failing
+fast with a complete list beats discovering missing sources one build at a time, which is
+what the last two stops were.
+
+Remaining: 13 steps from `blfs-mesa`, with firefox still the long pole.

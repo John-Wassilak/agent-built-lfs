@@ -3,5 +3,5 @@
 /usr/include/LLVMSPIRVLib/LLVMSPIRVLib.h
 /usr/include/LLVMSPIRVLib/LLVMSPIRVOpts.h
 /usr/lib/libLLVMSPIRVLib.so
-/usr/lib/libLLVMSPIRVLib.so.21.1
+/usr/lib/libLLVMSPIRVLib.so.22.1
 /usr/lib/pkgconfig/LLVMSPIRVLib.pc
