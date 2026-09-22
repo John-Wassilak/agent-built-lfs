@@ -171,16 +171,19 @@ nothing that depends on the GPU being in a known state.
 
 Logging in:
 
-- `root` and `john` both have real password hashes in the tree (`john` is uid 1000,
-  `/etc/sudoers.d/00-sudo` present). Root is **not** locked here, unlike the live 13.0
-  system where it was locked on 2026-08-26 in favor of `john` plus sudo. The root password
-  was set during USB prep to a value recorded outside this repo; if you no longer have it,
-  chroot into the stick from the live system and reset it before rebooting.
+- Only `john` can log in (uid 1000, `/etc/sudoers.d/00-sudo` present). `root` has no
+  password hash at all (`*`, since 2026-09-22, ch08-shadow block 10 in
+  `hosts/server/review-overrides.json`); get root through `sudo`. john's password was set
+  during USB prep to a value recorded outside this repo; if you no longer have it, chroot
+  into the stick from the live system and reset it before rebooting. Rescue/emergency
+  targets refuse a locked root unless `SYSTEMD_SULOGIN_FORCE=1` is on the kernel command
+  line (edit the GRUB entry), or use `init=/bin/bash`.
 - **Networking and SSH come up on their own.** `systemd-networkd` DHCPs on `en*`/`eth*`
   (`/etc/systemd/network/10-dhcp.network`), `sshd.service` is enabled, and
   `/etc/systemd/scripts/iptables` -- default-DROP on INPUT -- explicitly accepts
   `tcp/22 NEW`. So you can drive the restore over SSH from `laptop` rather than through
-  the console, which is the point of enabling it.
+  the console, which is the point of enabling it. sshd is key-only and refuses root, so
+  `~john/.ssh/authorized_keys` on the stick must hold the key you connect with.
 - **sshd generates fresh host keys on first start** (`ExecStartPre=ssh-keygen -A`); the
   tree ships none. `laptop`'s `known_hosts` will object. Expect that, and verify the
   fingerprint at the console rather than blindly removing the entry.

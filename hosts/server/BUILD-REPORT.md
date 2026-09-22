@@ -5272,3 +5272,43 @@ ESTABLISHED/RELATED, NEW tcp/22 and OUTPUT accept; `ip6tables -S` shows DROP pol
 with only the two lo rules; tailscale still up. Two rules the old login script had are
 gone: the BROADCAST/MULTICAST DROP (no-op without a LOG rule) and its unconditioned
 tcp/22 accept (replaced by the NEW-state one).
+
+## SSH key-only, no root login, no root password (2026-09-22)
+
+The live sshd was already key-only with root refused -- the overlay `sshd_config`
+deployed by hand says so, and `sshd -T` agreed -- but the repo would not have rebuilt it
+that way. The shared 13.1 decision on blfs-openssh block 3 replaced the book's
+`PermitRootLogin no` with `yes` ("this system has only root"), and block 5 (key-only) was
+dropped. A rerun of blfs-openssh would have appended `PermitRootLogin yes`, harmless only
+because the overlay's earlier `no` wins on first occurrence. Root also still had a
+working password hash (`passwd -S root` -> `P 2026-09-20`).
+
+Changes:
+
+- `recipes/blfs-13.1/overrides.json`: block 3 decision removed, so the generated recipe
+  is the book's own `PermitRootLogin no`. The removed reason described server's bootstrap
+  state before john existed, which is not true of any host now; server is the only host
+  reading this release.
+- `hosts/server/blfs-overrides.json`: block 5 enabled as the laptop's idempotent form --
+  sed out every `PermitRootLogin`/`PasswordAuthentication`/`KbdInteractiveAuthentication`
+  line, then append one `no` for each. Generates `hosts/server/recipes/blfs-openssh.sh`.
+- `hosts/server/review-overrides.json`: ch08-shadow block 10 is `usermod -p '*' root`
+  instead of the shared `lfs-changeme` placeholder. Generates
+  `hosts/server/recipes/ch08-shadow.sh`.
+- Live: `usermod -p '*' root`, then `/etc/shadow` copied over `/etc/shadow-` so the
+  backup does not keep the old hash.
+
+Verified on the live system: `passwd -S root` -> `L`; `/etc/shadow` and `/etc/shadow-`
+both carry `root:*:`; `sshd -T` shows permitrootlogin, passwordauthentication and
+kbdinteractiveauthentication all `no`; `ssh root@localhost` and `ssh -o
+PubkeyAuthentication=no john@localhost` both end `Permission denied (publickey)`, and
+`ssh -v` lists `publickey` as the only method; `su root` -> `Authentication failure`;
+`sudo -n true` still succeeds. `extract-recipes.py --check` and `extract-blfs.py --check`
+report zero drift after regenerating.
+
+Side effect: `rescue.target`/`emergency.target` run sulogin, which refuses a locked
+root unless given `--force`. `systemd-sulogin-shell` passes `--force` when
+`SYSTEMD_SULOGIN_FORCE=1` is on the kernel command line (string present in the binary,
+and sulogin(8): "If the root account is locked and --force is specified, no password is
+required"). Recovery is therefore `systemd.unit=rescue.target SYSTEMD_SULOGIN_FORCE=1`
+added at the GRUB prompt, or `init=/bin/bash`.

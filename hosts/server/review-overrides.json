@@ -70,5 +70,12 @@
       "cmd": "cat > /etc/os-release << \"EOF\"\nNAME=\"Linux From Scratch\"\nVERSION=\"13.1-systemd\"\nID=lfs\nPRETTY_NAME=\"Linux From Scratch 13.1-systemd\"\nVERSION_CODENAME=\"claude-managed\"\nHOME_URL=\"https://www.linuxfromscratch.org/lfs/\"\nRELEASE_TYPE=\"stable\"\nEOF",
       "reason": "Same as block 1 -- os-release carries the version twice, in VERSION and PRETTY_NAME."
     }
+  },
+  "ch08-shadow": {
+    "10": {
+      "action": "replace",
+      "cmd": "usermod -p '*' root\necho \"### root has no password -- reachable only through sudo (wheel)\"",
+      "reason": "Requested 2026-09-22: remove the root password altogether. The shared decision sets the placeholder 'lfs-changeme' because the book's `passwd root` (chapter08/shadow.html, 8.30.3) is interactive; that placeholder is a working password. This host gets john with wheel/NOPASSWD sudo (adduser-john, blfs-sudo), so root never needs one. `usermod -p '*'` replaces the hash with '*', which no crypt() output can match: login, su and ssh password auth for root all fail, and unlike laptop's `passwd -l` no hash survives behind a '!' for `passwd -u` to restore. Not `passwd -d`: an empty field lets login accept root with no password. Consequence: systemd's rescue/emergency targets run sulogin, which refuses a locked root unless SYSTEMD_SULOGIN_FORCE=1 is on the kernel command line (systemd-sulogin-shell then passes --force); init=/bin/bash also works."
+    }
   }
 }

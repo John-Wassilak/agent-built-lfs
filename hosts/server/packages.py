@@ -573,9 +573,10 @@ PACKAGES = BASE + [
     # land at 1000 (login.defs UID_MIN/GID_MIN, postlfs/users.html), the first ID above
     # LFS's system-account range. Password locked deliberately (usermod -L): decided with
     # the operator to create the account with no working auth yet rather than a temporary
-    # password or a key sight-unseen -- sshd already allows password auth (blfs-openssh
-    # block 5 was dropped for exactly this reason), so the account becomes reachable the
-    # moment a password or authorized_keys is added, whenever that happens.
+    # password or a key sight-unseen. sshd is key-only on this host since 2026-09-22
+    # (blfs-openssh block 5, hosts/server/blfs-overrides.json) and root has no password
+    # (ch08-shadow block 10), so on a fresh build nobody can log in until john gets a
+    # password at the console via chroot, or an authorized_keys.
     hand(177, "adduser-john", "", "adduser-john (hand-authored)"),
 
     # Fractional seq (177.1), not its original 119: moved 2026-09-08, same fresh-build

@@ -157,11 +157,6 @@
       "cmd": "make install &&\ninstall -v -m755    contrib/ssh-copy-id /usr/bin     &&\n\ninstall -v -m644    contrib/ssh-copy-id.1 \\\n                    /usr/share/man/man1              &&\ninstall -v -m755 -d /usr/share/doc/openssh-10.5p1     &&\ninstall -v -m644    INSTALL LICENCE OVERVIEW README* \\\n                    /usr/share/doc/openssh-10.5p1",
       "reason": "Version bumped ahead of the book 2026-09-05 (openssh-10.2p1 -> 10.5p1, packages/base.py seq 5) -- sa-13.0-032/173/200 all affect 10.2p1, fixed versions confirmed against openssh.org/releasenotes.html. The book's own text for this block hardcodes the doc-install path to the version it was written against (openssh-10.2p1); everything else in this recipe (configure/make/make install) is version-agnostic and needs no change. Shared, not host-specific, since the version bump itself lives in the shared packages/base.py and applies to any host built from this book."
     },
-    "3": {
-      "action": "replace",
-      "cmd": "echo \"PermitRootLogin yes\" >> /etc/ssh/sshd_config",
-      "reason": "The book appends 'PermitRootLogin no', which is the right default on a system with normal user accounts. This system has only root, so 'no' would make sshd unreachable and defeat the purpose of installing it. Set to 'yes' deliberately and flagged in the build report: change the root password on first boot and move to key-only auth."
-    },
     "4": {
       "action": "drop",
       "reason": "Interactive 'ssh-keygen' followed by 'ssh-copy-id ... REMOTE_USERNAME@REMOTE_HOSTNAME' -- literal placeholders, and it would block on a prompt."

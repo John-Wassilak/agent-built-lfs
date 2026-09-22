@@ -63,9 +63,14 @@ echo "PermitRootLogin no" >> /etc/ssh/sshd_config
 #   ctx: Once you've got passwordless logins working it's actually more secure than logging in
 #   ctx: with a password (as the private key is much longer than most people's passwords). If you
 #   ctx: would like to now disable password logins, as the root user:
-#   REVIEWED [drop]: Appends 'PasswordAuthentication no' and 'KbdInteractiveAuthentication no', i.e. key-only auth. No authorized_keys exists on this system, so applying it together with the block above would leave no way to log in at all.
-# echo "PasswordAuthentication no" >> /etc/ssh/sshd_config &&
-# echo "KbdInteractiveAuthentication no" >> /etc/ssh/sshd_config
+sed -i '/^PermitRootLogin /d;/^PasswordAuthentication /d;/^KbdInteractiveAuthentication /d' \
+    /etc/ssh/sshd_config
+
+cat >> /etc/ssh/sshd_config << "EOF"
+PermitRootLogin no
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+EOF
 
 # --- block 6 --------------------------------------------------
 #   ctx: If you added Linux-PAM support and you want ssh to use it then you will need to add a

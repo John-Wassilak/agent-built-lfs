@@ -66,8 +66,8 @@
     "tarball": "openssh-10.5p1.tar.gz",
     "manifest": true,
     "blocks": 8,
-    "enabled": 4,
-    "disabled": 4
+    "enabled": 5,
+    "disabled": 3
   },
   {
     "seq": 6,
