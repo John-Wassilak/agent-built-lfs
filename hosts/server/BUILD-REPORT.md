@@ -4554,3 +4554,34 @@ checked the same way rather than trusted:
 Every newly generated 13.1 recipe was also grepped for an install command; all 17 have
 one. The two that looked bare (`luajit`, `imagemagick`) put a variable assignment before
 `install` and were false positives of the check, not of the recipes.
+
+### The audit extended to all 75 recipes carrying decisions
+
+The `overrides.json` split copied *every* decision, not just the 17 recipes regenerated
+this week, so the block-count comparison was run across all 75 entries in
+`recipes/blfs-13.1/overrides.json` that name a block index. Ten came back with a changed
+count; three were already handled (`nss`, `glad`, `xorg-server`). The other seven were
+read by hand against the block each decision now lands on:
+
+- `blfs-glib2` (10 -> 9): idx 1 `enable` still lands on the `if [ -e /usr/include/glib-2.0 ]`
+  guard, idx 2 `replace` on the meson line, idx 7 `drop` on the HTML-doc block. Correct.
+- `blfs-json-c` (5 -> 4), `blfs-rust` (10 -> 11), `blfs-sdl3` (3 -> 4),
+  `blfs-sudo` (4 -> 5), `blfs-nodejs` (3 -> 2): all correct, and several of their reasons
+  *say so in the text* -- "Reindexed for the 2026-09-07 BLFS 13.1 bump", "New in BLFS
+  13.1", "Reindexed 4->5". `blfs-sdl3`'s idx 2 is even an `enable` added on 2026-09-08
+  with the note "this block is the REAL install step", i.e. the identical failure caught
+  once before, in that bump, by someone reading the blocks.
+
+That is the pattern, and it is the reassuring half of this: **the 13.1 bump did re-read
+the decisions for the recipes it generated.** What it did not do was generate all of
+them. The 14 recipes it left uncreated -- the gap closed on 2026-09-21 -- never got that
+re-read, and two of the 14 were wrong. The bug was not carelessness at the bump; it was
+the incomplete `recipes/blfs-13.1/` tree hiding a subset of decisions from the review
+that every other decision received.
+
+One cosmetic leftover, not worth a rebuild: `blfs-sudo`'s idx 4 reason still reads
+"Linux-PAM is not part of this LFS **13.0** build". The decision is still correct -- PAM
+is not built here -- only the release in the prose is stale.
+
+`blfs-nss` rebuilt clean: **271 files** in the manifest against the previous 1, and both
+`pkg-config --modversion nss` and `nss-config --version` now report **3.126.0**.

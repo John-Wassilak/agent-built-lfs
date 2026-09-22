@@ -430,3 +430,4 @@ blfs-nspr	native	9.5	0
 blfs-nss	native	262.2	0
 blfs-libarchive	native	45.0	0
 blfs-firefox	native	115.8	1
+blfs-nss	native	271.5	0
