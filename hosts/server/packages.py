@@ -615,7 +615,7 @@ PACKAGES = BASE + [
     book(187, "libarchive", "general/libarchive.html", "libarchive-3.8.9.tar.xz"),
     book(188, "libnotify", "x/libnotify.html", "libnotify-0.8.8.tar.xz"),
     book(189, "startup-notification", "x/startup-notification.html", "startup-notification-0.12.tar.gz"),
-    book(190, "libevent", "basicnet/libevent.html", "libevent-2.1.12-stable.tar.gz"),
+    book(190, "libevent", "basicnet/libevent.html", "libevent-2.1.13-stable.tar.gz"),
 
     # Fractional seq (190.5), not its original 241: moved 2026-09-08, same fresh-build
     # ordering bug as elsewhere in this file. Firefox's configure hard-requires it as

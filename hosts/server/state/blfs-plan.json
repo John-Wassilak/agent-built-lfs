@@ -2387,7 +2387,7 @@
     "page": "libevent",
     "title": "libevent-2.1.13",
     "context": "chroot",
-    "tarball": "libevent-2.1.12-stable.tar.gz",
+    "tarball": "libevent-2.1.13-stable.tar.gz",
     "manifest": true,
     "blocks": 5,
     "enabled": 3,

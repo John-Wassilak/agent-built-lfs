@@ -4640,3 +4640,77 @@ stays accurate without a separate `lfsmaint db` run", which was simply wrong and
 corrected in the file, with a `lfsmaint db` appended to the end of the run while it is
 still root. The run currently in flight was launched from the older copy, so that rebuild
 has to be done by hand once it finishes.
+
+## Firefox died on a header collision between libev and libevent (2026-09-22)
+
+81 minutes in, at `ipc/chromium`:
+
+```
+message_pump_libevent.cc:33:4: error: Cannot find libevent type sizes
+message_pump_libevent.cc:36:20: error: unknown type name 'LONG'
+  ... nine of these ...
+message_pump_libevent.cc:127:3: error: use of undeclared identifier 'event_base_loopbreak'
+```
+
+Configure had been perfectly happy: `--with-system-libevent`, `checking for libevent...
+yes`, `MOZ_LIBEVENT_LIBS... -levent`. And the installed
+`/usr/include/event2/event-config.h` really does define `EVENT__SIZEOF_SHORT` and the
+other eight macros. The header firefox actually reads is a different file.
+
+`message_pump_libevent.cc` does `#include "event.h"`, not `<event2/...>`. And
+**`/usr/include/event.h` was owned by two packages**:
+
+```
+$ grep -rl '^/usr/include/event.h$' hosts/server/manifests/
+hosts/server/manifests/blfs-libev.txt
+hosts/server/manifests/blfs-libevent.txt
+```
+
+The copy on disk was libev's, dated Sep 9 **07:51**, against libevent's own at **01:42**.
+Its first line says what it is: *"libevent compatibility header, only core events
+supported"*, copyright Marc Alexander Lehmann -- a shim implementing a subset of libevent
+1.x. It defines none of the `EVENT__SIZEOF_*` macros and declares no
+`event_base_loopbreak`, which is precisely the error list.
+
+**Why a from-scratch build never sees this.** seq order is libevent 190, firefox 192,
+libev 244. A full build installs libevent's header, builds firefox against it, and only
+then lets libev overwrite it. The collision is invisible until something rebuilds a
+libevent consumer afterwards -- which is exactly what a version sweep does. Firefox
+140.8.0esr was built this way in the 13.1 chroot and was fine.
+
+Fixed at the source. libev has no configure switch for the shim (it is unconditional in
+`include_HEADERS`), so `recipes/blfs-libev.sh` removes it after install, guarded on the
+file actually being libev's by grepping its own banner. Nothing wants it: picom is libev's
+only consumer here and includes `<ev.h>`. `laptop` declares libev at all, so the shared
+recipe is server-only in practice and the fix is generic anyway.
+
+The live repair was the other way round from the recipe order: rebuilding libev would
+have removed the shim and left *no* `/usr/include/event.h`, so libevent was rebuilt
+instead, which reinstalls its own. Verified by compiling firefox's exact preprocessor
+check standalone -- it now selects the `EVENT__SIZEOF_SHORT` branch, reports
+`SHORT=2 VOID_P=8`, and links `event_base_loopbreak`.
+
+### libevent was also a version miss, and it was on a list I had already produced
+
+`blfs-libevent` was pinned at 2.1.12-stable; BLFS 13.1 ships **2.1.13-stable**. It was in
+the 72-entry "planned tarball not in the 13.1 wget-lists" audit from the LLVM session, and
+that triage called out llvm and libclc as the only real ones. That was wrong -- the 72
+were dismissed too quickly by eyeballing categories instead of testing each one.
+
+Re-done mechanically: for each of the 72, strip the version off the pinned tarball and ask
+whether that *package name* appears in the 13.1 lists at any version. Three hit, and only
+one is a gap -- `libevdev` 1.13.7 and `lua` 5.4.9 are the two deliberate "ahead of book"
+pins `drift` already reports. `libevent` was the third. Bumped, downloaded, md5
+`eaa0bd34…`, rebuilt: `pkg-config --modversion libevent` now reports 2.1.13-stable.
+
+The two triage methods are complements and both are needed: name-matching finds a version
+gap but misses a rename, which is how llvm (`llvm` -> `llvm-project`) stayed invisible;
+exact-filename matching finds the rename but buries it among 70 benign entries.
+
+### A reporting trap worth recording
+
+The first run of the remaining seven steps was launched as
+`sudo rebuild.sh ... 2>&1 | tail -40`, and the completion notice said **exit code 0** while
+firefox had failed with rc=2 and the script had stopped. A pipeline's status is its last
+command's, so that 0 was `tail`'s. Relaunched writing to a file and reporting `$?`
+directly.

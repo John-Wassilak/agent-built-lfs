@@ -369,3 +369,4 @@ blfs-nspr
 blfs-nss
 blfs-libarchive
 blfs-nss
+blfs-libevent
