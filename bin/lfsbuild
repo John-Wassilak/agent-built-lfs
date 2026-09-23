@@ -266,6 +266,11 @@ def srcdir_of(tarball):
         capture_output=True, text=True, check=True,
     ).stdout
     for line in out.splitlines():
+        # Some tarballs prefix every entry with "./" (AppStream-1.1.2:
+        # "./AppStream-1.1.2/tools/..."). Strip it so the first component is the
+        # real directory; without this every line reduced to "." and was skipped.
+        while line.startswith("./"):
+            line = line[2:]
         top = line.split("/")[0]
         # Skip the archive-root marker some tarballs list explicitly (seen on
         # Firefox's own tarball: the first entry is a literal "./" before any
