@@ -34,5 +34,14 @@
     ],
     "cmd": "grep -ri 'RegisterDevice(0x9a49'",
     "context": "built. To determine the model of the Intel GPU, install pciutils-3.14.0 and run lspci -nn | grep -Ei 'VGA|DISPLAY' first. It will output some information about the GPU, including the PCI vendor ID (8086 for Intel) and the PCI device ID. For example, with an Intel Core i5-11300H CPU, the output is 8086:9a49. Now searching for the registration of this device ID in the intel-media-driver source tree:"
+  },
+  {
+    "recipe": "blfs-gimp",
+    "block": 4,
+    "tags": [
+      "admon:note"
+    ],
+    "cmd": "gtk-update-icon-cache -qtf /usr/share/icons/hicolor &&\nupdate-desktop-database -q",
+    "context": "r hierarchy and desktop files into the /usr/share/applications hierarchy. You can improve system performance and memory usage by updating /usr/share/icons/hicolor/index.theme and /usr/share/applications/mimeinfo.cache. To perform the update you must have GTK-3.24.51 installed (for the icon cache) and desktop-file-utils-0.28 (for the desktop cache) and issue the following commands as the root user:"
   }
 ]

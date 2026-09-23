@@ -6335,3 +6335,69 @@ All five book md5 sums matched. Build times: 0.3, 0.1, 0.1, 0.1 and 2.5 min. Man
 - ncat, nping and ndiff run.
 - zenmap's `zenmapCore`/`zenmapGUI`/`radialnet` import against Gtk 3. The GUI itself was
   not launched.
+
+## 2026-09-23 -- GIMP 3.0.6 (seq 341-361)
+
+Operator request. `xsoft/gimp.html` (BLFS 13.0) plus its Required and Recommended closure:
+24 new steps, all built natively. GTK3, glib-networking, harfbuzz, librsvg, libtiff,
+libxml2, lcms2, poppler, iso-codes, libgudev and xdg-utils were already here.
+
+- **341 docbook-xml**, **342 lxml**, **358 poppler-data**: `hand()`, shared. docbook-xml's
+  source is a zip with no top-level directory, which lfsbuild's `tar -tf` unpack cannot read,
+  so the recipe unzips into its own scratch dir. lxml is a section of `python-modules.html`.
+  poppler-data is blocks 3-4 of `poppler.html`, which seq 304 dropped; GIMP's page lists
+  Poppler "(including poppler-data)" as Required.
+- **343-357, 359-361**: `book()`. Shared decisions in `recipes/blfs-13.0/overrides.json`
+  drop the optional-download blocks (docbook-xsl-nons 1/3 and the `<version>` template 5,
+  gimp-help 5-7), openjpeg2's 1.7 GB test block 1, and ghostscript's X11 viewer test 7.
+  gimp block 4 (icon/desktop cache refresh) keeps the extractor's default of disabled, as
+  mpv's copy of the same note does. I ran both commands by hand after install.
+- **360 ghostscript**: host override (`blfs-overrides.json`) adds `--without-x`. configure
+  found libX11 and libXext but not libXt and stopped. This host is Wayland and had never
+  built libXt. GIMP uses gs to rasterize, not its x11 display devices.
+- **349.5 vala**: added after gexiv2's meson setup failed with "Could not execute Vala
+  compiler: valac" (meson.build:104). The book lists Vala as Recommended; gexiv2 fails
+  without it. It was first slotted at 354.5, just ahead of gexiv2. GIMP then failed at
+  meson.build:943 ("Vala shared or static library 'babl-0.1' not found"), because babl and
+  gegl install `.vapi` files only when valac exists at their configure time. Vala moved to
+  349.5, ahead of babl (never committed at 354.5, so no history renumbered), and babl and
+  gegl were force-rebuilt. `babl-0.1.vapi` and `gegl-0.4.vapi` are now in
+  `/usr/share/vala/vapi`.
+- **360.5 libxt**, **360.7 libxmu**: `hand()`, reusing server's shared x7lib recipes
+  unchanged. GIMP's meson.build:738 requires xmu, xext and xfixes whenever GTK3 has the x11
+  target, and this host's does (`broadway wayland x11`, kept for XWayland). No meson option
+  skips it. ghostscript was not rebuilt against libXt; it stays `--without-x`.
+
+`bin/lfsbuild` fix: `srcdir_of()` took the first path component of each `tar -tf` line,
+and `AppStream-1.1.2.tar.xz` prefixes every entry with `./`. Every line reduced to `.`,
+the Firefox guard skipped it, and the step died with "cannot determine source dir". A
+leading `./` is now stripped before the split. I checked the remaining 14 tarballs in this
+batch against the fixed function before resuming.
+
+Post-install fault: `/tmp/gimp/3.0`, GIMP's shared temp dir, was left owned by root,
+because lfsbuild runs the recipe as root and GIMP runs its own binaries during the build.
+As john, PostScript import then failed: ghostscript reported "Could not open the file
+'/tmp/gimp/3.0/gimp-temp-*.pnm' ... Permission denied". I removed it by hand, and a shared
+decision on gimp block 3 now removes it after `ninja install` when root owns it. That
+decision has not yet run in a build.
+
+Verified as john, headless (`gimp-console-3.0 -i --quit`, Script-Fu): created an image,
+exported PNG and PDF, reloaded the PDF through poppler (width 64 as saved), and loaded
+ghostscript's `tiger.eps` through libgs (2291x2366). `ldd` shows the system gegl, babl,
+gexiv2, libmypaint, appstream and libgs, with nothing missing. Not verified: the GUI in
+the Hyprland session.
+
+One test artifact to know about: a PS file exported by Script-Fu from a new image with
+default options had a BoundingBox of 19200x14400 points. Loading it back rasterized a
+5.6 GB temp file into `/tmp`, which is 7.6 GB RAM-backed tmpfs here, and filled it. I
+deleted it at once. This came from the scripted export defaults, not the build.
+
+PyGObject: the nmap entry above says PyGObject "was already here". It was not built by any
+step. `pygobject-3.58.0` and `pycairo-1.29.1` are in `manifests/blfs-nmap.txt`, pulled from
+PyPI by nmap's install. GIMP lists PyGObject as Recommended, and this copy meets that. It
+is still unrecorded as its own step.
+
+All book md5 sums matched (vala, libXt and libXmu included). Build times in
+`state/timings.tsv`; the long ones were ghostscript 20.2 min, gimp 13.2 min, gegl 7.9 min
+(5.7 on rebuild), lxml 6.3 min and vala 4.4 min. `extract-blfs.py --check`: zero drift.
+13 GB free on `/` afterwards.
