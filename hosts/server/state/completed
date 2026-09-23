@@ -379,3 +379,12 @@ blfs-rsync
 blfs-unixodbc
 blfs-nvidia-vaapi-driver
 blfs-mpv
+blfs-libseccomp
+blfs-runc
+blfs-containerd
+blfs-moby
+blfs-docker-cli
+blfs-docker-buildx
+blfs-docker-compose
+ch10-kernel
+blfs-nvidia-470xx

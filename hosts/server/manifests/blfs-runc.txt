@@ -1,0 +1,2 @@
+/usr/sbin/runc
+/usr/share/bash-completion/completions/runc

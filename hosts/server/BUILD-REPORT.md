@@ -5312,3 +5312,57 @@ root unless given `--force`. `systemd-sulogin-shell` passes `--force` when
 and sulogin(8): "If the root account is locked and --force is specified, no password is
 required"). Recovery is therefore `systemd.unit=rescue.target SYSTEMD_SULOGIN_FORCE=1`
 added at the GRUB prompt, or `init=/bin/bash`.
+
+## Docker, built from source (2026-09-23)
+
+Operator request: run containers. BLFS, SLFS and GLFS 13.1 have no page for Docker,
+containerd or runc (grepped all three books); BLFS has libseccomp. So `packages.py`
+**seq 256-262**: `book()` libseccomp, then `hand()` runc, containerd, moby (dockerd +
+docker-proxy), docker-cli, docker-buildx, docker-compose. Recipes are shared
+(`recipes/blfs-*.sh`) because nothing in them names hardware. The operator chose
+source builds over download.docker.com's static tarball, and john in the `docker`
+group (root-equivalent) over sudo-only or rootless.
+
+| step | version | notes |
+|------|---------|-------|
+| libseccomp | 2.6.1 | book page as extracted; md5 matches the book |
+| runc | 1.5.1 | `seccomp` tag kept, `libpathrs` dropped (Rust library, no book carries it); links `/usr/lib/libseccomp.so.2`, `runc features` reports seccomp enabled |
+| containerd | 2.4.0 | `no_btrfs` (no libbtrfsutil, root is ext4); unit rewritten to `/usr/bin`, not enabled -- docker.service Wants= it |
+| moby | 29.8.1 | upstream `hack/make.sh dynbinary`; tags `nri_no_wasm,journald`; docker.socket + docker.service enabled |
+| docker-cli | 29.8.1 | built under upstream's `with-go-mod.sh`; bash completion installed; no man pages |
+| docker-buildx | 0.37.1 | `/usr/libexec/docker/cli-plugins` |
+| docker-compose | 5.5.1 | only tarball without `vendor/`; network fetch with the tailscale resolv.conf pattern, module cache removed |
+
+All built under go1.27.0; every go.mod floor is <= 1.26.6. Every Go tree but compose
+ships `vendor/` and builds offline. Manifests are 44/2/4/11/2/1/1 files; moby's includes
+`/etc/group`/`gshadow` for `groupadd docker`, same as blfs-openssh and adduser-john.
+
+**Firewall interaction.** `/etc/systemd/scripts/iptables` starts with `iptables -F`,
+`-X` and `-t nat -F`, which deletes every DOCKER-* chain. The moby recipe installs a
+drop-in, `docker.service.d/10-after-iptables.conf`, so at boot the firewall loads
+first. On the live system, **any `systemctl restart iptables` must be followed by
+`systemctl restart docker`**.
+
+**Kernel.** Measured with moby's `contrib/check-config.sh` against `/boot/config-7.1.8`:
+namespaces, seccomp, memcg, pids and cpuset were present; missing were `BPF_SYSCALL` and
+`CGROUP_BPF` (runc's device control on cgroup v2), `VETH`, `BRIDGE`, `BRIDGE_NETFILTER`,
+`NETFILTER_ADVANCED`, `IP_NF_TARGET_MASQUERADE`, `IP_NF_RAW`, the IPv6 NAT/raw/MASQUERADE
+trio, `OVERLAY_FS` and `CFS_BANDWIDTH`. Added to `bin/kernel-config-base.sh` (a feature,
+not hardware). One trap found by diffing the dry-run config against `/boot`:
+`IP6_NF_TARGET_REJECT` is `default m if NETFILTER_ADVANCED=n`, so turning on
+NETFILTER_ADVANCED silently drops it -- now pinned explicitly. After the edit the dry run
+diff is additions only, and check-config's "Generally Necessary" list is clean except
+`NETFILTER_XT_MATCH_IPVS` (Swarm only, deliberately left out).
+
+Pre-rebuild kernel kept as `/boot/*.pre-docker` and `/lib/modules/7.1.8.pre-docker`.
+
+Kernel rebuilt with `lfsbuild --only ch10-kernel --force` after staging the config pair
+into `/sources` (`cmp` identical to the repo). The build tree's `.config` was checked a
+minute in and carried all twelve new symbols. As expected, `make modules_install`
+removed `kernel/drivers/video/nvidia-470xx/`; `blfs-nvidia-470xx --force` rebuilt it
+(vermagic `7.1.8 SMP preempt mod_unload`, same as in-tree `overlay.ko`). That run's
+manifest also records `/usr/share/X11/xorg.conf.d/nvidia-drm-outputclass.conf`, which
+the installer wrote this time; it selects `Driver "nvidia"`, the same choice
+`/etc/X11/xorg.conf` already makes. `lfsmaint db` rebuilt; `lfsmaint owns` resolves
+docker, dockerd, runc, containerd, docker-buildx and libseccomp.so.2. All four
+extractors report zero drift at 230 steps.

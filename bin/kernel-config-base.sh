@@ -128,6 +128,51 @@ kernel_config_shared() {
     $K --module  FUSE_FS
     $K --module  CUSE
 
+    # --- added 2026-09-23: container runtime (Docker / containerd / runc) ------
+    # Not in any book (BLFS/SLFS/GLFS 13.1 carry no container page). A feature, not
+    # hardware, so it goes here with FUSE and WireGuard. Measured against moby's own
+    # contrib/check-config.sh on server's 7.1.8 config: namespaces, seccomp, memcg,
+    # pids, cpuset and conntrack were already set; these were missing.
+    #
+    # BPF_SYSCALL + CGROUP_BPF: on cgroup v2 (what systemd mounts here) runc enforces
+    # the device allowlist with a BPF program attached to the container's cgroup --
+    # there is no devices.allow file on v2. Without these runc cannot start a
+    # container at all.
+    $K --enable  BPF_SYSCALL
+    $K --enable  CGROUP_BPF
+    # --cpus / cpu quota; dockerd warns and ignores the flag without it.
+    $K --enable  CFS_BANDWIDTH
+    # Default bridge network: a veth pair per container onto docker0, with bridged
+    # traffic visible to iptables. BRIDGE_NETFILTER depends on NETFILTER_ADVANCED.
+    $K --enable  NETFILTER_ADVANCED
+    $K --module  VETH
+    $K --module  BRIDGE
+    $K --module  BRIDGE_NETFILTER
+    # Outbound NAT for containers and dockerd's port-publishing rules. Legacy
+    # xtables, matching the iptables build above. IP_NF_TARGET_MASQUERADE selects
+    # NETFILTER_XT_TARGET_MASQUERADE. IP_NF_RAW: dockerd 28+ installs raw-table
+    # PREROUTING drops so hosts on the LAN cannot route directly to a container IP.
+    $K --module  IP_NF_TARGET_MASQUERADE
+    $K --module  NETFILTER_XT_MATCH_ADDRTYPE
+    $K --module  NETFILTER_XT_MARK
+    $K --module  IP_NF_RAW
+    # IPv6 half of the same, listed "Generally Necessary" by check-config.sh:
+    # dockerd programs ip6tables by default and fails network setup without the
+    # nat table. Enabling these does not open v6 -- the host firewall's ip6tables
+    # policy is still what decides.
+    $K --module  IP6_NF_NAT
+    $K --module  IP6_NF_TARGET_MASQUERADE
+    $K --module  IP6_NF_RAW
+    # NETFILTER_ADVANCED=y has a side effect: IP6_NF_TARGET_REJECT is
+    # `default m if NETFILTER_ADVANCED=n`, so it silently drops out of the config.
+    # Found by diffing the result against /boot/config-7.1.8; the only symbol
+    # affected. Pinned here so the ip6tables REJECT target stays available.
+    $K --module  IP6_NF_TARGET_REJECT
+    # NETFILTER_XT_MATCH_IPVS / IP_VS: check-config.sh also lists these, but only
+    # Swarm-mode service load balancing uses them. Left out.
+    # overlay2 / containerd's overlayfs snapshotter, the default image storage.
+    $K --module  OVERLAY_FS
+
     # --- book: Device Drivers, udev/systemd requirements ---
     $K --disable UEVENT_HELPER
     $K --enable  DEVTMPFS

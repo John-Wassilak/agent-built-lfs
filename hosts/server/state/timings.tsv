@@ -442,3 +442,12 @@ blfs-rsync	native	29.8	0
 blfs-unixodbc	native	41.6	0
 blfs-nvidia-vaapi-driver	native	5.7	0
 blfs-mpv	native	34.3	0
+blfs-libseccomp	native	11.3	0
+blfs-runc	native	23.5	0
+blfs-containerd	native	117.7	0
+blfs-moby	native	128.8	0
+blfs-docker-cli	native	47.1	0
+blfs-docker-buildx	native	85.5	0
+blfs-docker-compose	native	65.9	0
+ch10-kernel	native	1283.0	0
+blfs-nvidia-470xx	native	1400.2	0

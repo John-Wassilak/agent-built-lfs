@@ -739,4 +739,20 @@ PACKAGES = BASE + [
     # 13.1 -- the book's only VA driver is intel-vaapi-driver -- hence hand().
     hand(255, "nvidia-vaapi-driver", "nvidia-vaapi-driver-0.0.18.tar.gz",
          "nvidia-vaapi-driver-0.0.18 (hand-authored)"),
+
+    # Operator-requested 2026-09-23: Docker, to run containers. BLFS/SLFS/GLFS 13.1
+    # carry no page for Docker, containerd or runc (grepped all three books), so
+    # everything past libseccomp is hand(), built from source with /opt/go. Recipes are
+    # shared (recipes/blfs-*.sh): nothing in them names hardware or this host. In
+    # dependency order: libseccomp <- runc <- containerd <- dockerd; the CLI and its two
+    # plugins only need the daemon at runtime. Also needs the container options added
+    # to bin/kernel-config-base.sh the same day, and a reboot into that kernel.
+    book(256, "libseccomp", "general/libseccomp.html", "libseccomp-2.6.1.tar.gz"),
+    hand(257, "runc", "runc-v1.5.1.tar.gz", "runc-1.5.1 (hand-authored)"),
+    hand(258, "containerd", "containerd-v2.4.0.tar.gz", "containerd-2.4.0 (hand-authored)"),
+    hand(259, "moby", "moby-docker-v29.8.1.tar.gz", "moby (dockerd) 29.8.1 (hand-authored)"),
+    hand(260, "docker-cli", "docker-cli-v29.8.1.tar.gz", "docker-cli-29.8.1 (hand-authored)"),
+    hand(261, "docker-buildx", "buildx-v0.37.1.tar.gz", "docker-buildx-0.37.1 (hand-authored)"),
+    hand(262, "docker-compose", "compose-v5.5.1.tar.gz",
+         "docker-compose-5.5.1 (hand-authored)"),
 ]

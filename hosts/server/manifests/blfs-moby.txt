@@ -1,0 +1,11 @@
+/etc/group
+/etc/group-
+/etc/gshadow
+/etc/gshadow-
+/etc/systemd/system/multi-user.target.wants/docker.service
+/etc/systemd/system/sockets.target.wants/docker.socket
+/usr/bin/dockerd
+/usr/bin/docker-proxy
+/usr/lib/systemd/system/docker.service
+/usr/lib/systemd/system/docker.service.d/10-after-iptables.conf
+/usr/lib/systemd/system/docker.socket
