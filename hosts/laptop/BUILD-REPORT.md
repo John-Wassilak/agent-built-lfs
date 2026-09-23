@@ -6301,3 +6301,37 @@ because stdout block-buffers when it is not a terminal and stderr does not. The 
 lands *above* the "--check: N steps would be planned" summary instead of below it, so
 `extract-blfs.py --check 2>&1 | tail -8` showed a clean-looking tail on a run that had
 already failed. Read the exit status. That note is now in the script's own docstring.
+
+## 2026-09-23 -- nmap (seq 336-340)
+
+Operator request. `basicnet/nmap.html` (BLFS 13.0) lists `build` as Required, plus liblinear,
+libpcap, libssh2, Lua and PyGObject as Recommended. Without the Recommended ones, configure
+links nmap's own bundled copies. libssh2 (seq 82), lua5.4 (seq 98) and PyGObject were already
+here. Five new steps:
+
+- **336 libpcap**, **337 liblinear**: `book()` from their own pages. libpcap's optional
+  static-library sed stays enabled, so no `libpcap.a` is installed.
+- **338 pyproject-hooks**, **339 pypa-build**: `hand()`, shared. Both are sections of the
+  multi-package pages `python-dependencies.html` / `python-modules.html#pypa-build`, which
+  `book()` cannot address. The recipes are the book's pip3 commands, and flit_core was
+  already present as the backend. The name is `pypa-build`, not `build`.
+- **340 nmap**: `book()`. Shared decisions in `recipes/blfs-13.0/overrides.json` drop blocks
+  3-4. The page says the tests "need a graphical session and to be run as the root user",
+  and block 3's sed exists only to prepare them.
+
+Lua: `/usr/include/lua.h` here is 5.5 (seq 120), and nmap requires exactly 5.4.
+`configure.ac:844-845` tries `lua5.4/lua.h` and `-llua5.4` before the bare names, and it
+picked them. `nmap --version` reports `Compiled with: liblua-5.4.9 openssl-3.6.1
+libssh2-1.11.1 libz-1.3.2 libpcre2-10.47 libpcap-1.10.6 nmap-libdnet-1.18.0 ipv6`, with an
+empty "Compiled without". `ldd` shows the system libpcap, liblinear, liblua.so.5.4 and
+libssh2. libdnet is nmap's bundled copy, because BLFS lists it as Optional and it is not built
+here.
+
+All five book md5 sums matched. Build times: 0.3, 0.1, 0.1, 0.1 and 2.5 min. Manifests:
+103, 3, 15, 35 and 1190 files. Verified against 127.0.0.1:
+- A connect scan found 22/tcp and 80/tcp open.
+- A root `-sS -O` scan went through libpcap and returned an OS guess.
+- `--script-help` loaded NSE.
+- ncat, nping and ndiff run.
+- zenmap's `zenmapCore`/`zenmapGUI`/`radialnet` import against Gtk 3. The GUI itself was
+  not launched.

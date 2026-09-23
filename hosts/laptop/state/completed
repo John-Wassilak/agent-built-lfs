@@ -534,3 +534,8 @@ blfs-kdsingleapplication
 blfs-nextcloud-desktop
 blfs-imagemagick
 blfs-zbar
+blfs-libpcap
+blfs-liblinear
+blfs-pyproject-hooks
+blfs-pypa-build
+blfs-nmap

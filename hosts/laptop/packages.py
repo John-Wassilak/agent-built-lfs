@@ -1417,4 +1417,28 @@ PACKAGES = sorted(BASE + [
     # zbarimg on this one.
     hand(334, "imagemagick", "ImageMagick-7.1.2-13.tar.xz", "ImageMagick-7.1.2-13"),
     hand(335, "zbar", "zbar-0.23.93.tar.gz", "zbar-0.23.93 (hand-authored, shared recipe)"),
+
+    # --- nmap (operator request, 2026-09-23) -----------------------------------
+    #
+    # basicnet/nmap.html. Required: build. Recommended: liblinear, libpcap, libssh2,
+    # Lua, PyGObject -- without them configure falls back to nmap's own bundled
+    # (older) copies. libssh2 (seq 82), lua5.4 (seq 98) and PyGObject are already
+    # here; the rest are the four steps before it.
+    #
+    # Lua: /usr/include/lua.h on this host is 5.5 (seq 120, Hyprland's), and nmap
+    # requires exactly 5.4. Not a conflict -- configure.ac:844-845 probes
+    # lua5.4/lua.h and -llua5.4 before the bare names, both of which lua5.4 installs,
+    # and the LUA_VERSION_NUM == 504 check that follows uses the header it found.
+    #
+    # pyproject-hooks and build are hand(), not book(): both are sections of the
+    # multi-package pages general/python-dependencies.html and python-modules.html
+    # (#pypa-build), which book() cannot address. The recipes are the book's own
+    # commands. libpcap and liblinear have their own pages.
+    #
+    # All shared, none names hardware. Not promoted to BASE, same reason as seq 14.5.
+    book(336, "libpcap", "basicnet/libpcap.html", "libpcap-1.10.6.tar.gz"),
+    book(337, "liblinear", "general/liblinear.html", "liblinear-250.tar.gz"),
+    hand(338, "pyproject-hooks", "pyproject_hooks-1.2.0.tar.gz", "pyproject_hooks-1.2.0 (hand-authored, shared recipe)"),
+    hand(339, "pypa-build", "build-1.4.0.tar.gz", "build-1.4.0 (hand-authored, shared recipe)"),
+    book(340, "nmap", "basicnet/nmap.html", "nmap-7.98.tar.bz2"),
 ], key=lambda p: p["seq"])

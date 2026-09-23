@@ -612,3 +612,8 @@ blfs-kdsingleapplication	native	9.7	0
 blfs-nextcloud-desktop	native	1004.8	0
 blfs-imagemagick	native	333.1	0
 blfs-zbar	native	52.2	0
+blfs-libpcap	native	19.2	0
+blfs-liblinear	native	5.9	0
+blfs-pyproject-hooks	native	3.5	0
+blfs-pypa-build	native	3.6	0
+blfs-nmap	native	152.2	0
