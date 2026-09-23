@@ -801,5 +801,50 @@
       "action": "drop",
       "reason": "The book's own condition: 'Tests need a graphical session and to be run as the root user.' lfsbuild runs as root with no graphical session, so on any host this block either fails or needs a display handed to a root build. Optional; nmap's install does not depend on it."
     }
+  },
+  "blfs-docbook-xsl-nons": {
+    "1": {
+      "action": "drop",
+      "reason": "The book's own condition: 'If you downloaded the optional documentation tarball, unpack it'. docbook-xsl-doc-1.79.2 is listed under Optional downloads and was not fetched; the stylesheets install and catalog entries (blocks 2 and 4) do not depend on it."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "Installs the documentation unpacked by block 1, which is dropped for the same reason: 'If you downloaded the optional documentation tarball, install the documentation'. Without it doc/ holds nothing to copy."
+    },
+    "5": {
+      "action": "drop",
+      "reason": "A template, not a command: the book says to 'substitute the desired version number for <version>' when a project needs another stylesheet version installed alongside. Run literally it would add catalog entries for a directory named xsl-stylesheets-<version>. Nothing in this closure needs a second version."
+    }
+  },
+  "blfs-openjpeg2": {
+    "1": {
+      "action": "drop",
+      "reason": "The book's condition: 'If you wish to run the tests, some additional files are required', fetched by git clone of openjpeg-data, and the page puts the tests at 1.7 GB of extra disk space with '8 tests are known to fail'. Optional; the install in block 2 builds from block 0's tree, not the test reconfiguration."
+    }
+  },
+  "blfs-ghostscript": {
+    "7": {
+      "action": "drop",
+      "reason": "The book's condition: 'run the following command (in a X11 session)'. It opens a viewer window on tiger.eps and waits; lfsbuild runs as root with no display, so on any host it fails or blocks. A check to run by hand after install, not an install step."
+    }
+  },
+  "blfs-gimp": {
+    "3": {
+      "action": "replace",
+      "cmd": "ninja install &&\n\nif [ -d /tmp/gimp ] && [ \"$(stat -c %u /tmp/gimp)\" = 0 ]; then\n  rm -rf /tmp/gimp\nfi",
+      "reason": "Real failure (2026-09-23, laptop): the book builds Gimp as an unprivileged user, but lfsbuild runs the whole recipe as root. GIMP runs its own binaries during the build, and they created GIMP's shared temp directory /tmp/gimp/3.0 (g_get_tmp_dir()/gimp/<ver>) owned by root, mode 755. Every later GIMP run as a normal user then failed any import that goes through a temp file. PostScript/EPS failed with ghostscript 'Could not open the file /tmp/gimp/3.0/gimp-temp-*.pnm ... Permission denied'. The appended check removes the directory only when root owns it, so a user's own live /tmp/gimp is left alone. True of any host that builds as root."
+    },
+    "5": {
+      "action": "drop",
+      "reason": "The book's condition: 'If you wish to install local copies of the help files to read offline, unpack the gimp-help tarball'. gimp-help-3.0.2 is an Additional Download (123 MB, 74 MB installed) and was not fetched; Gimp opens its online manual when the local one is absent."
+    },
+    "6": {
+      "action": "drop",
+      "reason": "Builds the gimp-help tree unpacked by block 5, dropped for the same reason."
+    },
+    "7": {
+      "action": "drop",
+      "reason": "Installs the gimp-help tree built by block 6, dropped for the same reason."
+    }
   }
 }
