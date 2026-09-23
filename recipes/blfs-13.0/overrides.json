@@ -791,5 +791,15 @@
       "cmd": "cd nspr &&\n\nsed -i '/^RELEASE/s|^|#|' pr/src/misc/Makefile.in &&\nsed -i 's|$(LIBRARY) ||'  config/rules.mk         &&\n\n./configure --prefix=/usr   \\\n            --with-mozilla  \\\n            --with-pthreads \\\n            $([ \"$(uname -m)\" = x86_64 ] && echo --enable-64bit) &&\nmake",
       "reason": "The book writes $([ $(uname -m) = x86_64 ] ...) with the command substitution unquoted. Identical behaviour on every machine this targets; quoted so the test cannot degenerate into `[ = x86_64 ]` and abort the configure line if uname ever returns empty. Recovered 2026-09-15: this hardening existed in the hand-authored recipe server carried before the recipe was declared book(), and was silently lost when laptop's book() entry made the extractor the owner of the shared file. Re-recorded as a decision, which is the mechanism that should have held it. NOTE: a replace decision pins this whole block, so a BLFS release that changes it will be masked rather than picked up -- re-read this block against the book on any book bump."
     }
+  },
+  "blfs-nmap": {
+    "3": {
+      "action": "drop",
+      "reason": "Test-suite preparation only: the book introduces this sed with 'If you wish to run the test suite, run the following command', and it edits ndiff/ndifftest.py, which nothing but block 4 uses. Dropped with block 4."
+    },
+    "4": {
+      "action": "drop",
+      "reason": "The book's own condition: 'Tests need a graphical session and to be run as the root user.' lfsbuild runs as root with no graphical session, so on any host this block either fails or needs a display handed to a root build. Optional; nmap's install does not depend on it."
+    }
   }
 }
