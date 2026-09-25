@@ -2,14 +2,23 @@
 # HAND-AUTHORED recipe -- no BLFS book page for nginx (BLFS 13.0-systemd carries no
 # nginx page; `find book/blfs-13.0 -iname '*nginx*'` and a case-insensitive grep of the
 # whole book tree both return nothing -- the book's only HTTP servers are Apache and
-# lighttpd).
+# lighttpd). Re-checked against book/blfs-13.1 on 2026-09-24: still none.
 #
-# source : nginx.org/download/nginx-1.30.4.tar.gz -- upstream's own canonical download
-# host. 1.30.4 is the head of the *stable* branch (nginx numbers even minors stable, odd
-# minors mainline; 1.31.5 is the current mainline). Stable is the right branch for a
+# The recipe is version-neutral; the tarball comes from each host's packages.py entry.
+# laptop (seq 320) built 1.30.4, server (seq 264) built 1.30.5.
+#
+# source : nginx.org/download/nginx-1.30.5.tar.gz -- upstream's own canonical download
+# host. 1.30.5 is the head of the *stable* branch (nginx numbers even minors stable, odd
+# minors mainline; 1.31.6 is the current mainline). Stable is the right branch for a
 # machine that serves files and is not tracking new features.
 #
-# provenance: sha256 4261dc90e9e47c1c4041276e9aaa3d48ebe2e664f728e14fa95ae6c67d57a08b,
+# provenance, 1.30.5: sha256
+# 6c20565aa2325cb82216ae804f4a4ff1875179014759a381c42ddc8e11c4906d; the detached
+# signature verifies GOOD against Sergey Kandaurov's key
+# D6786CE303D9A9022998DC6CC8464D549AF75C0A (uid s.kandaurov@f5.com), signature made
+# 2026-09-15, key from nginx.org/keys/pluknet.key -- same-origin, as below.
+#
+# provenance, 1.30.4: sha256 4261dc90e9e47c1c4041276e9aaa3d48ebe2e664f728e14fa95ae6c67d57a08b,
 # and the detached signature nginx-1.30.4.tar.gz.asc verifies GOOD against Roman
 # Arutyunyan's key 43387825DDB1BB97EC36BA5D007C8D7C15D87369 (RSA, uid
 # r.arutyunyan@f5.com / arut@nginx.com), signature made 2026-07-15. That key was taken
@@ -25,6 +34,13 @@
 # use-after-free in ngx_http_ssi_module) -- all read "Not vulnerable: 1.31.3+, 1.30.4+".
 # 1.30.4 is therefore the oldest stable release that clears every published advisory.
 # Anything on 1.28.x or 1.26.x is vulnerable to all three.
+#
+# Re-checked 2026-09-24: CVE-2026-90439 (medium, buffer overflow in
+# ngx_http_v3_module) reads "Not vulnerable: 1.31.6+, 1.30.5+; Vulnerable:
+# 1.29.2-1.31.5". This recipe never passes --with-http_v3_module (HTTP/3 is not a
+# default module), so a 1.30.4 build from it does not contain the vulnerable code --
+# but 1.30.5 is the release that clears every advisory, and new builds should use it.
+# 1.30.5's CHANGES lists that fix and one QUIC-only change, nothing else.
 #
 # rationale: operator-requested (2026-09-08) -- "install nginx". Serves a local file
 # tree over HTTP. The docroot, the listen address and the vhosts are all host decisions
@@ -104,7 +120,7 @@
 # `nginx -V`, a config syntax test, and a real HTTP request against the running server.
 set -e
 
-NGINX_VERSION=1.30.4
+NGINX_VERSION=1.30.5
 
 # The worker account. `-r` (system range, SYS_UID_MIN..SYS_UID_MAX -- 101..999 in this
 # system's login.defs) rather than a fixed low id, for the same reason as blfs-tor.sh and

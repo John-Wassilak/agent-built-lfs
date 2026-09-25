@@ -760,4 +760,15 @@ PACKAGES = BASE + [
     # --init` failed with `exec: "docker-init": executable file not found`. tini 0.19.0,
     # the version moby 29.8.1 pins, built static and installed where dockerd looks.
     hand(263, "tini", "tini-v0.19.0.tar.gz", "tini-0.19.0 (docker-init, hand-authored)"),
+
+    # Operator-requested 2026-09-24: "add/install nginx". BLFS 13.1 has no nginx page
+    # either (grepped book/blfs-13.1), so this is the same shared hand-authored recipe
+    # laptop built at seq 320. pcre2, openssl and zlib are LFS chapter 8, already here.
+    # 1.30.5, not laptop's 1.30.4: CVE-2026-90439 (ngx_http_v3_module) reads "Not
+    # vulnerable: 1.31.6+, 1.30.5+". See the recipe header.
+    #
+    # Config is the stub for now, per the operator, but reachable over WireGuard as
+    # well as loopback: hosts/server/overlay/etc/nginx/nginx.conf binds 127.0.0.1, ::1
+    # and wg0's 10.0.0.4, and the blfs-iptables host override accepts tcp/80 on wg0.
+    hand(264, "nginx", "nginx-1.30.5.tar.gz", "nginx-1.30.5 (hand-authored, shared recipe)"),
 ]

@@ -148,6 +148,15 @@ MANIFEST_NOISE = "|".join([
     # step that owns them, which is the line between the two cases.
     r"^/var/lib/NetworkManager/",
     r"^/var/lib/bluetooth/",
+    # Docker's and containerd's data roots: image layers, container rootfs, and named
+    # volumes, which running containers write continuously. Found 2026-09-24 on
+    # server, where blfs-nginx's manifest held nginx's 28 files (identical to laptop's)
+    # plus a Grafana database and a Postgres WAL segment from two compose volumes that
+    # were live during the build. Same category as tailscale above: a daemon no step
+    # starts, whose state any step can pick up. The daemons create both directories at
+    # first start, so no step's real install lands under them.
+    r"^/var/lib/docker/",
+    r"^/var/lib/containerd/",
 ])
 
 # Steps the driver handles specially rather than executing verbatim.

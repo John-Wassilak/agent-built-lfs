@@ -114,6 +114,13 @@ iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 # rule above already covers the rest of each session once it exists.
 iptables -A INPUT -p tcp --dport 22 -m conntrack --ctstate NEW -j ACCEPT
 
+# Not in the book's example: nginx on the WireGuard tunnel only (2026-09-24). New
+# inbound HTTP is accepted on wg0 and nowhere else -- not enp6s0, and not tailscale0,
+# which tailscaled's own ts-input chain opens wholesale ahead of these rules. That
+# is also why nginx binds 10.0.0.4 and loopback by address rather than `listen 80`;
+# see hosts/server/overlay/etc/nginx/nginx.conf. No v6 rule: wg0 carries no v6.
+iptables -A INPUT -i wg0 -p tcp --dport 80 -m conntrack --ctstate NEW -j ACCEPT
+
 # Everything else is dropped by policy (no LOG rule -- the book's example logs
 # every dropped packet, which on an internet-facing host is a constant stream
 # of scan/noise traffic; not wanted here, dropped without a paper trail).

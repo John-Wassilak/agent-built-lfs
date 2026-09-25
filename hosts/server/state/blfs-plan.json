@@ -3232,5 +3232,19 @@
     "blocks": 1,
     "enabled": 1,
     "disabled": 0
+  },
+  {
+    "seq": 264,
+    "order": "blfs.264",
+    "name": "blfs-nginx",
+    "chapter": "blfs",
+    "page": "nginx",
+    "title": "nginx-1.30.5 (hand-authored, shared recipe)",
+    "context": "chroot",
+    "tarball": "nginx-1.30.5.tar.gz",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
   }
 ]

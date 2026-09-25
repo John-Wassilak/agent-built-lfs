@@ -865,6 +865,12 @@ that have no business belonging to this package. A path under `/var/lib/<some ot
 service>/` in a package's manifest is a bug in the exclusion list, not a discovery about
 the package.
 
+Same case, 2026-09-24 on `server`: Docker and containerd data roots. A build that
+runs while compose containers are up picks up their named-volume writes (a Grafana
+database, a Postgres WAL segment in `blfs-nginx`'s case). On any host that runs
+containers, expect every step to hit this; `^/var/lib/docker/` and
+`^/var/lib/containerd/` are in `MANIFEST_NOISE`.
+
 ## A sysctl written to `conf/default` can be a no-op, and for `accept_redirects` it is
 
 The BLFS Personal Firewall script (`postlfs/iptables.html`), which this project's

@@ -5426,3 +5426,69 @@ After the fix, with no dockerd restart (it looks up the binary on each container
 Manifest is one file; `lfsmaint owns /usr/libexec/docker/docker-init` resolves to
 tini-0.19.0. `recipes/blfs-moby.sh`'s note that docker-init "is not built" now points at
 this step.
+
+## nginx 1.30.5 (seq 264), stub config on loopback and WireGuard (2026-09-24)
+
+Operator request: "add/install nginx". Decisions asked up front: serve the stub for now,
+reachable over "wireguard and loopback only".
+
+BLFS 13.1 has no nginx page (grepped `book/blfs-13.1`), so this is `hand(264)` on the
+shared `recipes/blfs-nginx.sh` that `laptop` built at seq 320. The dependencies (pcre2,
+openssl, zlib) are all LFS chapter 8.
+
+**Version: 1.30.5, not laptop's 1.30.4.** nginx.org/en/security_advisories.html, re-read
+today, has a new entry since laptop's build: CVE-2026-90439 (medium, ngx_http_v3_module),
+"Not vulnerable: 1.31.6+, 1.30.5+". The shared recipe never passes
+`--with-http_v3_module`, so laptop's binary does not contain that code, but 1.30.5 is now
+the release that clears every advisory. Its CHANGES has that fix and one QUIC-only
+change. sha256 `6c20565aa2325cb82216ae804f4a4ff1875179014759a381c42ddc8e11c4906d`; the
+signature verifies GOOD against Sergey Kandaurov's key D6786CE3...9AF75C0A, fetched from
+nginx.org/keys/pluknet.key (same origin as the tarball, as with 1.30.4). Every configure
+flag the recipe uses was checked against 1.30.5's `./configure --help`. The recipe header
+now records both versions; laptop's packages.py entry is unchanged.
+
+Build: 0.7 min, `nginx -V` reports 1.30.5 built with GCC 16.2.0 and OpenSSL 4.0.1.
+
+### Exposure: bound by address, because Tailscale opens tailscale0 ahead of the firewall
+
+`iptables -S` shows `-A INPUT -j ts-input` as the first rule, and tailscaled's `ts-input`
+chain has `-i tailscale0 -j ACCEPT`. A wildcard `listen 80` would answer the whole
+tailnet no matter what the iptables unit says. So:
+
+- `hosts/server/overlay/etc/nginx/nginx.conf`: the recipe's stub, with `listen` on
+  127.0.0.1:80, [::1]:80 and 10.0.0.4:80 (wg0) only.
+- `hosts/server/overlay/etc/systemd/system/nginx.service.d/10-wg0.conf`:
+  `After=`/`Wants=wg-quick@wg0.service`. nginx refuses to start if a listen address
+  cannot bind, and the shared unit only waits for network.target.
+- `blfs-iptables` host override (block 2): `-A INPUT -i wg0 -p tcp --dport 80 -m
+  conntrack --ctstate NEW -j ACCEPT`. enp6s0 stays closed by policy. No v6 rule: wg0 has
+  no v6 address.
+
+Applied live without restarting `iptables.service`. That script runs `iptables -F -X`
+and `-t nat -F`, which would also wipe Docker's and tailscaled's chains. The live
+`/etc/systemd/scripts/iptables` matched HEAD's recipe byte for byte, and was replaced with
+the regenerated one. The single rule was appended to the running INPUT chain by hand, so
+the running ruleset and the one loaded at next boot are the same.
+
+| Check | Result |
+|---|---|
+| `ss -ltn` port 80 | 127.0.0.1, 10.0.0.4, [::1] only |
+| `curl` 127.0.0.1, [::1], 10.0.0.4 (from server) | 200, `Server: nginx` (no version) |
+| `curl` 100.86.175.49 (tailscale0), 192.168.0.231 (enp6s0) | connection refused |
+| `systemctl show nginx -p After -p Wants` | includes wg-quick@wg0.service |
+
+Not yet verified: a request from the wg peer itself. `curl 10.0.0.4` from this machine
+goes over `lo`, so the wg0 firewall rule has not been exercised. The boot ordering has
+not been tested with a reboot.
+
+### Manifest: Docker volumes leaked in (tooling fix, shared)
+
+The first manifest held 30 files: nginx's 28 (identical to laptop's) plus
+`/var/lib/docker/volumes/piquiti_grafana/_data/grafana.db` and a Postgres WAL segment
+from `piquiti_pgdata`, written by running compose containers during the build. This is
+the unrelated-daemon case PRACTICES.md records for upower and tailscale.
+`^/var/lib/docker/` and `^/var/lib/containerd/` are now in `MANIFEST_NOISE`
+(`bin/lfsbuild`). No manifest on either host has a real install under those paths.
+The saved manifest was filtered with the same patterns, so it now matches what a capture
+with the new list would have produced (28 files, identical to laptop's). No re-run was
+needed, because nothing was missing.
