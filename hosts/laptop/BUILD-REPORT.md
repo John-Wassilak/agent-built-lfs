@@ -6487,3 +6487,18 @@ only the same user can read (`/proc/<pid>/environ` is 0400).
 Server-side auth is unchanged: TLSVnc with the VNC password. Turning auth off
 (`SecurityTypes None`) was not done, since anything that reaches 10.0.0.4:5900 over wg0
 would then get the desktop.
+
+### Follow-up: launcher moved to ~/Scripts (same day)
+
+Operator request: keep the desktop pieces in the `~/Scripts` repo. The launcher is now
+`~/Scripts/vnc-server.sh`, the entry `~/Scripts/desktop-files/vnc-server.desktop` ("Server
+Desktop"), and the icon `desktop-files/icons/vnc-server.png`. The icon is an original
+128px drawing (a white monitor and pointer on a blue circle), matching that repo's other
+icons; TigerVNC's own icon was not copied. They are installed by that repo's
+`desktop-files/install.sh` into `/usr/share/applications` and
+`/usr/share/icons/hicolor/128x128/apps`. The five existing entries and icons it
+re-copied were byte-identical to what was installed.
+
+The two overlay copies here (`hosts/laptop/overlay/home/john/.local/bin/vnc-server`,
+`.../.local/share/applications/vnc-server.desktop`) were removed, and so were their
+installed copies under `~/.local`, so the menu does not list the entry twice.
