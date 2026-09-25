@@ -1,0 +1,15 @@
+# Menu entry for laptop (2026-09-25): TigerVNC viewer to server's :0 over wg0.
+# `server` is 10.0.0.4 in /etc/hosts; server's x0vncserver listens there only. See
+# hosts/server/BUILD-REPORT.md, "TigerVNC: laptop controls this display over WireGuard".
+# -RemoteResize=0: do not ask server to match this window. server refuses anyway
+# (AcceptSetDesktopSize=0); this keeps the viewer from requesting it at all.
+[Desktop Entry]
+Type=Application
+Name=Server Desktop (VNC)
+GenericName=Remote desktop viewer
+Comment=View and control server's display over WireGuard
+Exec=/usr/bin/vncviewer -RemoteResize=0 server:0
+Icon=tigervnc
+Terminal=false
+StartupWMClass=vncviewer
+Categories=Network;RemoteAccess;

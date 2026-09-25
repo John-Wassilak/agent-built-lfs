@@ -6464,3 +6464,12 @@ Also installed: `w0vncserver`, TigerVNC's Wayland server, built because its deps
 PipeWire, wayland-client, xkbcommon) are present. Nothing uses it here.
 
 Build times: FLTK 1.4 min, TigerVNC 1.2 min (plus 0.6 min for the failed first run).
+
+### Follow-up: menu entry (same day)
+
+`hosts/laptop/overlay/home/john/.local/share/applications/vnc-server.desktop`, installed
+to `~/.local/share/applications/`, so both launchers here (wofi's drun on SUPER+D, and
+DankMaterialShell's) list "Server Desktop (VNC)". It runs `vncviewer -RemoteResize=0
+server:0`. server already refuses resize requests (`AcceptSetDesktopSize=0`, server's
+BUILD-REPORT); the flag stops the viewer from sending them. `desktop-file-validate`
+passes. Kept in the host overlay because it names `server`.
