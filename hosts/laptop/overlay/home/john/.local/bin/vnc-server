@@ -1,0 +1,20 @@
+#!/bin/bash
+# SPDX-License-Identifier: MIT
+# agent-built-lfs -- open server's display in TigerVNC, password from pass-auto
+# Copyright (c) 2026 John Wassilak
+
+# Run by ~/.local/share/applications/vnc-server.desktop. vncviewer reads VNC_PASSWORD
+# from its environment and then skips the password dialog (vncviewer/UserDialog.cxx,
+# getUserPasswd). The password is the first line of pass-auto's vnc/server entry. If
+# that lookup fails (no entry, or the gpg-auto pinentry was cancelled) the variable is
+# left unset and vncviewer prompts as usual.
+#
+# The environment of a running process is readable by the same user only
+# (/proc/<pid>/environ is mode 0400), which is the same exposure pass-auto's cached key
+# already has.
+pw=$(/home/john/.local/bin/pass-auto show vnc/server 2>/dev/null | head -n1)
+if [ -n "$pw" ]; then
+    export VNC_PASSWORD="$pw"
+fi
+unset pw
+exec /usr/bin/vncviewer -RemoteResize=0 server:0 "$@"

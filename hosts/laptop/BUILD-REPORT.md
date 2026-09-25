@@ -6473,3 +6473,17 @@ DankMaterialShell's) list "Server Desktop (VNC)". It runs `vncviewer -RemoteResi
 server:0`. server already refuses resize requests (`AcceptSetDesktopSize=0`, server's
 BUILD-REPORT); the flag stops the viewer from sending them. `desktop-file-validate`
 passes. Kept in the host overlay because it names `server`.
+
+### Follow-up: VNC password from pass-auto (same day)
+
+Operator request: no password prompt, with the password kept in pass-auto. The menu entry
+now runs `~/.local/bin/vnc-server` (tracked at `hosts/laptop/overlay/home/john/.local/
+bin/vnc-server`). It reads the first line of pass-auto's `vnc/server` and exports it as
+`VNC_PASSWORD`. TigerVNC's viewer uses that and skips its dialog
+(`vncviewer/UserDialog.cxx`, `getUserPasswd`). If the lookup fails, the variable is left
+unset and the viewer prompts as before. The value sits in the viewer's environment, which
+only the same user can read (`/proc/<pid>/environ` is 0400).
+
+Server-side auth is unchanged: TLSVnc with the VNC password. Turning auth off
+(`SecurityTypes None`) was not done, since anything that reaches 10.0.0.4:5900 over wg0
+would then get the desktop.
