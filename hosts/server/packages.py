@@ -755,4 +755,9 @@ PACKAGES = BASE + [
     hand(261, "docker-buildx", "buildx-v0.37.1.tar.gz", "docker-buildx-0.37.1 (hand-authored)"),
     hand(262, "docker-compose", "compose-v5.5.1.tar.gz",
          "docker-compose-5.5.1 (hand-authored)"),
+
+    # docker-init, found missing by the post-reboot check the same day: `docker run
+    # --init` failed with `exec: "docker-init": executable file not found`. tini 0.19.0,
+    # the version moby 29.8.1 pins, built static and installed where dockerd looks.
+    hand(263, "tini", "tini-v0.19.0.tar.gz", "tini-0.19.0 (docker-init, hand-authored)"),
 ]

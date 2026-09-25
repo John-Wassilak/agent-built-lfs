@@ -388,3 +388,5 @@ blfs-docker-buildx
 blfs-docker-compose
 ch10-kernel
 blfs-nvidia-470xx
+blfs-tini
+blfs-tini

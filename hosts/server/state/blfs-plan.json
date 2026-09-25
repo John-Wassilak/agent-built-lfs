@@ -3218,5 +3218,19 @@
     "blocks": 1,
     "enabled": 1,
     "disabled": 0
+  },
+  {
+    "seq": 263,
+    "order": "blfs.263",
+    "name": "blfs-tini",
+    "chapter": "blfs",
+    "page": "tini",
+    "title": "tini-0.19.0 (docker-init, hand-authored)",
+    "context": "chroot",
+    "tarball": "tini-v0.19.0.tar.gz",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
   }
 ]

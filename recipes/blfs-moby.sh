@@ -14,8 +14,8 @@
 # binary: the static build exists for distribution tarballs, and this box has the
 # shared libc it would otherwise bundle.
 #
-# docker-init (tini, for `docker run --init`) is not built: it is a separate C
-# project, and without it only `--init` fails; nothing else uses it.
+# docker-init (tini, for `docker run --init`) is a separate C project, built by
+# its own step (blfs-tini, seq 263) into /usr/libexec/docker/docker-init.
 #
 # Units: upstream contrib/init/systemd/docker.{service,socket}, unchanged, plus one
 # drop-in ordering docker.service after iptables.service. BLFS's iptables script

@@ -5366,3 +5366,63 @@ the installer wrote this time; it selects `Driver "nvidia"`, the same choice
 `/etc/X11/xorg.conf` already makes. `lfsmaint db` rebuilt; `lfsmaint owns` resolves
 docker, dockerd, runc, containerd, docker-buildx and libseccomp.so.2. All four
 extractors report zero drift at 230 steps.
+
+### Runtime verification after reboot (2026-09-23)
+
+Booted `vmlinuz-7.1.8-lfs-13.1-systemd` (built 03:14). `systemctl --failed` empty;
+iptables, docker.socket and docker active, containerd active via docker.service's Wants=;
+nvidia 470xx loaded, `nvidia-smi -L` sees the GTX 770. The DOCKER chains exist in
+`filter` and `nat` after boot, so `10-after-iptables.conf` orders correctly.
+
+`docker version`/`docker info`: engine and CLI 29.8.1, containerd 2.4.0, runc 1.5.1, all
+go1.27.0; overlayfs (containerd snapshotter), cgroup v2 with the systemd driver, seccomp
+builtin profile, cgroupns; buildx 0.37.1 and compose 5.5.1 found. No WARNING lines, and no
+warning-or-worse entries for docker or containerd in this boot's journal.
+
+| check | result |
+|-------|--------|
+| `docker run hello-world` (pull from Docker Hub) | pass |
+| alpine: HTTP egress, DNS (A and AAAA) | pass |
+| `--memory 64m --cpus 0.5 --pids-limit 50` | `memory.max` 67108864, `cpu.max` 50000 100000, `pids.max` 50 |
+| `Seccomp:` in a container | 2 (filter); `unshare -U` refused, as the default profile intends |
+| mknod of block 8:0 then read | `Operation not permitted` (CGROUP_BPF device control works) |
+| `--device /dev/null:/dev/xnull` write | pass |
+| `-p 127.0.0.1:18080:80`, `-p [::1]:18081:80`, bridge IP (nginx:alpine) | 200 on all three |
+| `docker buildx build` + run | pass |
+| `docker compose up`, service-name DNS between two services | pass |
+| `docker run --init` | **fail**: `exec: "docker-init": executable file not found in $PATH` |
+
+`docker-init` is tini in upstream packaging, and no step built it. Test images and
+containers removed afterwards; alpine kept.
+
+**Fix: `packages.py` seq 263, `hand()` tini 0.19.0** (`recipes/blfs-tini.sh`), the version
+moby 29.8.1 pins in `hack/dockerfile/install/tini.installer`. GitHub archive of tag v0.19.0
+(commit de40ad00, confirmed through the GitHub refs API), md5
+`72935bca9232313409a052833068fb1d`, staged into `/sources` by hand like the rest of the
+Docker stack. Built as `tini-static`, because dockerd bind-mounts it into containers
+that do not share the host's glibc (`/usr/lib/libc.a` is present from LFS glibc). CMake
+4.4.2 refuses the `cmake_minimum_required(2.8)`, so the recipe passes
+`CMAKE_POLICY_VERSION_MINIMUM=3.5`, the same workaround moby's installer uses. It compiled
+under GCC 16.2.0 with tini's own `-Werror -Wextra -pedantic-errors` and no warnings.
+Installed as `/usr/libexec/docker/docker-init`, which dockerd searches before `PATH`
+(`daemon/config/config_linux.go` `lookupBinPath`).
+
+First build: `--init` worked, but `docker info` printed an empty `init version:`. dockerd
+takes the commit from `docker-init --version` (`parseInitVersion` in
+`daemon/info_unix.go`), and without `.git` CMake falls back to an empty suffix. The recipe
+now seds the fallback to `" - git.de40ad0"` (same idea as runc's hand-set `COMMIT`);
+rebuilt with `--force`.
+
+After the fix, with no dockerd restart (it looks up the binary on each container start):
+
+| check | result |
+|-------|--------|
+| `docker-init --version` | `tini version 0.19.0 - git.de40ad0`, statically linked, stripped |
+| `docker info` | `Init Binary: docker-init`, `init version: de40ad0` |
+| `docker run --init alpine ps` | PID 1 `docker-init`, PID 8 `sh`; without `--init`, PID 1 is `sh` |
+| compose `init: true` | PID 1 `docker-init` |
+| orphaned `sleep` under `--init` | reaped, 0 zombies |
+
+Manifest is one file; `lfsmaint owns /usr/libexec/docker/docker-init` resolves to
+tini-0.19.0. `recipes/blfs-moby.sh`'s note that docker-init "is not built" now points at
+this step.
