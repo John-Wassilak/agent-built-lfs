@@ -566,3 +566,5 @@ blfs-babl
 blfs-gegl
 blfs-gimp
 blfs-tailscale
+blfs-fltk
+blfs-tigervnc

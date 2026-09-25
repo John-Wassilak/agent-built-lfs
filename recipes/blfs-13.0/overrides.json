@@ -846,5 +846,19 @@
       "action": "drop",
       "reason": "Installs the gimp-help tree built by block 6, dropped for the same reason."
     }
+  },
+  "blfs-fltk": {
+    "1": {
+      "action": "drop",
+      "reason": "'If you wish to create the API documentation, issue: make -C documentation html' -- explicitly optional, and needs Doxygen, which is not built."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "'If desired, install some example games built as a part of the tests, extra documentation and example programs' -- explicitly optional; the documentation half also needs block 1's docs."
+    },
+    "4": {
+      "action": "drop",
+      "reason": "'If you downloaded the optional html documentation' -- the docs tarball is not fetched."
+    }
   }
 }

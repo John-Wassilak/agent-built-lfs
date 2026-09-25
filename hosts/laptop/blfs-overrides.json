@@ -175,5 +175,49 @@
       "cmd": "rm -rf zlib &&\n\n./configure --prefix=/usr           \\\n            --disable-compile-inits \\\n            --with-system-libtiff   \\\n            --without-x             \\\n            CFLAGS=\"${CFLAGS:--g -O3} -fPIC\" &&\nmake",
       "reason": "Real failure (2026-09-23): configure found libX11 and libXext but not libXt, and stopped with 'X11 libraries (libX11, libXt, libXext) not available, either install them, or rerun configure with \"--without-x\"'. This host is Wayland/Hyprland (host.toml hw.graphics) and has never built libXt, which ships with the Xorg Libraries. --without-x drops only gs's own x11 display devices. GIMP, the reason gs is here, calls it to rasterize PostScript and PDF and does not use those devices. The book lists X only as the Optional 'a graphical environment'. Host-scoped because it follows from this machine's display stack; a host with the Xorg libraries needs no change."
     }
+  },
+  "blfs-fltk": {
+    "0": {
+      "action": "replace",
+      "cmd": "sed -i -e '/cat./d' documentation/Makefile &&\n\n./configure --prefix=/usr --enable-shared --disable-wayland &&\nmake",
+      "reason": "--disable-wayland added. FLTK 1.4 builds a hybrid Wayland/X11 library by default when wayland-client, wayland-protocols, wayland-cursor, xkbcommon and pangocairo are present (configure.ac, all present here under Hyprland), and a hybrid library picks Wayland at run time whenever a compositor is available (README.Wayland.txt, 'FLTK_BACKEND'). FLTK's only consumer here is TigerVNC's vncviewer, whose Linux code is X11-only (vncviewer/KeyboardX11.cxx, Surface_X11.cxx, calls on fl_display) and was written against FLTK 1.3 (CMakeLists.txt checks FL_MINOR_VERSION == 3, which the book seds to 4). README.Wayland.txt section 2.1 says code conceived for FLTK 1.3 with X11-specific calls needs the X11 backend. An X11-only build runs under Xwayland. This is a fact about a Wayland desktop host, so it is not in the shared file."
+    }
+  },
+  "blfs-tigervnc": {
+    "1": {
+      "action": "replace",
+      "cmd": "sed -i \"/FL_MINOR_VERSION/s/3/4/\" CMakeLists.txt &&\n\n# No Linux-PAM on this host (see the review reason). PAM is used in exactly two\n# places: vncsession (the Xvnc session launcher) and libvnc's username/password\n# validator. Drop the top-level REQUIRED check, skip unix/vncserver, stub the\n# validator.\nsed -i '/find_package(PAM REQUIRED)/d' CMakeLists.txt &&\nsed -i '/add_subdirectory(vncserver)/d' unix/CMakeLists.txt &&\ncat > common/rfb/UnixPasswordValidator.cxx << \"EOF\"\n// Replaces upstream's PAM-based validator: this build has no Linux-PAM.\n// Username/password security types (Plain, TLSPlain, X509Plain, RA2, RA2_256)\n// always refuse; VncAuth and the TLS/RSA-AES types that wrap it are unaffected.\n#ifdef HAVE_CONFIG_H\n#include <config.h>\n#endif\n#include <string>\n\n#include <rfb/UnixPasswordValidator.h>\n\nusing namespace rfb;\n\nstd::string UnixPasswordValidator::displayName;\n\nbool UnixPasswordValidator::validateInternal(SConnection * /* sc */,\n                                             const char * /* username */,\n                                             const char * /* password */,\n                                             std::string &msg)\n{\n  msg = \"Username/password authentication unavailable: built without PAM\";\n  return false;\n}\nEOF",
+      "reason": "The book's FLTK-1.4 sed is kept as the first line. No Linux-PAM on this host: it was left out deliberately (server BUILD-REPORT 2026-08-26, 'this system has no PAM installed at all'), and installing the library alone would let later sudo/shadow/openssh/systemd rebuilds detect it and switch to PAM auth with no /etc/pam.d config. Operator chose (2026-09-25) to patch TigerVNC instead. The book lists PAM as Required because TigerVNC's CMakeLists.txt has an unconditional `find_package(PAM REQUIRED)` under UNIX; in the source, PAM is used only by unix/vncserver/vncsession.c (the systemd launcher for the Xvnc sessions the book's configuration section sets up, not used here) and common/rfb/UnixPasswordValidator.cxx (username/password security types). This block removes the check and the vncserver subdirectory, and replaces the validator with one that always refuses. VNC-password auth (VncAuth, TLSVnc, RA2ne) needs no PAM and is what this host uses."
+    },
+    "2": {
+      "action": "replace",
+      "cmd": "# Build viewer, x0vncserver, vncpasswd, vncconfig\ncmake -G \"Unix Makefiles\"          \\\n      -D CMAKE_INSTALL_PREFIX=/usr \\\n      -D CMAKE_BUILD_TYPE=Release  \\\n      -W no-dev . &&\nmake",
+      "reason": "Xvnc is not built: the use here is sharing an existing X display with x0vncserver (built by the top-level cmake, unix/x0vncserver) or running vncviewer, not the book's standalone Xvnc desktops. That drops the xorg-server tarball, the xserver patch/autoreconf/configure and Xorg Legacy Fonts (needed only by Xvnc). The cmake + make lines are the book's own, unchanged."
+    },
+    "3": {
+      "action": "replace",
+      "cmd": "# Install viewer, x0vncserver, vncpasswd, vncconfig\nmake install &&\nmv  /usr/share/doc/tigervnc /usr/share/doc/tigervnc-1.16.0",
+      "reason": "The book's viewer install, unchanged. The Xvnc install and the /usr/bin/Xvnc link are removed: none of them is built (blocks 1-2)."
+    },
+    "4": {
+      "action": "drop",
+      "reason": "Configures the book's vncserver@ Xvnc session (Xsession, vncserver.users, ~/.config/tigervnc/config, vncserver@:1). Not applicable: Xvnc and vncsession are not built on this host (blocks 1-3)."
+    },
+    "5": {
+      "action": "drop",
+      "reason": "Configures the book's vncserver@ Xvnc session (Xsession, vncserver.users, ~/.config/tigervnc/config, vncserver@:1). Not applicable: Xvnc and vncsession are not built on this host (blocks 1-3)."
+    },
+    "6": {
+      "action": "drop",
+      "reason": "Configures the book's vncserver@ Xvnc session (Xsession, vncserver.users, ~/.config/tigervnc/config, vncserver@:1). Not applicable: Xvnc and vncsession are not built on this host (blocks 1-3)."
+    },
+    "7": {
+      "action": "drop",
+      "reason": "Configures the book's vncserver@ Xvnc session (Xsession, vncserver.users, ~/.config/tigervnc/config, vncserver@:1). Not applicable: Xvnc and vncsession are not built on this host (blocks 1-3)."
+    },
+    "8": {
+      "action": "drop",
+      "reason": "Configures the book's vncserver@ Xvnc session (Xsession, vncserver.users, ~/.config/tigervnc/config, vncserver@:1). Not applicable: Xvnc and vncsession are not built on this host (blocks 1-3)."
+    }
   }
 }

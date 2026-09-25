@@ -5304,5 +5304,33 @@
     "blocks": 8,
     "enabled": 4,
     "disabled": 4
+  },
+  {
+    "seq": 362,
+    "order": "blfs.362",
+    "name": "blfs-fltk",
+    "chapter": "blfs",
+    "page": "fltk",
+    "title": "FLTK-1.4.4",
+    "context": "chroot",
+    "tarball": "fltk-1.4.4-source.tar.gz",
+    "manifest": true,
+    "blocks": 5,
+    "enabled": 2,
+    "disabled": 3
+  },
+  {
+    "seq": 363,
+    "order": "blfs.363",
+    "name": "blfs-tigervnc",
+    "chapter": "blfs",
+    "page": "tigervnc",
+    "title": "Tigervnc-1.16.0",
+    "context": "chroot",
+    "tarball": "tigervnc-1.16.0.tar.gz",
+    "manifest": true,
+    "blocks": 9,
+    "enabled": 4,
+    "disabled": 5
   }
 ]

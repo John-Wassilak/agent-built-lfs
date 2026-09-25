@@ -6422,3 +6422,45 @@ was absent. That value was a one-off pref in tailscaled.state, and one
 Not verified on laptop: server's test of turning shields off, restarting, and checking
 that the pref came back. tailscaled has not restarted since the build, so the
 `ExecStartPost` has not run here yet. It will run on the next start.
+
+## FLTK 1.4.4 and TigerVNC 1.16.0 (seq 362-363), viewer for server's display (2026-09-25)
+
+Operator request: control server's X session from this machine over WireGuard. server
+runs `x0vncserver` on its `:0` (server's BUILD-REPORT, same date); this host needs
+`vncviewer`.
+
+Two host decisions, both in `blfs-overrides.json`:
+
+- **FLTK `--disable-wayland`.** FLTK 1.4 builds a hybrid Wayland/X11 library whenever its
+  Wayland deps are present, and they all are here. A hybrid library picks Wayland at run
+  time under Hyprland. TigerVNC's Linux viewer is X11 code written against FLTK 1.3
+  (`KeyboardX11.cxx`, `Surface_X11.cxx`, and its CMakeLists checks `FL_MINOR_VERSION ==
+  3`, which the book seds to 4). FLTK's `README.Wayland.txt` section 2.1 says such code
+  needs the X11 backend. The viewer runs under Xwayland.
+- **TigerVNC without Linux-PAM.** The book lists PAM as Required, and neither host has it.
+  In the source, PAM is used only by `vncsession` (the launcher for the book's Xvnc
+  sessions) and `common/rfb/UnixPasswordValidator.cxx` (username/password security
+  types). Block 1 drops the top-level `find_package(PAM REQUIRED)` and `unix/vncserver`,
+  and replaces the validator with a stub that always refuses. The operator chose this
+  over installing the PAM library, which later sudo/shadow/openssh rebuilds would detect.
+  Xvnc is not built, so Xorg Legacy Fonts and the xorg-server tarball are not needed.
+
+FLTK's docs/test/html-docs blocks (1, 3, 4) are dropped in the shared
+`recipes/blfs-13.0/overrides.json` as ordinary optional-docs decisions.
+
+First TigerVNC build failed in the stub: `SSecurityPlain.h` uses `std::string` without
+including `<string>`, and upstream's validator happens to include it first. Added
+`#include <string>` ahead of the header; the second build passed.
+
+| Check | Result |
+|---|---|
+| Sources | md5 matches the book for tigervnc-1.16.0 and fltk-1.4.4 |
+| `ldd /usr/bin/vncviewer` | libfltk 1.4, libgnutls 3.8.13, libnettle; no wayland, no libpam |
+| `vncviewer -h` | `TigerVNC v1.16.0` |
+| Manifest | 54 files: vncviewer, x0vncserver, vncpasswd, vncconfig, 30 locale files, icons, man pages |
+| `extract-blfs.py --check` | zero drift |
+
+Also installed: `w0vncserver`, TigerVNC's Wayland server, built because its deps (glib,
+PipeWire, wayland-client, xkbcommon) are present. Nothing uses it here.
+
+Build times: FLTK 1.4 min, TigerVNC 1.2 min (plus 0.6 min for the failed first run).

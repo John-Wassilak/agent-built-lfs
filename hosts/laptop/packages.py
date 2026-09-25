@@ -1511,4 +1511,11 @@ PACKAGES = sorted(BASE + [
     hand(360.5, "libxt", "libXt-1.3.1.tar.xz", "libXt-1.3.1", page="x7lib"),
     hand(360.7, "libxmu", "libXmu-1.3.1.tar.xz", "libXmu-1.3.1", page="x7lib"),
     book(361, "gimp", "xsoft/gimp.html", "gimp-3.0.6.tar.xz"),
+    # TigerVNC viewer, to control server's X display over wg0 (operator, 2026-09-25).
+    # server runs x0vncserver; this host only needs vncviewer. Two host decisions in
+    # blfs-overrides.json: FLTK built X11-only (the viewer is X11 code, runs under
+    # Xwayland), and TigerVNC patched to build without Linux-PAM, which neither host
+    # has. Xvnc and Xorg Legacy Fonts are not built.
+    book(362, "fltk", "x/fltk.html", "fltk-1.4.4-source.tar.gz"),
+    book(363, "tigervnc", "xsoft/tigervnc.html", "tigervnc-1.16.0.tar.gz"),
 ], key=lambda p: p["seq"])
