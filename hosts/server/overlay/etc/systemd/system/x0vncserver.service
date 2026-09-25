@@ -14,6 +14,9 @@
 # X is started by hand, so it may not exist at boot and it goes away when the session
 # ends. ExecStartPre waits quietly for the :0 socket instead of failing in a loop, and
 # x0vncserver exits when X does, so Restart=always goes back to waiting.
+# AcceptSetDesktopSize=0: vncviewer defaults to RemoteResize, which asks the server to
+# resize its screen (via RandR) to the viewer window. The physical screen here must stay
+# put (operator, 2026-09-25); the viewer scrolls instead.
 # XAUTHORITY: startx adds the cookie in ~/.Xauthority to the server's own -auth file,
 # so that file authenticates to whichever X is running.
 [Unit]
@@ -28,7 +31,8 @@ Environment=XAUTHORITY=/home/john/.Xauthority
 ExecStartPre=/bin/sh -c 'until [ -S /tmp/.X11-unix/X0 ]; do sleep 5; done'
 TimeoutStartSec=infinity
 ExecStart=/usr/bin/x0vncserver -display :0 -interface 10.0.0.4 -rfbport 5900 \
-    -SecurityTypes TLSVnc -PasswordFile /home/john/.config/tigervnc/passwd
+    -SecurityTypes TLSVnc -PasswordFile /home/john/.config/tigervnc/passwd \
+    -AcceptSetDesktopSize=0
 Restart=always
 RestartSec=10
 
