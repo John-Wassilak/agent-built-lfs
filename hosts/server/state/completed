@@ -392,3 +392,6 @@ blfs-tini
 blfs-tini
 blfs-nginx
 blfs-tailscale
+blfs-gnutls
+blfs-fltk
+blfs-tigervnc

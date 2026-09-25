@@ -5543,3 +5543,65 @@ revision 0 not supported" 25 times since 2026-09-21, and its rp_filter workaroun
 fail. The kernel lacks the xt connmark match/target. Open item.
 
 laptop: not yet applied. It needs `lfsbuild --only blfs-tailscale --force` run on laptop.
+
+## TigerVNC: laptop controls this display over WireGuard (2026-09-25)
+
+Operator request: control this machine's screen from laptop, "tigervnc over wireguard".
+The shape is `x0vncserver` sharing the running `:0` (startx on vt1, awesome), not the
+book's standalone Xvnc desktops. The session I checked had been up since 2026-09-24 08:37.
+Note: the X binary here is `/usr/bin/X`, so `pgrep Xorg` finds nothing.
+
+Steps, next unused seq:
+
+- 265 `gnutls` 3.8.13: the one Required dependency not already here. nettle (4.x,
+  `libnettle.so.9`), libtasn1 and p11-kit were.
+- 266 `fltk` 1.3.11: BLFS 13.1 carries 1.3, not 13.0's 1.4.4, so no Wayland question
+  arises (laptop's did). Docs and test-games blocks dropped in the shared
+  `recipes/blfs-13.1/overrides.json`.
+- 267 `tigervnc` 1.16.2, with host decisions in `blfs-overrides.json`:
+  - Built without Linux-PAM, which this host has never had. In the source, PAM is used
+    only by `vncsession` and `common/rfb/UnixPasswordValidator.cxx`. Block 1 keeps the
+    book's two nettle-4 digest seds, then drops `find_package(PAM REQUIRED)` and
+    `unix/vncserver`, and stubs the validator to always refuse. The operator chose this
+    over installing the PAM library, which later sudo/shadow/openssh/systemd rebuilds
+    would detect.
+  - Xvnc not built: no xorg-server tarball, no Xorg Legacy Fonts. Blocks 4-9 (the
+    vncserver@ session configuration) are dropped.
+
+Laptop made the same PAM decision against 13.0's 1.16.0 (its seq 363). The first build
+there found that the stub needs `#include <string>`; this host's build already had it.
+
+Deployment, applied live:
+
+- `hosts/server/overlay/etc/systemd/system/x0vncserver.service`, installed to
+  `/etc/systemd/system/` and enabled. It runs as john with `DISPLAY=:0` and
+  `XAUTHORITY=~/.Xauthority`, and `ExecStartPre` waits for `/tmp/.X11-unix/X0`, since X is
+  started by hand. Its flags are `-interface 10.0.0.4 -SecurityTypes TLSVnc -PasswordFile
+  ~/.config/tigervnc/passwd`, with `Restart=always`. The header explains each choice.
+- `~/.Xauthority`'s `:0` cookie is stale (file dated 2026-09-23), yet it still works:
+  startx found the existing entry and copied it into the server's own `-auth` file
+  (`~/.serverauth.<pid>`) as an extra cookie. So the unit does not need to know the pid.
+- `blfs-iptables` host override: `-A INPUT -i wg0 -p tcp --dport 5900 -m conntrack
+  --ctstate NEW -j ACCEPT`, after the nginx rule. Applied the nginx way: the live
+  `/etc/systemd/scripts/iptables` matched HEAD's recipe (`cmp`), was replaced by the
+  regenerated script, and the single rule was appended to the running INPUT chain. No
+  `iptables.service` restart, which would flush Docker's and tailscaled's chains.
+- Password set by the operator with `vncpasswd` (`~/.config/tigervnc/passwd`, 0600). It
+  is not in the repo.
+
+| Check | Result |
+|---|---|
+| Sources | md5 matches the book for tigervnc-1.16.2, fltk-1.3.11, gnutls-3.8.13 |
+| `ldd /usr/bin/x0vncserver` | libXtst, libXdamage, libgnutls 3.8.13, libnettle.so.9; no libpam |
+| Journal | "XTest extension present", "Listening for VNC connections on 10.0.0.4 interface(s), port 5900" |
+| TCP to 10.0.0.4:5900 from laptop | `RFB 003.008` |
+| Security types offered | one: 19 (VeNCrypt, carrying TLSVnc); plain VncAuth not offered |
+| TCP to 100.86.175.49:5900 (tailscale0) and 192.168.0.231:5900 (enp6s0) from laptop | no answer within 3 s |
+| `extract-blfs.py --check` | zero drift |
+
+Not verified: a full login from laptop's vncviewer with the password (the operator's to
+do), and the unit's behavior across an X restart or a reboot.
+
+Build times: GnuTLS 2.5 min, FLTK 0.6 min, TigerVNC 0.8 min. GnuTLS's manifest is 1303
+files, almost all headers, man pages, gtk-doc and locale files; no path outside what the
+package installs.

@@ -51,7 +51,7 @@ any `mkfs`, `dd` or `grub-install`, and match on the label, not the letter.
   `hosts/server/state/completed` gets archived as history for the 13.0 image it describes.
   `hosts/server-rebuild/host.toml` already says so in its own header.
 - **The overlay**: `overlay/` (shared) and `hosts/server/overlay/` (this machine).
-  Fifteen files, none of them applied by any tool -- see "Apply the overlay" below.
+  Sixteen files, none of them applied by any tool -- see "Apply the overlay" below.
 
 ## Known open items -- settle these before deploying
 
@@ -258,6 +258,9 @@ In order, all against `/mnt/target`:
    `etc/systemd/system/nginx.service.d/10-wg0.conf` orders nginx after `wg-quick@wg0`;
    `systemctl daemon-reload` after both. Without the drop-in nginx can race wg0 at boot
    and fail to bind 10.0.0.4.
+   `etc/systemd/system/x0vncserver.service` (TigerVNC sharing `:0` on 10.0.0.4) needs
+   `systemctl enable`, and `~john/.config/tigervnc/passwd` is not in the repo: carry it
+   from the old root or re-run `vncpasswd` as john.
 3. **`/boot/grub/grub.cfg`** is copied from `hosts/server/overlay/boot/grub.cfg`
    **verbatim** -- no hand-edited identifiers. It searches `--label LFSROOT` and boots
    `root=PARTUUID=c2cd0612-02`, and both survive this procedure: step 4's

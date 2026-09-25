@@ -455,3 +455,6 @@ blfs-tini	native	11.9	0
 blfs-tini	native	1.2	0
 blfs-nginx	native	42.6	0
 blfs-tailscale	native	162.5	0
+blfs-gnutls	native	152.8	0
+blfs-fltk	native	35.5	0
+blfs-tigervnc	native	49.6	0

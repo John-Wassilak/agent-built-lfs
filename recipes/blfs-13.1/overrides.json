@@ -844,5 +844,15 @@
       "cmd": "mkdir build &&\ncd    build &&\n\nmeson setup ..              \\\n      --prefix=$XORG_PREFIX \\\n      --localstatedir=/var  \\\n      -D glamor=true        \\\n      -D sha1=libgcrypt     \\\n      -D xkb_output_dir=/var/lib/xkb &&\nninja",
       "reason": "Adds `-D sha1=libgcrypt` to the book's meson line. meson's default for this option is `auto`, which picks libnettle, whose xsha1.c branch does `#include <nettle/sha.h>` -- a header nettle does not ship. Re-verified against the live 13.1 tree on 2026-09-21: the installed nettle-4.0 (BLFS 13.1's own pinned version; 13.0 pinned 3.10.2) has /usr/include/nettle/sha1.h, sha2.h and sha3.h and no sha.h at all, so the nettle branch cannot compile. libgcrypt is a Required dependency of this same page and xsha1.c has a complete libgcrypt branch (`#include <gcrypt.h>`), so forcing that implementation avoids the missing header rather than patching around it. A real upstream xorg-server/nettle mismatch, not a packaging fault here, and true of any machine on BLFS 13.1 -- hence the shared file.\n\nRecorded as a decision on 2026-09-21 because the 13.0 recipe carried this same flag as a hand-edit with its rationale in a comment inside a GENERATED file. When xorg-server was converted hand() -> book() and re-extracted for 13.1, both the flag and the comment were silently dropped -- exactly the failure mode PRACTICES.md records for 6aad09a. As a `replace` this pins the whole block and will mask a future book change to the meson line, so it wants re-reading on the next release bump."
     }
+  },
+  "blfs-fltk": {
+    "1": {
+      "action": "drop",
+      "reason": "'If you wish to create the API documentation, issue: make -C documentation html' -- explicitly optional, and needs Doxygen, which is not built."
+    },
+    "3": {
+      "action": "drop",
+      "reason": "'If desired, install some example games built as a part of the tests, extra documentation and example programs' -- explicitly optional; the documentation half also needs block 1's docs."
+    }
   }
 }

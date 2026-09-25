@@ -771,4 +771,16 @@ PACKAGES = BASE + [
     # well as loopback: hosts/server/overlay/etc/nginx/nginx.conf binds 127.0.0.1, ::1
     # and wg0's 10.0.0.4, and the blfs-iptables host override accepts tcp/80 on wg0.
     hand(264, "nginx", "nginx-1.30.5.tar.gz", "nginx-1.30.5 (hand-authored, shared recipe)"),
+
+    # TigerVNC, to control this machine's X display (:0, awesome) from laptop over
+    # WireGuard (operator, 2026-09-25). x0vncserver shares the running session; the
+    # book's Xvnc/vncsession path is not built, so Xorg Legacy Fonts and the
+    # xorg-server tarball are not needed. The book lists Linux-PAM as Required, and
+    # this host has none by design: blfs-overrides.json patches TigerVNC to build
+    # without it (same decision as laptop's seq 363). GnuTLS is the one Required
+    # dependency not already here; nettle, libtasn1 and p11-kit are. Exposure: bound to
+    # 10.0.0.4 and accepted on wg0 only, same as nginx at seq 264.
+    book(265, "gnutls", "postlfs/gnutls.html", "gnutls-3.8.13.tar.xz"),
+    book(266, "fltk", "x/fltk.html", "fltk-1.3.11-source.tar.gz"),
+    book(267, "tigervnc", "xsoft/tigervnc.html", "tigervnc-1.16.2.tar.gz"),
 ]
