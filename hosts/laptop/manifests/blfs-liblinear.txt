@@ -1,0 +1,3 @@
+/usr/include/linear.h
+/usr/lib/liblinear.so
+/usr/lib/liblinear.so.6

@@ -1417,4 +1417,98 @@ PACKAGES = sorted(BASE + [
     # zbarimg on this one.
     hand(334, "imagemagick", "ImageMagick-7.1.2-13.tar.xz", "ImageMagick-7.1.2-13"),
     hand(335, "zbar", "zbar-0.23.93.tar.gz", "zbar-0.23.93 (hand-authored, shared recipe)"),
+
+    # --- nmap (operator request, 2026-09-23) -----------------------------------
+    #
+    # basicnet/nmap.html. Required: build. Recommended: liblinear, libpcap, libssh2,
+    # Lua, PyGObject -- without them configure falls back to nmap's own bundled
+    # (older) copies. libssh2 (seq 82), lua5.4 (seq 98) and PyGObject are already
+    # here; the rest are the four steps before it.
+    #
+    # Lua: /usr/include/lua.h on this host is 5.5 (seq 120, Hyprland's), and nmap
+    # requires exactly 5.4. Not a conflict -- configure.ac:844-845 probes
+    # lua5.4/lua.h and -llua5.4 before the bare names, both of which lua5.4 installs,
+    # and the LUA_VERSION_NUM == 504 check that follows uses the header it found.
+    #
+    # pyproject-hooks and build are hand(), not book(): both are sections of the
+    # multi-package pages general/python-dependencies.html and python-modules.html
+    # (#pypa-build), which book() cannot address. The recipes are the book's own
+    # commands. libpcap and liblinear have their own pages.
+    #
+    # All shared, none names hardware. Not promoted to BASE, same reason as seq 14.5.
+    book(336, "libpcap", "basicnet/libpcap.html", "libpcap-1.10.6.tar.gz"),
+    book(337, "liblinear", "general/liblinear.html", "liblinear-250.tar.gz"),
+    hand(338, "pyproject-hooks", "pyproject_hooks-1.2.0.tar.gz", "pyproject_hooks-1.2.0 (hand-authored, shared recipe)"),
+    hand(339, "pypa-build", "build-1.4.0.tar.gz", "build-1.4.0 (hand-authored, shared recipe)"),
+    book(340, "nmap", "basicnet/nmap.html", "nmap-7.98.tar.bz2"),
+
+    # --- GIMP (operator request, 2026-09-23) ------------------------------------
+    #
+    # xsoft/gimp.html (BLFS 13.0). Required and not yet here: AppStream,
+    # appstream-glib, gegl, gexiv2, libmypaint, mypaint-brushes, poppler-data.
+    # Recommended and not yet here: Graphviz, ghostscript (with libgs). The rest of
+    # its Required/Recommended list (GTK3, glib-networking, harfbuzz, librsvg,
+    # libtiff, libxml2, lcms2, poppler, iso-codes, libgudev, xdg-utils) is already
+    # built. PyGObject 3.58.0 is present too, but only because blfs-nmap's install
+    # pulled it from PyPI (it is in that step's manifest); no step builds it.
+    #
+    # Second-level closure, each from its own page's Required/Recommended list:
+    #   AppStream       itstool (docbook-xml, lxml), libfyaml (libyaml), libxmlb,
+    #                   docbook-xsl-nons
+    #   appstream-glib  libyaml
+    #   gegl            babl (Required), Graphviz (Recommended)
+    #   gexiv2          Exiv2 (inih Recommended), Vala (Recommended). Vala was left
+    #                   out at first and gexiv2's meson setup failed with "Could not
+    #                   execute Vala compiler: valac" (meson.build:104). It sits at
+    #                   seq 349.5, ahead of babl, not just ahead of gexiv2: babl and
+    #                   gegl install .vapi files only when valac is present at their
+    #                   configure time, and gimp's meson.build:943 then requires
+    #                   babl-0.1.vapi. The first build put Vala at 354.5, which left
+    #                   babl without it and GIMP failed; babl and gegl were rebuilt.
+    #                   Vala's own Recommended Graphviz (for valadoc) is seq 351,
+    #                   after it, so a fresh build gets Vala without valadoc.
+    #   ghostscript     OpenJPEG (Recommended). Without it the book's block 0 still
+    #                   removes the bundled copy, and gs loses JPX decoding.
+    #
+    # hand() steps:
+    #   docbook-xml     pst/docbook.html's source is a zip with no top-level
+    #                   directory, which lfsbuild's `tar -tf` unpack cannot read.
+    #   lxml            a section of general/python-modules.html, not its own page.
+    #   poppler-data    a section of general/poppler.html. seq 304 dropped its blocks
+    #                   because nothing needed CJK/Cyrillic encodings; GIMP's page lists
+    #                   poppler "(including poppler-data)" as Required. Installing it as
+    #                   its own step avoids rebuilding poppler.
+    #
+    # All shared, none names hardware. Not promoted to BASE, same reason as seq 14.5.
+    hand(341, "docbook-xml", "", "DocBook-4.5 XML DTD (hand-authored, shared recipe)"),
+    hand(342, "lxml", "lxml-6.0.2.tar.gz", "lxml-6.0.2 (hand-authored, shared recipe)"),
+    book(343, "itstool", "pst/itstool.html", "itstool-2.0.7.tar.gz"),
+    book(344, "libyaml", "general/libyaml.html", "yaml-0.2.5.tar.gz"),
+    book(345, "libfyaml", "general/libfyaml.html", "libfyaml-0.9.4.tar.gz"),
+    book(346, "libxmlb", "general/libxmlb.html", "libxmlb-0.3.25.tar.xz"),
+    book(347, "docbook-xsl-nons", "pst/docbook-xsl.html", "docbook-xsl-nons-1.79.2.tar.bz2"),
+    book(348, "appstream", "general/appstream.html", "AppStream-1.1.2.tar.xz"),
+    book(349, "appstream-glib", "general/appstream-glib.html", "appstream-glib-0.8.3.tar.xz"),
+    book(349.5, "vala", "general/vala.html", "vala-0.56.18.tar.xz"),
+    book(350, "babl", "general/babl.html", "babl-0.1.122.tar.xz"),
+    book(351, "graphviz", "general/graphviz.html", "graphviz-14.1.2.tar.bz2"),
+    book(352, "gegl", "general/gegl.html", "gegl-0.4.66.tar.xz"),
+    book(353, "inih", "general/inih.html", "inih-r62.tar.gz"),
+    book(354, "exiv2", "general/exiv2.html", "exiv2-0.28.7.tar.gz"),
+    book(355, "gexiv2", "gnome/gexiv2.html", "gexiv2-0.14.6.tar.xz"),
+    book(356, "libmypaint", "general/libmypaint.html", "libmypaint-1.6.1.tar.xz"),
+    book(357, "mypaint-brushes", "general/mypaint-brushes.html", "mypaint-brushes-1.3.1.tar.xz"),
+    hand(358, "poppler-data", "poppler-data-0.4.12.tar.gz", "poppler-data-0.4.12 (hand-authored, shared recipe)"),
+    book(359, "openjpeg2", "general/openjpeg2.html", "openjpeg-2.5.4.tar.gz"),
+    book(360, "ghostscript", "pst/gs.html", "ghostscript-10.06.0.tar.xz"),
+    # libXt and libXmu: GIMP's meson.build:738 requires xmu, xext and xfixes whenever
+    # GTK3 was built with the x11 target, and this host's GTK3 has it (targets:
+    # broadway wayland x11, kept for XWayland). No meson option skips it. First run
+    # stopped with 'Dependency "xmu" not found'. Both are x7lib packages; the shared
+    # recipes server wrote (its seq 237-238) are reused unchanged. libXt is also what
+    # ghostscript's configure wanted; gs was already built --without-x (host
+    # override) and is not rebuilt.
+    hand(360.5, "libxt", "libXt-1.3.1.tar.xz", "libXt-1.3.1", page="x7lib"),
+    hand(360.7, "libxmu", "libXmu-1.3.1.tar.xz", "libXmu-1.3.1", page="x7lib"),
+    book(361, "gimp", "xsoft/gimp.html", "gimp-3.0.6.tar.xz"),
 ], key=lambda p: p["seq"])

@@ -60,33 +60,29 @@ Things worth knowing before changing anything here:
 - **`nvme0n1p3` (the LUKS `/mnt/crypt` volume, this repo's own home) is never touched by
   any of this build or deploy process.** Only `nvme0n1p1` (root) and `nvme0n1p2` (swap)
   get reformatted at deploy time.
-- **This host is still pinned to LFS/BLFS 13.0 (`host.toml`'s `[books]`) while `server`
-  moved to 13.1 on 2026-09-07.** The shared `recipes/` tree is machine-neutral only when
-  every host reads the same book version -- that stopped being true the moment `server`
-  bumped, and the tooling has no version-scoping for the shared tree, only for the
-  chunked book HTML it reads from. Concretely: `bin/extract-recipes.py --host laptop
-  --check` / `bin/extract-blfs.py --host laptop --check` will report drift on ~240 pages
-  where this host has no `hosts/laptop/recipes/<name>.sh` copy of its own -- that is
-  **expected noise from the version gap, not real drift** (confirmed 2026-09-07: this
-  host's own book/13.0-based rendering is unchanged from before the bump; only the
-  *shared* candidate file changed, since `server`'s 13.1 extraction run overwrote it).
-  **Do not run `lfsbuild --host laptop --only <step> --force` for any step this host has
-  no `hosts/laptop/recipes/` copy of without first checking whether that step's page
-  changed between `book/13.0` and `book/blfs-13.0` vs `book/13.1`/`book/blfs-13.1`** --
-  the shared recipe may now assume a different toolchain/library version than what this
-  host is actually built against. Six pages are confirmed to need this care because they
-  had real command-content changes carried a stale block-index into the shared file
-  during the bump (`ch08-gcc`, `blfs-nodejs`, `blfs-sudo`, `blfs-glib2`, `blfs-rust`,
-  `blfs-json-c`) -- each now has a `hosts/laptop/`-level compat override restoring the
-  correct 13.0-era decision, tagged "Remove once this host also bumps to 13.1" in its
-  `reason`. The other ~240 pages were not individually re-verified against 13.1 text
-  (out of scope for server's bump); their shared recipe is now 13.1-shaped by default.
-  The clean fix, whenever this host's own bump happens, is to do the same 13.0->13.1
-  migration review this host still owes, at which point these compat overrides and this
-  whole note can be deleted. A better structural fix -- version-scoping `recipes/`
-  itself (e.g. `recipes/<family>-<ver>/`) so two hosts on different book versions never
-  share one candidate file -- was identified but not implemented; flag it if a third
-  host or another cross-version gap appears.
+- **This host is pinned to LFS/BLFS 13.0 (`host.toml`'s `[books]`); `server` moved to
+  13.1 on 2026-09-07.** Since `db416ba` (2026-09-21) this host reads its own
+  generated recipes and decisions: `recipes/lfs-13.0/`, `recipes/blfs-13.0/`, and so on,
+  each with its own `overrides.json`. `server`'s 13.1 extractions write
+  `recipes/*-13.1/` and cannot touch them. `extract-blfs.py --host laptop --check`
+  exits 0 with zero drift. New decisions for this host's pages go in the 13.0
+  `overrides.json`, and they carry to 13.1 only through a re-read. `extract-recipes.py`
+  and `extract-slfs.py` cannot run here, because the LFS and SLFS books are not in this
+  tree.
+
+  Still cross-version: `packages/base.py` pins tarball versions for every host. This
+  host's plan asks for `which-2.25` and `p11-kit-0.26.5`, which are 13.1's, while its
+  13.0 pages name 2.23 and 0.26.2. Before rebuilding a BASE step, check the tarball in
+  `state/blfs-plan.json` against this host's page.
+
+  Leftover compat overrides, all tagged "Remove once this host also bumps to 13.1":
+  `blfs-overrides.json` `blfs-rust` blocks 3-4, and `review-overrides.json` `ch08-gcc`
+  blocks 5 and 7. They were written to undo 13.1 decisions leaking into the shared
+  file. That no longer happens: `recipes/blfs-13.0/overrides.json` already drops rust
+  3-4, and `recipes/lfs-13.0/overrides.json` already has gcc 7 as `test` and no entry
+  for block 5. They look redundant, but they have not been removed. The gcc pair can't
+  be `--check`ed on this machine, so remove it from a checkout that has the LFS book.
+  (`blfs-rust` block 1 in the same file is a real host decision, not a leftover.)
 
 Site data is untracked on purpose. `etc-hosts.local` and `authorized-keys.local` hold this
 machine's LAN/VPN map and its SSH access list; both are gitignored with tracked `.example`
