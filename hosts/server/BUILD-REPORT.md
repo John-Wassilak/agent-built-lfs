@@ -5492,3 +5492,54 @@ the unrelated-daemon case PRACTICES.md records for upower and tailscale.
 The saved manifest was filtered with the same patterns, so it now matches what a capture
 with the new list would have produced (28 files, identical to laptop's). No re-run was
 needed, because nothing was missing.
+
+## Tailscale shields-up, in the shared recipe (2026-09-24)
+
+Operator request: "set tailscale to 'shields up' and can that be added to our install
+recipe, it should be the same across server and laptop".
+
+Shields-up makes tailscaled refuse every connection that a tailnet peer initiates to this
+node. Connections this node opens outward still work. It matters here for the reason
+recorded in the nginx entry above: `ts-input` accepts everything on `tailscale0` before
+the iptables unit's rules run.
+
+`recipes/blfs-tailscale.sh` (shared, so laptop gets the same) now installs
+`/usr/lib/systemd/system/tailscaled.service.d/shields-up.conf`, which runs
+`ExecStartPost=-/usr/bin/tailscale set --shields-up`. Checked against the v1.102.3
+source before choosing it:
+
+- A one-off `tailscale set` lives only in tailscaled.state. It is not in any manifest,
+  and one later `--shields-up=false` undoes it permanently.
+- The `--config` file (ipn/conf.go, "alpha0") has a ShieldsUp field, but it locks every
+  pref against the CLI unless `"Locked": false`. Each load also resets AdvertiseServices
+  and the relay prefs unconditionally.
+- `tailscale set` sends only the flags actually passed (`setFlagSet.Visit`) and has no
+  login-state check, so the drop-in changes nothing else.
+
+The recipe header gives the full reasoning. The `-` prefix means a failed `set` cannot
+stop tailscaled. `/lfs-audit` section D now checks `ShieldsUp` and the drop-in.
+
+Re-ran with `lfsbuild --only blfs-tailscale --force`: 2.7 min. `/sources` no longer held
+the tarball after the re-image, so it was re-fetched from the v1.102.3 tag archive
+(sha256 `0e94d961c31ce7d33e8b7ce4ac6fdbec83ee5658784eed69eb7fce300729d717`). No earlier
+sha256 was recorded to compare against.
+
+| Check | Result |
+|---|---|
+| `tailscale debug prefs` after the step | `ShieldsUp: true` |
+| `tailscale set --shields-up=false`, then `systemctl restart tailscaled` | back to `ShieldsUp: true` (the drop-in did it) |
+| `tailscale ping ifd-grafana` (outbound) | pong, direct, 32 ms |
+| `ts-input` chain after restart | recreated, same 5 rules |
+
+Manifest: the old 4 files plus the drop-in. The capture also claimed
+`/etc/nginx/nginx.conf`, `/etc/nginx/nginx.conf.bak-20260924` and
+`/etc/nginx/locations/pi-quiti.conf`, which a separate session wrote during the build
+window while adding a pi-quiti reverse proxy. They were removed from this manifest by
+hand. They are operator config and belong to no package. No noise pattern can cover
+that case, since `/etc/nginx/` holds real package files.
+
+Seen in the journal, not caused by this change: tailscaled has logged "Extension connmark
+revision 0 not supported" 25 times since 2026-09-21, and its rp_filter workaround rules
+fail. The kernel lacks the xt connmark match/target. Open item.
+
+laptop: not yet applied. It needs `lfsbuild --only blfs-tailscale --force` run on laptop.

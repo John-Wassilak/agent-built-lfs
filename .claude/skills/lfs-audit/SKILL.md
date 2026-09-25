@@ -140,6 +140,15 @@ iptables -L -n -v 2>/dev/null                                  # active firewall
 ss -tlnp 2>/dev/null                                            # cross-check open ports against the above
 ```
 
+If tailscale is installed, `tailscaled`'s own `ts-input` chain runs ahead of the
+iptables unit and accepts everything on `tailscale0`, so the firewall rules above say
+nothing about tailnet exposure. Shields-up is what closes it, and `blfs-tailscale`
+installs a drop-in that re-applies it on every start:
+```sh
+tailscale debug prefs 2>/dev/null | grep ShieldsUp             # expect true
+systemctl cat tailscaled 2>/dev/null | grep -- '--shields-up'  # the drop-in is present
+```
+
 Then delegate to the project's own tracker rather than re-deriving it:
 ```sh
 bin/lfsmaint --root / advisories     # LFS/BLFS security advisories affecting installed packages
@@ -153,7 +162,8 @@ entries (`/usr/bin/passwd`, `/usr/bin/sudo`, etc. are expected).
 
 Flag: any SUID/SGID binary not owned by a known package; any world-writable file outside
 `/tmp`/`/var/tmp`; any private key with group/other read permission; any non-root UID 0
-account; any advisory at Critical/High severity for an installed package.
+account; any advisory at Critical/High severity for an installed package; `ShieldsUp`
+false or the drop-in missing on a host with tailscale.
 
 ## E. Hardware without a bound kernel driver
 

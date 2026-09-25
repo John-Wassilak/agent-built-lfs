@@ -871,6 +871,12 @@ database, a Postgres WAL segment in `blfs-nginx`'s case). On any host that runs
 containers, expect every step to hit this; `^/var/lib/docker/` and
 `^/var/lib/containerd/` are in `MANIFEST_NOISE`.
 
+The case no pattern covers: a person or another agent session editing files under a
+path that packages also own, such as `/etc/nginx/`, while an unrelated step builds.
+Found the same day, when `blfs-tailscale`'s manifest claimed three nginx config files.
+The only defense is reading every new manifest against what the step could plausibly
+install, and preferring to run a step when nothing else is editing the system.
+
 ## A sysctl written to `conf/default` can be a no-op, and for `accept_redirects` it is
 
 The BLFS Personal Firewall script (`postlfs/iptables.html`), which this project's
