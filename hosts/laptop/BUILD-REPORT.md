@@ -6401,3 +6401,24 @@ All book md5 sums matched (vala, libXt and libXmu included). Build times in
 `state/timings.tsv`; the long ones were ghostscript 20.2 min, gimp 13.2 min, gegl 7.9 min
 (5.7 on rebuild), lxml 6.3 min and vala 4.4 min. `extract-blfs.py --check`: zero drift.
 13 GB free on `/` afterwards.
+
+## Tailscale shields-up drop-in (2026-09-25)
+
+Applied the shared `blfs-tailscale` change from 2026-09-24 (server's BUILD-REPORT has the
+reasoning). Re-ran with `lfsbuild --book blfs --native --only blfs-tailscale --force`:
+3.9 min, using the tarball already in `/sources`.
+
+Before the re-run, `tailscale debug prefs` already showed `ShieldsUp: true`, but the drop-in
+was absent. That value was a one-off pref in tailscaled.state, and one
+`--shields-up=false` would have undone it for good.
+
+| Check | Result |
+|---|---|
+| Manifest | the old 4 files plus `tailscaled.service.d/shields-up.conf`. No stray paths |
+| `systemctl cat tailscaled` | drop-in loaded, `ExecStartPost=-/usr/bin/tailscale set --shields-up` |
+| `tailscale debug prefs` | `ShieldsUp: true` |
+| tailscaled | active |
+
+Not verified on laptop: server's test of turning shields off, restarting, and checking
+that the pref came back. tailscaled has not restarted since the build, so the
+`ExecStartPost` has not run here yet. It will run on the next start.

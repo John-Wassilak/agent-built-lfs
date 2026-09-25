@@ -1,4 +1,5 @@
 /etc/default/tailscaled
 /usr/bin/tailscale
 /usr/lib/systemd/system/tailscaled.service
+/usr/lib/systemd/system/tailscaled.service.d/shields-up.conf
 /usr/sbin/tailscaled
