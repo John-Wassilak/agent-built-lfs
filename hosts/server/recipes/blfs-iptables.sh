@@ -120,6 +120,9 @@ iptables -A INPUT -p tcp --dport 22 -m conntrack --ctstate NEW -j ACCEPT
 # is also why nginx binds 10.0.0.4 and loopback by address rather than `listen 80`;
 # see hosts/server/overlay/etc/nginx/nginx.conf. No v6 rule: wg0 carries no v6.
 iptables -A INPUT -i wg0 -p tcp --dport 80 -m conntrack --ctstate NEW -j ACCEPT
+# VNC (x0vncserver sharing :0, packages.py seq 267) likewise wg0 only; it also
+# binds 10.0.0.4 alone, see hosts/server/overlay/etc/systemd/system/x0vncserver.service.
+iptables -A INPUT -i wg0 -p tcp --dport 5900 -m conntrack --ctstate NEW -j ACCEPT
 
 # Everything else is dropped by policy (no LOG rule -- the book's example logs
 # every dropped packet, which on an internet-facing host is a constant stream

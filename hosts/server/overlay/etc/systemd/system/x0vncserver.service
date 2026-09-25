@@ -1,0 +1,36 @@
+# x0vncserver for `server` (2026-09-25): shares john's running X display, :0 (startx on
+# vt1, awesome), so laptop can view and control it over WireGuard with vncviewer.
+# packages.py seq 267 builds it.
+#
+# Exposure: -interface binds wg0's 10.0.0.4 only, and the blfs-iptables host override
+# accepts tcp/5900 on wg0 only. Binding by address matters for the reason nginx's does:
+# tailscaled's ts-input chain accepts everything on tailscale0 ahead of the firewall.
+#
+# Auth: VNC password, in ~john/.config/tigervnc/passwd (vncpasswd's default location;
+# x0vncserver has no default, so it is named here). TLSVnc wraps it in anonymous TLS
+# (GnuTLS, seq 265) on top of WireGuard's encryption. VncAuth alone is not offered.
+# Username/password types are unavailable: this build has no PAM (seq 267's overrides).
+#
+# X is started by hand, so it may not exist at boot and it goes away when the session
+# ends. ExecStartPre waits quietly for the :0 socket instead of failing in a loop, and
+# x0vncserver exits when X does, so Restart=always goes back to waiting.
+# XAUTHORITY: startx adds the cookie in ~/.Xauthority to the server's own -auth file,
+# so that file authenticates to whichever X is running.
+[Unit]
+Description=TigerVNC x0vncserver sharing display :0 on wg0
+After=wg-quick@wg0.service
+Wants=wg-quick@wg0.service
+
+[Service]
+User=john
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/home/john/.Xauthority
+ExecStartPre=/bin/sh -c 'until [ -S /tmp/.X11-unix/X0 ]; do sleep 5; done'
+TimeoutStartSec=infinity
+ExecStart=/usr/bin/x0vncserver -display :0 -interface 10.0.0.4 -rfbport 5900 \
+    -SecurityTypes TLSVnc -PasswordFile /home/john/.config/tigervnc/passwd
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
