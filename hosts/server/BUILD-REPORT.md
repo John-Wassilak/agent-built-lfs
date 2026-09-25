@@ -5605,3 +5605,24 @@ do), and the unit's behavior across an X restart or a reboot.
 Build times: GnuTLS 2.5 min, FLTK 0.6 min, TigerVNC 0.8 min. GnuTLS's manifest is 1303
 files, almost all headers, man pages, gtk-doc and locale files; no path outside what the
 package installs.
+
+### Follow-up: clients may no longer resize this screen (same day)
+
+The operator's first connection resized the physical display. vncviewer defaults to
+`RemoteResize`, which asks the server to match the viewer window, and x0vncserver
+defaults to `AcceptSetDesktopSize=on` and applies it through RandR. The operator wants
+this screen to stay put and the viewer to scroll. The unit now passes
+`-AcceptSetDesktopSize=0`, which refuses the request from any client, whatever its
+settings. Checked in `x0vncserver -h` first.
+
+The earlier resize had left X at 640x480. x0vncserver's restart logged `Desktop geometry
+is set to 640x480`, against `1440x900` at its first start and in the NVIDIA entries
+above. This host has no `xrandr`, so it was set back to 1440x900 with a one-off python
+ctypes call to libXrandr's `XRRSetScreenConfig`. That script then segfaulted in its own
+`XSync` call: the argument types were not declared, so the display pointer was
+truncated. The resize had already been applied. X, awesome and every mpv process kept
+their original start times, and the kernel log shows the fault only in that python
+process. x0vncserver's next start logged `1440x900+0+0`.
+
+My first edit to the unit also doubled a line-continuation backslash, and systemd left
+the service in `activating`. It was fixed before the restart above.
