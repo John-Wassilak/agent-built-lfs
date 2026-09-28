@@ -5346,5 +5346,19 @@
     "blocks": 10,
     "enabled": 3,
     "disabled": 7
+  },
+  {
+    "seq": 365,
+    "order": "blfs.365",
+    "name": "blfs-dbeaver",
+    "chapter": "blfs",
+    "page": "dbeaver",
+    "title": "DBeaver CE 26.2.1 (hand-authored, upstream binary)",
+    "context": "chroot",
+    "tarball": "dbeaver-ce-26.2.1-linux-x86_64.tar.gz",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
   }
 ]

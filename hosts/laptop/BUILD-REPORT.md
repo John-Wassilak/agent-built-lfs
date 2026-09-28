@@ -6522,3 +6522,33 @@ INPUT policy is DROP, so a daemon on 873 would be unreachable. Server made the s
 
 Built in 0.8 min, 5 files in the manifest. `rsync --version` reports 3.4.1, protocol 32,
 with openssl-crypto, ACLs and xattrs. A local `rsync -a` copy worked.
+
+## DBeaver CE 26.2.1 (seq 365), upstream binary with bundled runtime (2026-09-28)
+
+Operator request. No BLFS page, so this is `hand()` with a shared recipe,
+`recipes/blfs-dbeaver.sh`. It uses the upstream `dbeaver-ce-26.2.1-linux-x86_64.tar.gz`
+from the GitHub release, which is where `dbeaver.io/files/dbeaver-ce-latest-...` redirected
+that day. sha256 `16d7bd01...2067e8` matches the digest GitHub publishes for the asset, and
+the recipe checks it again.
+
+The tarball ships its own Java runtime (Temurin 25.0.3, trimmed with jlink), and that
+runtime is what gets used. The operator asked whether a shared system JDK made sense
+yet. It didn't. DBeaver is the only Java program on this host. BLFS 13.0's binary JDK
+(`general/java.html`, OpenJDK 21.0.10) lists CUPS as a runtime dependency, and
+the source build (`openjdk.html`) requires CUPS to build, and this host has never built CUPS.
+With a shared JDK, Java security updates would also be ours to track. With the bundled
+runtime they arrive with each DBeaver release. Revisit if a second Java consumer appears.
+DBeaver needs Java 21 or newer, so a later switch is one `-vm` line in `dbeaver.ini`.
+
+`ldd` over every ELF file in the tarball and over the SWT natives from the gtk jar found
+nothing missing except `libjawt.so`, which lives in the bundled `jre/lib`. WebKitGTK is not
+installed, so SWT's Browser widget cannot open (DBeaver's embedded help and tips pages).
+Everything else works.
+
+Installed to `/opt/dbeaver`, plus the `/usr/bin/dbeaver` symlink, a rewritten
+`dbeaver-ce.desktop` and `/usr/share/pixmaps/dbeaver.png`. Built in 0.1 min, 814 files in
+the manifest, all of them under those paths. The installed copy, launched under Hyprland, got
+through workbench initialization with no errors in the console or workspace log. The
+install tree is root-owned and read-only, so the launcher keeps its configuration area
+in `~/.eclipse` and user data in `~/.local/share/DBeaverData`. The same read-only
+tree means DBeaver's built-in updater cannot write there. Upgrade by bumping the recipe.

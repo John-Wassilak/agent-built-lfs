@@ -1523,4 +1523,10 @@ PACKAGES = sorted(BASE + [
     # carries no patch and says it is correct only for releases that need none, and
     # 13.0 does. The generated recipes/blfs-13.0/blfs-rsync.sh wins over it here.
     book(364, "rsync", "basicnet/rsync.html", "rsync-3.4.1.tar.gz"),
+    # DBeaver CE (operator, 2026-09-28). No BLFS page; the upstream prebuilt tarball
+    # with its own bundled Java runtime, installed to /opt/dbeaver. This host has no
+    # JDK (see the LibreOffice note above), and the bundled runtime keeps it that way.
+    # See the recipe for the ldd sweep and the missing-WebKitGTK consequence.
+    hand(365, "dbeaver", "dbeaver-ce-26.2.1-linux-x86_64.tar.gz",
+         "DBeaver CE 26.2.1 (hand-authored, upstream binary)"),
 ], key=lambda p: p["seq"])
