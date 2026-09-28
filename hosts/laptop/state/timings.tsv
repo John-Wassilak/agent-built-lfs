@@ -651,3 +651,4 @@ blfs-tailscale	native	233.1	0
 blfs-fltk	native	82.3	0
 blfs-tigervnc	native	37.6	2
 blfs-tigervnc	native	73.0	0
+blfs-rsync	native	50.5	0

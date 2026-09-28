@@ -1518,4 +1518,9 @@ PACKAGES = sorted(BASE + [
     # has. Xvnc and Xorg Legacy Fonts are not built.
     book(362, "fltk", "x/fltk.html", "fltk-1.4.4-source.tar.gz"),
     book(363, "tigervnc", "xsoft/tigervnc.html", "tigervnc-1.16.0.tar.gz"),
+    # rsync client (operator, 2026-09-27). The 13.0 page's version and its required
+    # security patch, not server's 3.5.0: the shared hand-authored recipes/blfs-rsync.sh
+    # carries no patch and says it is correct only for releases that need none, and
+    # 13.0 does. The generated recipes/blfs-13.0/blfs-rsync.sh wins over it here.
+    book(364, "rsync", "basicnet/rsync.html", "rsync-3.4.1.tar.gz"),
 ], key=lambda p: p["seq"])

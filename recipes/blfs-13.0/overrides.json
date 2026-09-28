@@ -860,5 +860,23 @@
       "action": "drop",
       "reason": "'If you downloaded the optional html documentation' -- the docs tarball is not fetched."
     }
+  },
+  "blfs-rsync": {
+    "3": {
+      "action": "drop",
+      "reason": "Optional Doxygen HTML API docs ('If you have Doxygen-1.16.1 installed and wish to build HTML API documentation'). Doxygen is not installed -- same doc-tool trap as popt, json-c, libassuan and the rest."
+    },
+    "4": {
+      "action": "drop",
+      "reason": "Test suite ('To run the tests, fix one test and then run the test suite'). Not auto-flagged by the testsuite classifier because the block opens with the wildtest.c sed rather than 'make check'. Skipped under this project's BLFS test policy; server ran it once by hand on this same 13.0 page (commit eeb5029): 45 passed, 1 skipped (crtimes), 0 failed."
+    },
+    "6": {
+      "action": "drop",
+      "reason": "Installs the Doxygen API docs from block 3, which is dropped."
+    },
+    "9": {
+      "action": "drop",
+      "reason": "Optional switch from the default service unit to socket activation ('If the socket method is desired'). The book's default is the service method, and the block presumes block 8's rsyncd unit is installed. Opt-in, true of any host."
+    }
   }
 }

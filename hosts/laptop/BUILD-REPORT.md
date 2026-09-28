@@ -6502,3 +6502,23 @@ re-copied were byte-identical to what was installed.
 The two overlay copies here (`hosts/laptop/overlay/home/john/.local/bin/vnc-server`,
 `.../.local/share/applications/vnc-server.desktop`) were removed, and so were their
 installed copies under `~/.local`, so the menu does not list the entry twice.
+
+## rsync 3.4.1 (seq 364), client only (2026-09-27)
+
+Operator request. Built from this host's own book, BLFS 13.0 `basicnet/rsync.html`: 3.4.1
+with the page's required `rsync-3.4.1-security_fix-1.patch` (upstream 797e17f). Server's
+3.5.0 and the shared hand-authored `recipes/blfs-rsync.sh` were not reused: that recipe
+applies no patch and its header says it is correct only for a release that needs none,
+and 13.0 needs one. The generated `recipes/blfs-13.0/blfs-rsync.sh` outranks it here.
+
+Tarball md5 `04ce67866db04fd7a1cde0b78168406e` matches the book; the page gives no md5
+for the patch. popt-1.19 (seq 163) was already installed.
+
+Decisions: shared 13.0 overrides drop the Doxygen docs (blocks 3, 6), the test suite
+(block 4, which the testsuite classifier missed because it opens with the wildtest.c
+sed), and the optional socket-activation switch (block 9). Host overrides drop the
+daemon setup (rsyncd user, `/etc/rsyncd.conf`, `make install-rsyncd`: blocks 0, 7, 8).
+INPUT policy is DROP, so a daemon on 873 would be unreachable. Server made the same call.
+
+Built in 0.8 min, 5 files in the manifest. `rsync --version` reports 3.4.1, protocol 32,
+with openssl-crypto, ACLs and xattrs. A local `rsync -a` copy worked.

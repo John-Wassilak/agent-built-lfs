@@ -219,5 +219,19 @@
       "action": "drop",
       "reason": "Configures the book's vncserver@ Xvnc session (Xsession, vncserver.users, ~/.config/tigervnc/config, vncserver@:1). Not applicable: Xvnc and vncsession are not built on this host (blocks 1-3)."
     }
+  },
+  "blfs-rsync": {
+    "0": {
+      "action": "drop",
+      "reason": "rsyncd user/group, which the book asks for only 'If you intend to run rsync as a daemon'. Client-only install on this host (operator request 2026-09-27 was for the rsync client). The firewall's INPUT policy is DROP (iptables -S INPUT, checked 2026-09-27), so a daemon on 873 would be unreachable and extra attack surface. Same decision server made on this page."
+    },
+    "7": {
+      "action": "drop",
+      "reason": "/etc/rsyncd.conf, described by the book as 'a simple download-only configuration to set up running rsync as a server'. No daemon on this host -- see block 0."
+    },
+    "8": {
+      "action": "drop",
+      "reason": "'make install-rsyncd' is a target of blfs-systemd-units' Makefile, not rsync's, and the book notes 'You don't need this unit to run the rsync client'. No daemon on this host -- see block 0."
+    }
   }
 }
