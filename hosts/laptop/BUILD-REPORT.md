@@ -6657,3 +6657,10 @@ Applied by hand on laptop with the recipe's own sed. `systemctl show iptables` r
 `~/Scripts/firewall.sh check` then reported "running kernel matches this file". That
 file now skips dockerd's `DOCKER*` chains in `check` the way it skips tailscaled's, and
 its `apply` restarts docker as well as tailscaled.
+
+**Grub and /boot**, operator request: one current entry and one backup. `default=0` is
+the rebuilt 6.18.49. Entry 1 is the 6.18.49 `.preDOCKER` image, which booted 2026-09-05
+to 2026-10-01. The 6.18.10 kernel, config and System.map were deleted, along with the
+four menu entries whose images were already gone (`.preTHERMAL`, `.preUVC`, `.preBT`)
+or had just been deleted (6.18.10). `/lib/modules/6.18.10` belongs to the kernel that
+is running now, so it is kept until the next boot. `grub-script-check` passes.
