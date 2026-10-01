@@ -6664,3 +6664,46 @@ to 2026-10-01. The 6.18.10 kernel, config and System.map were deleted, along wit
 four menu entries whose images were already gone (`.preTHERMAL`, `.preUVC`, `.preBT`)
 or had just been deleted (6.18.10). `/lib/modules/6.18.10` belongs to the kernel that
 is running now, so it is kept until the next boot. `grub-script-check` passes.
+
+## Second boot after the Docker kernel: runtime checks pass (2026-10-01)
+
+Booted 6.18.49 (built 15:39 the same day) from grub entry 0. `systemctl --failed` is
+empty. `/lib/modules/6.18.10` was already gone. `/boot` holds two kernels, each with its
+config and System.map: the current 6.18.49 and the `.preDOCKER` backup. `/lib/modules`
+holds the two matching trees. The deployed grub.cfg is byte-identical to the overlay.
+
+**Journal.** Warning-or-worse entries for this boot were compared, pattern by pattern,
+against the last two boots (6.18.49 `.preDOCKER` and 6.18.10). All of them predate this
+kernel except NetworkManager's "failed to read bridge setting 'vlan_protocol'" for
+`docker0`, which first appears now because `docker0` now exists. The others are the
+three user units under `/mnt/crypt` failing CHDIR until the LUKS volume is mounted by
+hand (each recovered on its restart timer), v6 router solicitations refused by the
+OUTPUT DROP policy, martian-source logging, RTKit missing, and the Bluetooth
+supported-features read.
+
+**Firewall.** `iptables.service` started at 16:17:18 with no xtables lock errors.
+`~/Scripts/firewall.sh check` reports "running kernel matches this file", with
+tailscaled's and dockerd's chains listed as not checked.
+
+**Docker.** `docker info`: overlayfs, cgroup v2 with the systemd driver, seccomp, init
+binary `docker-init`, kernel 6.18.49, no WARNING lines. No warning-or-worse journal
+entries for docker or containerd. Server's runtime checks are now a script,
+`bin/docker-check.sh`, shared because none of them names hardware. All 24 pass:
+
+| check | result |
+|-------|--------|
+| `docker run hello-world` (pull from Docker Hub) | pass |
+| alpine: HTTP egress, DNS (A and AAAA) | pass |
+| `--memory 64m --cpus 0.5 --pids-limit 50` | `memory.max` 67108864, `cpu.max` 50000 100000, `pids.max` 50 |
+| `Seccomp:` in a container | 2 (filter); `unshare -U` refused |
+| mknod of block 8:0 then read | `Operation not permitted` |
+| `--device /dev/null:/dev/xnull` write | pass |
+| `-p 127.0.0.1:18080:80`, `-p [::1]:18081:80`, bridge IP (nginx:alpine) | 200 on all three |
+| `docker buildx build --load` + run | pass |
+| compose: service-name DNS, `init: true` | pass; PID 1 `docker-init` |
+| `docker run --init` / without | PID 1 `docker-init` / the command |
+
+Negative controls, run by hand: with `--security-opt seccomp=unconfined`, `Seccomp:` is
+0 and `unshare -U` succeeds, so the seccomp checks do detect a missing filter. The
+script removed its containers, compose network and images, and kept alpine, as
+server's run did.
