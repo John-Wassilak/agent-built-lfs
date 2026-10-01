@@ -653,3 +653,11 @@ blfs-tigervnc	native	37.6	2
 blfs-tigervnc	native	73.0	0
 blfs-rsync	native	50.5	0
 blfs-dbeaver	native	4.3	0
+blfs-libseccomp	native	13.1	0
+blfs-runc	native	49.3	0
+blfs-containerd	native	192.6	0
+blfs-moby	native	170.1	0
+blfs-docker-cli	native	63.2	0
+blfs-docker-buildx	native	114.4	0
+blfs-docker-compose	native	78.4	0
+blfs-tini	native	2.0	0

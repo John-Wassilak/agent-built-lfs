@@ -1529,4 +1529,27 @@ PACKAGES = sorted(BASE + [
     # See the recipe for the ldd sweep and the missing-WebKitGTK consequence.
     hand(365, "dbeaver", "dbeaver-ce-26.2.1-linux-x86_64.tar.gz",
          "DBeaver CE 26.2.1 (hand-authored, upstream binary)"),
+    # Docker (operator, 2026-10-01: "just like on server"). The same stack server built
+    # at its seq 256-263, on the same shared hand-authored recipes and the same
+    # tarballs (copied from server's /sources, md5 identical). BLFS 13.0 has no page for
+    # Docker, containerd, runc or tini either. One difference: libseccomp is book() off
+    # this host's 13.0 page, so 2.6.0 rather than server's 13.1 2.6.1. runc only needs
+    # libseccomp.so.2, which both provide. Go is this host's own go1.27.0 (seq 169), the
+    # same toolchain server used. Also needs the container options in
+    # bin/kernel-config-base.sh, which this host's 6.18.49 kernel predates: a kernel
+    # rebuild and a reboot, recorded in BUILD-REPORT.md.
+    book(366, "libseccomp", "general/libseccomp.html", "libseccomp-2.6.0.tar.gz"),
+    hand(367, "runc", "runc-v1.5.1.tar.gz", "runc-1.5.1 (hand-authored, shared recipe)"),
+    hand(368, "containerd", "containerd-v2.4.0.tar.gz",
+         "containerd-2.4.0 (hand-authored, shared recipe)"),
+    hand(369, "moby", "moby-docker-v29.8.1.tar.gz",
+         "moby (dockerd) 29.8.1 (hand-authored, shared recipe)"),
+    hand(370, "docker-cli", "docker-cli-v29.8.1.tar.gz",
+         "docker-cli-29.8.1 (hand-authored, shared recipe)"),
+    hand(371, "docker-buildx", "buildx-v0.37.1.tar.gz",
+         "docker-buildx-0.37.1 (hand-authored, shared recipe)"),
+    hand(372, "docker-compose", "compose-v5.5.1.tar.gz",
+         "docker-compose-5.5.1 (hand-authored, shared recipe)"),
+    hand(373, "tini", "tini-v0.19.0.tar.gz",
+         "tini-0.19.0 (docker-init, hand-authored, shared recipe)"),
 ], key=lambda p: p["seq"])

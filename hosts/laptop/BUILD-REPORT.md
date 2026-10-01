@@ -6552,3 +6552,65 @@ through workbench initialization with no errors in the console or workspace log.
 install tree is root-owned and read-only, so the launcher keeps its configuration area
 in `~/.eclipse` and user data in `~/.local/share/DBeaverData`. The same read-only
 tree means DBeaver's built-in updater cannot write there. Upgrade by bumping the recipe.
+
+## Docker (seq 366-373) and a container-capable 6.18.49 kernel (2026-10-01)
+
+Operator request: "need to install docker just like on server". Same stack, recipes and
+tarballs as server's seq 256-263 (see server's BUILD-REPORT.md, 2026-09-23): source
+builds, john in the `docker` group. BLFS 13.0 has no page for Docker, containerd, runc or
+tini either.
+
+Sources: the seven GitHub archives were copied from server's `/sources`; md5 of each
+matches server's copy. libseccomp is `book()` off this host's 13.0 page, so **2.6.0**, not
+server's 2.6.1; md5 `2d42bcde31fd6e994fcf251a1f71d487` matches the book. The generated
+`recipes/blfs-13.0/blfs-libseccomp.sh` has the same body as the 13.1 one. Go is this
+host's go1.27.0, the toolchain server used.
+
+| step | min | manifest | notes |
+|------|-----|----------|-------|
+| libseccomp 2.6.0 | 0.2 | 43 | server's 2.6.1 had 44 |
+| runc 1.5.1 | 0.8 | 2 | `runc features`: seccomp enabled; links `/usr/lib/libseccomp.so.2` |
+| containerd 2.4.0 | 3.2 | 4 | |
+| moby 29.8.1 | 2.8 | 11 | docker.socket + docker.service enabled, not started |
+| docker-cli 29.8.1 | 1.1 | 2 | |
+| docker-buildx 0.37.1 | 1.9 | 1 | |
+| docker-compose 5.5.1 | 1.3 | 1 | network module fetch; resolv.conf restored to the resolved stub |
+| tini 0.19.0 | 0.0 | 1 | `tini version 0.19.0 - git.de40ad0` |
+
+The first run was blocked before libseccomp by lfsbuild's 8 GB free-space guard (7.8 GB
+free on `/`). `make clean` in `/sources/linux-6.18.49` freed 0.9 GB of Sep 5 object files.
+That tree's `.config` was identical to `/boot/config-6.18.49` and was about to be rebuilt.
+
+**Firewall.** This host's `/etc/systemd/scripts/iptables` (host override) has the same
+`-F`/`-X`/`-t nat -F` preamble as server's, so the moby drop-in ordering docker after
+iptables.service applies here too: **any `systemctl restart iptables` must be followed by
+`systemctl restart docker`**. v4 FORWARD policy is DROP, which dockerd's own chains
+handle. IPv6 is blocked outright here (2026-09-09 entry), so containers get no v6
+egress, unlike server's AAAA check.
+
+**Kernel.** `/boot/config-6.18.49` (Sep 5) predates the container options added to
+`bin/kernel-config-base.sh` on 2026-09-23. The dry run against the 6.18.49 tree is
+additions only: 29 symbols, no set value changed or dropped, `IP6_NF_TARGET_REJECT` still
+`=m`. The build used the same hand steps as the 2026-09-05 entry (`lfsbuild` still cannot
+target 6.18.49), with the config scripts restaged from the repo into `/sources`: the
+copies there dated from Sep 4. Only the known `MOUSE_PS2_SYNAPTICS` warning. Afterwards:
+
+- `/boot/config-6.18.49` is byte-identical to the dry run. moby's `contrib/check-config.sh`
+  "Generally Necessary" list is clean except `NETFILTER_XT_MATCH_IPVS` (Swarm only, left
+  out as on server).
+- Modules 95 -> 105; all 95 old paths still present, and every module `lsmod` shows on
+  the running kernel resolves in the new tree.
+- Config-only rebuild, same version string, so `/lib/modules/6.18.49` was overwritten in
+  place. The previous kernel is `vmlinuz-6.18.49-lfs-13.0-systemd.preDOCKER` (plus
+  `config-`/`System.map-` `.preDOCKER`) with its tree at `/lib/modules/6.18.49.preDOCKER`,
+  and a new grub fallback entry (index 2). `default=1` still names 6.18.49, now the
+  rebuilt one. Deployed grub.cfg is byte-identical to the overlay; `grub-script-check` passes.
+
+`lfsmaint db` rebuilt; `lfsmaint owns` resolves docker, dockerd, runc, containerd,
+docker-init, both CLI plugins and libseccomp.so.2. `extract-blfs.py --check`: zero drift
+at 391 steps.
+
+Not yet done: the reboot, and the runtime checks server ran after its own (hello-world,
+egress/DNS, cgroup limits, seccomp, device control, published ports, buildx, compose,
+`--init`). Until the reboot, dockerd cannot start and the `docker` group is not in john's
+session.

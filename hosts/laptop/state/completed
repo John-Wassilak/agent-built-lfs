@@ -570,3 +570,11 @@ blfs-fltk
 blfs-tigervnc
 blfs-rsync
 blfs-dbeaver
+blfs-libseccomp
+blfs-runc
+blfs-containerd
+blfs-moby
+blfs-docker-cli
+blfs-docker-buildx
+blfs-docker-compose
+blfs-tini
