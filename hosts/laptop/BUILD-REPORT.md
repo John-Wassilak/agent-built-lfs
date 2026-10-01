@@ -6614,3 +6614,46 @@ Not yet done: the reboot, and the runtime checks server ran after its own (hello
 egress/DNS, cgroup limits, seccomp, device control, published ports, buildx, compose,
 `--init`). Until the reboot, dockerd cannot start and the `docker` group is not in john's
 session.
+
+## First boot after the Docker kernel: wrong kernel, firewall half-loaded (2026-10-01)
+
+The reboot came up on **6.18.10** (grub entry 0), not the rebuilt 6.18.49 that
+`default=1` named. `last -x` shows 6.18.49 on the two previous boots, and the
+deployed grub.cfg was byte-identical to the overlay with `default=1`. Nothing on the
+running system says why entry 0 was taken; a key pressed at the menu is the likely
+cause. `/boot/vmlinuz-6.18.49-lfs-13.0-systemd` is valid: `cmp` matches
+`/sources/linux-6.18.49/arch/x86/boot/bzImage`, and the tree's `.config` matches
+`/boot/config-6.18.49`.
+
+**Docker.** Each failure traces to 6.18.10 lacking the container options:
+`Failed to create bridge docker0 via netlink: operation not supported` (no
+`CONFIG_BRIDGE`), `Module overlay not found in directory /lib/modules/6.18.10`, and
+ip6tables `nat` missing (no `IP6_NF_NAT`). All three are set in the 6.18.49 build. The
+journald note "local system does not support BPF/cgroup firewalling" is the same
+cause (`CGROUP_BPF`, also in 6.18.49). Docker's runtime checks wait for a boot on that
+kernel.
+
+**Firewall.** `iptables.service` failed with `status=4/NOPERMISSION`: eight
+`Can't lock /run/xtables.lock` errors. tailscaled was bringing its router up and taking
+the same lock, and the BLFS script calls `iptables` without `-w`. The live result was
+partial: no `INPUT -i lo` accept, no wg nginx rule, v6 INPUT and FORWARD at ACCEPT.
+The previous three boots show no lock errors, so the race was always present and
+first lost on this boot. A win would have been no better, since the script's
+`iptables -F; -X` would then have deleted tailscaled's `ts-*` chains.
+
+Fix in the shared hand-authored `recipes/blfs-iptables-unit.sh`: the installed
+`iptables.service` gets `Wants=`/`Before=network-pre.target` in place of
+`After=network.target`, the ordering systemd.special(7) gives for firewall units.
+tailscaled is `After=network-pre.target`, and docker.service is already
+`After=iptables.service` (blfs-moby drop-in). The edit is a sed rather than a drop-in.
+A drop-in cannot remove `After=network.target`, and keeping it beside
+`Before=network-pre.target` would be a cycle. This is shared because the upstream unit
+is the same on any machine. `server` has not received it.
+
+Applied by hand on laptop with the recipe's own sed. `systemctl show iptables` reports
+`Before=network-pre.target multi-user.target shutdown.target docker.service`, and
+`systemd-analyze verify multi-user.target` reports no cycle. Rules were reloaded with
+`systemctl restart iptables` followed by `systemctl try-restart tailscaled`.
+`~/Scripts/firewall.sh check` then reported "running kernel matches this file". That
+file now skips dockerd's `DOCKER*` chains in `check` the way it skips tailscaled's, and
+its `apply` restarts docker as well as tailscaled.
