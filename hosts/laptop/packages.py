@@ -1560,4 +1560,16 @@ PACKAGES = sorted(BASE + [
     hand(374, "openbao", "openbao-v2.6.2.tar.gz", "openbao-2.6.2 (hand-authored, shared recipe)"),
     hand(375, "opentofu", "opentofu-v1.12.6.tar.gz",
          "opentofu-1.12.6 (hand-authored, shared recipe)"),
+    # pytest (operator request, 2026-10-02). general/python-modules.html#pytest (BLFS
+    # 13.0) requires iniconfig, pluggy and Pygments, and recommends setuptools_scm.
+    # Pygments 2.21.0 is already installed. All four are sections of the multi-package
+    # pages python-dependencies.html / python-modules.html, so hand(), not book(); the
+    # recipes are the book's pip3 commands. The iniconfig section lists hatch_vcs as
+    # Required, but iniconfig-2.3.0 builds with setuptools + setuptools-scm, so
+    # hatch_vcs, hatchling and hatchling's three dependencies are not built.
+    hand(376, "setuptools-scm", "setuptools_scm-9.2.2.tar.gz",
+         "setuptools_scm-9.2.2 (hand-authored, shared recipe)"),
+    hand(377, "pluggy", "pluggy-1.6.0.tar.gz", "pluggy-1.6.0 (hand-authored, shared recipe)"),
+    hand(378, "iniconfig", "iniconfig-2.3.0.tar.gz", "iniconfig-2.3.0 (hand-authored, shared recipe)"),
+    hand(379, "pytest", "pytest-9.0.2.tar.gz", "pytest-9.0.2 (hand-authored, shared recipe)"),
 ], key=lambda p: p["seq"])

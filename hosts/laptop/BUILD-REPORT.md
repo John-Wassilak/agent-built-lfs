@@ -6747,3 +6747,35 @@ and a `kv put`/`kv get` round trip returns the value. `tofu init` + `apply` of a
 `v2.0.0-HEAD`, the same placeholder string server's binary shows, because of the recipe's
 synthetic git commit. `tofu version` reads `v1.12.6-dev`, as on server.
 `extract-blfs.py --check`: zero drift at 393 steps.
+
+## pytest 9.0.2 (seq 376-379) (2026-10-02)
+
+Operator request. `general/python-modules.html#pytest` (BLFS 13.0) lists iniconfig, pluggy
+and Pygments as Required and setuptools_scm as Recommended. Pygments 2.21.0 was already
+installed. Four new steps, all `hand()` and shared, because every one is a section of the
+multi-package pages `python-dependencies.html` / `python-modules.html`. The recipes are the
+book's pip3 commands with `--no-build-isolation`:
+
+- **376 setuptools-scm** 9.2.2: built with its in-tree `_own_version_helper` backend on
+  setuptools. Runtime dependencies are packaging and setuptools.
+- **377 pluggy** 1.6.0, **378 iniconfig** 2.3.0, **379 pytest** 9.0.2: setuptools +
+  setuptools-scm, read from each tarball's `[build-system]`.
+
+The book is stale on one point. The iniconfig section lists hatch_vcs as Required, but
+iniconfig-2.3.0's `pyproject.toml` declares `setuptools>=77` and `setuptools-scm>=8` with
+`setuptools.build_meta`. hatch_vcs, hatchling and hatchling's Required editables, pathspec
+and trove-classifiers would have been five steps nothing uses, so none of them was built.
+
+**Disk.** lfsbuild's 8 GB guard refused the first step with 4.7 GB free on `/`. The 3.8 GB
+drop since the 2026-10-01 entry is about 3.3 GB of video downloads in the operator's home
+directory. The four steps need well under 100 MB, so on the operator's call the guard was
+skipped for this one run. A throwaway wrapper loaded `bin/lfsbuild` as a module and dropped
+only the "GB headroom" preflight refusal. `bin/lfsbuild` itself is unchanged. Free space
+was 4.7 GB afterwards.
+
+All four book md5 sums matched. Build times: 4.5, 4.1, 3.9 and 4.9 s. Manifests: 81, 24, 16
+and 160 files. The programs installed are `/usr/bin/setuptools-scm`, `/usr/bin/pytest` and
+`/usr/bin/py.test`. `pytest --version` reports 9.0.2, and `importlib.metadata` reports
+pytest 9.0.2, pluggy 1.6.0, iniconfig 2.3.0 and setuptools_scm 9.2.2. A four-test smoke file
+(parametrize, `pytest.raises`, the `tmp_path` fixture) passed. The book's test block, which
+installs `pytest[dev]` from PyPI into a venv, was not run.

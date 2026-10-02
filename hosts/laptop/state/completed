@@ -580,3 +580,7 @@ blfs-docker-compose
 blfs-tini
 blfs-openbao
 blfs-opentofu
+blfs-setuptools-scm
+blfs-pluggy
+blfs-iniconfig
+blfs-pytest
