@@ -67,5 +67,14 @@ User=root
 WantedBy=multi-user.target
 EOF
 
+# Cache cleanup added 2026-10-01 (laptop): `go build` leaves the module cache
+# in $HOME/go/pkg and the build cache in $HOME/.cache/go-build (2.5G and
+# 1.8G, measured with du on laptop). The manifest sweep already excludes
+# both, but on disk they pushed laptop under lfsbuild's 8 GB guard before
+# the next step. Same cleanup as blfs-tailscale.sh, except $HOME/go/bin is
+# kept: `make dev` installs a second copy of bao there, and both hosts'
+# manifests list /root/go/bin/bao.
+rm -rf "$HOME/go/pkg" "$HOME/.cache/go-build"
+
 echo "### version"
 /usr/bin/bao version 2>&1 | head -1 || true

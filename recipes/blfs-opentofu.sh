@@ -37,5 +37,13 @@ go build -tags http2legacy -ldflags "-X main.version=v1.12.6" -o tofu ./cmd/tofu
 
 install -v -m755 tofu /usr/bin/tofu
 
+# Cache cleanup added 2026-10-01 (laptop): `go build` leaves the module cache
+# in $HOME/go/pkg and the build cache in $HOME/.cache/go-build (1.3G and
+# 1.6G, measured with du on laptop). They are build-time cache, not installed
+# files; the manifest sweep already excludes them. Same cleanup as
+# blfs-tailscale.sh. Only pkg/ is removed, so any /root/go/bin binary another
+# recipe installed (blfs-openbao's bao) stays.
+rm -rf "$HOME/go/pkg" "$HOME/.cache/go-build"
+
 echo "### version"
 /usr/bin/tofu version 2>&1 | head -1 || true

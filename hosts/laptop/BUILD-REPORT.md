@@ -6732,7 +6732,10 @@ left 2.5 GB in `/root/go/pkg` and 1.8 GB in `/root/.cache/go-build`, which put f
 at 4.4 GB and would have blocked opentofu. Both caches were deleted by hand after each
 build. lfsbuild's manifest sweep already excludes them. Neither recipe cleans up after
 itself, unlike `blfs-tailscale.sh` and `blfs-docker-compose.sh`. Free space ended at
-8.5 GB.
+8.5 GB. Afterwards both shared recipes got the same `rm -rf` of the two caches. The
+openbao one keeps `$HOME/go/bin`, which holds the manifested `/root/go/bin/bao`. Neither
+host has rebuilt with the new recipes, and server's caches from its seq 250-251 builds
+were not checked.
 
 **State.** `openbao.service` is installed, disabled and inactive, matching server. The
 config is the recipe's `/etc/openbao/config.hcl`: file storage, `127.0.0.1:8200`, no TLS.
