@@ -578,3 +578,5 @@ blfs-docker-cli
 blfs-docker-buildx
 blfs-docker-compose
 blfs-tini
+blfs-openbao
+blfs-opentofu

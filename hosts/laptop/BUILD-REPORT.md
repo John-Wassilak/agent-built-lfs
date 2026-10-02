@@ -6707,3 +6707,40 @@ Negative controls, run by hand: with `--security-opt seccomp=unconfined`, `Secco
 0 and `unshare -U` succeeds, so the seccomp checks do detect a missing filter. The
 script removed its containers, compose network and images, and kept alpine, as
 server's run did.
+
+## OpenBao 2.6.2 and OpenTofu 1.12.6 (seq 374-375) (2026-10-01)
+
+Operator request: "need to install bao and tofu like on server". These are server's seq
+250-251, on the same shared hand-authored recipes (`recipes/blfs-openbao.sh`,
+`recipes/blfs-opentofu.sh`). Neither has a BLFS page. Go is this host's go1.27.0 (seq 169).
+
+Sources: server's `/sources` no longer holds either tarball. Both tags were fetched again
+from GitHub's archive endpoint (`archive/refs/tags/v2.6.2.tar.gz`,
+`archive/refs/tags/v1.12.6.tar.gz`). md5 `9f27dcae7309870f09af39aae6400c44` (openbao),
+`a69a8feea2898c3667b90e46bdd1d990` (opentofu). No earlier md5 was recorded, so there is
+nothing to compare them against.
+
+| step | min | manifest | notes |
+|------|-----|----------|-------|
+| openbao 2.6.2 | 6.4 | 4 | same four paths as server's manifest, `/root/go/bin/bao` included |
+| opentofu 1.12.6 | 4.7 | 1 | built with the recipe's `http2legacy` tag |
+
+**Disk.** The first run was blocked by lfsbuild's 8 GB guard: 7.98 GiB free. `make clean`
+in `/sources/linux-6.18.49` freed 0.9 GB. The tree's `.config` was byte-identical to
+`/boot/config-6.18.49`, and the kernel had already been rebuilt and booted. openbao then
+left 2.5 GB in `/root/go/pkg` and 1.8 GB in `/root/.cache/go-build`, which put free space
+at 4.4 GB and would have blocked opentofu. Both caches were deleted by hand after each
+build. lfsbuild's manifest sweep already excludes them. Neither recipe cleans up after
+itself, unlike `blfs-tailscale.sh` and `blfs-docker-compose.sh`. Free space ended at
+8.5 GB.
+
+**State.** `openbao.service` is installed, disabled and inactive, matching server. The
+config is the recipe's `/etc/openbao/config.hcl`: file storage, `127.0.0.1:8200`, no TLS.
+
+**Checks.** `lfsmaint db` rebuilt; `lfsmaint owns` resolves `/usr/bin/bao`,
+`/usr/bin/tofu` and `openbao.service`. `bao server -dev` on `127.0.0.1:18200`: unsealed,
+and a `kv put`/`kv get` round trip returns the value. `tofu init` + `apply` of a
+`terraform_data` resource (no provider download) outputs the value. `bao version` reads
+`v2.0.0-HEAD`, the same placeholder string server's binary shows, because of the recipe's
+synthetic git commit. `tofu version` reads `v1.12.6-dev`, as on server.
+`extract-blfs.py --check`: zero drift at 393 steps.

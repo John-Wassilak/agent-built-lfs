@@ -1552,4 +1552,12 @@ PACKAGES = sorted(BASE + [
          "docker-compose-5.5.1 (hand-authored, shared recipe)"),
     hand(373, "tini", "tini-v0.19.0.tar.gz",
          "tini-0.19.0 (docker-init, hand-authored, shared recipe)"),
+    # OpenBao and OpenTofu (operator, 2026-10-01: "like on server"). Server's seq 250-251,
+    # on the same shared hand-authored recipes. No BLFS page for either. Server's
+    # tarballs were no longer in its /sources, so these are the same tags fetched again
+    # from GitHub's archive endpoint. Go is this host's go1.27.0 (seq 169), the toolchain
+    # server built them with; tofu needs the recipe's http2legacy tag under it.
+    hand(374, "openbao", "openbao-v2.6.2.tar.gz", "openbao-2.6.2 (hand-authored, shared recipe)"),
+    hand(375, "opentofu", "opentofu-v1.12.6.tar.gz",
+         "opentofu-1.12.6 (hand-authored, shared recipe)"),
 ], key=lambda p: p["seq"])

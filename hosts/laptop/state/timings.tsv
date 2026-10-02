@@ -661,3 +661,5 @@ blfs-docker-cli	native	63.2	0
 blfs-docker-buildx	native	114.4	0
 blfs-docker-compose	native	78.4	0
 blfs-tini	native	2.0	0
+blfs-openbao	native	382.9	0
+blfs-opentofu	native	284.1	0
