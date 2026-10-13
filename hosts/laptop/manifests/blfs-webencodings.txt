@@ -1,0 +1,16 @@
+/usr/lib/python3.14/site-packages/webencodings-0.5.1.dist-info/INSTALLER
+/usr/lib/python3.14/site-packages/webencodings-0.5.1.dist-info/METADATA
+/usr/lib/python3.14/site-packages/webencodings-0.5.1.dist-info/RECORD
+/usr/lib/python3.14/site-packages/webencodings-0.5.1.dist-info/REQUESTED
+/usr/lib/python3.14/site-packages/webencodings-0.5.1.dist-info/WHEEL
+/usr/lib/python3.14/site-packages/webencodings-0.5.1.dist-info/top_level.txt
+/usr/lib/python3.14/site-packages/webencodings/__init__.py
+/usr/lib/python3.14/site-packages/webencodings/__pycache__/__init__.cpython-314.pyc
+/usr/lib/python3.14/site-packages/webencodings/__pycache__/labels.cpython-314.pyc
+/usr/lib/python3.14/site-packages/webencodings/__pycache__/mklabels.cpython-314.pyc
+/usr/lib/python3.14/site-packages/webencodings/__pycache__/tests.cpython-314.pyc
+/usr/lib/python3.14/site-packages/webencodings/__pycache__/x_user_defined.cpython-314.pyc
+/usr/lib/python3.14/site-packages/webencodings/labels.py
+/usr/lib/python3.14/site-packages/webencodings/mklabels.py
+/usr/lib/python3.14/site-packages/webencodings/tests.py
+/usr/lib/python3.14/site-packages/webencodings/x_user_defined.py

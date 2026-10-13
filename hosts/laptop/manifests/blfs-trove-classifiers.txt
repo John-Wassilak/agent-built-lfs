@@ -1,0 +1,14 @@
+/usr/bin/trove-classifiers
+/usr/lib/python3.14/site-packages/trove_classifiers-2026.1.14.14.dist-info/INSTALLER
+/usr/lib/python3.14/site-packages/trove_classifiers-2026.1.14.14.dist-info/METADATA
+/usr/lib/python3.14/site-packages/trove_classifiers-2026.1.14.14.dist-info/RECORD
+/usr/lib/python3.14/site-packages/trove_classifiers-2026.1.14.14.dist-info/REQUESTED
+/usr/lib/python3.14/site-packages/trove_classifiers-2026.1.14.14.dist-info/WHEEL
+/usr/lib/python3.14/site-packages/trove_classifiers-2026.1.14.14.dist-info/entry_points.txt
+/usr/lib/python3.14/site-packages/trove_classifiers-2026.1.14.14.dist-info/licenses/LICENSE
+/usr/lib/python3.14/site-packages/trove_classifiers-2026.1.14.14.dist-info/top_level.txt
+/usr/lib/python3.14/site-packages/trove_classifiers/__init__.py
+/usr/lib/python3.14/site-packages/trove_classifiers/__main__.py
+/usr/lib/python3.14/site-packages/trove_classifiers/__pycache__/__init__.cpython-314.pyc
+/usr/lib/python3.14/site-packages/trove_classifiers/__pycache__/__main__.cpython-314.pyc
+/usr/lib/python3.14/site-packages/trove_classifiers/py.typed

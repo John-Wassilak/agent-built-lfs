@@ -6779,3 +6779,113 @@ and 160 files. The programs installed are `/usr/bin/setuptools-scm`, `/usr/bin/p
 pytest 9.0.2, pluggy 1.6.0, iniconfig 2.3.0 and setuptools_scm 9.2.2. A four-test smoke file
 (parametrize, `pytest.raises`, the `tmp_path` fixture) passed. The book's test block, which
 installs `pytest[dev]` from PyPI into a venv, was not run.
+
+## Mnemosyne 2.11 and QtWebEngine 6.10.2 (seq 380-418) (2026-10-12 to 2026-10-13)
+
+Operator request: the Mnemosyne flash card program. Mnemosyne is not in BLFS. The source
+is the upstream GitHub tag tarball `mnemosyne-2.11.tar.gz`, whose `pyproject.toml` still
+says 2.10.1.2 while `mnemosyne/version.py` says 2.11. The build backend is poetry-core,
+and its `poetry-build.py` runs `make build` to generate the Qt UI with pyuic6. The program
+needs PyQt6 with QtWebEngine, matplotlib, cheroot, webob and argon2-cffi. QtWebEngine
+was the large piece: Qt here is a trimmed 6.10.2 that skipped qtwebengine and qtwebchannel.
+
+Thirty-nine new steps. The order and the version pins:
+
+- **380-381** webencodings, html5lib (book sections; html5lib applies the book's patch
+  and sed).
+- **382-383** qtwebchannel (a twin of `blfs-qtwebsockets.sh`) and qtwebengine
+  (`x/qtwebengine.html`, generated, with a host override; see below).
+- **384-396** the matplotlib chain: cython, pyproject-metadata, meson-python, numpy
+  (`-Dallow-noblas=true`, there is no BLAS here), pyparsing, cycler, fonttools, cppy,
+  kiwisolver, pybind11, contourpy, pillow, matplotlib. matplotlib 3.10.9 seeds
+  `qhull-8.0.2.tgz` into `subprojects/packagecache` and builds against the system
+  freetype.
+- **397-411** more-itertools, jaraco.functools, cheroot, the hatchling family (editables,
+  pathspec, trove-classifiers, hatchling, hatch-vcs, hatch-fancy-pypi-readme), legacy-cgi,
+  webob, pycparser, cffi, argon2-cffi-bindings, argon2-cffi.
+- **412-418** sip, pyqt-builder, pyqt6-sip, pyqt6, pyqt6-webengine, poetry-core,
+  mnemosyne. mnemosyne installs with `--no-deps` and adds the desktop file, a 128x128
+  icon and the man page.
+
+Pins below the latest release:
+
+- **pybind11 2.13.6** and **argon2-cffi-bindings 25.1.0**: later releases build with
+  scikit-build-core, which is not installed.
+- **jaraco.functools 4.1.0**: later releases need coherent.licensed.
+- **matplotlib 3.10.9**: 3.11 bundles HarfBuzz, libraqm and SheenBidi.
+- **PyQt6 6.10.2** and **PyQt6-WebEngine 6.10.0**: to match Qt 6.10.2.
+
+Not installed: gTTS, googletrans, cherrypy, decorator and sphinx. They are optional or
+unused imports in Mnemosyne 2.11.
+
+**CUPS.** The 2026-09-06 "no CUPS" decision stands. QtWebEngine builds Chromium with
+`use_cups=false` and prints through Qt PrintSupport, so configure reported "Printing and
+PDF: yes" without CUPS.
+
+**QtWebEngine override.** `blfs-overrides.json` replaces `blfs-qtwebengine` block 1. It
+adds `-D CMAKE_INSTALL_PREFIX=$QT6DIR` and takes ninja's `-j` from MAKEFLAGS. The reason
+is in the override.
+
+**`/sources` pruning.** `/` had too little room for the work. Seven tarballs superseded by
+newer installed versions were deleted first. The operator then removed 514 tarballs of
+installed packages plus `libreoffice-extern/` and `DankMaterialShell/`. Kept:
+`linux-6.18.49/` (the `/lib/modules/6.18.49/build` symlink target), the Python 3.14.7
+tarball and docs for the pending upgrade, `certdata.txt`, the kernel config scripts,
+`lua.pc` and `.build/`. The laptop libreoffice override reads
+`/sources/libreoffice-extern/`, so a LibreOffice rebuild has to fetch that again.
+
+**Build location and guard.** QtWebEngine's tree did not fit on `/`. The operator freed
+`/mnt/crypt` to 14 GB and asked for the build there. The two Qt tarballs went to
+`/mnt/crypt/lfs-sources` and the step ran with `--sources /mnt/crypt/lfs-sources`.
+lfsbuild's 8 GB guard checks `/`, which had 7.8-8.0 GB free. On the operator's call it
+was skipped with the same throwaway wrapper as the 2026-10-02 pytest run. `bin/lfsbuild`
+itself is unchanged.
+
+**Pause.** At the operator's request the build was paused with SIGSTOP after pillow and
+resumed with SIGCONT. matplotlib's 13.7 min includes the pause.
+
+**QtWebEngine run.** 22,862 ninja steps, 786.8 min (13.1 h) wall time at `-j4`. Midway
+through the Blink compiles, available memory was 1.4 GiB with 5.3 GB of swap in use, and
+Claude Code's memory-pressure reaper killed the lfsbuild parent and the session's disk
+watcher. The recipe's
+bash and ninja survived as orphans and finished the build and `ninja install` into
+`/opt/qt6`. `/mnt/crypt` got down to its last few GB and the operator freed 2 GB more
+during the run. With the parent gone, nothing captured a manifest or marked the step
+complete, so that was done by hand afterwards. The manifest uses lfsbuild's own
+`MANIFEST_ROOTS` and `MANIFEST_NOISE` and the step's `/tmp/.lfsbuild-stamp`, limited to
+files changed before the log's last write (03:39:14) so later activity stays out: 509
+files, all under `/opt/qt6`. The timing line and `state/completed` entry were appended
+by hand. The 13 GB build tree that lfsbuild's cleanup would have removed was deleted
+by hand.
+
+**Ordering mistake.** Steps 384-415 were run before 382-383 so QtWebEngine could be left
+for `/mnt/crypt`. PyQt6's configure therefore did not find QtWebChannel and built 20
+binding modules without it, and pyqt6-webengine then failed with
+`'QtWebChannel/QtWebChannelmod.sip' could not be found`. In `seq` order this does not
+happen. The first `--force` rebuild of PyQt6 compiled the module and installed nothing:
+`pip3 install --no-index --find-links dist PyQt6` found 6.10.2 already present ("Requirement
+already satisfied"), and the step's manifest was overwritten with 0 files. The recipe now
+passes `--force-reinstall --no-deps`, and the second rebuild (38.7 min) installed 23
+binding modules (the old 20 plus QtWebChannel, QtPdf and QtPdfWidgets, the last two also
+from qtwebengine), manifest 738 files (716 before).
+
+**ldconfig.** After that, `from PyQt6 import QtWebChannel` failed with
+`libQt6WebChannel.so.6: cannot open shared object file`. The library was in
+`/opt/qt6/lib`, which `/etc/ld.so.conf` lists, but neither the qtwebchannel recipe nor
+the book's qtwebengine commands run `ldconfig`, so the cache did not know the new Qt
+libraries. `sudo ldconfig` fixed it: 12 WebEngine/WebChannel entries afterwards.
+
+Build times, other than the above: cython 6.6 min, numpy 8.9, fonttools 1.6, contourpy
+1.1, pillow 0.8, PyQt6 43.3 (first build), qtwebchannel 0.8, everything else under 0.7.
+Manifests: numpy 1320 files, matplotlib 884, qtwebchannel 85, mnemosyne 915.
+
+pyqt6-webengine then built in 2.3 min, manifest 55 files, and `completed` reached
+436/436.
+
+**Checks.** `PyQt6.QtWebEngineWidgets`, `QtWebEngineCore`, `QtWebChannel`, matplotlib,
+cheroot, webob and argon2 import. `mnemosyne` under Hyprland mapped a window titled
+"Mnemosyne" (`hyprctl clients`) with `/opt/qt6/libexec/QtWebEngineProcess` running, and
+printed nothing to stdout or stderr before a 25 s `timeout` ended it. That first run
+created `~/.config/mnemosyne` and an empty `~/.local/share/mnemosyne/default.db`.
+`extract-blfs.py --check`: zero drift at 436 steps. The two Qt tarballs remain in
+`/mnt/crypt/lfs-sources` (841 MB).

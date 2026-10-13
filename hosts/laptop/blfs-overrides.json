@@ -233,5 +233,12 @@
       "action": "drop",
       "reason": "'make install-rsyncd' is a target of blfs-systemd-units' Makefile, not rsync's, and the book notes 'You don't need this unit to run the rsync client'. No daemon on this host -- see block 0."
     }
+  },
+  "blfs-qtwebengine": {
+    "1": {
+      "action": "replace",
+      "cmd": "mkdir build &&\ncd    build &&\n\ncmake -D CMAKE_MESSAGE_LOG_LEVEL=STATUS             \\\n      -D CMAKE_INSTALL_PREFIX=$QT6DIR               \\\n      -D QT_FEATURE_webengine_system_ffmpeg=ON      \\\n      -D QT_FEATURE_webengine_system_icu=ON         \\\n      -D QT_FEATURE_webengine_proprietary_codecs=ON \\\n      -D QT_FEATURE_webengine_webrtc_pipewire=ON    \\\n      -D QT_BUILD_EXAMPLES_BY_DEFAULT=OFF           \\\n      -D QT_GENERATE_SBOM=OFF                       \\\n      -G Ninja ..                                   &&\nJOBS=$(printf '%s' \"${MAKEFLAGS:-}\" | grep -oE '\\-j ?[0-9]+' | grep -oE '[0-9]+' | head -1 || true) &&\nninja -j \"${JOBS:-1}\"",
+      "reason": "Operator-requested (2026-10-12), for Mnemosyne. The book's block, with two additions. (1) `ninja -j` from MAKEFLAGS: bare ninja ignores MAKEFLAGS and runs nproc+2 = 6 jobs on this 4-thread host (found live during qt6, 2026-09-04, see the blfs-qt6 override); this Chromium build is the one that blew up RAM and disk in that incident, so it gets host.toml's jobs=4 and nothing more. (2) An explicit CMAKE_INSTALL_PREFIX=$QT6DIR (/opt/qt6), the same choice recipes/blfs-qt5compat.sh documents for standalone Qt modules: the book relies on Qt's build internals to default the prefix to the Qt prefix, and a Qt module installed anywhere else is silently broken. Not changed: the book's Required Cups. This qtwebengine sets use_cups=false for Chromium (src/core/CMakeLists.txt) and prints through Qt::PrintSupport (webengine-printing-and-pdf: CONDITION TARGET Qt::PrintSupport AND QT_FEATURE_printer), and laptop's qt6 already has printer enabled with cups disabled (qt_lib_printsupport_private.pri), so the 2026-09-06 no-CUPS decision holds without turning printing off."
+    }
   }
 }

@@ -1572,4 +1572,69 @@ PACKAGES = sorted(BASE + [
     hand(377, "pluggy", "pluggy-1.6.0.tar.gz", "pluggy-1.6.0 (hand-authored, shared recipe)"),
     hand(378, "iniconfig", "iniconfig-2.3.0.tar.gz", "iniconfig-2.3.0 (hand-authored, shared recipe)"),
     hand(379, "pytest", "pytest-9.0.2.tar.gz", "pytest-9.0.2 (hand-authored, shared recipe)"),
+    # Mnemosyne 2.11 flash cards (operator request, 2026-10-12). Cards render in a
+    # QWebEngineView, so the long pole is qtwebengine (x/qtwebengine.html, 12 GB to
+    # build): its build tree goes on /mnt/crypt via lfsbuild --sources, since / cannot
+    # hold it. The book lists Cups as Required, but this qtwebengine passes use_cups=false
+    # to Chromium and prints through Qt PrintSupport, which laptop's qt6 already built
+    # without cups (the 2026-09-06 "no CUPS" decision stands). qtwebchannel is a
+    # standalone module because laptop's qt6 skips it. Book sections of the
+    # multi-package Python pages are hand() with the book's commands; everything not in
+    # BLFS 13.0 is hand() from PyPI, sha256-checked. Three PyPI pins sit below latest to
+    # stay on backends already here: pybind11 2.13.6 and argon2-cffi-bindings 25.1.0
+    # (newer need scikit-build-core), jaraco.functools 4.1.0 (newer needs
+    # coherent.licensed). matplotlib is 3.10.9 because 3.11 bundles HarfBuzz/libraqm/
+    # SheenBidi subprojects. PyQt6 6.10.2 / PyQt6-WebEngine 6.10.0 match Qt 6.10.2.
+    hand(380, "webencodings", "webencodings-0.5.1.tar.gz",
+         "webencodings-0.5.1 (hand-authored, shared recipe)"),
+    hand(381, "html5lib", "html5lib-1.1.tar.gz", "html5lib-1.1 (hand-authored, shared recipe)"),
+    hand(382, "qtwebchannel", "qtwebchannel-everywhere-src-6.10.2.tar.xz",
+         "Qt 6.10.2 qtwebchannel module (hand-authored, shared recipe)"),
+    book(383, "qtwebengine", "x/qtwebengine.html", "qtwebengine-everywhere-src-6.10.2.tar.xz"),
+    hand(384, "cython", "cython-3.2.4.tar.gz", "Cython-3.2.4 (hand-authored, shared recipe)"),
+    hand(385, "pyproject-metadata", "pyproject_metadata-0.11.0.tar.gz",
+         "pyproject-metadata-0.11.0 (hand-authored, shared recipe)"),
+    hand(386, "meson-python", "meson_python-0.19.0.tar.gz",
+         "meson_python-0.19.0 (hand-authored, shared recipe)"),
+    hand(387, "numpy", "numpy-2.4.2.tar.gz", "NumPy-2.4.2 (hand-authored, shared recipe)"),
+    hand(388, "pyparsing", "pyparsing-3.3.2.tar.gz", "pyparsing-3.3.2 (hand-authored, shared recipe)"),
+    hand(389, "cycler", "cycler-0.12.1.tar.gz", "cycler-0.12.1 (hand-authored, shared recipe)"),
+    hand(390, "fonttools", "fonttools-4.66.1.tar.gz", "fonttools-4.66.1 (hand-authored, shared recipe)"),
+    hand(391, "cppy", "cppy-1.3.1.tar.gz", "cppy-1.3.1 (hand-authored, shared recipe)"),
+    hand(392, "kiwisolver", "kiwisolver-1.5.1.tar.gz", "kiwisolver-1.5.1 (hand-authored, shared recipe)"),
+    hand(393, "pybind11", "pybind11-2.13.6.tar.gz", "pybind11-2.13.6 (hand-authored, shared recipe)"),
+    hand(394, "contourpy", "contourpy-1.4.0.tar.gz", "contourpy-1.4.0 (hand-authored, shared recipe)"),
+    hand(395, "pillow", "pillow-12.3.0.tar.gz", "Pillow-12.3.0 (hand-authored, shared recipe)"),
+    hand(396, "matplotlib", "matplotlib-3.10.9.tar.gz",
+         "matplotlib-3.10.9 (hand-authored, shared recipe)"),
+    hand(397, "more-itertools", "more_itertools-11.1.0.tar.gz",
+         "more-itertools-11.1.0 (hand-authored, shared recipe)"),
+    hand(398, "jaraco-functools", "jaraco_functools-4.1.0.tar.gz",
+         "jaraco.functools-4.1.0 (hand-authored, shared recipe)"),
+    hand(399, "cheroot", "cheroot-11.1.2.tar.gz", "cheroot-11.1.2 (hand-authored, shared recipe)"),
+    hand(400, "editables", "editables-0.5.tar.gz", "editables-0.5 (hand-authored, shared recipe)"),
+    hand(401, "pathspec", "pathspec-1.0.4.tar.gz", "pathspec-1.0.4 (hand-authored, shared recipe)"),
+    hand(402, "trove-classifiers", "trove_classifiers-2026.1.14.14.tar.gz",
+         "trove-classifiers-2026.1.14.14 (hand-authored, shared recipe)"),
+    hand(403, "hatchling", "hatchling-1.28.0.tar.gz", "hatchling-1.28.0 (hand-authored, shared recipe)"),
+    hand(404, "hatch-vcs", "hatch_vcs-0.5.0.tar.gz", "hatch_vcs-0.5.0 (hand-authored, shared recipe)"),
+    hand(405, "hatch-fancy-pypi-readme", "hatch_fancy_pypi_readme-25.1.0.tar.gz",
+         "hatch-fancy-pypi-readme-25.1.0 (hand-authored, shared recipe)"),
+    hand(406, "legacy-cgi", "legacy_cgi-2.6.4.tar.gz", "legacy-cgi-2.6.4 (hand-authored, shared recipe)"),
+    hand(407, "webob", "webob-1.8.11.tar.gz", "WebOb-1.8.11 (hand-authored, shared recipe)"),
+    hand(408, "pycparser", "pycparser-3.11.tar.gz", "pycparser-3.11 (hand-authored, shared recipe)"),
+    hand(409, "cffi", "cffi-2.1.1.tar.gz", "cffi-2.1.1 (hand-authored, shared recipe)"),
+    hand(410, "argon2-cffi-bindings", "argon2_cffi_bindings-25.1.0.tar.gz",
+         "argon2-cffi-bindings-25.1.0 (hand-authored, shared recipe)"),
+    hand(411, "argon2-cffi", "argon2_cffi-25.1.0.tar.gz",
+         "argon2-cffi-25.1.0 (hand-authored, shared recipe)"),
+    hand(412, "sip", "sip-6.17.1.tar.gz", "sip-6.17.1 (hand-authored, shared recipe)"),
+    hand(413, "pyqt-builder", "pyqt_builder-1.20.0.tar.gz",
+         "PyQt-builder-1.20.0 (hand-authored, shared recipe)"),
+    hand(414, "pyqt6-sip", "pyqt6_sip-13.13.0.tar.gz", "PyQt6-sip-13.13.0 (hand-authored, shared recipe)"),
+    hand(415, "pyqt6", "pyqt6-6.10.2.tar.gz", "PyQt6-6.10.2 (hand-authored, shared recipe)"),
+    hand(416, "pyqt6-webengine", "pyqt6_webengine-6.10.0.tar.gz",
+         "PyQt6-WebEngine-6.10.0 (hand-authored, shared recipe)"),
+    hand(417, "poetry-core", "poetry_core-2.3.2.tar.gz", "poetry-core-2.3.2 (hand-authored, shared recipe)"),
+    hand(418, "mnemosyne", "mnemosyne-2.11.tar.gz", "Mnemosyne-2.11 (hand-authored, shared recipe)"),
 ], key=lambda p: p["seq"])

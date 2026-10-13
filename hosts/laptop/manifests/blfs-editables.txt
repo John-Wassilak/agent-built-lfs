@@ -1,0 +1,11 @@
+/usr/lib/python3.14/site-packages/editables-0.5.dist-info/INSTALLER
+/usr/lib/python3.14/site-packages/editables-0.5.dist-info/METADATA
+/usr/lib/python3.14/site-packages/editables-0.5.dist-info/RECORD
+/usr/lib/python3.14/site-packages/editables-0.5.dist-info/REQUESTED
+/usr/lib/python3.14/site-packages/editables-0.5.dist-info/WHEEL
+/usr/lib/python3.14/site-packages/editables-0.5.dist-info/licenses/LICENSE.txt
+/usr/lib/python3.14/site-packages/editables/__init__.py
+/usr/lib/python3.14/site-packages/editables/__pycache__/__init__.cpython-314.pyc
+/usr/lib/python3.14/site-packages/editables/__pycache__/redirector.cpython-314.pyc
+/usr/lib/python3.14/site-packages/editables/py.typed
+/usr/lib/python3.14/site-packages/editables/redirector.py

@@ -1,0 +1,10 @@
+/usr/lib/python3.14/site-packages/__pycache__/cgi.cpython-314.pyc
+/usr/lib/python3.14/site-packages/__pycache__/cgitb.cpython-314.pyc
+/usr/lib/python3.14/site-packages/cgi.py
+/usr/lib/python3.14/site-packages/cgitb.py
+/usr/lib/python3.14/site-packages/legacy_cgi-2.6.4.dist-info/INSTALLER
+/usr/lib/python3.14/site-packages/legacy_cgi-2.6.4.dist-info/METADATA
+/usr/lib/python3.14/site-packages/legacy_cgi-2.6.4.dist-info/RECORD
+/usr/lib/python3.14/site-packages/legacy_cgi-2.6.4.dist-info/REQUESTED
+/usr/lib/python3.14/site-packages/legacy_cgi-2.6.4.dist-info/WHEEL
+/usr/lib/python3.14/site-packages/legacy_cgi-2.6.4.dist-info/licenses/LICENSE
