@@ -6887,5 +6887,6 @@ cheroot, webob and argon2 import. `mnemosyne` under Hyprland mapped a window tit
 "Mnemosyne" (`hyprctl clients`) with `/opt/qt6/libexec/QtWebEngineProcess` running, and
 printed nothing to stdout or stderr before a 25 s `timeout` ended it. That first run
 created `~/.config/mnemosyne` and an empty `~/.local/share/mnemosyne/default.db`.
-`extract-blfs.py --check`: zero drift at 436 steps. The two Qt tarballs remain in
-`/mnt/crypt/lfs-sources` (841 MB).
+`extract-blfs.py --check`: zero drift at 436 steps. On the operator's call the two Qt
+tarballs (841 MB) and `/mnt/crypt/lfs-sources` were then deleted, so rebuilding
+qtwebchannel or qtwebengine means fetching them again.
