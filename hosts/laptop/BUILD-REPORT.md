@@ -6890,3 +6890,24 @@ created `~/.config/mnemosyne` and an empty `~/.local/share/mnemosyne/default.db`
 `extract-blfs.py --check`: zero drift at 436 steps. On the operator's call the two Qt
 tarballs (841 MB) and `/mnt/crypt/lfs-sources` were then deleted, so rebuilding
 qtwebchannel or qtwebengine means fetching them again.
+
+## Fan pulsing: fan-control rewrote the level every pass (2026-10-13)
+
+The fan pulsed audibly under sustained load (Firefox, load average 11.7, package 78-84 C).
+`fan-control.service` was running and holding level 7 throughout, so the hysteresis was not
+hunting. At that fixed level rpm still cycled 6100-7450 about every 5 s. With the script
+paused (SIGSTOP, inside the 30 s EC watchdog) rpm settled at 6924-6940 within 5 s. The
+cause was the script's own `level 7` write every 2 s, which it did to feed the watchdog:
+each level write restarts the EC's speed regulation even when the level is unchanged.
+
+In 6.18.49's `thinkpad_acpi.c`, `fan_write()` resets the watchdog after any accepted
+command, and `fan_write_cmd_watchdog()` only stores the interval, with no EC access. The
+script now reads the level back from `/proc/acpi/ibm/fan`, writes `level N` only when the
+EC reports something else (so a reset on resume is still corrected), and otherwise writes
+`watchdog 30`. `full-speed` reads back as `disengaged`, so the comparison maps one to the
+other. After the restart, under the same load (load average 12.2), level 7 held
+6904-6960 rpm for 50 s.
+
+The script, its unit and `thinkpad_acpi.conf` (`fan_control=1`) had been installed by hand
+and were not tracked. They are now in `overlay/usr/local/sbin/fan-control`,
+`overlay/etc/systemd/system/fan-control.service` and `overlay/etc/modprobe.d/`.

@@ -1,0 +1,86 @@
+#!/bin/bash
+# SPDX-License-Identifier: MIT
+# agent-built-lfs -- hysteresis fan control for laptop (ThinkPad X1 Carbon 4th)
+# Copyright (c) 2026 John Wassilak
+#
+# Hysteresis fan control for the X1 Carbon 4th gen (20FR). The EC's
+# own curve hunts between two speeds every ~5s under sustained load;
+# this steps up as soon as the smoothed temp crosses a threshold, but
+# only steps down once it has stayed below the lower threshold for
+# HOLD seconds.
+#
+# Needs "options thinkpad_acpi fan_control=1" in /etc/modprobe.d/.
+# The EC watchdog hands control back to auto if this script dies.
+#
+# Install (as root, from hosts/laptop/overlay/):
+#   install -m 755 usr/local/sbin/fan-control /usr/local/sbin/
+#   install -m 644 etc/systemd/system/fan-control.service /etc/systemd/system/
+#   install -m 644 etc/modprobe.d/thinkpad_acpi.conf /etc/modprobe.d/
+#   systemctl daemon-reload && systemctl enable --now fan-control
+
+FAN=/proc/acpi/ibm/fan
+INTERVAL=2      # seconds between reads
+HOLD=30         # seconds below DOWN before stepping down a level
+WATCHDOG=30     # EC reverts to auto if not written to for this long
+
+# Per step: EC level, temp (C) to step up into it, temp to step down out of it.
+# Measured rpm: 1=3200 2=4200 3=5200 4=5500 5=6300 6=7=6900, so 4 and 6
+# are skipped.
+LEVEL=(0          1  2  3  5  7  full-speed)
+UP=(   0         50 58 65 72 78  90)
+DOWN=( 0         45 53 60 67 73  84)
+
+for d in /sys/class/hwmon/hwmon*; do
+    [ "$(cat "$d/name")" = coretemp ] && TEMP="$d/temp1_input"
+done
+[ -n "$TEMP" ] || { echo "coretemp not found" >&2; exit 1; }
+
+trap 'echo "level auto" > $FAN; exit' INT TERM EXIT
+echo "watchdog $WATCHDOG" > $FAN
+
+cur=$(( ${#LEVEL[@]} - 1 ))   # start high, settle down
+below=0
+avg=$(( $(cat "$TEMP") / 1000 ))
+while :; do
+    # Package temp jumps 10C for a single sample under bursty load;
+    # an EMA (~8s time constant) keeps those from moving the fan.
+    avg=$(( (avg * 3 + $(cat "$TEMP") / 1000 + 2) / 4 ))
+    t=$avg
+
+    target=0
+    for i in "${!UP[@]}"; do
+        (( t >= UP[i] )) && target=$i
+    done
+
+    if (( target > cur )); then
+        cur=$target
+        below=0
+    elif (( cur > 0 && t < DOWN[cur] )); then
+        below=$(( below + INTERVAL ))
+        if (( below >= HOLD )); then
+            cur=$(( cur - 1 ))
+            below=0
+        fi
+    else
+        below=0
+    fi
+
+    # A level write restarts the EC's speed regulation even when the level
+    # is unchanged: rewriting "level 7" every 2s swung rpm 6100-7450 on a
+    # ~5s cycle, audible as pulsing, while left alone it held 6924-6940
+    # (2026-10-13). So write the level only when the EC reports a different
+    # one -- read back rather than remembered, so a reset behind our back
+    # (resume from suspend) is still corrected on the next pass. Any accepted
+    # command feeds the thinkpad_acpi watchdog, and "watchdog N" only sets
+    # the interval without touching the EC (fan_write() and
+    # fan_write_cmd_watchdog() in drivers/platform/x86/lenovo/thinkpad_acpi.c).
+    # "full-speed" reads back as "disengaged" (same EC bit).
+    want=${LEVEL[cur]/full-speed/disengaged}
+    ec=$(awk '/^level:/ {print $2}' $FAN)
+    if [[ $ec != "$want" ]]; then
+        echo "level ${LEVEL[cur]}" > $FAN
+    else
+        echo "watchdog $WATCHDOG" > $FAN
+    fi
+    sleep $INTERVAL
+done

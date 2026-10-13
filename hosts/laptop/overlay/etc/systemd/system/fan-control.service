@@ -1,0 +1,9 @@
+[Unit]
+Description=Hysteresis fan control (thinkpad_acpi)
+
+[Service]
+ExecStart=/usr/local/sbin/fan-control
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
