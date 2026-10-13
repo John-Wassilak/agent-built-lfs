@@ -35,7 +35,7 @@ for d in /sys/class/hwmon/hwmon*; do
 done
 [ -n "$TEMP" ] || { echo "coretemp not found" >&2; exit 1; }
 
-trap 'echo "level auto" > $FAN; exit' INT TERM EXIT
+trap 'echo "level auto" > $FAN; exit 0' INT TERM EXIT
 echo "watchdog $WATCHDOG" > $FAN
 
 cur=$(( ${#LEVEL[@]} - 1 ))   # start high, settle down
