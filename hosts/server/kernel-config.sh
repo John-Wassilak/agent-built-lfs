@@ -73,14 +73,13 @@ $K --module  SND_HDA_GENERIC
 # Three real costs against a card nothing uses. Enable CONFIG_SSB + CONFIG_B43
 # here and add a b43-fwcutter hand() entry to packages.py if that ever changes.
 #
-# vmscape: /sys/devices/system/cpu/vulnerabilities/vmscape reads "Vulnerable"
-# on this i5-2500K and there is nothing to set. Kernel 7.1.8 carries no
-# CONFIG_MITIGATION_VMSCAPE symbol at all (grepped the whole config), and
-# VMSCAPE is a guest-to-host attack: it needs the machine to be running VMs.
-# `# CONFIG_KVM is not set` here -- only CONFIG_KVM_GUEST, which is the other
-# direction -- so this host cannot host a guest and the attack has no surface.
-# Microcode is current (0x2f; `old_microcode: Not affected`), unlike laptop's
-# still-open finding. Revisit if KVM is ever enabled on this box.
+# vmscape: superseded 2026-10-21 by the KVM section below. Before KVM, this note
+# recorded /sys/devices/system/cpu/vulnerabilities/vmscape reading "Vulnerable"
+# with no CONFIG_MITIGATION_VMSCAPE symbol in the config, and concluded that a
+# host running no guests had no attack surface. The missing symbol had a simpler
+# cause: arch/x86/Kconfig declares MITIGATION_VMSCAPE `depends on KVM`, so it
+# cannot appear while KVM is unset. Microcode was current at the time (0x2f;
+# `old_microcode: Not affected`), unlike laptop's still-open finding.
 
 # xt_connmark / CONNMARK: absent, and tailscale asks for it on every start.
 # Recorded 2026-09-22 (/lfs-audit). `journalctl -u tailscaled` carries ten lines
@@ -106,5 +105,35 @@ $K --module  SND_HDA_GENERIC
 # Enable all four here and rebuild the kernel (then nvidia-470xx) if this host
 # ever becomes a tailscale exit node or subnet router, which is exactly when the
 # workaround stops being cosmetic.
+
+# --- KVM, added 2026-10-21 ---------------------------------------------------
+# For a Windows 11 guest under qemu (packages.py seq 268-273), which the operator
+# reaches from laptop over RDP on wg0. BLFS 13.1 postlfs/qemu.html asks for
+# VIRTUALIZATION (already =y), KVM, and the vendor module. KVM_INTEL sits in this
+# file, not the base, because it names a CPU vendor.
+#
+# CPU, from /proc/cpuinfo: vmx with ept, vpid, unrestricted_guest and flexpriority,
+# which covers everything KVM needs for a modern guest. There is no VT-d: the
+# 2500K is a K SKU, and /sys/firmware/acpi/tables has no DMAR. VFIO therefore stays
+# unset, because with no IOMMU there is nothing it could pass through.
+#
+# KVM selects core options the running kernel lacks (PREEMPT_NOTIFIERS,
+# USER_RETURN_NOTIFIER, X86_FRED via KVM_INTEL). Building it is therefore a
+# full kernel rebuild and a reboot, which in turn means a blfs-nvidia-470xx
+# rebuild.
+#
+# MITIGATION_VMSCAPE is `depends on KVM, default y` in arch/x86/Kconfig, so it
+# appears once KVM is on. It is pinned here so that turning on KVM can never
+# leave VMSCAPE unmitigated.
+#
+# Deliberately NOT enabled:
+#   VHOST_NET -- in-kernel virtio-net backend for tap devices. The guest uses
+#     -netdev user (libslirp), which is userspace and never touches vhost; RDP
+#     traffic is far below where that matters.
+#   BRIDGE / TUN -- already =m from the shared base (docker, tailscale), so the book's
+#     bridge setup is available if a host ever wants it.
+$K --module  KVM
+$K --module  KVM_INTEL
+$K --enable  MITIGATION_VMSCAPE
 
 kernel_config_finish

@@ -395,3 +395,12 @@ blfs-tailscale
 blfs-gnutls
 blfs-fltk
 blfs-tigervnc
+blfs-dtc
+blfs-libslirp
+blfs-json-glib
+blfs-libtpms
+blfs-swtpm
+blfs-qemu
+ch10-kernel
+blfs-nvidia-470xx
+blfs-iptables

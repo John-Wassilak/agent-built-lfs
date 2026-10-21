@@ -51,7 +51,7 @@ any `mkfs`, `dd` or `grub-install`, and match on the label, not the letter.
   `hosts/server/state/completed` gets archived as history for the 13.0 image it describes.
   `hosts/server-rebuild/host.toml` already says so in its own header.
 - **The overlay**: `overlay/` (shared) and `hosts/server/overlay/` (this machine).
-  Sixteen files, none of them applied by any tool -- see "Apply the overlay" below.
+  Seventeen files, none of them applied by any tool -- see "Apply the overlay" below.
 
 ## Known open items -- settle these before deploying
 

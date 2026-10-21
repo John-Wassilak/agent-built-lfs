@@ -40,3 +40,11 @@ Things worth knowing before changing anything here:
   added UEFI-target GRUB builds and boot-entry steps this host doesn't need (BIOS/MBR
   only) -- bound to this host's boot mode, not its GPU/CPU, but the same "device/boot
   path" test from root `CLAUDE.md` still puts them here.
+- **A Windows 11 guest runs under qemu/KVM** (packages.py seq 268-273, 2026-10-21):
+  qemu from the book, plus swtpm/libtpms as hand-authored recipes for the TPM 2.0 that
+  Windows 11 needs. KVM and KVM_INTEL are in `kernel-config.sh`. The launcher is
+  `overlay/usr/local/bin/win11-vm`, with images on `/mnt/big_drive/vm`. RDP reaches the
+  guest only over wg0: qemu forwards `10.0.0.4:3389`, and the firewall accepts 3389 on
+  wg0 alone (`blfs-overrides.json` page `blfs-iptables` block 2; the recipe is
+  generated). USB devices pass through with `win11-vm usb-attach`. The CPU has no VT-d,
+  so do not propose GPU or PCI passthrough.

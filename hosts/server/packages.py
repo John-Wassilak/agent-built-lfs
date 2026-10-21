@@ -783,4 +783,26 @@ PACKAGES = BASE + [
     book(265, "gnutls", "postlfs/gnutls.html", "gnutls-3.8.13.tar.xz"),
     book(266, "fltk", "x/fltk.html", "fltk-1.3.11-source.tar.gz"),
     book(267, "tigervnc", "xsoft/tigervnc.html", "tigervnc-1.16.2.tar.gz"),
+
+    # QEMU/KVM, to run a Windows 11 guest that laptop reaches over RDP on wg0 (operator,
+    # 2026-10-21). QEMU rather than VirtualBox: BLFS 13.1 carries qemu-11.1.1, and
+    # VirtualBox would add a second out-of-tree kernel module next to nvidia-470xx. The
+    # i5-2500K has VT-x with EPT/VPID but no VT-d (K SKU, no ACPI DMAR table), so this is
+    # KVM without device passthrough. The kernel side (KVM, KVM_INTEL) is in
+    # kernel-config.sh.
+    #
+    # dtc and libslirp are qemu's Recommended deps not already here; libslirp carries
+    # -netdev user, whose hostfwd is how RDP reaches the guest. alsa-lib, sdl2-compat,
+    # glib2 and pixman are already built.
+    #
+    # Windows 11 needs TPM 2.0 and UEFI. UEFI needs no package: qemu installs its bundled
+    # edk2 firmware (pc-bios/edk2-x86_64-secure-code.fd) under /usr/share/qemu. The TPM
+    # is swtpm on libtpms, neither in BLFS (both in Arch [extra]), so hand() recipes;
+    # json-glib is a swtpm dependency that is in the book.
+    book(268, "dtc", "general/dtc.html", "dtc-1.8.1.tar.xz"),
+    book(269, "libslirp", "basicnet/libslirp.html", "libslirp-v4.9.3.tar.bz2"),
+    book(270, "json-glib", "general/json-glib.html", "json-glib-1.10.8.tar.xz"),
+    hand(271, "libtpms", "libtpms-v0.10.2.tar.gz", "libtpms-0.10.2 (hand-authored, shared recipe)"),
+    hand(272, "swtpm", "swtpm-v0.10.2.tar.gz", "swtpm-0.10.2 (hand-authored, shared recipe)"),
+    book(273, "qemu", "postlfs/qemu.html", "qemu-11.1.1.tar.xz"),
 ]

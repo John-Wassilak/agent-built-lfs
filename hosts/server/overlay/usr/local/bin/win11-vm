@@ -1,0 +1,173 @@
+#!/bin/bash
+# SPDX-License-Identifier: MIT
+# agent-built-lfs -- Windows 11 guest launcher for `server` (qemu + KVM + swtpm)
+# Copyright (c) 2026 John Wassilak
+
+# Usage, as john (in the kvm group):
+#   win11-vm create              disk image, UEFI vars, TPM state  (once)
+#   win11-vm install WIN11.iso   boot the installer, in a window on the X display
+#   win11-vm run                 headless; reach it over RDP at 10.0.0.4:3389 on wg0
+#   win11-vm stop                ACPI power button, so Windows shuts down cleanly
+#   win11-vm usb-attach VID:PID  hand a USB device on this host to the running guest
+#   win11-vm usb-detach VID:PID  give it back
+#
+# Set WIN11_USB="VID:PID[ VID:PID...]" to attach devices at start instead. IDs are
+# the hex pair lsusb prints, e.g. 0bc2:ab38.
+#
+# Host-specific, hence hosts/server/overlay: it names /mnt/big_drive (sda2; / has
+# 30G free and Windows 11 wants ~64G), wg0's address, and a CPU/RAM split sized
+# for this i5-2500K (4 cores) with 31G of RAM. The packages are packages.py seq
+# 268-273, and the kernel side is KVM/KVM_INTEL in kernel-config.sh.
+#
+# One-time setup, as root: `install -d -o john -g john /mnt/big_drive/vm`.
+# Put the virtio-win driver ISO (Fedora's stable virtio-win.iso, the same file
+# the AUR `virtio-win` package installs) in that directory. Windows setup needs
+# its viostor driver before it can see the virtio disk.
+#
+# Hardware choices:
+#   q35 + smm=on + edk2 secure-code firmware -- UEFI with Secure Boot, which
+#     Windows 11 checks for. The firmware is the copy qemu ships in pc-bios/ and
+#     installs to /usr/share/qemu, so no separate OVMF build exists.
+#   swtpm socket + tpm-tis -- the TPM 2.0 Windows 11 requires. swtpm runs with
+#     --terminate, so it exits when qemu disconnects.
+#   -cpu host with Hyper-V enlightenments -- Windows runs noticeably better
+#     with them (KVM_HYPERV is =y in the kernel config). The guest sees the real
+#     i5-2500K, which Windows 11 setup calls unsupported. Bypassing that is a
+#     registry key during setup; see BUILD-REPORT.md 2026-10-21.
+#   virtio-blk disk, virtio-net NIC -- drivers from the virtio-win ISO.
+#   -netdev user (libslirp) with one hostfwd, bound to 10.0.0.4 only, so RDP
+#     exists on wg0 and nowhere else. The firewall rule in blfs-iptables.sh is
+#     the second layer. If wg0 is down at start, qemu cannot bind and exits.
+#   usb-host on the guest's xHCI -- USB passthrough through libusb, which works
+#     without VT-d because it forwards USB transfers, not a PCI device. The guest
+#     sees the real device, so a vendor driver (a NAS-style drive with its own
+#     Windows software) binds inside Windows. qemu detaches the host's kernel
+#     driver (usb-storage/uas) itself, but the device must not be mounted here.
+#     john needs write access to its /dev/bus/usb node, which udev gives root
+#     only: add a rule for its VID:PID (see BUILD-REPORT.md 2026-10-21).
+set -euo pipefail
+
+VM=${WIN11_VM_DIR:-/mnt/big_drive/vm}
+CPUS=${WIN11_CPUS:-2}
+MEM=${WIN11_MEM:-8G}
+DISK_SIZE=${WIN11_DISK_SIZE:-96G}
+RDP_ADDR=${WIN11_RDP_ADDR:-10.0.0.4}
+
+FW_CODE=/usr/share/qemu/edk2-x86_64-secure-code.fd
+FW_VARS_TEMPLATE=/usr/share/qemu/edk2-i386-vars.fd
+DISK=$VM/win11.qcow2
+VARS=$VM/win11-vars.fd
+TPM=$VM/tpm
+VIRTIO_ISO=$VM/virtio-win.iso
+MONITOR=$VM/monitor.sock
+
+die() { echo "win11-vm: $*" >&2; exit 1; }
+
+preflight() {
+    [ -c /dev/kvm ] || die "/dev/kvm missing -- is kvm_intel loaded (kernel-config.sh KVM section)?"
+    [ -r /dev/kvm ] && [ -w /dev/kvm ] || die "no access to /dev/kvm -- add $(id -un) to the kvm group and log in again"
+    [ -d "$VM" ] && [ -w "$VM" ] || die "$VM is not writable -- as root: install -d -o $(id -un) -g $(id -gn) $VM"
+}
+
+create() {
+    preflight
+    [ -e "$DISK" ] && die "$DISK already exists; refusing to overwrite"
+    qemu-img create -f qcow2 "$DISK" "$DISK_SIZE"
+    cp -v "$FW_VARS_TEMPLATE" "$VARS"
+    mkdir -p "$TPM"
+    # Per-user swtpm_setup/localca config under ~/.config, so john can create the
+    # EK and platform certificates without the root-owned /var/lib/swtpm-localca.
+    swtpm_setup --create-config-files skip-if-exist
+    swtpm_setup --tpm2 --tpmstate "$TPM" \
+                --create-ek-cert --create-platform-cert --lock-nvram
+}
+
+start_tpm() {
+    rm -f "$TPM/swtpm.sock"
+    swtpm socket --tpm2 --daemon --terminate \
+          --tpmstate dir="$TPM" \
+          --ctrl type=unixio,path="$TPM/swtpm.sock" \
+          --log file="$TPM/swtpm.log",level=1
+    for _ in 1 2 3 4 5 6 7 8 9 10; do
+        [ -S "$TPM/swtpm.sock" ] && return 0
+        sleep 0.2
+    done
+    die "swtpm did not create $TPM/swtpm.sock (see $TPM/swtpm.log)"
+}
+
+qemu_vm() {
+    preflight
+    [ -e "$DISK" ] || die "no $DISK -- run 'win11-vm create' first"
+    # Validate here: a die inside $(usb_args) would only end that subshell.
+    for d in ${WIN11_USB:-}; do usb_id "$d"; done
+    start_tpm
+    exec qemu-system-x86_64 \
+        -name win11 \
+        -machine q35,smm=on,accel=kvm \
+        -global driver=cfi.pflash01,property=secure,value=on \
+        -drive if=pflash,format=raw,unit=0,readonly=on,file="$FW_CODE" \
+        -drive if=pflash,format=raw,unit=1,file="$VARS" \
+        -cpu host,hv_relaxed,hv_vapic,hv_spinlocks=0x1fff,hv_time,hv_vpindex,hv_synic,hv_stimer,hv_frequencies \
+        -smp "$CPUS",sockets=1,cores="$CPUS",threads=1 \
+        -m "$MEM" \
+        -rtc base=localtime \
+        -chardev socket,id=chrtpm,path="$TPM/swtpm.sock" \
+        -tpmdev emulator,id=tpm0,chardev=chrtpm \
+        -device tpm-tis,tpmdev=tpm0 \
+        -drive file="$DISK",if=none,id=disk0,format=qcow2,cache=none,aio=native,discard=unmap \
+        -device virtio-blk-pci,drive=disk0,bootindex=1 \
+        -netdev user,id=net0,hostfwd=tcp:"$RDP_ADDR":3389-:3389 \
+        -device virtio-net-pci,netdev=net0 \
+        -device qemu-xhci -device usb-tablet \
+        -monitor unix:"$MONITOR",server,nowait \
+        $(usb_args) \
+        "$@"
+}
+
+usb_id() {
+    [[ $1 =~ ^([0-9a-fA-F]{4}):([0-9a-fA-F]{4})$ ]] || die "want VID:PID (hex, as lsusb prints it), got '$1'"
+    VID=${BASH_REMATCH[1],,}; PID=${BASH_REMATCH[2],,}
+}
+
+usb_args() {
+    local d
+    for d in ${WIN11_USB:-}; do
+        usb_id "$d"
+        printf -- '-device usb-host,vendorid=0x%s,productid=0x%s,id=usb-%s-%s ' "$VID" "$PID" "$VID" "$PID"
+    done
+}
+
+monitor() {
+    [ -S "$MONITOR" ] || die "no monitor socket at $MONITOR -- is the VM running?"
+    python3 -c 'import socket,sys,time
+s=socket.socket(socket.AF_UNIX); s.connect(sys.argv[1]); s.sendall(sys.argv[2].encode()+b"\n")
+time.sleep(0.5); s.settimeout(1)
+try:
+    out=s.recv(65536).decode(errors="replace")
+except socket.timeout:
+    out=""
+print("\n".join(l for l in out.splitlines() if l and not l.startswith(("QEMU ","(qemu)"))))' "$MONITOR" "$1"
+}
+
+case "${1:-}" in
+    create)  create ;;
+    install)
+        iso=${2:-}
+        [ -n "$iso" ] && [ -r "$iso" ] || die "usage: win11-vm install /path/to/Win11.iso"
+        [ -r "$VIRTIO_ISO" ] || die "no $VIRTIO_ISO -- setup cannot see a virtio disk without it"
+        qemu_vm -vga std \
+                -drive file="$iso",media=cdrom,readonly=on \
+                -drive file="$VIRTIO_ISO",media=cdrom,readonly=on
+        ;;
+    run)     qemu_vm -vga std -display none ;;
+    stop)    monitor system_powerdown ;;
+    usb-attach)
+        usb_id "${2:-}"
+        monitor "device_add usb-host,vendorid=0x$VID,productid=0x$PID,id=usb-$VID-$PID"
+        ;;
+    usb-detach)
+        usb_id "${2:-}"
+        monitor "device_del usb-$VID-$PID"
+        ;;
+    *) sed -n '/^# Usage/,/^#$/p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+esac

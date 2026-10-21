@@ -458,3 +458,13 @@ blfs-tailscale	native	162.5	0
 blfs-gnutls	native	152.8	0
 blfs-fltk	native	35.5	0
 blfs-tigervnc	native	49.6	0
+blfs-dtc	native	94.1	0
+blfs-libslirp	native	9.1	0
+blfs-json-glib	native	12.1	0
+blfs-libtpms	native	17.8	2
+blfs-libtpms	native	40.7	0
+blfs-swtpm	native	23.1	0
+blfs-qemu	native	396.7	0
+ch10-kernel	native	1299.8	0
+blfs-nvidia-470xx	native	1425.2	0
+blfs-iptables	native	16.8	0

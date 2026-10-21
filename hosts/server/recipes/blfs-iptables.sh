@@ -123,6 +123,11 @@ iptables -A INPUT -i wg0 -p tcp --dport 80 -m conntrack --ctstate NEW -j ACCEPT
 # VNC (x0vncserver sharing :0, packages.py seq 267) likewise wg0 only; it also
 # binds 10.0.0.4 alone, see hosts/server/overlay/etc/systemd/system/x0vncserver.service.
 iptables -A INPUT -i wg0 -p tcp --dport 5900 -m conntrack --ctstate NEW -j ACCEPT
+# RDP into the Windows 11 guest (qemu, packages.py seq 273; 2026-10-21) likewise wg0
+# only. qemu's user-mode network forwards 10.0.0.4:3389 to the guest, so this is an
+# INPUT rule to a host socket, not FORWARD; hosts/server/overlay/usr/local/bin/win11-vm
+# binds the forward to 10.0.0.4 alone for the same reason as VNC.
+iptables -A INPUT -i wg0 -p tcp --dport 3389 -m conntrack --ctstate NEW -j ACCEPT
 
 # Everything else is dropped by policy (no LOG rule -- the book's example logs
 # every dropped packet, which on an internet-facing host is a constant stream

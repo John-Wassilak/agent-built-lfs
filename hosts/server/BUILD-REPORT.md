@@ -5626,3 +5626,149 @@ process. x0vncserver's next start logged `1440x900+0+0`.
 
 My first edit to the unit also doubled a line-continuation backslash, and systemd left
 the service in `activating`. It was fixed before the restart above.
+
+## QEMU/KVM for a Windows 11 guest, RDP from laptop (2026-10-21)
+
+The operator wants a Windows VM on this machine, reached from laptop over RDP. BLFS 13.1
+carries qemu-11.1.1 (`postlfs/qemu.html`), so this uses qemu rather than VirtualBox,
+which is not in the book and would add a second out-of-tree kernel module next to
+nvidia-470xx. The operator chose Windows 11 and server-side work only. FreeRDP on laptop
+is not part of this.
+
+**Hardware, measured.** `/proc/cpuinfo`'s vmx flags include `ept`, `vpid`,
+`unrestricted_guest` and `flexpriority`. `/sys/firmware/acpi/tables` has no DMAR table,
+which fits the 2500K being a K SKU without VT-d: KVM works, device passthrough does not,
+and `VFIO` stays unset. Recorded as `virt` in `host.toml`.
+
+**Packages, seq 268-273.**
+- **dtc and libslirp**: qemu's Recommended deps that were not built yet. The other
+  Recommended deps (alsa-lib, sdl2-compat) and the Required ones (glib2, pixman) were
+  already here.
+- **json-glib**: a swtpm dependency, taken from the book.
+- **libtpms 0.10.2 and swtpm 0.10.2**: hand-authored shared recipes (`recipes/blfs-libtpms.sh`,
+  `recipes/blfs-swtpm.sh`). Neither is in BLFS; both are in Arch [extra]. The versions are
+  the latest GitHub releases, read from the API, not assumed.
+- **Tarball checks**: all four book tarballs matched the book's MD5.
+- **UEFI firmware**: no build. qemu's tarball ships `pc-bios/edk2-x86_64-secure-code.fd.bz2`
+  and `edk2-i386-vars.fd.bz2`, checked with `tar t`.
+
+**Review decisions** (`recipes/blfs-13.1/overrides.json`). The classifier queued only one
+qemu block, the `/usr/bin/qemu` symlink Note, which is enabled. Every other block on the
+three new book pages ran unflagged, so each got an explicit decision:
+- **qemu**: dropped the VT diagnostic grep, the usage examples (one would launch a VM
+  inside the build), and the bridge ip_forward/bridge.conf setup. The guest uses
+  `-netdev user`.
+- **usermod placeholder**: `usermod -a -G kvm <username>` became the guarded `john` form
+  the sudo page already uses.
+- **dtc**: dropped the texlive PDF and SWIG Python-binding blocks.
+- **json-glib**: dropped the docutils and gi-docgen blocks, since neither is installed.
+
+**Kernel** (`hosts/server/kernel-config.sh`). Added `KVM=m`, `KVM_INTEL=m` and
+`MITIGATION_VMSCAPE=y`.
+- **vmscape**: the old vmscape note said 7.1.8 had no `MITIGATION_VMSCAPE` symbol. The
+  reason is `depends on KVM` in `arch/x86/Kconfig`, so the note is rewritten.
+- **Dry run**: ran the config in scratch against the 7.1.8 tarball. Both gates passed.
+- **Diff**: `scripts/diffconfig /boot/config-7.1.8 .config` is all additions except two
+  derived flags, `X86_DISABLED_FEATURE_FRED` and `X86_REQUIRED_FEATURE_SYSFAST32`. Both
+  follow from `X86_FRED n -> y`, which `KVM_INTEL` selects. The diff also adds
+  `PREEMPT_NOTIFIERS` and `USER_RETURN_NOTIFIER` to the core kernel, so a modules-only
+  build is not an option: it has to be a full rebuild and a reboot, which means
+  nvidia-470xx gets rebuilt too.
+- **Useful arrivals**: `KVM_SMM=y`, which the Secure Boot firmware needs, and
+  `KVM_HYPERV=y`, for Windows enlightenments.
+
+**Network and firewall.**
+- **Forward**: the guest uses libslirp user networking with one hostfwd, bound to
+  `10.0.0.4:3389`.
+- **Firewall**: an INPUT rule accepts 3389 on wg0 only, the same posture as nginx (80)
+  and VNC (5900). It lives in block 2 of `hosts/server/blfs-overrides.json`, the source
+  `hosts/server/recipes/blfs-iptables.sh` is generated from. A first attempt edited the
+  generated recipe in place, and the next `extract-blfs.py` run overwrote it, which is
+  exactly what CLAUDE.md warns about.
+- **Loading**: `iptables.service` loads `/etc/systemd/scripts/iptables` at boot, so the
+  reboot into the KVM kernel picks the rule up. `~/Scripts/firewall.sh` is the laptop's
+  documented posture, not server's, and does not feed the unit, so it is unchanged. A
+  live `systemctl restart iptables` without a reboot must be followed by
+  `systemctl restart docker`.
+
+**Launcher.** `hosts/server/overlay/usr/local/bin/win11-vm` has four subcommands: `create`,
+`install <iso>`, `run` (headless) and `stop` (ACPI powerdown through the monitor
+socket). It needs one root step first: `install -d -o john -g john /mnt/big_drive/vm`.
+The virtio-win ISO has to be in that directory for setup to see the virtio disk.
+
+**Windows-side steps, not automated.**
+- **CPU check**: setup rejects the i5-2500K. `-cpu host` shows the real model, and a newer
+  model cannot be spoofed because Sandy Bridge has no AVX2. During setup, press Shift+F10
+  and set `HKLM\SYSTEM\Setup\LabConfig\BypassCPUCheck=1` (DWORD). TPM and Secure Boot are
+  real, so neither needs a bypass. Feature updates may need the CPU bypass again.
+- **Edition**: it must be Pro or higher, because Home has no RDP server.
+- **Disk driver**: load viostor from the virtio-win ISO in "Where do you want to install
+  Windows".
+- **After setup**: install virtio-win's guest tools (netkvm, balloon) and enable Remote
+  Desktop.
+
+### Build (same day)
+
+All six steps built natively with `lfsbuild --book blfs --only <step>`, and each captured a
+manifest.
+- **libtpms 0.10.2**: failed first with `-Werror=discarded-qualifiers` at
+  `tpm_library.c:441`. glibc 2.43+ returns a const pointer from `strstr()` on a const
+  haystack. Upstream fixed it in fc8820cfaa on master, which is not in v0.10.2; the recipe
+  now applies the same one-line change by sed and greps that it took.
+- **Verified after install**:
+  - `qemu-system-x86_64 -accel help` lists kvm.
+  - `-device help` has `usb-host`, `qemu-xhci`, `tpm-tis` and `virtio-blk-pci`.
+  - `/usr/share/qemu/edk2-x86_64-secure-code.fd` and `edk2-i386-vars.fd` are present.
+  - `/usr/bin/qemu` points to qemu-system-x86_64.
+  - `qemu-bridge-helper` is `root:kvm 4750`.
+  - `swtpm --version` reports 0.10.2.
+  - john is in kvm.
+- **swtpm as john**: a per-user `swtpm_setup --create-config-files` plus `--tpm2
+  --create-ek-cert --create-platform-cert --lock-nvram` in a scratch directory
+  authored TPM state with an ECC EK certificate.
+
+### USB passthrough for an external drive (same day)
+
+The operator wants to hand a USB drive (a NAS-type device with its own Windows driver) to
+the guest. No build change is needed: qemu found libusb (already built), so `usb-host`
+exists. This is not PCI passthrough and does not need VT-d. qemu forwards USB transfers
+from userspace, and the guest sees the real device, so the vendor's Windows driver binds
+inside Windows. qemu detaches usb-storage/uas on the host itself. The drive must not be
+mounted here while the guest has it.
+- **Launcher**: `win11-vm usb-attach VID:PID` and `usb-detach` hot-plug it through the
+  monitor socket, and `WIN11_USB="VID:PID"` attaches it at start.
+- **Permissions, still to do**: `/dev/bus/usb/*/*` are `root:root 0664`, and qemu needs
+  write access. Once the drive is plugged in and `lsusb` shows its IDs, add
+  `hosts/server/overlay/etc/udev/rules.d/70-win11-usb.rules` with
+  `SUBSYSTEM=="usb", ATTR{idVendor}=="<vid>", ATTR{idProduct}=="<pid>", GROUP="kvm",
+  MODE="0660"`.
+
+### Kernel rebuild with KVM, nvidia rebuild, firewall script (same day)
+
+- **Backup**: the pre-rebuild kernel is kept as `/boot/*.pre-kvm` and
+  `/lib/modules/7.1.8.pre-kvm`. There is no grub entry for it. To fall back, edit the
+  entry at the grub prompt and point `linux` at `vmlinuz-7.1.8-lfs-13.1-systemd.pre-kvm`.
+  The boot path is built in, so it boots, but its modules would not match
+  `/lib/modules/7.1.8`; swap the two module directories back first.
+- **Staging**: the config pair went into `/sources`, `cmp`-identical to the repo.
+  `lfsbuild --only ch10-kernel --force` then succeeded. The installed
+  `/boot/config-7.1.8` is byte-identical to the scratch dry run, and carries `KVM=m`,
+  `KVM_INTEL=m`, `MITIGATION_VMSCAPE=y`, `KVM_SMM=y` and `KVM_HYPERV=y`. `kvm.ko` and
+  `kvm-intel.ko` are under `kernel/arch/x86/kvm/`.
+- **NVIDIA**: `modules_install` removed `kernel/drivers/video/nvidia-470xx/`, as before.
+  `blfs-nvidia-470xx --force` rebuilt all five modules, with vermagic
+  `7.1.8 SMP preempt mod_unload`, the same as in-tree `kvm.ko`.
+- **Firewall script**: `blfs-iptables --force` needed `iptables-1.8.13.tar.xz` staged
+  again, since it was no longer in `/sources`; it was re-downloaded and the book MD5
+  matched. The previous script is kept as
+  `/etc/systemd/scripts/iptables.bak-20261021`. The diff is the five added lines, the
+  3389-on-wg0 rule and its comment. The live ruleset was not reloaded; the reboot loads it.
+- **Launcher**: installed as `/usr/local/bin/win11-vm`, with `/mnt/big_drive/vm` created
+  and owned by john. Before the reboot, `win11-vm create` stops at its `/dev/kvm`
+  preflight, as intended.
+- **Extractors**: both report zero drift.
+
+**Not yet done:** the reboot, then the runtime checks: `/dev/kvm` is `root:kvm 0660`,
+`kvm_intel` loads, `nvidia-smi -L` works, `systemctl --failed` is empty, docker is
+active, `iptables -S INPUT` shows the 3389 rule, and the vmscape sysfs entry reports a
+mitigation. After that, the guest install.

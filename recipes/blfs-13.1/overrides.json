@@ -854,5 +854,72 @@
       "action": "drop",
       "reason": "'If desired, install some example games built as a part of the tests, extra documentation and example programs' -- explicitly optional; the documentation half also needs block 1's docs."
     }
+  },
+  "blfs-dtc": {
+    "2": {
+      "action": "drop",
+      "reason": "BLFS 13.1 general/dtc.html: PDF documentation build, conditional on texlive-20260301 ('If you have texlive-20260301 installed'). texlive is not built here."
+    },
+    "4": {
+      "action": "drop",
+      "reason": "BLFS 13.1 general/dtc.html: SWIG compatibility sed for the Python bindings, conditional on SWIG-4.5.0 being installed. SWIG is not built, and qemu links the C libfdt, not the Python module."
+    },
+    "5": {
+      "action": "drop",
+      "reason": "BLFS 13.1 general/dtc.html: builds the optional Python 3 libfdt wheel; same SWIG condition as block 4. Nothing here imports libfdt from Python."
+    },
+    "6": {
+      "action": "drop",
+      "reason": "BLFS 13.1 general/dtc.html: installs the Python wheel block 5 would have built. Dropped with it."
+    }
+  },
+  "blfs-json-glib": {
+    "1": {
+      "action": "drop",
+      "reason": "BLFS 13.1 general/json-glib.html: man pages, conditional on docutils-0.23 ('If docutils-0.23 is installed'). docutils is not installed (python3 -c 'import docutils' fails)."
+    },
+    "2": {
+      "action": "drop",
+      "reason": "BLFS 13.1 general/json-glib.html: API documentation, conditional on Gi-DocGen-2026.1. Not installed."
+    }
+  },
+  "blfs-qemu": {
+    "0": {
+      "action": "drop",
+      "reason": "BLFS 13.1 postlfs/qemu.html, 'KVM Prerequisites': a diagnostic grep the reader runs by eye to see whether the CPU has vmx/svm. Its exit status says nothing about the build, and on a CPU without VT it exits 1 and would abort a build that can still produce a working (TCG-only) qemu. Check it by hand before adding this step."
+    },
+    "1": {
+      "action": "replace",
+      "cmd": "id john >/dev/null 2>&1 && usermod -a -G kvm john || echo \"### john not created yet (blfs-adduser-john); add him to kvm by hand\"",
+      "reason": "BLFS 13.1 postlfs/qemu.html, 'Installation of qemu': `usermod -a -G kvm <username>` is a placeholder (taken literally, bash reads <username> as an input redirect and fails). john is the one human account on these hosts, the same substitution the sudo page's decision makes, and he needs kvm both to open /dev/kvm when the VM runs from a service or ssh session (the book's own reason) and for qemu-bridge-helper (block 4's note). Guarded the same way as sudo's usermod so a fresh build where adduser-john has not run yet does not fail."
+    },
+    "5": {
+      "action": "enable",
+      "reason": "BLFS 13.1 postlfs/qemu.html: the /usr/bin/qemu symlink is a convenience Note, flagged by the admonition heuristic, but the book's own 'Using Qemu' section says its instructions assume the link exists. Cheap and harmless, so installed."
+    },
+    "6": {
+      "action": "drop",
+      "reason": "BLFS 13.1 postlfs/qemu.html, 'Using Qemu > Disk': example of creating a guest disk image (vdisk.img in the current directory, which here is the build tree). Usage, not installation."
+    },
+    "7": {
+      "action": "drop",
+      "reason": "BLFS 13.1 postlfs/qemu.html, 'Using Qemu > Operating System': example that boots an installer ISO in a VM. Interactive and long-running; it would hang the build. Usage, not installation."
+    },
+    "8": {
+      "action": "drop",
+      "reason": "BLFS 13.1 postlfs/qemu.html, 'Defining the virtual hardware': example VM command line, interactive (-serial mon:stdio). Usage, not installation."
+    },
+    "9": {
+      "action": "drop",
+      "reason": "BLFS 13.1 postlfs/qemu.html, 'Networking': enables IP forwarding for the bridge network device, part of the usage walkthrough and only needed for -netdev bridge. A host that wants bridged guests should make this decision deliberately, next to its firewall; it is not part of installing qemu."
+    },
+    "10": {
+      "action": "drop",
+      "reason": "BLFS 13.1 postlfs/qemu.html: persists block 9's ip_forward in /etc/sysctl.d/60-net-forward.conf (and appends, so a rebuild duplicates the line). Dropped with block 9."
+    },
+    "11": {
+      "action": "drop",
+      "reason": "BLFS 13.1 postlfs/qemu.html: /etc/qemu/bridge.conf allowing br0, the third step of the bridge setup. Names an interface (br0) that only exists if a host builds the bridge in the book's 'Advanced Network Setup'. Dropped with blocks 9-10."
+    }
   }
 }
