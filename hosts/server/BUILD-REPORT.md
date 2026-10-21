@@ -5772,3 +5772,37 @@ mounted here while the guest has it.
 `kvm_intel` loads, `nvidia-smi -L` works, `systemctl --failed` is empty, docker is
 active, `iptables -S INPUT` shows the 3389 rule, and the vmscape sysfs entry reports a
 mitigation. After that, the guest install.
+
+### Post-reboot verification, tailscale disabled (2026-10-21)
+
+Rebooted 13:48 into the KVM kernel (#1, built 13:09). Every check listed above passes:
+
+| Check | Result |
+|---|---|
+| `/dev/kvm` | `crw-rw---- root kvm 10,232`; john is in `kvm` |
+| `lsmod` | `kvm_intel`, `kvm` loaded |
+| `nvidia-smi -L` | GTX 770; NVRM 470.256.02 loaded, vermagic `7.1.8 SMP preempt mod_unload` |
+| `systemctl --failed` | empty; `is-system-running` reports `running` |
+| docker, containerd, iptables | active; DOCKER chains present |
+| `iptables -S INPUT` | 22, then 80, 5900, 3389 on wg0 only |
+| vmscape sysfs | `Mitigation: IBPB before exit to userspace` |
+| microcode | updated early, 0x28 to 0x2f |
+
+Two items from earlier entries that had not been tested across a reboot now pass. nginx
+went active at 13:49:04, one second after `wg-quick@wg0` (13:49:03), and listens on
+127.0.0.1, [::1] and 10.0.0.4 only. x0vncserver waited for `/tmp/.X11-unix/X0`, started
+at 13:49:59 with geometry 1440x900, and listens on 10.0.0.4:5900 only.
+
+Errors this boot are the known ones: ACPI `_GTF.DSSP`, `Unpatched return thunk in use`
+from nvidia, the HDA `Cannot probe codecs` on both controllers (also on the 10-13 boot),
+and the missing `xt_connmark` from `kernel-config.sh`.
+
+**Tailscale disabled (operator decision).** tailscaled had been logged out since 11:34,
+before the reboot, after a re-register request to controlplane.tailscale.com failed with
+"connection reset by peer". After the boot it sat in `NeedsLogin`, and tailscale0 had no
+100.x address. The operator does not need it at the moment, so `systemctl disable --now
+tailscaled` was run. tailscale0 and the `ts-*` chains are gone. The binaries, the unit
+and `/var/lib/tailscale` stay in place, so `systemctl enable --now tailscaled` followed
+by `tailscale up` brings it back. The comments in nginx.conf, x0vncserver.service and
+the iptables override about `ts-input` running ahead of the firewall do not apply while
+it is off. They become true again if it is re-enabled, so they are left in place.
