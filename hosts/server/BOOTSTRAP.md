@@ -279,7 +279,15 @@ In order, all against `/mnt/target`:
 4. **`grub-install --target=i386-pc --recheck /dev/sdb`**, from a chroot on
    `/mnt/target`, same bind-mount dance as step 1. A filesystem copy carries `/boot` but
    not the MBR; the disk does not boot until this runs.
-5. **Optional identity**: `/etc/hostname` (currently `lfs`), and
+5. **`/` owned by root.** `stat -c '%U:%G %a' /mnt/target` must print `root:root`.
+   `rsync -a` from a trailing-slash source copies that source directory's owner and mode
+   onto the destination root, so whoever owned `/mnt/lfs` owns the stick's `/`, and the
+   stick's `/` passes the same owner and mode on to the target's. The 2026-09-21 re-image
+   left the target's `/` as `john:john 555`. That went unnoticed until 2026-10-21, and
+   systemd-tmpfiles skipped about 93 "unsafe path transition" operations on every boot in
+   between. `chown root:root /mnt/target` fixes it. Check the stick's `/` in step 1 the
+   same way.
+6. **Optional identity**: `/etc/hostname` (currently `lfs`), and
    `truncate -s 0 /mnt/target/etc/machine-id` if you would rather the target not share the
    stick's `621d52cd…` -- systemd regenerates it on first boot and it is the DHCP DUID
    seed.

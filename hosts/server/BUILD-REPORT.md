@@ -5806,3 +5806,16 @@ and `/var/lib/tailscale` stay in place, so `systemctl enable --now tailscaled` f
 by `tailscale up` brings it back. The comments in nginx.conf, x0vncserver.service and
 the iptables override about `ts-input` running ahead of the firewall do not apply while
 it is off. They become true again if it is re-enabled, so they are left in place.
+
+### `/` owned by root again (2026-10-21)
+
+`stat /` showed `john:john 555`. systemd-tmpfiles logged
+"Detected unsafe path transition / (owned by john) -> ..." 91 to 93 times on every boot
+in the retained journal, which goes back to 2026-09-21 15:38. Those messages covered
+paths under `/etc`, `/run`, `/var`, `/dev` and `/tmp`. Any process running as john could
+also chmod `/` writable and replace top-level directories without sudo. `/`'s mtime is
+2026-09-21 20:59, which points at the re-image. Fixed with `chown root:root /`; mode 555
+was left unchanged. `systemd-tmpfiles --create --dry-run` now reports zero unsafe path
+transitions. `BOOTSTRAP.md` step 5 now checks `/`'s owner before the first boot, since
+`rsync -a` from a trailing-slash source copies the source directory's owner onto the
+destination root.
