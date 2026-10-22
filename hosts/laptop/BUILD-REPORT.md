@@ -7168,3 +7168,21 @@ log, because the old log was overwritten.
 
 **Not yet done:** a connection to server's guest with `sdl-freerdp` to confirm the
 pointer shows.
+
+### Follow-up: menu entry switched from VNC to RDP (same day)
+
+Operator request: the RDP client replaces the VNC launcher for the Windows 11 guest. In the
+`~/Scripts` repo, `vnc-windows.sh` and `desktop-files/vnc-windows.desktop` are replaced by
+`rdp-windows.sh` and `desktop-files/rdp-windows.desktop` ("Windows VM (RDP)"). The icon is
+the same file, renamed to `rdp-windows.png`. The script sends the operator's
+`wlfreerdp` arguments to `sdl-freerdp /args-from:stdin`, so the password (first line of
+`pass show win11/Windows`) stays out of the process list. It adds `/wm-class:rdp-windows`
+to match the entry's `StartupWMClass`, because the SDL3 client uses `FreeRDP_WmClass` as
+its app id (`client/SDL/SDL3/sdl_context.cpp`). Any extra arguments are passed through. A run
+with stub `pass` and `sdl-freerdp` commands printed the expected argument list. The
+entry passes `desktop-file-validate`. The installed `vnc-windows` entry and icon were
+removed from `/usr/share`, and the new ones were installed and indexed with
+`update-desktop-database`.
+
+Unchanged on server: `win11-vm` still serves the guest's console on VNC at 10.0.0.4:5901,
+and the firewall still accepts 5901 on wg0.
