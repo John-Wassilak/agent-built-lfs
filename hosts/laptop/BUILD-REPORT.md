@@ -6911,3 +6911,122 @@ other. After the restart, under the same load (load average 12.2), level 7 held
 The script, its unit and `thinkpad_acpi.conf` (`fan_control=1`) had been installed by hand
 and were not tracked. They are now in `overlay/usr/local/sbin/fan-control`,
 `overlay/etc/systemd/system/fan-control.service` and `overlay/etc/modprobe.d/`.
+
+## TPM 2.0, UHID and an unbound-hardware sweep: 6.18.49 rebuilt (2026-10-13)
+
+Operator request: test passkey flows with something close to a YubiKey's security bar
+without buying one. The plan is a userspace CTAP2 authenticator that keeps its keys in
+the TPM and presents itself to the browser as a USB security key through `/dev/uhid`
+(linux-id is the candidate, not yet packaged). Neither device existed: `TCG_TPM`,
+`UHID` and `USBIP_CORE` were all unset.
+
+**TPM.** No PCI function, because it is Intel PTT, a firmware TPM in the CSME (the CSME
+itself is `00:16.0`, HECI, bound to `mei_me`). ACPI has it as `MSFT0101:00` at
+`\_SB_.TPM_`, status 15. The firmware also publishes a `TCPA` table, but the device is the
+2.0 HID. The `TPM2` table's start method (u32 at offset 48) is 2, and in 6.18.49
+`tpm_tis.c`'s `check_acpi_tpm2()` returns `-ENODEV` for anything but 6, so the config
+adds `TCG_CRB`, not `TCG_TIS`. `HW_RANDOM_TPM=y` follows from the defaults.
+`SECURITYFS` stays off: `TCG_TPM` only `imply`s it, and defconfig's explicit
+"is not set" wins.
+
+**Sweep.** Every PCI device, USB interface and ACPI/platform device with no driver bound,
+checked against the config, the kernel log and `/proc/cpuinfo`. Added, operator's call
+on all of them:
+
+| option | evidence |
+|--------|----------|
+| `CRYPTO_AES_NI_INTEL` | `/mnt/crypt` is `aes-xts-plain64`; `/proc/crypto` resolved it to `xts(ecb(aes-generic))` |
+| `RMI4_CORE`/`RMI4_SMB` + F03/F11/F12/F30/F3A | kernel log: "The touchpad can support a better bus than the too old PS/2 protocol. Make sure MOUSE_PS2_SYNAPTICS_SMBUS and RMI4_SMB are enabled" |
+| `INTEL_PCH_THERMAL` | `00:14.2` (`8086:9d31`) unbound; the driver lists `0x9D31` as Skylake PCH |
+| `INTEL_IDLE` | idle was `acpi_idle`. Its deepest state is already MWAIT 0x60 (C10), so the gain is the intermediate states only |
+| `ITCO_WDT` | `iTCO_wdt` platform device unbound. Inert until `RuntimeWatchdogSec=` is set |
+| `KVM`/`KVM_INTEL` | `vmx` present. Selects `X86_FRED`, inactive on Skylake |
+| `MISC_RTSX_PCI`, `MMC`, `MMC_BLOCK`, `MMC_REALTEK_PCI` | RTS525A at `02:00.0` unbound, previously deferred |
+| `INTEL_IOMMU_DEFAULT_ON` | DMAR present and `INTEL_IOMMU=y`, but `/sys/class/iommu` empty: only IRQ remapping was on |
+
+Left alone: Gaussian Mixture Model `00:08.0` (no mainline driver), ISH `00:13.0`
+(class 0000), fingerprint `138a:0090` (userspace), LPC/PMC, and the EC/lid/button/HPET
+ACPI devices the core handles unbound. `kernel-config.sh`'s card-reader comment had
+guessed `MFD_RTSX_PCI`; the symbol is `MISC_RTSX_PCI`.
+
+**Build.** Same hand steps as 2026-10-01, as root with
+`env -i PATH=/usr/bin:/bin:/usr/sbin:/sbin`, which keeps `CONFIG_RUSTC_VERSION=0` as in
+the running config (with `/opt/rustc` on `PATH` those lines change, nothing else). A
+dry run of the TPM-only change in a tmpfs copy of the tree added four symbols. The
+staged script was then built (25 min), the sweep added, and `make` rerun (28 min: KVM
+pulls in `PREEMPT_NOTIFIERS`, a `task_struct` field, so nearly everything recompiled).
+Against the old `/boot/config-6.18.49` the final config is additions only, plus
+`X86_DISABLED_FEATURE_FRED` replaced by `X86_FRED`. Gate passed; the only warning is the
+known `MOUSE_PS2_SYNAPTICS` one. No compiler warnings.
+
+**Install.** The Docker kernel is now `.preTPM` (vmlinuz, config, System.map) with its
+tree copied to `/lib/modules/6.18.49.preTPM` (`diff -r` clean before install). Modules
+105 -> 123, none removed; all 80 modules `lsmod` shows resolve in the new tree. Grub:
+entry 0 the new kernel, entry 1 the `.preTPM` backup; `.preDOCKER` left the menu, its
+files stay on disk until this kernel has booted. Deployed grub.cfg byte-identical to
+the overlay, `grub-script-check` passes.
+
+The backup's grub comment no longer says the newer tree "usually works". With
+`MODVERSIONS` off, the `.preTPM` kernel would load the new modules despite the
+`task_struct` layout change, so the comment gives the `init=/bin/bash` swap to its own
+tree.
+
+Not yet done: the reboot, then `/dev/tpmrm0` and `/dev/uhid`, `tpm_crb` binding,
+`xts-aes-aesni` in `/proc/crypto`, `rmi_smbus` taking the touchpad with the TrackPoint
+still working, `intel_idle` as the cpuidle driver, `/sys/class/iommu` populated with i915
+healthy, `pch_skylake` in hwmon/thermal, and `rtsx_pci` bound.
+
+**After the reboot (2026-10-13).** Running `6.18.49 #2`, built 21:08, not tainted. Seven
+of the nine checks pass:
+
+- `/dev/uhid` present, `/dev/kvm` present (group `kvm`), `/dev/watchdog0` from `iTCO_wdt`.
+- `/proc/crypto`: `xts(aes)` now resolves to `xts-aes-aesni-avx` (priority 500);
+  `aesni_intel` shows 6 users with `cryptroot` mapped.
+- cpuidle driver `intel_idle`, states POLL, C1, C1E, C3, C6, C7s, C8, C9, C10.
+- `/sys/class/iommu` has `dmar0` and `dmar1`, 13 IOMMU groups, i915 bound with no errors
+  (only the "Transparent Hugepage support is recommended" note).
+- `pch_skylake` shows up as a thermal zone and in hwmon.
+- `02:00.0` bound to `rtsx_pci`, `mmc0` present.
+
+Two failed:
+
+- **TPM.** `tpm_crb` loads and then fails its probe: two "tpm tpm0: Operation Timed
+  out", then "probe with driver tpm_crb failed with error -62". No `/dev/tpm*`. Just
+  before that, at 3.238 s: "DMAR: [DMA Read NO_PASID] Request device [00:12.4] fault addr
+  0xd7fff000 [fault reason 0x02] Present bit in context entry is clear". The TPM2 table's
+  control area address (u64 at offset 40) is `0xd7fff000`, and `/proc/iomem` puts
+  `d7fff000-d7ffffff : MSFT0101:00` there. `00:12.4` is not on the PCI bus, and neither
+  RMRR (`d751f000-d753efff`, `da000000-dc7fffff`) covers that page. So the PTT reads its
+  CRB control area by DMA from a hidden requester ID, and once DMA remapping is on,
+  the IOMMU blocks it. This is inferred from the address match. Booting with
+  `intel_iommu=off` would confirm it, which has not been tried yet.
+- **RMI4 touchpad.** Both the touchpad and the TrackPoint are still on PS/2, and there
+  is no `/sys/bus/rmi4`. The kernel's message changed to "Your touchpad (PNP: LEN0058
+  PNP0f13) says it can support a different bus. If i2c-hid and hid-rmi are not used, you
+  might want to try setting psmouse.synaptics_intertouch to 1". `LEN0058` is not in
+  `smbus_pnp_ids[]` in 6.18.49's `synaptics.c`. With `RMI4_SMB` set, the parameter
+  defaults to -1 (not set), and an unlisted ID then stays on PS/2. `psmouse` is built in,
+  so switching needs `psmouse.synaptics_intertouch=1` on the kernel command line.
+
+The other errors this boot were there before the rebuild: "Bluetooth: hci0: Reading
+supported features failed (-16)" was logged on each of the two previous boots too. No
+units failed. `.preDOCKER` (vmlinuz and `/lib/modules/6.18.49.preDOCKER`) can now be
+deleted, since this kernel has booted.
+
+**Test entry, second reboot (2026-10-13).** Booted grub entry 2 (`intel_iommu=off
+psmouse.synaptics_intertouch=1`). Both failures from the first boot are gone:
+
+- **TPM.** "DMAR: IOMMU disabled", no DMAR fault, and `tpm_crb` binds `MSFT0101:00`.
+  `/dev/tpm0` and `/dev/tpmrm0` exist, `tpm_version_major` is 2, and `rng_current` is
+  `tpm-rng-0`. 16 bytes read from `/dev/hwrng` and PCR 0 and 7 read from `pcr-sha1`, so
+  the TPM answers commands. That confirms the blocked DMA read from `00:12.4` as the
+  cause. Only a `pcr-sha1` bank is exposed, no `pcr-sha256`. Interrupt remapping is
+  still on ("DMAR-IR: Enabled IRQ remapping in xapic mode").
+- **Touchpad.** "synaptics: Trying to set up SMBus access", then `rmi4_smbus 0-002c`
+  registers a TM3144-002 (fw id 2059155). Functions present: F01, F03, F11, F30, F34,
+  F54. The TrackPoint enumerates behind F03 ("RMI4 PS/2 pass-through port at
+  rmi4-00.fn03", firmware 0x0e, 3 buttons). Whether both move the pointer has to be
+  checked by hand.
+
+No failed units. The only errors are the Bluetooth `-16` from earlier boots and the
+missing `regulatory.db`.

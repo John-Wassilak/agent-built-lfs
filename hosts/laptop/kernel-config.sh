@@ -61,9 +61,8 @@ $K --module  THINKPAD_ACPI
 $K --module  MOUSE_PS2_SYNAPTICS
 
 # --- card reader: Realtek RTS525A (rtsx_pci) ----------------------------------------
-# Deferred, per host.toml: not on the boot path and not needed yet. Add
-# MFD_RTSX_PCI + MMC_REALTEK_PCI here if it turns out to be wanted -- exact Kconfig
-# symbol names not yet verified against this kernel's Kconfig, unlike everything above.
+# Enabled 2026-10-13 in the unbound-hardware sweep at the end of this file. The
+# symbol is MISC_RTSX_PCI, not MFD_RTSX_PCI as first guessed here.
 
 # --- bluetooth: Intel 8260 combo chip, USB HCI half ---------------------------------
 # Confirmed live (2026-09-03): lsusb shows 8087:0a2b "Intel Corp. Bluetooth wireless
@@ -185,5 +184,104 @@ $K --enable  POWERCAP
 $K --module  INTEL_RAPL
 $K --module  INTEL_POWERCLAMP
 $K --module  INTEL_TCC_COOLING
+
+# --- TPM 2.0 (Intel PTT firmware TPM) and UHID: a TPM-backed FIDO2 authenticator ----
+# Operator request 2026-10-13: test passkey flows with something that meets roughly a
+# YubiKey's bar (private key never leaves hardware) without buying one. The plan is a
+# userspace CTAP2 authenticator that keeps its keys in the TPM and presents itself to
+# the browser as a USB HID security key through /dev/uhid. This section is only the
+# kernel half; neither device node exists under /boot/config-6.18.49
+# (TCG_TPM, UHID and USBIP_CORE all unset).
+#
+# The TPM is there and in 2.0 mode, checked live, not assumed:
+# /sys/bus/acpi/devices/MSFT0101:00 (the TPM 2.0 HID) at \_SB_.TPM_, status 15 (present,
+# enabled). The firmware also publishes a TCPA table beside TPM2, but the device it
+# describes is MSFT0101, not the 1.2 HID PNP0C31.
+#
+# CRB, not TIS: the ACPI TPM2 table's start method (u32 at offset 48) is 2,
+# ACPI_TPM2_START_METHOD -- the firmware-TPM (PTT) interface. In the 6.18.49 source,
+# tpm_tis.c's check_acpi_tpm2() returns -ENODEV for any TPM2 device whose start method
+# is not ACPI_TPM2_MEMORY_MAPPED (6) ("The tpm2_crb driver handles this device"), and
+# tpm_crb.c handles method 2. TCG_TIS would build and
+# never bind, so it is left out.
+#
+# TCG_TPM2_HMAC (bus HMAC/encryption) stays at its default n. It defends a discrete
+# chip's LPC/SPI bus against snooping and interposers; a PTT has no such bus, since it
+# runs inside the chipset.
+#
+# HW_RANDOM_TPM defaults to y once TCG_TPM is on (HW_RANDOM is already =y, which the
+# Kconfig dependency requires when TCG_TPM is =m), so the TPM also feeds /dev/hwrng.
+# TCG_TPM only `imply`s SECURITYFS, and defconfig's explicit "is not set" wins, so it
+# stays off (dry run 2026-10-13). That costs only the BIOS event log under
+# /sys/kernel/security/tpm0, which measured-boot tooling reads and FIDO does not.
+#
+# Modules: neither is on the boot path. Host, not shared: the start method and the
+# PTT are this board's.
+$K --module  TCG_TPM
+$K --module  TCG_CRB
+$K --module  UHID
+
+# --- unbound-hardware sweep, 2026-10-13 -------------------------------------------
+# Every PCI device, USB interface and ACPI/platform device with no driver bound,
+# checked against /boot/config-6.18.49, the kernel log and /proc/cpuinfo. Left out
+# on purpose: the Gaussian Mixture Model at 00:08.0 (no mainline driver), the
+# Integrated Sensor Hub at 00:13.0 (reports class 0000, unused on this board), the
+# fingerprint reader 138a:0090 (userspace only), and the LPC/PMC/EC/lid/button
+# devices the ACPI core handles without a bound driver.
+
+# AES-NI. /mnt/crypt is LUKS aes-xts-plain64, and /proc/crypto resolved it to
+# xts(ecb(aes-generic)): every block of this repo and every build went through
+# software AES. The CPU has the aes flag. Module: dm-crypt is itself =m, and the
+# crypto API picks the higher-priority aesni implementation once it is loaded.
+$K --module  CRYPTO_AES_NI_INTEL
+
+# Synaptics touchpad over SMBus (RMI4). The kernel asks for it in its own log:
+# "The touchpad can support a better bus than the too old PS/2 protocol. Make sure
+# MOUSE_PS2_SYNAPTICS_SMBUS and RMI4_SMB are enabled". The first was already =y.
+# F03 is the PS/2 guest port the TrackPoint sits behind; without it the TrackPoint
+# stops working once the touchpad leaves PS/2. F11/F12 are 2D pointing (which one
+# depends on the firmware), F30/F3A the physical buttons. F34 (reflash) and F55
+# (tuning) are not needed to use the device.
+$K --module  RMI4_CORE
+$K --module  RMI4_SMB
+$K --enable  RMI4_F03
+$K --enable  RMI4_F11
+$K --enable  RMI4_F12
+$K --enable  RMI4_F30
+$K --enable  RMI4_F3A
+
+# PCH thermal sensor, PCI 00:14.2 (8086:9d31), unbound. intel_pch_thermal.c lists
+# 0x9D31 as PCH_THERMAL_DID_SKL. One more input for thermald (see the thermal
+# section above).
+$K --module  INTEL_PCH_THERMAL
+
+# intel_idle. Idle was on acpi_idle with three ACPI states (C1, MWAIT 0x33, MWAIT
+# 0x60). The deepest already reaches C10, so the gain is the intermediate states
+# and their tuned latencies, not a new deepest state. Bool: no module form.
+$K --enable  INTEL_IDLE
+
+# Chipset TCO watchdog. The iTCO_wdt platform device (created by i2c-i801, =y) was
+# present and unbound. Does nothing until systemd's RuntimeWatchdogSec= is set.
+$K --module  ITCO_WDT
+
+# KVM. The CPU has vmx and VIRTUALIZATION is already =y. KVM_INTEL selects
+# X86_FRED, which is detected at runtime and stays inactive on Skylake.
+$K --module  KVM
+$K --module  KVM_INTEL
+
+# Realtek RTS525A SD card reader, PCI 02:00.0 (10ec:525a), unbound. Was deferred in
+# the card reader section above; operator asked for it 2026-10-13. MMC itself was
+# unset, so the core and block driver come with it.
+$K --module  MISC_RTSX_PCI
+$K --module  MMC
+$K --module  MMC_BLOCK
+$K --module  MMC_REALTEK_PCI
+
+# IOMMU DMA remapping. The DMAR table is present and INTEL_IOMMU was =y, but only
+# interrupt remapping was on (/sys/class/iommu was empty). defconfig's explicit
+# "is not set" overrides the Kconfig default of y. In Kconfig rather than as
+# intel_iommu=on on the grub line, so the backup kernel boots without it if i915 on
+# Skylake objects. Undo with intel_iommu=off at the grub prompt.
+$K --enable  INTEL_IOMMU_DEFAULT_ON
 
 kernel_config_finish
