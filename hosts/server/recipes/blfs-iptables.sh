@@ -128,6 +128,24 @@ iptables -A INPUT -i wg0 -p tcp --dport 5900 -m conntrack --ctstate NEW -j ACCEP
 # INPUT rule to a host socket, not FORWARD; hosts/server/overlay/usr/local/bin/win11-vm
 # binds the forward to 10.0.0.4 alone for the same reason as VNC.
 iptables -A INPUT -i wg0 -p tcp --dport 3389 -m conntrack --ctstate NEW -j ACCEPT
+# The guest's screen: qemu's VNC server on 10.0.0.4:5901 (TLS plus a password, see
+# win11-vm), wg0 only like 5900.
+iptables -A INPUT -i wg0 -p tcp --dport 5901 -m conntrack --ctstate NEW -j ACCEPT
+
+# Not in the book's example: wg1, the egress tunnel to nextcloud that carries only the
+# Windows 11 guest's traffic (2026-10-21; routing in /usr/local/sbin/win11vm-route).
+# Nothing may arrive on wg1 except replies, and nothing is forwarded to or from it.
+# mangle, not filter: PREROUTING runs before docker's DNAT, so a NEW packet from wg1
+# cannot reach a published container port by way of FORWARD, and docker never touches
+# these chains. mangle is not flushed above, hence delete-then-add so a rerun does not
+# stack copies. wg1.conf's PostUp adds the same drops to filter; those come and go with
+# the interface, these hold regardless.
+for r in "PREROUTING -i wg1 -m conntrack ! --ctstate ESTABLISHED,RELATED -j DROP" \
+         "FORWARD -i wg1 -j DROP" \
+         "FORWARD -o wg1 -j DROP"; do
+    iptables -t mangle -D $r 2>/dev/null
+    iptables -t mangle -A $r
+done
 
 # Everything else is dropped by policy (no LOG rule -- the book's example logs
 # every dropped packet, which on an internet-facing host is a constant stream

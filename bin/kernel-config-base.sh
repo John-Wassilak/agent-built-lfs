@@ -228,6 +228,21 @@ kernel_config_shared() {
     # in the running kernel's own .config before adding this.
     $K --module  TUN
 
+    # --- added 2026-10-22: transparent hugepages, madvise only -----------------
+    # defconfig leaves TRANSPARENT_HUGEPAGE unset (confirmed in server's
+    # /boot/config-7.1.8). Wanted first for server's qemu guest: qemu madvise()s
+    # guest RAM with MADV_HUGEPAGE, so 2M pages back it and each EPT walk is
+    # shorter. A generic memory-management feature, not hardware, so it is here.
+    #
+    # MADVISE, not ALWAYS (mm/Kconfig's default): only processes that ask get huge
+    # pages, so nothing else changes footprint and khugepaged has little to scan.
+    # SHMEM_HUGE_ADVISE: the same rule for the internal shmem mount, which backs
+    # memfd -- qemu's guest RAM is a shared memfd once virtio-fs is in use, and
+    # under the NEVER default that RAM would get no huge pages at all.
+    $K --enable  TRANSPARENT_HUGEPAGE
+    $K --enable  TRANSPARENT_HUGEPAGE_MADVISE
+    $K --enable  TRANSPARENT_HUGEPAGE_SHMEM_HUGE_ADVISE
+
     # Resolve dependencies non-interactively.
 }
 

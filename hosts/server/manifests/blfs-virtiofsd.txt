@@ -1,0 +1,2 @@
+/usr/libexec/virtiofsd
+/usr/share/qemu/vhost-user/50-virtiofsd.json

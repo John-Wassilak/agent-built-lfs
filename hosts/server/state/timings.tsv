@@ -468,3 +468,5 @@ blfs-qemu	native	396.7	0
 ch10-kernel	native	1299.8	0
 blfs-nvidia-470xx	native	1425.2	0
 blfs-iptables	native	16.8	0
+blfs-libcap-ng	native	161.5	0
+blfs-virtiofsd	native	95.6	0

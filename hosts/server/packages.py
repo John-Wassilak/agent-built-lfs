@@ -805,4 +805,13 @@ PACKAGES = BASE + [
     hand(271, "libtpms", "libtpms-v0.10.2.tar.gz", "libtpms-0.10.2 (hand-authored, shared recipe)"),
     hand(272, "swtpm", "swtpm-v0.10.2.tar.gz", "swtpm-0.10.2 (hand-authored, shared recipe)"),
     book(273, "qemu", "postlfs/qemu.html", "qemu-11.1.1.tar.xz"),
+
+    # virtio-fs, to share /mnt/big_drive/vm/share with the Windows guest (operator,
+    # 2026-10-22). qemu 8.0 removed its C virtiofsd; the Rust one is the replacement,
+    # and it links libcap-ng. Neither is in BLFS (BLFS lists libcap-ng only as an
+    # optional dep of qemu and cifs-utils); both are in Arch, so hand() recipes.
+    # Samba with slirp's smb= was the alternative, a much larger package for the same
+    # result. The guest side is virtio-win's viofs driver plus WinFsp.
+    hand(274, "libcap-ng", "libcap-ng-v0.9.6.tar.gz", "libcap-ng-0.9.6 (hand-authored, shared recipe)"),
+    hand(275, "virtiofsd", "virtiofsd-v1.14.0.tar.gz", "virtiofsd-1.14.0 (hand-authored, shared recipe)"),
 ]

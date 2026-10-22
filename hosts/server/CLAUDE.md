@@ -47,4 +47,7 @@ Things worth knowing before changing anything here:
   guest only over wg0: qemu forwards `10.0.0.4:3389`, and the firewall accepts 3389 on
   wg0 alone (`blfs-overrides.json` page `blfs-iptables` block 2; the recipe is
   generated). USB devices pass through with `win11-vm usb-attach`. The CPU has no VT-d,
-  so do not propose GPU or PCI passthrough.
+  so do not propose GPU or PCI passthrough. Since 2026-10-21/22: it runs as `win11vm`
+  from `win11-vm@run`, its internet traffic leaves only through wg1
+  (`win11vm-route`), its console is VNC on 10.0.0.4:5901, and `/mnt/big_drive/vm-share`
+  is shared to it as `Z:` through virtiofsd (seq 274-275).

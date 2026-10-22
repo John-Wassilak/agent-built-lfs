@@ -1,0 +1,50 @@
+#!/bin/bash
+# SPDX-License-Identifier: MIT
+# agent-built-lfs -- policy routing that sends the Windows 11 guest's traffic out wg1
+# Copyright (c) 2026 John Wassilak
+
+# Usage (root): win11vm-route up | down
+#
+# The guest uses qemu's user-mode network (slirp), so everything it sends leaves
+# through sockets owned by the qemu process, which runs as win11vm. These rules
+# route by that uid:
+#
+#   1000  win11vm, tcp from port 3389 to the laptop (10.0.0.2)  -> main (wg0)
+#         RDP replies only; nothing else from win11vm reaches wg0.
+#   1001  win11vm                                               -> table 51
+#   1002  win11vm                                               -> prohibit
+#
+# Table 51 holds `default dev wg1` (added by wg1.conf PostUp, gone while wg1 is
+# down) and the `unreachable default` set here, which stays. With wg1 down the
+# guest has no route at all; it never falls back to enp6s0.
+#
+# The `local` table (pref 0) still comes first, so the guest reaches host
+# addresses: slirp's DNS forwarder (10.0.2.3) and 10.0.2.2 both land on
+# server's loopback. win11-vm@.service gives qemu its own resolv.conf so DNS
+# goes to a public resolver through wg1 instead of server's resolved.
+set -euo pipefail
+
+TABLE=51
+LAPTOP=10.0.0.2
+uid=$(id -u win11vm)
+
+down() {
+    for pref in 1000 1001 1002; do
+        while ip rule del pref "$pref" 2>/dev/null; do :; done
+    done
+    ip route del unreachable default metric 4096 table "$TABLE" 2>/dev/null || true
+}
+
+up() {
+    down
+    ip route add unreachable default metric 4096 table "$TABLE"
+    ip rule add pref 1000 uidrange "$uid-$uid" to "$LAPTOP" ipproto tcp sport 3389 lookup main
+    ip rule add pref 1001 uidrange "$uid-$uid" lookup "$TABLE"
+    ip rule add pref 1002 uidrange "$uid-$uid" prohibit
+}
+
+case "${1:-}" in
+    up)   up ;;
+    down) down ;;
+    *)    echo "usage: win11vm-route up|down" >&2; exit 2 ;;
+esac

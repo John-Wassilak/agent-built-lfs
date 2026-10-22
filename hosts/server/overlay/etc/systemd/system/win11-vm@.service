@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: MIT
+# agent-built-lfs -- Windows 11 guest as a unit: win11-vm@install or win11-vm@run
+# Copyright (c) 2026 John Wassilak
+#
+# Runs as win11vm, whose traffic win11vm-route sends out wg1 to nextcloud. Do not
+# start both instances at once; qemu's qcow2 lock refuses the second anyway.
+#
+# BindReadOnlyPaths: slirp forwards the guest's DNS (10.0.2.3) to the nameserver in
+# the host's /etc/resolv.conf. Here that is 127.0.0.53, and resolved would resolve
+# over the home connection. Inside this unit qemu sees /etc/win11vm/resolv.conf
+# instead, a public resolver, which it reaches through wg1 like any other traffic.
+#
+# ExecStop sends the ACPI power button and then waits for qemu to exit. Without the
+# wait, systemd would kill qemu as soon as ExecStop returned, mid-shutdown.
+
+[Unit]
+Description=Windows 11 guest (%i)
+Requires=win11vm-route.service
+After=win11vm-route.service wg-quick@wg0.service wg-quick@wg1.service
+Wants=wg-quick@wg0.service wg-quick@wg1.service
+
+[Service]
+Type=simple
+User=win11vm
+Group=win11vm
+Environment=HOME=/var/lib/win11vm
+BindReadOnlyPaths=/etc/win11vm/resolv.conf:/etc/resolv.conf
+ExecStart=/usr/local/bin/win11-vm %i
+ExecStop=/bin/sh -c '/usr/local/bin/win11-vm stop; while kill -0 $MAINPID 2>/dev/null; do sleep 1; done'
+TimeoutStopSec=180
+KillMode=mixed
+
+[Install]
+WantedBy=multi-user.target

@@ -3,26 +3,46 @@
 # agent-built-lfs -- Windows 11 guest launcher for `server` (qemu + KVM + swtpm)
 # Copyright (c) 2026 John Wassilak
 
-# Usage, as john (in the kvm group):
+# Usage, as win11vm (sudo -u win11vm -H win11-vm ...):
 #   win11-vm create              disk image, UEFI vars, TPM state  (once)
-#   win11-vm install WIN11.iso   boot the installer, in a window on the X display
-#   win11-vm run                 headless; reach it over RDP at 10.0.0.4:3389 on wg0
-#   win11-vm stop                ACPI power button, so Windows shuts down cleanly
+#   win11-vm install [WIN11.iso] boot the installer (default $VM/install.iso), virtio CD attached
+#   win11-vm run                 boot Windows, virtio CD attached
+#   win11-vm stop                shut Windows down (guest agent, else ACPI power button)
 #   win11-vm usb-attach VID:PID  hand a USB device on this host to the running guest
 #   win11-vm usb-detach VID:PID  give it back
 #
+# Both modes put the guest's screen on VNC at 10.0.0.4:5901 (wg0 only; TLS, and
+# the password in $VM/vnc.pass, which create writes) and RDP at 10.0.0.4:3389.
+#
+# install and run are normally started as systemd units, win11-vm@install and
+# win11-vm@run, which give qemu its own resolv.conf (see the unit).
+#
 # Set WIN11_USB="VID:PID[ VID:PID...]" to attach devices at start instead. IDs are
 # the hex pair lsusb prints, e.g. 0bc2:ab38.
+#
+# Why win11vm and not john: the guest's internet traffic leaves through qemu's own
+# sockets, and /usr/local/sbin/win11vm-route sends that uid's traffic out wg1 to
+# nextcloud, with no fallback to enp6s0. Run as anyone else, the guest would go out
+# the home connection.
 #
 # Host-specific, hence hosts/server/overlay: it names /mnt/big_drive (sda2; / has
 # 30G free and Windows 11 wants ~64G), wg0's address, and a CPU/RAM split sized
 # for this i5-2500K (4 cores) with 31G of RAM. The packages are packages.py seq
 # 268-273, and the kernel side is KVM/KVM_INTEL in kernel-config.sh.
 #
-# One-time setup, as root: `install -d -o john -g john /mnt/big_drive/vm`.
+# One-time setup, as root: `useradd -r -m -d /var/lib/win11vm -s /sbin/nologin -U
+# -G kvm win11vm` and `install -d -m 750 -o win11vm -g win11vm /mnt/big_drive/vm`.
 # Put the virtio-win driver ISO (Fedora's stable virtio-win.iso, the same file
 # the AUR `virtio-win` package installs) in that directory. Windows setup needs
 # its viostor driver before it can see the virtio disk.
+#
+# The file share is /mnt/big_drive/vm-share, a sibling of $VM because $VM is 750
+# and john has to reach the share. Set up as root, once:
+#   install -d -m 2770 -o win11vm -g john /mnt/big_drive/vm-share
+#   setfacl -m u:win11vm:rwx,u:john:rwx,m:rwx \
+#           -d -m u:win11vm:rwx,u:john:rwx,g::rwx,m:rwx /mnt/big_drive/vm-share
+# The default ACL is what lets each side write what the other created: virtiofsd
+# runs as win11vm, so the guest's files are win11vm's, and john's are john's.
 #
 # Hardware choices:
 #   q35 + smm=on + edk2 secure-code firmware -- UEFI with Secure Boot, which
@@ -34,10 +54,21 @@
 #     with them (KVM_HYPERV is =y in the kernel config). The guest sees the real
 #     i5-2500K, which Windows 11 setup calls unsupported. Bypassing that is a
 #     registry key during setup; see BUILD-REPORT.md 2026-10-21.
+#     hv_tlbflush, hv_ipi (2026-10-22): remote TLB flushes and IPIs become one
+#     hypercall instead of an exit per target vCPU, which matters most on Sandy
+#     Bridge with no APICv. hv_runtime and hv_reset are cheap reporting/reset
+#     hooks Windows uses when present. All four checked accepted under KVM here.
 #   virtio-blk disk, virtio-net NIC -- drivers from the virtio-win ISO.
+#   virtio-fs (vhost-user-fs-pci, tag "share") -- $SHARE as a drive in Windows,
+#     served by virtiofsd (packages.py seq 275) running as win11vm in its own
+#     namespace sandbox. vhost-user needs guest RAM the daemon can map, hence the
+#     shared memfd backend. Windows side: viofs driver and VirtioFsSvc from
+#     virtio-win, plus WinFsp; see BUILD-REPORT.md 2026-10-22.
 #   -netdev user (libslirp) with one hostfwd, bound to 10.0.0.4 only, so RDP
 #     exists on wg0 and nowhere else. The firewall rule in blfs-iptables.sh is
 #     the second layer. If wg0 is down at start, qemu cannot bind and exits.
+#     ipv6=off: wg1 carries IPv4 only and server blocks v6 outright, so the guest
+#     is not offered v6 to try.
 #   usb-host on the guest's xHCI -- USB passthrough through libusb, which works
 #     without VT-d because it forwards USB transfers, not a PCI device. The guest
 #     sees the real device, so a vendor driver (a NAS-style drive with its own
@@ -60,6 +91,10 @@ VARS=$VM/win11-vars.fd
 TPM=$VM/tpm
 VIRTIO_ISO=$VM/virtio-win.iso
 MONITOR=$VM/monitor.sock
+QGA=$VM/qga.sock
+VNC_PASS=$VM/vnc.pass
+SHARE=${WIN11_SHARE:-/mnt/big_drive/vm-share}
+VFS_SOCK=$VM/virtiofs.sock
 
 die() { echo "win11-vm: $*" >&2; exit 1; }
 
@@ -67,6 +102,18 @@ preflight() {
     [ -c /dev/kvm ] || die "/dev/kvm missing -- is kvm_intel loaded (kernel-config.sh KVM section)?"
     [ -r /dev/kvm ] && [ -w /dev/kvm ] || die "no access to /dev/kvm -- add $(id -un) to the kvm group and log in again"
     [ -d "$VM" ] && [ -w "$VM" ] || die "$VM is not writable -- as root: install -d -o $(id -un) -g $(id -gn) $VM"
+}
+
+# VNC auth is DES, so qemu uses only the first 8 characters; 8 random ones, then.
+# No trailing newline: qemu reads the file whole and it would become part of it.
+vnc_password() {
+    [ -e "$VNC_PASS" ] && return 0
+    local pw
+    # tr gets SIGPIPE once head has its 8; under pipefail that is a failure.
+    pw=$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom 2>/dev/null | head -c 8) || true
+    [ ${#pw} -eq 8 ] || die "could not generate a VNC password"
+    (umask 077; printf %s "$pw" >"$VNC_PASS")
+    echo "VNC password written to $VNC_PASS"
 }
 
 create() {
@@ -80,6 +127,7 @@ create() {
     swtpm_setup --create-config-files skip-if-exist
     swtpm_setup --tpm2 --tpmstate "$TPM" \
                 --create-ek-cert --create-platform-cert --lock-nvram
+    vnc_password
 }
 
 start_tpm() {
@@ -95,31 +143,55 @@ start_tpm() {
     die "swtpm did not create $TPM/swtpm.sock (see $TPM/swtpm.log)"
 }
 
+# virtiofsd serves one vhost-user connection and exits when qemu closes it, so it
+# needs no stop of its own. Backgrounded before qemu's exec, it stays in the unit's
+# cgroup and is cleaned up with it. Its log goes to the journal with qemu's.
+start_virtiofsd() {
+    [ -d "$SHARE" ] && [ -w "$SHARE" ] || die "$SHARE is not writable -- see the one-time setup above"
+    rm -f "$VFS_SOCK"
+    /usr/libexec/virtiofsd --socket-path="$VFS_SOCK" --shared-dir="$SHARE" \
+                           --sandbox=namespace --cache=auto &
+    for _ in 1 2 3 4 5 6 7 8 9 10; do
+        [ -S "$VFS_SOCK" ] && return 0
+        sleep 0.2
+    done
+    die "virtiofsd did not create $VFS_SOCK"
+}
+
 qemu_vm() {
     preflight
     [ -e "$DISK" ] || die "no $DISK -- run 'win11-vm create' first"
     # Validate here: a die inside $(usb_args) would only end that subshell.
     for d in ${WIN11_USB:-}; do usb_id "$d"; done
+    vnc_password
     start_tpm
+    start_virtiofsd
     exec qemu-system-x86_64 \
         -name win11 \
         -machine q35,smm=on,accel=kvm \
         -global driver=cfi.pflash01,property=secure,value=on \
         -drive if=pflash,format=raw,unit=0,readonly=on,file="$FW_CODE" \
         -drive if=pflash,format=raw,unit=1,file="$VARS" \
-        -cpu host,hv_relaxed,hv_vapic,hv_spinlocks=0x1fff,hv_time,hv_vpindex,hv_synic,hv_stimer,hv_frequencies \
+        -cpu host,hv_relaxed,hv_vapic,hv_spinlocks=0x1fff,hv_time,hv_vpindex,hv_synic,hv_stimer,hv_frequencies,hv_tlbflush,hv_ipi,hv_runtime,hv_reset \
         -smp "$CPUS",sockets=1,cores="$CPUS",threads=1 \
         -m "$MEM" \
+        -object memory-backend-memfd,id=mem0,size="$MEM",share=on \
+        -numa node,memdev=mem0 \
         -rtc base=localtime \
         -chardev socket,id=chrtpm,path="$TPM/swtpm.sock" \
         -tpmdev emulator,id=tpm0,chardev=chrtpm \
         -device tpm-tis,tpmdev=tpm0 \
         -drive file="$DISK",if=none,id=disk0,format=qcow2,cache=none,aio=native,discard=unmap \
         -device virtio-blk-pci,drive=disk0,bootindex=1 \
-        -netdev user,id=net0,hostfwd=tcp:"$RDP_ADDR":3389-:3389 \
+        -netdev user,id=net0,ipv6=off,hostfwd=tcp:"$RDP_ADDR":3389-:3389 \
         -device virtio-net-pci,netdev=net0 \
         -device qemu-xhci -device usb-tablet \
         -monitor unix:"$MONITOR",server,nowait \
+        -device virtio-serial-pci \
+        -chardev socket,id=qga0,path="$QGA",server=on,wait=off \
+        -device virtserialport,chardev=qga0,name=org.qemu.guest_agent.0 \
+        -chardev socket,id=vfs0,path="$VFS_SOCK" \
+        -device vhost-user-fs-pci,chardev=vfs0,tag=share \
         $(usb_args) \
         "$@"
 }
@@ -137,6 +209,28 @@ usb_args() {
     done
 }
 
+# Shut Windows down. The guest agent (qemu-ga, from virtio-win-guest-tools) does a
+# forced shutdown, so an app sitting on "close apps?" cannot hold it up; the ACPI
+# power button can be ignored that way, and was, twice on 2026-10-21. Without the
+# agent (tools not installed yet) this falls back to the power button.
+shutdown_guest() {
+    if [ -S "$QGA" ] && python3 -c 'import json,socket,sys
+s=socket.socket(socket.AF_UNIX); s.settimeout(3); s.connect(sys.argv[1])
+s.sendall(json.dumps({"execute":"guest-sync","arguments":{"id":4242}}).encode()+b"\n")
+buf=b""
+while b"\n" not in buf:
+    c=s.recv(4096)
+    if not c: sys.exit(1)
+    buf+=c
+if json.loads(buf.splitlines()[0]).get("return")!=4242: sys.exit(1)
+s.sendall(json.dumps({"execute":"guest-shutdown","arguments":{"mode":"powerdown"}}).encode()+b"\n")' "$QGA" 2>/dev/null; then
+        echo "win11-vm: guest agent shutdown sent"
+    else
+        echo "win11-vm: no guest agent answer; pressing the ACPI power button"
+        monitor system_powerdown
+    fi
+}
+
 monitor() {
     [ -S "$MONITOR" ] || die "no monitor socket at $MONITOR -- is the VM running?"
     python3 -c 'import socket,sys,time
@@ -149,18 +243,36 @@ except socket.timeout:
 print("\n".join(l for l in out.splitlines() if l and not l.startswith(("QEMU ","(qemu)"))))' "$MONITOR" "$1"
 }
 
+# The guest's screen, on wg0 only like RDP and the host's own x0vncserver (5900),
+# and with the same protections: VeNCrypt anonymous TLS plus a VNC password, which
+# TigerVNC's viewer negotiates as TLSVnc. The firewall accepts 5901 on wg0 alone.
+#
+# virtio-vga, not std: qemu's VNC server passes the viewer's SetDesktopSize on to
+# the display device, and std VGA has no way to tell the guest, so Windows stayed
+# at its boot resolution under Microsoft Basic Display Adapter. virtio-vga hands it
+# to viogpudo (the guest tools stage it), and the VioGpu resolution service
+# (vgpusrv.exe -i, from viogpudo\w11\amd64 on the virtio-win ISO) applies it. The
+# VGA part keeps firmware and setup visible before that driver loads.
+VNC=(-vga none -device virtio-vga
+     -object tls-creds-anon,id=vnctls,endpoint=server
+     -object secret,id=vncpw,file="$VNC_PASS",format=raw
+     -display vnc="$RDP_ADDR":1,tls-creds=vnctls,password-secret=vncpw)
+
 case "${1:-}" in
     create)  create ;;
     install)
-        iso=${2:-}
-        [ -n "$iso" ] && [ -r "$iso" ] || die "usage: win11-vm install /path/to/Win11.iso"
+        iso=${2:-$VM/install.iso}
+        [ -r "$iso" ] || die "cannot read $iso -- usage: win11-vm install [/path/to/Win11.iso]"
         [ -r "$VIRTIO_ISO" ] || die "no $VIRTIO_ISO -- setup cannot see a virtio disk without it"
-        qemu_vm -vga std \
+        qemu_vm "${VNC[@]}" \
                 -drive file="$iso",media=cdrom,readonly=on \
                 -drive file="$VIRTIO_ISO",media=cdrom,readonly=on
         ;;
-    run)     qemu_vm -vga std -display none ;;
-    stop)    monitor system_powerdown ;;
+    run)
+        [ -r "$VIRTIO_ISO" ] || die "no $VIRTIO_ISO"
+        qemu_vm "${VNC[@]}" -drive file="$VIRTIO_ISO",media=cdrom,readonly=on
+        ;;
+    stop)    shutdown_guest ;;
     usb-attach)
         usb_id "${2:-}"
         monitor "device_add usb-host,vendorid=0x$VID,productid=0x$PID,id=usb-$VID-$PID"

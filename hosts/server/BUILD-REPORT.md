@@ -5819,3 +5819,98 @@ was left unchanged. `systemd-tmpfiles --create --dry-run` now reports zero unsaf
 transitions. `BOOTSTRAP.md` step 5 now checks `/`'s owner before the first boot, since
 `rsync -a` from a trailing-slash source copies the source directory's owner onto the
 destination root.
+
+### Guest egress through wg1, VNC console, win11vm user (2026-10-21)
+
+This entry records work that was committed late, from the files themselves.
+- **win11vm user**: the guest now runs as `win11vm`, not john, from `win11-vm@.service`
+  (`win11-vm@install` or `win11-vm@run`). Its images stay on `/mnt/big_drive/vm`, now
+  `win11vm:win11vm 750`.
+- **Egress**: `/usr/local/sbin/win11vm-route` (run by `win11vm-route.service`) routes the
+  `win11vm` uid's traffic to table 51. That table's default goes out wg1 to nextcloud,
+  with an `unreachable` fallback, so the guest never leaves through enp6s0. RDP replies
+  to laptop (10.0.0.2) are the one exception, and go out wg0. The unit binds
+  `/etc/win11vm/resolv.conf` (Quad9) over `/etc/resolv.conf`, so slirp's DNS forwarder
+  also goes through wg1 instead of resolved.
+- **Firewall** (host override, block 2): mangle-table drops for wg1 (nothing NEW in,
+  nothing forwarded either way) and tcp/5901 on wg0 for the guest's VNC console.
+- **Launcher**: VNC on `10.0.0.4:5901` with anonymous TLS and a password in
+  `$VM/vnc.pass`. `stop` uses the guest agent (qemu-ga) before falling back to the ACPI
+  button.
+
+## Windows guest: display resize, cleanup, Hyper-V flags, virtio-fs share, THP (2026-10-22)
+
+**Display resize over VNC.** The guest stayed at its boot resolution when the viewer
+window changed size. `-vga std` gives Windows the Bochs VGA device (1234:1111) on
+Microsoft Basic Display Adapter, which has no path for qemu's resize hint. The launcher
+now uses `-vga none -device virtio-vga`. viogpudo was already in the guest's driver store
+from the guest tools and bound when the device appeared. Resize still did not work until
+the VioGpu resolution service was installed: `vgpusrv.exe -i` from
+`viogpudo\w11\amd64` on the virtio-win ISO. That service runs from the CD path (`D:`),
+which `win11-vm run` always attaches.
+
+**Guest cleanup.** Done through the guest agent (`guest-exec` runs as SYSTEM). The
+edition is Enterprise Evaluation, build 26300, so the policies below take effect:
+- **Policies**: consumer features, tips, Bing and web search, Copilot, Recall,
+  OneDrive, the advertising ID and Edge startup boost/background mode are off.
+  Telemetry is at 0. The Widgets news policy key (`Policies\Microsoft\Dsh`) refused the
+  write ("unauthorized"), which no longer matters because the Widgets package was
+  removed.
+- **Services disabled**: DiagTrack, dmwappushservice, SysMain, WSearch, lfsvc,
+  MapsBroker, WSAIFabricSvc, PcaSvc, InventorySvc, SSDPSRV, WFDSConMgrSvc, TrkWks,
+  iphlpsvc, RetailDemo and four Xbox services.
+- **Scheduled tasks**: nine telemetry and appraiser tasks are disabled. `Microsoft
+  Compatibility Appraiser` and `ProgramDataUpdater` do not exist on this build.
+- **Apps**: twenty consumer appx packages were removed and deprovisioned.
+- **Power and display**: High performance plan, hibernation and fast startup off,
+  visual effects set to best performance.
+- **Left on**: Defender (Tamper Protection is on), Windows Update and RDP.
+
+**Hyper-V enlightenments.** Added `hv_tlbflush`, `hv_ipi`, `hv_runtime` and `hv_reset`.
+qemu accepted all four under KVM in a throwaway instance (`-S`, killed by timeout, no
+error) before the launcher changed. The running guest carries them.
+
+**virtio-fs share** (`packages.py` seq 274-275). The operator wanted a small share near
+the VM files.
+- **Packages**: qemu 8.0 removed its C virtiofsd. The Rust virtiofsd 1.14.0 links
+  libcap-ng 0.9.6. Neither is in BLFS/SLFS/GLFS 13.1, so both are hand-authored shared
+  recipes. Samba with slirp's `smb=` was the alternative, a much larger package for the
+  same result.
+- **Build**: libcap-ng took 2.7 min (45 files). virtiofsd took 1.6 min; cargo fetched
+  the Cargo.lock crates with `--locked`, and `CARGO_HOME` stayed in the build tree. It
+  installs `/usr/libexec/virtiofsd` and `/usr/share/qemu/vhost-user/50-virtiofsd.json`.
+  `ldd` shows libseccomp and libcap-ng. Both extractors report zero drift.
+- **Directory**: `/mnt/big_drive/vm-share`, a sibling of `vm/`, because `vm/` is 750 and
+  john must reach the share. It is `win11vm:john 2770`, with access and default ACLs
+  giving rwx to both users, so each side can write what the other created.
+- **Launcher**: starts virtiofsd as win11vm with `--sandbox=namespace --cache=auto`
+  before qemu, and adds `vhost-user-fs-pci` (tag `share`). Guest RAM moves to
+  `memory-backend-memfd,share=on` with one NUMA node, because vhost-user needs memory
+  the daemon can map. Startup warnings are expected for an unprivileged daemon: it cannot
+  set uid/gid 0 in the sandbox, and file handles are disabled.
+- **Guest**: WinFsp 2.1 (`winfsp-2.1.25156.msi`; the Authenticode status was Valid,
+  signer NAVIMATICS LLC) installed silently. VirtioFsSvc was already installed by the
+  guest tools as demand-start and is now auto-start.
+- **Verified**: the share mounts as `Z:`. A file written on server was read in the
+  guest, and a file written in the guest appeared on server as `win11vm:john` with the
+  ACL.
+
+**Transparent hugepages** (`bin/kernel-config-base.sh`). `TRANSPARENT_HUGEPAGE=y` with
+`TRANSPARENT_HUGEPAGE_MADVISE` and `TRANSPARENT_HUGEPAGE_SHMEM_HUGE_ADVISE`.
+- **Why**: qemu madvises guest RAM with `MADV_HUGEPAGE`. With the memfd backend that
+  RAM is shmem, which the NEVER default would leave on 4K pages.
+- **Where**: the shared base, because THP is a generic memory-management feature;
+  laptop gets it at its next kernel build.
+- **Dry run**: against the 7.1.8 tarball, both gates passed, and `diffconfig` against
+  `/boot/config-7.1.8` shows THP symbols only.
+- **Rebuild**: THP is core mm, so this is a full rebuild and a reboot, which means
+  nvidia-470xx gets rebuilt too. The current kernel is saved as `/boot/*.pre-thp` and
+  `/lib/modules/7.1.8.pre-thp` (which holds the five nvidia modules).
+  `ch10-kernel --force` followed by `blfs-nvidia-470xx --force` was still running when
+  this was committed.
+
+**Not yet done:** the kernel/nvidia build result, the reboot, then the checks:
+`/sys/kernel/mm/transparent_hugepage/enabled` and `shmem_enabled` reading `[madvise]`
+and `[advise]`, `AnonHugePages`/`ShmemHugePages` in `/proc/meminfo` rising with the
+guest running, and `nvidia-smi -L`. The guest's time zone is Pacific while `-rtc
+base=localtime` hands it Central wall time, so its UTC is 2 h off; not changed yet.
