@@ -5906,10 +5906,12 @@ the VM files.
 - **Rebuild**: THP is core mm, so this is a full rebuild and a reboot, which means
   nvidia-470xx gets rebuilt too. The current kernel is saved as `/boot/*.pre-thp` and
   `/lib/modules/7.1.8.pre-thp` (which holds the five nvidia modules).
-  `ch10-kernel --force` followed by `blfs-nvidia-470xx --force` was still running when
-  this was committed.
+  `ch10-kernel --force` and then `blfs-nvidia-470xx --force` both succeeded. The
+  installed `/boot/config-7.1.8` is byte-identical to the dry run. All five nvidia
+  modules are back under `/lib/modules/7.1.8`, with vermagic `7.1.8 SMP preempt
+  mod_unload`, the same as in-tree `kvm.ko`.
 
-**Not yet done:** the kernel/nvidia build result, the reboot, then the checks:
+**Not yet done:** the reboot, then the checks:
 `/sys/kernel/mm/transparent_hugepage/enabled` and `shmem_enabled` reading `[madvise]`
 and `[advise]`, `AnonHugePages`/`ShmemHugePages` in `/proc/meminfo` rising with the
 guest running, and `nvidia-smi -L`. The guest's time zone is Pacific while `-rtc

@@ -406,3 +406,5 @@ blfs-nvidia-470xx
 blfs-iptables
 blfs-libcap-ng
 blfs-virtiofsd
+ch10-kernel
+blfs-nvidia-470xx
