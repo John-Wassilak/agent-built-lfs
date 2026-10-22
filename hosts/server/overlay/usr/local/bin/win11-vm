@@ -61,9 +61,14 @@
 #   virtio-blk disk, virtio-net NIC -- drivers from the virtio-win ISO.
 #   virtio-fs (vhost-user-fs-pci, tag "share") -- $SHARE as a drive in Windows,
 #     served by virtiofsd (packages.py seq 275) running as win11vm in its own
-#     namespace sandbox. vhost-user needs guest RAM the daemon can map, hence the
-#     shared memfd backend. Windows side: viofs driver and VirtioFsSvc from
+#     namespace sandbox. vhost-user needs guest RAM the daemon can map, hence a
+#     shared file backend. Windows side: viofs driver and VirtioFsSvc from
 #     virtio-win, plus WinFsp; see BUILD-REPORT.md 2026-10-22.
+#   Guest RAM is a file in $RAM_DIR, the unit's private tmpfs mounted huge=advise,
+#     with align=2M, so it is backed by transparent hugepages (2026-10-22). The
+#     memfd backend got none: qemu maps it 4K-aligned, one page off a 2M boundary,
+#     and a shmem mapping is THP-eligible only when PMD-aligned to its file offset.
+#     Run outside the unit (no $RAM_DIR), it falls back to memfd on 4K pages.
 #   -netdev user (libslirp) with one hostfwd, bound to 10.0.0.4 only, so RDP
 #     exists on wg0 and nowhere else. The firewall rule in blfs-iptables.sh is
 #     the second layer. If wg0 is down at start, qemu cannot bind and exits.
@@ -95,6 +100,7 @@ QGA=$VM/qga.sock
 VNC_PASS=$VM/vnc.pass
 SHARE=${WIN11_SHARE:-/mnt/big_drive/vm-share}
 VFS_SOCK=$VM/virtiofs.sock
+RAM_DIR=/run/win11vm-ram
 
 die() { echo "win11-vm: $*" >&2; exit 1; }
 
@@ -158,6 +164,17 @@ start_virtiofsd() {
     die "virtiofsd did not create $VFS_SOCK"
 }
 
+# The guest RAM backend: the hugepage-capable file when the unit has mounted $RAM_DIR,
+# else memfd. discard-data: nothing needs the RAM image after qemu exits.
+ram_backend() {
+    if [ -d "$RAM_DIR" ] && [ -w "$RAM_DIR" ]; then
+        echo "memory-backend-file,id=mem0,size=$MEM,share=on,mem-path=$RAM_DIR/win11,align=2M,discard-data=on"
+    else
+        echo "win11-vm: no $RAM_DIR, guest RAM on memfd without hugepages" >&2
+        echo "memory-backend-memfd,id=mem0,size=$MEM,share=on"
+    fi
+}
+
 qemu_vm() {
     preflight
     [ -e "$DISK" ] || die "no $DISK -- run 'win11-vm create' first"
@@ -175,7 +192,7 @@ qemu_vm() {
         -cpu host,hv_relaxed,hv_vapic,hv_spinlocks=0x1fff,hv_time,hv_vpindex,hv_synic,hv_stimer,hv_frequencies,hv_tlbflush,hv_ipi,hv_runtime,hv_reset \
         -smp "$CPUS",sockets=1,cores="$CPUS",threads=1 \
         -m "$MEM" \
-        -object memory-backend-memfd,id=mem0,size="$MEM",share=on \
+        -object "$(ram_backend)" \
         -numa node,memdev=mem0 \
         -rtc base=localtime \
         -chardev socket,id=chrtpm,path="$TPM/swtpm.sock" \

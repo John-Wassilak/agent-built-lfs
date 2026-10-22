@@ -5911,8 +5911,43 @@ the VM files.
   modules are back under `/lib/modules/7.1.8`, with vermagic `7.1.8 SMP preempt
   mod_unload`, the same as in-tree `kvm.ko`.
 
-**Not yet done:** the reboot, then the checks:
-`/sys/kernel/mm/transparent_hugepage/enabled` and `shmem_enabled` reading `[madvise]`
-and `[advise]`, `AnonHugePages`/`ShmemHugePages` in `/proc/meminfo` rising with the
-guest running, and `nvidia-smi -L`. The guest's time zone is Pacific while `-rtc
-base=localtime` hands it Central wall time, so its UTC is 2 h off; not changed yet.
+**After the reboot** (11:55):
+- **Kernel**: `enabled` reads `[madvise]`, `shmem_enabled` `[advise]`, `defrag`
+  `[madvise]`. Of the mTHP sizes only `hugepages-2048kB` is on, set to `inherit`.
+- **nvidia**: `nvidia-smi -L` lists the GTX 770. The `Unpatched return thunk in use`
+  WARN at module load is the known one; it also fired on the previous boot.
+- **Errors**: the ACPI `_GTF.DSSP` set and `00:1b.0 Cannot probe codecs`, both
+  known. No failed units. The HDMI codec on `01:00.1` probed this boot (card 1,
+  `codec#0`); the previous boot logged `Cannot probe codecs` on it.
+- **The guest got no hugepages.** With Windows booted (6.9 GB RSS), `ShmemPmdMapped`
+  was 0. The memfd VMA had `hg` in VmFlags, so qemu's `MADV_HUGEPAGE` arrived, but
+  `THPeligible: 0`. It started at `0x7fab23fff000`, one 4K page below a 2M boundary.
+  A shmem mapping gets PMD pages only when its address and file offset agree modulo
+  2M. qemu aligns a fd-backed RAM block to the fd's page size, 4K for memfd, and
+  `memory-backend-memfd` has no `align` property.
+- **Measured** with throwaway qemu instances (512M, `prealloc=on`, `-S`): memfd gave
+  `THPeligible: 0` and `ShmemPmdMapped: 0`. `memory-backend-file` with `align=2M` on
+  a tmpfs mounted `huge=advise` gave `THPeligible: 1` and all 524288 kB PMD-mapped.
+  `/dev/shm` would not do: `shmem_enabled` governs only the internal shm mount, and
+  a tmpfs mount takes its own `huge=` (default never).
+- **Fix**: `win11-vm@.service` mounts a private tmpfs with
+  `TemporaryFileSystem=/run/win11vm-ram:huge=advise,size=16G,mode=1777`. The launcher
+  puts guest RAM in `/run/win11vm-ram/win11` with `align=2M,discard-data=on`, and falls
+  back to memfd (with a warning) when run outside the unit. The size is explicit
+  because systemd defaults this mount to 10% of RAM (3.1 GiB here). The first attempt
+  used `size=50%%`, and this directive expands no specifiers, so tmpfs got `50%%` and
+  the unit failed at NAMESPACE. That failure took ExecStop down too, so systemd
+  SIGTERMed the running qemu: the guest, started for this check about 3 minutes
+  earlier, was killed mid-boot rather than shut down.
+- **Result**: the guest RAM VMA is at `0x7f7f2fe00000`, `THPeligible: 1`, and all
+  8329216 kB of its RSS is `ShmemPmdMapped`.
+- **Guest after the kill**: Windows reached the lock screen, but qemu-ga gave no
+  answer in 12 minutes. `win11-vm@run` was restarted with the new unit; `stop` fell
+  back to the ACPI power button and Windows was down in 15 s. On the next boot the
+  agent answered within 12 s. That points at the hard kill, though the logs do not
+  prove it. Through `guest-exec`, the guest read a file written on server from `Z:`
+  and wrote one back, which arrived as `win11vm:john`. `ShmemPmdMapped` stayed at
+  8329216 kB.
+
+The guest's time zone is Pacific while `-rtc base=localtime` hands it Central wall
+time, so its UTC is 2 h off; not changed yet.

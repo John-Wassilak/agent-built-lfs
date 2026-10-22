@@ -10,6 +10,14 @@
 # over the home connection. Inside this unit qemu sees /etc/win11vm/resolv.conf
 # instead, a public resolver, which it reaches through wg1 like any other traffic.
 #
+# TemporaryFileSystem: guest RAM lives in a file here (see RAM_DIR in the launcher).
+# The unit's private tmpfs is the only shmem whose huge= this can set to advise; the
+# memfd backend could not get THP because qemu maps it 4K-aligned. size= is explicit
+# because systemd's default is 10% of RAM, less than the guest; it is a ceiling, not
+# an allocation, and must stay above WIN11_MEM. It is absolute because this directive
+# expands no specifiers, so 50%% would reach tmpfs as-is and fail. 1777 is safe in a
+# mount only this unit can see.
+#
 # ExecStop sends the ACPI power button and then waits for qemu to exit. Without the
 # wait, systemd would kill qemu as soon as ExecStop returned, mid-shutdown.
 
@@ -25,6 +33,7 @@ User=win11vm
 Group=win11vm
 Environment=HOME=/var/lib/win11vm
 BindReadOnlyPaths=/etc/win11vm/resolv.conf:/etc/resolv.conf
+TemporaryFileSystem=/run/win11vm-ram:huge=advise,size=16G,mode=1777
 ExecStart=/usr/local/bin/win11-vm %i
 ExecStop=/bin/sh -c '/usr/local/bin/win11-vm stop; while kill -0 $MAINPID 2>/dev/null; do sleep 1; done'
 TimeoutStopSec=180
