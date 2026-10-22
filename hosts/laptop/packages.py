@@ -1644,4 +1644,11 @@ PACKAGES = sorted(BASE + [
     # which only Kerberos logins use; a password login is NTLM. Gives wlfreerdp
     # (native Wayland, for Hyprland) and xfreerdp.
     book(419, "freerdp", "xsoft/freerdp.html", "FreeRDP-3.22.0.tar.gz"),
+    # linux-id 0.2.4 (operator request, 2026-10-13): a TPM-backed FIDO2 authenticator
+    # that presents itself to the browser through /dev/uhid, for testing passkeys
+    # without a hardware key. No BLFS page. Needs the 2026-10-13 kernel (TCG_CRB, UHID)
+    # and, on this firmware, intel_iommu=off for tpm_crb to bind. Host recipe: its udev
+    # rule uses a group instead of upstream's uaccess, since this seatd session has no
+    # logind session for uaccess to act on. Go is this host's go1.27.0 (seq 169).
+    hand(420, "linux-id", "linux-id-v0.2.4.tar.gz", "linux-id-0.2.4 (hand-authored, host-specific)"),
 ], key=lambda p: p["seq"])

@@ -7030,3 +7030,62 @@ psmouse.synaptics_intertouch=1`). Both failures from the first boot are gone:
 
 No failed units. The only errors are the Bluetooth `-16` from earlier boots and the
 missing `regulatory.db`.
+
+## linux-id 0.2.4, a TPM-backed FIDO2 authenticator (seq 420, 2026-10-13)
+
+Operator request, the userspace half of the TPM/UHID work above. No BLFS page, so
+`hand()` with a host recipe, `hosts/laptop/recipes/blfs-linux-id.sh`. Source is the
+v0.2.4 tag (commit `a3eabc5`, 2026-09-19), GitHub archive tarball, sha256
+`fc23f48778899d06174107e037c21999b7f668cf9ed248c863133f4a259bbf34`, identical
+(`diff -r`) to the tag's checkout.
+
+**Where the keys live.** The operator asked whether `~/.config/linux-id/creds.json`
+holds the passkeys' private keys. Read from the v0.2.4 source:
+
+- `tpm/tpm.go` creates each credential's key in the TPM (`FixedTPM`, `FixedParent`,
+  ECDSA P-256) under a primary derived from the owner hierarchy and a per-credential
+  random seed. The credential ID is the TPM-wrapped private blob, the public area and
+  that seed. The private key is never outside the TPM in usable form.
+- `ctap2/credstore.go` writes `creds.json` (mode 0600, directory 0700) only for
+  discoverable credentials. Each entry holds that credential ID plus the RP ID and the
+  user name and display name in plaintext. A copy is useless without this TPM, but it
+  does list which sites have passkeys.
+- The gap against a YubiKey is user presence. Owner hierarchy and key both use an empty
+  password, and the pinentry click is enforced by linux-id, not the TPM. A process that
+  can open `/dev/tpmrm0` and read the credential ID can sign without the click.
+- Attestation is "none" for CTAP2. CTAP1/U2F uses SoftU2F's published shared cert.
+
+**Differences from upstream's `install.sh`.** Upstream tags `/dev/uhid` and
+`/dev/tpmrm0` `uaccess`. This host runs Hyprland on seatd and `loginctl list-sessions`
+is empty, so uaccess grants nothing here. That also explains why no security key's
+hidraw node has ever been user-accessible on this machine: `70-uaccess.rules:54` is the
+only rule that opens them. The recipe instead installs `70-linux-id.rules`, which gives
+`/dev/uhid`, `/dev/tpmrm0` and every hidraw node with `ID_SECURITY_TOKEN=1` to a new
+system group `fido`, mode 0660. The user unit drops `ConditionSecurity=tpm2`, because
+this systemd is built `-TPM2` and `systemd-analyze condition ConditionSecurity=tpm2`
+fails with a working TPM. Everything else in the unit is upstream's sandboxing.
+
+**Build.** `lfsbuild` 8 GB guard skipped on the operator's call (6.3 GB free), same
+throwaway wrapper as before. go1.27.0, 8 modules fetched, 1.0 min. `go test ./...`
+passed: 5 packages ok, 7 with no tests, including `tpm`, so the tests never touch a TPM.
+Manifest 8 files: `/usr/bin/linux-id`, the unit, the udev rule,
+`/usr/lib/modules-load.d/uhid.conf`, and the four `/etc/group`/`gshadow` files from
+`groupadd`. `extract-blfs.py --check`: zero drift at 437 steps.
+
+**By hand.** `usermod -aG fido john` (operator's call), udev rules reloaded, `uhid`
+loaded, `misc`/`tpmrm` retriggered. `/dev/tpmrm0` and `/dev/uhid` are now
+`root:fido 0660`. `systemd-analyze verify --user` on the unit is clean.
+
+Not yet done: a new login so john's session and user manager pick up `fido`,
+`systemctl --user enable --now linux-id`, and a registration and sign-in in Firefox.
+The TPM only binds with `intel_iommu=off` (grub entry 2), so until the IOMMU decision
+is made, linux-id only works from that entry.
+
+**Grub, both parameters made permanent (2026-10-13).** On the operator's call, entry 0
+now carries `intel_iommu=off psmouse.synaptics_intertouch=1`, and the temporary test
+entry is gone. Two entries again: 0 the current kernel, 1 the `.preTPM` backup, which
+needs neither parameter (no TPM or RMI4 in its config). Deployed `grub.cfg` is
+byte-identical to the overlay, and `grub-script-check` passes. `grubenv` is empty and
+`grub.cfg` never runs `load_env`, so `set default=0` decides. `kernel-config.sh` still
+sets `INTEL_IOMMU_DEFAULT_ON`, and the command line turns it back off. Removing it from
+the config would make the parameter unnecessary, but that needs a rebuild.
