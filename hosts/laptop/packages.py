@@ -1651,4 +1651,20 @@ PACKAGES = sorted(BASE + [
     # rule uses a group instead of upstream's uaccess, since this seatd session has no
     # logind session for uaccess to act on. Go is this host's go1.27.0 (seq 169).
     hand(420, "linux-id", "linux-id-v0.2.4.tar.gz", "linux-id-0.2.4 (hand-authored, host-specific)"),
+    # Vietnamese input (operator request, 2026-10-21, for a language course): fcitx5
+    # with the Bamboo engine for Telex/VNI typing under Hyprland, plus the Qt settings
+    # tool. BLFS 13.0 has no input method framework. The XKB `vn` layout in
+    # ~/.config/hypr/hyprland.lua covers plain layout switching without any of this.
+    hand(421, "nlohmann-json", "json-3.12.0.tar.xz", "nlohmann_json-3.12.0 (hand-authored, shared recipe)"),
+    hand(422, "xcb-imdkit", "xcb-imdkit-1.0.9.tar.zst", "xcb-imdkit-1.0.9 (hand-authored, shared recipe)"),
+    hand(423, "fcitx5", "fcitx5-5.1.23_dict.tar.zst", "fcitx5-5.1.23 (hand-authored, shared recipe)"),
+    hand(424, "fcitx5-gtk", "fcitx5-gtk-5.1.7.tar.zst", "fcitx5-gtk-5.1.7 (hand-authored, shared recipe)"),
+    hand(425, "fcitx5-qt", "fcitx5-qt-5.1.16.tar.zst", "fcitx5-qt-5.1.16 (hand-authored, shared recipe)"),
+    hand(426, "kitemviews", "kitemviews-6.23.0.tar.xz", "KItemViews-6.23.0 (hand-authored, shared recipe)"),
+    hand(427, "kwidgetsaddons", "kwidgetsaddons-6.23.0.tar.xz",
+         "KWidgetsAddons-6.23.0 (hand-authored, shared recipe)"),
+    hand(428, "fcitx5-configtool", "fcitx5-configtool-5.1.16.tar.zst",
+         "fcitx5-configtool-5.1.16 (hand-authored, shared recipe)"),
+    hand(429, "fcitx5-bamboo", "fcitx5-bamboo-1.0.11.tar.zst",
+         "fcitx5-bamboo-1.0.11 (hand-authored, shared recipe)"),
 ], key=lambda p: p["seq"])
