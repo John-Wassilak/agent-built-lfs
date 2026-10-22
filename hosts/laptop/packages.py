@@ -1641,8 +1641,9 @@ PACKAGES = sorted(BASE + [
     # FreeRDP, the RDP client for server's Windows 11 guest at 10.0.0.4:3389 over wg0
     # (operator, 2026-10-22). Book page, BLFS 13.0. Required deps (FFmpeg, ICU, Xorg
     # Libraries) and the Recommended ones are already built here except MIT Kerberos,
-    # which only Kerberos logins use; a password login is NTLM. Gives wlfreerdp
-    # (native Wayland, for Hyprland) and xfreerdp.
+    # which only Kerberos logins use; a password login is NTLM. FreeRDP hard-requires
+    # Kerberos and Cups unless told otherwise, so blfs-overrides.json turns both off.
+    # Gives wlfreerdp (native Wayland, for Hyprland) and xfreerdp.
     book(419, "freerdp", "xsoft/freerdp.html", "FreeRDP-3.22.0.tar.gz"),
     # linux-id 0.2.4 (operator request, 2026-10-13): a TPM-backed FIDO2 authenticator
     # that presents itself to the browser through /dev/uhid, for testing passkeys

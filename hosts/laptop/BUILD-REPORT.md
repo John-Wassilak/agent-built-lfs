@@ -7089,3 +7089,37 @@ byte-identical to the overlay, and `grub-script-check` passes. `grubenv` is empt
 `grub.cfg` never runs `load_env`, so `set default=0` decides. `kernel-config.sh` still
 sets `INTEL_IOMMU_DEFAULT_ON`, and the command line turns it back off. Removing it from
 the config would make the parameter unnecessary, but that needs a rebuild.
+
+## FreeRDP 3.22.0 (seq 419, 2026-10-22)
+
+The RDP client for server's Windows 11 guest at 10.0.0.4:3389 over wg0. Book page
+`xsoft/freerdp.html`, tarball md5 `73e87d77b8997e487c89db49e81d3b13`, matching the book.
+
+**Two configure failures, one host decision.** The book's command failed twice at
+configure. First: "Could NOT find Kerberos ... (missing: KRB5_FOUND ...)". With
+`-D WITH_KRB5=OFF`: "Could NOT find Cups (missing: CUPS_LIBRARIES CUPS_INCLUDE_DIR)".
+The book lists MIT Kerberos as Recommended and Cups as Optional, but FreeRDP turns both on
+by default and then calls `find_package(... REQUIRED)`: `winpr/libwinpr/sspi/CMakeLists.txt`
+for KRB5, `channels/printer/client/cups/CMakeLists.txt` for Cups. Neither is built here.
+The operator chose to turn both off rather than build Kerberos, which as a new step would
+sort after FreeRDP's seq 419. The decision is `blfs-freerdp` block 0 in
+`blfs-overrides.json`, generating `hosts/laptop/recipes/blfs-freerdp.sh`. A configure-only
+trial in tmpfs with both flags passed before the real run. Lost: Kerberos (domain)
+logins and printer redirection. The guest takes an NTLM password login.
+
+Configure reports `DOCBOOKXSL_DIR` as unused, so the book's flag has no effect in 3.22.0.
+`WITH_PULSE` came out off (no PulseAudio here, pipewire instead); audio redirection uses
+the ALSA backend, which pipewire serves.
+
+**Build location and guard.** `/` had 2.0 GB free. On the operator's call the tarball was
+copied to `/mnt/crypt/lfs-sources`, the step ran with `--sources` there, and lfsbuild's
+8 GB guard was skipped with the same throwaway wrapper as before. `bin/lfsbuild` is
+unchanged.
+
+**Result.** 151 s, no compiler warnings. Manifest 365 files, all under `/usr`:
+`wlfreerdp`, `xfreerdp`, `sfreerdp`, `sfreerdp-server`, `freerdp-proxy`,
+`freerdp-shadow-cli`, `winpr-hash`, `winpr-makecert`, the libraries and headers.
+`xfreerdp --version` reports 3.22.0, and `ldd` finds every library for both clients.
+`wlfreerdp` prints a deprecation warning at every start, pointing to the SDL3 client;
+the book builds with `WITH_CLIENT_SDL=OFF` and SDL3 is not built here, so `wlfreerdp`
+remains the Wayland client. No connection to the guest has been tried yet.
