@@ -5949,5 +5949,12 @@ the VM files.
   and wrote one back, which arrived as `win11vm:john`. `ShmemPmdMapped` stayed at
   8329216 kB.
 
-The guest's time zone is Pacific while `-rtc base=localtime` hands it Central wall
-time, so its UTC is 2 h off; not changed yet.
+**Guest clock.** The guest's time zone is Pacific, and `-rtc base=localtime` handed it
+server's Central wall time. `guest-get-time` put its UTC 7199 s ahead of server's.
+W32Time is demand-start and not running, so nothing corrected it. The guest keeps
+Pacific. It now takes UTC from the RTC: `RealTimeIsUniversal=1` (DWORD under
+`HKLM\SYSTEM\CurrentControlSet\Control\TimeZoneInformation`, set through
+`guest-exec`) and `-rtc base=utc` in the launcher. That also takes server's time zone
+and DST out of the guest's clock. After a restart, which shut down through the guest
+agent this time, the skew is -1.3 s (the RTC has 1 s resolution), and the guest shows
+10:24 against server's 12:24 CDT.

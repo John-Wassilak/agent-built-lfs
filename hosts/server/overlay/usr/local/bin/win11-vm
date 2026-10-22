@@ -48,6 +48,11 @@
 #   q35 + smm=on + edk2 secure-code firmware -- UEFI with Secure Boot, which
 #     Windows 11 checks for. The firmware is the copy qemu ships in pc-bios/ and
 #     installs to /usr/share/qemu, so no separate OVMF build exists.
+#   -rtc base=utc -- the guest has RealTimeIsUniversal=1 (HKLM\SYSTEM\
+#     CurrentControlSet\Control\TimeZoneInformation, DWORD), so it reads the RTC as
+#     UTC and applies its own time zone. With base=localtime it read server's Central
+#     wall time as Pacific, and its UTC ran 2 h ahead (2026-10-22). A new install
+#     needs that value set before switching, or its clock is off by the UTC offset.
 #   swtpm socket + tpm-tis -- the TPM 2.0 Windows 11 requires. swtpm runs with
 #     --terminate, so it exits when qemu disconnects.
 #   -cpu host with Hyper-V enlightenments -- Windows runs noticeably better
@@ -194,7 +199,7 @@ qemu_vm() {
         -m "$MEM" \
         -object "$(ram_backend)" \
         -numa node,memdev=mem0 \
-        -rtc base=localtime \
+        -rtc base=utc \
         -chardev socket,id=chrtpm,path="$TPM/swtpm.sock" \
         -tpmdev emulator,id=tpm0,chardev=chrtpm \
         -device tpm-tis,tpmdev=tpm0 \
