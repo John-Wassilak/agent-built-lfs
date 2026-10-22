@@ -7123,3 +7123,48 @@ unchanged.
 `wlfreerdp` prints a deprecation warning at every start, pointing to the SDL3 client;
 the book builds with `WITH_CLIENT_SDL=OFF` and SDL3 is not built here, so `wlfreerdp`
 remains the Wayland client. No connection to the guest has been tried yet.
+
+## FreeRDP SDL3 client, with SDL3_ttf (seq 418.5, 419 rebuilt, 2026-10-22)
+
+`wlfreerdp` showed no mouse pointer under Hyprland, and it prints a deprecation warning
+pointing to the SDL3 client. The operator asked for the SDL3 client instead.
+
+**Correction to the entry above.** It says SDL3 is not built here. That is wrong: SDL3
+3.4.0 is seq 147 and `pkg-config --modversion sdl3` reports 3.4.0. The missing piece was
+SDL_ttf. `client/SDL/SDL3/dialogs/CMakeLists.txt` find_package()s `SDL3_ttf` REQUIRED, and
+the book's Command Explanations say to remove `-D WITH_CLIENT_SDL=OFF` once SDL_ttf is
+installed.
+
+**SDL3_ttf 3.2.2 (seq 418.5).** No BLFS page, so it is a hand-authored shared recipe,
+`recipes/blfs-sdl3-ttf.sh`, configured as Arch extra's `sdl3_ttf` 3.2.2-3. The detached
+signature verified good against Sam Lantinga's key, and the sha512 matches Arch's PKGBUILD.
+The recipe pins harfbuzz on, plutosvg (color emoji) off, no vendored libraries, and
+`SDLTTF_STRICT=ON`. Configure reported `enabled: harfbuzz freetype`, `disabled:
+plutosvg`. 8.8 s, 15-file manifest, no warnings. Seq 418.5 places it before FreeRDP in a
+fresh build, the same fractional-seq pattern as pipewire's 130.5.
+
+**FreeRDP override, second change.** `blfs-freerdp` block 0 in `blfs-overrides.json` drops
+`-D WITH_CLIENT_SDL=OFF` and adds `-D WITH_CLIENT_SDL2=OFF`. Without the second flag,
+sdl2-compat (seq 148) would also enable the deprecated SDL2 client, and building both
+forces `WITH_CLIENT_SDL_VERSIONED=ON`, which renames the binary. `extract-blfs.py --host
+laptop --check` reports zero drift after regenerating.
+
+**Build.** Same arrangement as the first FreeRDP build: tarballs in
+`/mnt/crypt/lfs-sources`, `--sources` there, and lfsbuild's 8 GB guard skipped on the
+operator's call with the throwaway wrapper (`/` had 1.9 GB free). `bin/lfsbuild` is
+unchanged. 154 s. New files: `/usr/bin/sdl-freerdp` and its man page. `ldd` resolves
+`libSDL3.so.0` and `libSDL3_ttf.so.0`, and `sdl-freerdp --version` reports 3.22.0.
+`wlfreerdp` and `xfreerdp` are still installed.
+
+The fresh capture listed 347 files instead of 365 plus the two new ones. cmake reported
+the 20 unchanged library symlinks (`libfreerdp3.so`, `libwinpr3.so.3`, and others) as
+"Up-to-date" and did not touch them, so `-cnewer` skipped them. The committed manifest is
+the union of the old and new captures, filtered to paths that exist: 367 files.
+
+The log has 252 `-Wdeprecated-declarations` warnings, all in libfreerdp and winpr code
+(198 from `include/freerdp/codecs.h`, 49 from `libfreerdp/crypto/er.c` and `der.c`), none
+in `client/SDL`. The first entry's "no compiler warnings" cannot be checked against this
+log, because the old log was overwritten.
+
+**Not yet done:** a connection to server's guest with `sdl-freerdp` to confirm the
+pointer shows.

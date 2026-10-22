@@ -627,3 +627,5 @@ blfs-pyqt6
 blfs-pyqt6-webengine
 blfs-linux-id
 blfs-freerdp
+blfs-sdl3-ttf
+blfs-freerdp

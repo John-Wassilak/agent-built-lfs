@@ -715,3 +715,5 @@ blfs-linux-id	native	57.0	0
 blfs-freerdp	native	6.3	1
 blfs-freerdp	native	9.1	1
 blfs-freerdp	native	151.0	0
+blfs-sdl3-ttf	native	8.8	0
+blfs-freerdp	native	154.0	0

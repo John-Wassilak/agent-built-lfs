@@ -1637,13 +1637,19 @@ PACKAGES = sorted(BASE + [
          "PyQt6-WebEngine-6.10.0 (hand-authored, shared recipe)"),
     hand(417, "poetry-core", "poetry_core-2.3.2.tar.gz", "poetry-core-2.3.2 (hand-authored, shared recipe)"),
     hand(418, "mnemosyne", "mnemosyne-2.11.tar.gz", "Mnemosyne-2.11 (hand-authored, shared recipe)"),
+    # SDL3_ttf, for FreeRDP's SDL3 client (operator, 2026-10-22): wlfreerdp is deprecated
+    # upstream and shows no mouse pointer under Hyprland. No BLFS page. Seq 418.5 so a
+    # fresh build has it before FreeRDP's 419, same fractional-seq pattern as pipewire's
+    # 130.5 (PRACTICES.md).
+    hand(418.5, "sdl3-ttf", "SDL3_ttf-3.2.2.tar.gz", "SDL3_ttf-3.2.2 (hand-authored, shared recipe)"),
 
     # FreeRDP, the RDP client for server's Windows 11 guest at 10.0.0.4:3389 over wg0
     # (operator, 2026-10-22). Book page, BLFS 13.0. Required deps (FFmpeg, ICU, Xorg
     # Libraries) and the Recommended ones are already built here except MIT Kerberos,
     # which only Kerberos logins use; a password login is NTLM. FreeRDP hard-requires
     # Kerberos and Cups unless told otherwise, so blfs-overrides.json turns both off.
-    # Gives wlfreerdp (native Wayland, for Hyprland) and xfreerdp.
+    # Gives sdl-freerdp (SDL3, the Wayland client upstream points to), wlfreerdp
+    # (deprecated) and xfreerdp. The SDL client needs SDL3_ttf, seq 418.5.
     book(419, "freerdp", "xsoft/freerdp.html", "FreeRDP-3.22.0.tar.gz"),
     # linux-id 0.2.4 (operator request, 2026-10-13): a TPM-backed FIDO2 authenticator
     # that presents itself to the browser through /dev/uhid, for testing passkeys
