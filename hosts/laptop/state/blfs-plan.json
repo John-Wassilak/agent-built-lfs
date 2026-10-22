@@ -6102,5 +6102,19 @@
     "blocks": 1,
     "enabled": 1,
     "disabled": 0
+  },
+  {
+    "seq": 419,
+    "order": "blfs.419",
+    "name": "blfs-freerdp",
+    "chapter": "blfs",
+    "page": "freerdp",
+    "title": "FreeRDP-3.22.0",
+    "context": "chroot",
+    "tarball": "FreeRDP-3.22.0.tar.gz",
+    "manifest": true,
+    "blocks": 2,
+    "enabled": 2,
+    "disabled": 0
   }
 ]

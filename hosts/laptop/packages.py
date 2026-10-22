@@ -1637,4 +1637,11 @@ PACKAGES = sorted(BASE + [
          "PyQt6-WebEngine-6.10.0 (hand-authored, shared recipe)"),
     hand(417, "poetry-core", "poetry_core-2.3.2.tar.gz", "poetry-core-2.3.2 (hand-authored, shared recipe)"),
     hand(418, "mnemosyne", "mnemosyne-2.11.tar.gz", "Mnemosyne-2.11 (hand-authored, shared recipe)"),
+
+    # FreeRDP, the RDP client for server's Windows 11 guest at 10.0.0.4:3389 over wg0
+    # (operator, 2026-10-22). Book page, BLFS 13.0. Required deps (FFmpeg, ICU, Xorg
+    # Libraries) and the Recommended ones are already built here except MIT Kerberos,
+    # which only Kerberos logins use; a password login is NTLM. Gives wlfreerdp
+    # (native Wayland, for Hyprland) and xfreerdp.
+    book(419, "freerdp", "xsoft/freerdp.html", "FreeRDP-3.22.0.tar.gz"),
 ], key=lambda p: p["seq"])
