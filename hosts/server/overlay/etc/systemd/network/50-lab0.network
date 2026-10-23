@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: MIT
+# agent-built-lfs -- lab0's address and DHCP server
+# Copyright (c) 2026 John Wassilak
+#
+# 192.168.56.0/24, VirtualBox's default host-only subnet, so lab write-ups that assume it
+# work unchanged. It does not collide with enp6s0 (192.168.0.0/24), wg0, wg1 or docker.
+#
+# The DHCP server hands out addresses only. EmitRouter=no and EmitDNS=no keep a guest's
+# default route and resolver on its NAT NIC; with a router option the guest would get a
+# second default route through a network that goes nowhere. Kali's lease is pinned to
+# .10 by its MAC, which kali-vm sets.
+#
+# No IPv6: server drops v6 outright (blfs-iptables host override), so lab0 gets no
+# link-local address either.
+#
+# ConfigureWithoutCarrier: a bridge has no carrier until a guest's tap is up, and the
+# address and DHCP server must exist before the first guest boots.
+
+[Match]
+Name=lab0
+
+[Network]
+Address=192.168.56.1/24
+DHCPServer=yes
+ConfigureWithoutCarrier=yes
+LinkLocalAddressing=no
+IPv6AcceptRA=no
+
+[DHCPServer]
+PoolOffset=100
+PoolSize=100
+EmitRouter=no
+EmitDNS=no
+
+[DHCPServerStaticLease]
+MACAddress=52:54:00:56:00:0a
+Address=192.168.56.10

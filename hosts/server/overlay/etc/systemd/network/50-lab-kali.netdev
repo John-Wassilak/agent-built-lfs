@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: MIT
+# agent-built-lfs -- lab-kali, the Kali guest's tap on lab0
+# Copyright (c) 2026 John Wassilak
+#
+# Persistent and owned by kalivm, so qemu, running as kalivm, opens it through
+# /dev/net/tun without CAP_NET_ADMIN or a setuid helper. A new lab target gets a copy
+# of this file with its own Name= and User=.
+
+[NetDev]
+Name=lab-kali
+Kind=tap
+
+[Tap]
+User=kalivm
+Group=kalivm

@@ -5958,3 +5958,47 @@ Pacific. It now takes UTC from the RTC: `RealTimeIsUniversal=1` (DWORD under
 and DST out of the guest's clock. After a restart, which shut down through the guest
 agent this time, the skew is -1.3 s (the RTC has 1 s resolution), and the guest shows
 10:24 against server's 12:24 CDT.
+
+## Kali lab guest and a host-only network (2026-10-22)
+
+The operator's lab sheet asks for three things: a hypervisor with CPU virtualization, a
+host-only network for lab targets, and a Kali image with 2 vCPU and 4 GB, NIC 1 on NAT
+and NIC 2 on host-only. The hypervisor is the qemu that runs the Windows guest, so no
+packages were added. `grep -cE 'vmx|svm' /proc/cpuinfo` printed 8.
+
+- **Host-only network**: `lab0`, a bridge with no uplink, 192.168.56.0/24 (VirtualBox's
+  default host-only subnet), with server at .1. systemd-networkd creates it from
+  `overlay/etc/systemd/network/50-lab0.{netdev,network}` and runs a DHCP server there
+  with `EmitRouter=no` and `EmitDNS=no`, so a guest's default route stays on its NAT NIC.
+  Each guest gets a persistent tap owned by its own user (`50-lab-kali.netdev`), and
+  `50-lab-taps.network` enslaves every `lab-*` to the bridge. Kali's MAC has a static
+  lease at .10.
+- **NAT NIC**: qemu's slirp, the counterpart of VirtualBox NAT. It goes out through
+  enp6s0. kalivm has no policy routing, unlike win11vm's route through wg1.
+- **Firewall** (host override, block 2): from lab0, the host accepts DHCP (udp/67) and
+  drops everything else. That rule sits ahead of the any-interface SSH rule. Mangle
+  FORWARD drops anything routed into or out of lab0. Filter FORWARD accepts lab0 to
+  lab0, which matters only if br_netfilter is ever loaded; it is not now. tcp/5902 is
+  open on wg0 for the console. Applied the way earlier rules were: the live
+  `/etc/systemd/scripts/iptables` matched HEAD's recipe (`cmp`), so it was saved as
+  `iptables.bak-20261022` and replaced, and the same rules were inserted into the running
+  chains at the script's positions. `iptables.service` was not restarted.
+- **Launcher**: `overlay/usr/local/bin/kali-vm` (`create`, `run`, `stop`, `reset`) and
+  `kali-vm.service`, which runs as `kalivm` (system user, group kvm) and is not enabled
+  at boot. `create` streams the `.qcow2` member out of the `.7z` with bsdtar into
+  `/mnt/big_drive/kali/kali-base.qcow2` (mode 440), then makes `kali.qcow2` as an
+  overlay on it. `reset` replaces that overlay. The console is VNC on 10.0.0.4:5902 with
+  TLS and a password in `vnc.pass`, the same as the Windows guest.
+
+| Check | Result |
+|---|---|
+| Import of `kali-linux-2026.2-qemu-amd64.7z` | 4 m 30 s, `qemu-img check` clean, base 16.0 GB, 80 GiB virtual |
+| Boot to lab0 lease | ~21 s; networkd offered 192.168.56.10 to 52:54:00:56:00:0a |
+| In the guest (qemu-ga `guest-exec`) | eth0 10.0.2.15 with the only default route, eth1 192.168.56.10; 2 CPUs, 4 GB |
+| Internet over NIC 1 | `curl https://www.kali.org` returned 200 |
+| Guest to 192.168.56.1:22, and ping to .1 | both blocked |
+| Host to 192.168.56.10:22 | refused by the guest, so the path works; Kali ships with sshd off |
+| VNC 10.0.0.4:5902 | `RFB 003.008` |
+| `systemctl stop kali-vm` | down in 3.2 s through the guest agent |
+| Guest RAM | `AnonHugePages` 1400832 kB of 1465004 kB RSS, without win11-vm's tmpfs |
+| `extract-blfs.py --check`, `extract-recipes.py --check` | zero drift |

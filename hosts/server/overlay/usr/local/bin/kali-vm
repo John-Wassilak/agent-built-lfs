@@ -1,0 +1,180 @@
+#!/bin/bash
+# SPDX-License-Identifier: MIT
+# agent-built-lfs -- Kali Linux lab guest launcher for `server` (qemu + KVM)
+# Copyright (c) 2026 John Wassilak
+
+# Usage, as kalivm (sudo -u kalivm kali-vm ...):
+#   kali-vm create IMAGE   import Kali's qemu image (.qcow2, or the .7z it ships in)  (once)
+#   kali-vm run            boot Kali
+#   kali-vm stop           shut Kali down (guest agent, else ACPI power button)
+#   kali-vm reset          throw away every change since create (VM must be stopped)
+#
+# run is normally started as the kali-vm unit. The screen is VNC on 10.0.0.4:5902
+# (wg0 only; TLS, and the password in $VM/vnc.pass, which create writes).
+#
+# Two NICs, the order the lab sheet asks for:
+#   NIC 1, NAT: qemu's user-mode network (libslirp), the qemu equivalent of
+#     VirtualBox NAT. Outbound only, no hostfwd. It leaves through enp6s0, the home
+#     connection; unlike win11vm, kalivm has no policy routing to wg1.
+#   NIC 2, host-only: the tap lab-kali on the bridge lab0, 192.168.56.0/24, which
+#     systemd-networkd creates (overlay/etc/systemd/network/50-lab*). The MAC is fixed
+#     so networkd's DHCP server always gives Kali 192.168.56.10. The firewall forwards
+#     nothing in or out of lab0 (blfs-iptables host override).
+#
+# Disk: create stores the image as $BASE, read-only, and the guest writes to $DISK,
+# a qcow2 overlay backed by it. reset is a new overlay, so a lab can start over from a
+# clean Kali without importing the 16G image again.
+#
+# Host-specific, hence hosts/server/overlay: it names /mnt/big_drive (sda2; / has 24G
+# free and the image alone is 16G), wg0's address and lab0's tap. 2 vCPUs and 4G, the
+# lab sheet's numbers, which fit beside the Windows guest's 2 and 8G on this 4-core,
+# 31G i5-2500K. No new packages: qemu is packages.py seq 268, and bsdtar (libarchive)
+# reads the .7z.
+#
+# One-time setup, as root:
+#   useradd -r -M -d /mnt/big_drive/kali -s /sbin/nologin -U -G kvm kalivm
+#   install -d -m 750 -o kalivm -g kalivm /mnt/big_drive/kali
+# then the networkd files above, `networkctl reload`, and the firewall script.
+#
+# Hardware choices:
+#   q35, SeaBIOS -- Kali's qemu image boots with legacy BIOS; no Secure Boot or TPM.
+#   -cpu host -- the guest sees the real i5-2500K (AES-NI, AVX), which hashcat and
+#     john use.
+#   Guest RAM is plain anonymous memory. THP is madvise here and qemu madvises guest
+#     RAM, so it gets hugepages without win11-vm's tmpfs, which exists only because
+#     virtiofsd needs a shared backend.
+#   virtio-blk, virtio-net, virtio-vga -- all in Kali's kernel. virtio-vga lets the
+#     VNC viewer's resize reach the desktop.
+#   -rtc base=utc -- Linux keeps the RTC in UTC.
+set -euo pipefail
+
+VM=${KALI_VM_DIR:-/mnt/big_drive/kali}
+CPUS=${KALI_CPUS:-2}
+MEM=${KALI_MEM:-4G}
+VNC_ADDR=${KALI_VNC_ADDR:-10.0.0.4}
+LAB_TAP=lab-kali
+LAB_MAC=52:54:00:56:00:0a
+
+BASE=$VM/kali-base.qcow2
+DISK=$VM/kali.qcow2
+MONITOR=$VM/monitor.sock
+QGA=$VM/qga.sock
+VNC_PASS=$VM/vnc.pass
+
+die() { echo "kali-vm: $*" >&2; exit 1; }
+
+preflight() {
+    [ -c /dev/kvm ] || die "/dev/kvm missing -- is kvm_intel loaded?"
+    [ -r /dev/kvm ] && [ -w /dev/kvm ] || die "no access to /dev/kvm -- $(id -un) is not in the kvm group"
+    [ -d "$VM" ] && [ -w "$VM" ] || die "$VM is not writable -- see the one-time setup in $0"
+}
+
+# Same scheme as win11-vm: DES VNC auth reads 8 characters, no trailing newline.
+vnc_password() {
+    [ -e "$VNC_PASS" ] && return 0
+    local pw
+    pw=$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom 2>/dev/null | head -c 8) || true
+    [ ${#pw} -eq 8 ] || die "could not generate a VNC password"
+    (umask 077; printf %s "$pw" >"$VNC_PASS")
+    echo "VNC password written to $VNC_PASS"
+}
+
+overlay() {
+    qemu-img create -f qcow2 -F qcow2 -b "$BASE" "$DISK"
+}
+
+create() {
+    local img=${1:-}
+    preflight
+    [ -r "$img" ] || die "usage: kali-vm create kali-linux-*-qemu-amd64.{7z,qcow2} (readable by $(id -un))"
+    [ -e "$BASE" ] && die "$BASE already exists; refusing to overwrite"
+    case "$img" in
+        *.7z)
+            # The archive holds one member, the .qcow2. Streamed, so no second copy.
+            local member
+            member=$(bsdtar -tf "$img" | grep -m1 '\.qcow2$') || die "no .qcow2 inside $img"
+            echo "kali-vm: extracting $member (16G, a few minutes)"
+            bsdtar -xOf "$img" "$member" >"$BASE.part"
+            ;;
+        *.qcow2) cp -v "$img" "$BASE.part" ;;
+        *) die "want a .7z or .qcow2, got $img" ;;
+    esac
+    qemu-img check -q "$BASE.part" || die "$BASE.part fails qemu-img check"
+    mv "$BASE.part" "$BASE"
+    chmod 440 "$BASE"
+    overlay
+    vnc_password
+}
+
+reset() {
+    preflight
+    [ -e "$BASE" ] || die "no $BASE -- run 'kali-vm create' first"
+    [ -S "$MONITOR" ] && python3 -c 'import socket,sys
+s=socket.socket(socket.AF_UNIX); s.connect(sys.argv[1])' "$MONITOR" 2>/dev/null \
+        && die "the VM is running; stop it first"
+    rm -f "$DISK"
+    overlay
+}
+
+run() {
+    preflight
+    [ -e "$DISK" ] || die "no $DISK -- run 'kali-vm create' first"
+    [ -d /sys/class/net/$LAB_TAP ] || die "no $LAB_TAP -- are the lab0 networkd files installed (networkctl reload)?"
+    vnc_password
+    exec qemu-system-x86_64 \
+        -name kali \
+        -machine q35,accel=kvm \
+        -cpu host \
+        -smp "$CPUS",sockets=1,cores="$CPUS",threads=1 \
+        -m "$MEM" \
+        -rtc base=utc \
+        -drive file="$DISK",if=none,id=disk0,format=qcow2,cache=none,aio=native,discard=unmap \
+        -device virtio-blk-pci,drive=disk0,bootindex=1 \
+        -netdev user,id=nat,ipv6=off \
+        -device virtio-net-pci,netdev=nat \
+        -netdev tap,id=lab,ifname="$LAB_TAP",script=no,downscript=no \
+        -device virtio-net-pci,netdev=lab,mac="$LAB_MAC" \
+        -device qemu-xhci -device usb-tablet \
+        -monitor unix:"$MONITOR",server,nowait \
+        -device virtio-serial-pci \
+        -chardev socket,id=qga0,path="$QGA",server=on,wait=off \
+        -device virtserialport,chardev=qga0,name=org.qemu.guest_agent.0 \
+        -vga none -device virtio-vga \
+        -object tls-creds-anon,id=vnctls,endpoint=server \
+        -object secret,id=vncpw,file="$VNC_PASS",format=raw \
+        -display vnc="$VNC_ADDR":2,tls-creds=vnctls,password-secret=vncpw
+}
+
+monitor() {
+    [ -S "$MONITOR" ] || die "no monitor socket at $MONITOR -- is the VM running?"
+    python3 -c 'import socket,sys,time
+s=socket.socket(socket.AF_UNIX); s.connect(sys.argv[1]); s.sendall(sys.argv[2].encode()+b"\n")
+time.sleep(0.5)' "$MONITOR" "$1"
+}
+
+# Guest agent first (qemu-guest-agent, if Kali has it running), else the power button.
+shutdown_guest() {
+    if [ -S "$QGA" ] && python3 -c 'import json,socket,sys
+s=socket.socket(socket.AF_UNIX); s.settimeout(3); s.connect(sys.argv[1])
+s.sendall(json.dumps({"execute":"guest-sync","arguments":{"id":4242}}).encode()+b"\n")
+buf=b""
+while b"\n" not in buf:
+    c=s.recv(4096)
+    if not c: sys.exit(1)
+    buf+=c
+if json.loads(buf.splitlines()[0]).get("return")!=4242: sys.exit(1)
+s.sendall(json.dumps({"execute":"guest-shutdown","arguments":{"mode":"powerdown"}}).encode()+b"\n")' "$QGA" 2>/dev/null; then
+        echo "kali-vm: guest agent shutdown sent"
+    else
+        echo "kali-vm: no guest agent answer; pressing the ACPI power button"
+        monitor system_powerdown
+    fi
+}
+
+case "${1:-}" in
+    create) create "${2:-}" ;;
+    run)    run ;;
+    stop)   shutdown_guest ;;
+    reset)  reset ;;
+    *) sed -n '/^# Usage/,/^#$/p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+esac

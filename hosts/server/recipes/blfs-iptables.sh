@@ -107,6 +107,15 @@ iptables -A OUTPUT -j ACCEPT
 # (e.g. port mode ftp)
 iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
+# Not in the book's example: lab0, the host-only bridge for lab guests (Kali and its
+# targets, 2026-10-22; hosts/server/overlay/etc/systemd/network/50-lab0.*). A lab target
+# is assumed hostile, so from lab0 the host answers DHCP (networkd's server on udp/67)
+# and nothing else -- not sshd, which the next rule opens on every other interface.
+# Placed before that rule for this reason. Replies to connections server opens into
+# the lab are covered by ESTABLISHED,RELATED above.
+iptables -A INPUT -i lab0 -p udp --dport 67 -j ACCEPT
+iptables -A INPUT -i lab0 -j DROP
+
 # Not in the book's example: this box is administered entirely over SSH, and
 # the book's own Personal Firewall script does not allow any inbound service,
 # SSH included -- applying it unmodified would have locked out the only way
@@ -131,6 +140,8 @@ iptables -A INPUT -i wg0 -p tcp --dport 3389 -m conntrack --ctstate NEW -j ACCEP
 # The guest's screen: qemu's VNC server on 10.0.0.4:5901 (TLS plus a password, see
 # win11-vm), wg0 only like 5900.
 iptables -A INPUT -i wg0 -p tcp --dport 5901 -m conntrack --ctstate NEW -j ACCEPT
+# The Kali lab guest's screen, 10.0.0.4:5902 (kali-vm), the same way.
+iptables -A INPUT -i wg0 -p tcp --dport 5902 -m conntrack --ctstate NEW -j ACCEPT
 
 # Not in the book's example: wg1, the egress tunnel to nextcloud that carries only the
 # Windows 11 guest's traffic (2026-10-21; routing in /usr/local/sbin/win11vm-route).
@@ -146,6 +157,20 @@ for r in "PREROUTING -i wg1 -m conntrack ! --ctstate ESTABLISHED,RELATED -j DROP
     iptables -t mangle -D $r 2>/dev/null
     iptables -t mangle -A $r
 done
+
+# Not in the book's example: lab0 is isolated. Nothing is routed between it and any
+# other interface, in either direction; a guest's internet access is its own NAT NIC
+# (qemu's slirp), not lab0. Same mangle reasoning as wg1: docker enables ip_forward
+# and owns filter FORWARD, and these hold regardless. Guest-to-guest frames are
+# bridged and never reach these chains, unless br_netfilter is loaded (docker can load
+# it). Then they arrive in FORWARD as lab0 -> lab0, which the `! -o`/`! -i` leave
+# alone, and the filter rule after the loop accepts them ahead of the DROP policy.
+for r in "FORWARD -i lab0 ! -o lab0 -j DROP" \
+         "FORWARD ! -i lab0 -o lab0 -j DROP"; do
+    iptables -t mangle -D $r 2>/dev/null
+    iptables -t mangle -A $r
+done
+iptables -A FORWARD -i lab0 -o lab0 -j ACCEPT
 
 # Everything else is dropped by policy (no LOG rule -- the book's example logs
 # every dropped packet, which on an internet-facing host is a constant stream

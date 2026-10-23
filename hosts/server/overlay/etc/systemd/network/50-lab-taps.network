@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: MIT
+# agent-built-lfs -- every lab-* tap is a port of lab0
+# Copyright (c) 2026 John Wassilak
+#
+# The taps carry no address of their own; the host's address is on the bridge.
+
+[Match]
+Name=lab-*
+
+[Network]
+Bridge=lab0
+ConfigureWithoutCarrier=yes
+LinkLocalAddressing=no
+IPv6AcceptRA=no

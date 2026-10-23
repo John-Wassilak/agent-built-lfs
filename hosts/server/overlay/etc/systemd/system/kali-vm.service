@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: MIT
+# agent-built-lfs -- Kali lab guest as a unit
+# Copyright (c) 2026 John Wassilak
+#
+# Runs as kalivm, which owns the lab-kali tap. Not enabled at boot; `systemctl start
+# kali-vm` when a lab needs it. ExecStop asks the guest to shut down and waits for qemu
+# to exit, as win11-vm@.service does.
+
+[Unit]
+Description=Kali Linux lab guest
+After=systemd-networkd.service wg-quick@wg0.service
+Wants=wg-quick@wg0.service
+
+[Service]
+Type=simple
+User=kalivm
+Group=kalivm
+ExecStart=/usr/local/bin/kali-vm run
+ExecStop=/bin/sh -c '/usr/local/bin/kali-vm stop; while kill -0 $MAINPID 2>/dev/null; do sleep 1; done'
+TimeoutStopSec=120
+KillMode=mixed
+
+[Install]
+WantedBy=multi-user.target

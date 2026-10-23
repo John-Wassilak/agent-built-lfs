@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: MIT
+# agent-built-lfs -- lab0, the host-only network for lab guests (Kali and its targets)
+# Copyright (c) 2026 John Wassilak
+#
+# A bridge with no uplink: guests on it reach each other and server's 192.168.56.1,
+# nothing else. Each guest gets a persistent tap enslaved to it (50-lab-<name>.netdev
+# and 50-lab-taps.network). The subnet and the firewall rules are in 50-lab0.network and
+# the blfs-iptables host override.
+
+[NetDev]
+Name=lab0
+Kind=bridge
+
+[Bridge]
+STP=no
