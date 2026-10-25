@@ -6002,3 +6002,16 @@ packages were added. `grep -cE 'vmx|svm' /proc/cpuinfo` printed 8.
 | `systemctl stop kali-vm` | down in 3.2 s through the guest agent |
 | Guest RAM | `AnonHugePages` 1400832 kB of 1465004 kB RSS, without win11-vm's tmpfs |
 | `extract-blfs.py --check`, `extract-recipes.py --check` | zero drift |
+
+### Kali guest: screen follows the VNC viewer (2026-10-25)
+
+The guest stayed at 1280x800 whatever the viewer's size. virtio-vga was already passing
+the size through: `/sys/class/drm/card0-Virtual-1/modes` listed 668x717 first, and
+`xrandr` marked it preferred, but X kept 1280x800. Kali's autostart entry
+`xautoresize.desktop` runs `xautoresize-launcher`, which exits unless
+`systemd-detect-virt` says `oracle` or `vmware`, so nothing applied the new mode on KVM.
+Fix, inside the guest: `~kali/.config/autostart/xautoresize.desktop` with
+`Exec=xautoresize`, which shadows the system entry by name. It lives in the guest's
+overlay, so `kali-vm reset` discards it; the launcher's header says so. `xautoresize` was
+also started in the running session through the guest agent. The operator confirmed the
+desktop now follows the viewer window.

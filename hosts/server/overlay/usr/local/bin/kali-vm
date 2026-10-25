@@ -43,8 +43,12 @@
 #   Guest RAM is plain anonymous memory. THP is madvise here and qemu madvises guest
 #     RAM, so it gets hugepages without win11-vm's tmpfs, which exists only because
 #     virtiofsd needs a shared backend.
-#   virtio-blk, virtio-net, virtio-vga -- all in Kali's kernel. virtio-vga lets the
-#     VNC viewer's resize reach the desktop.
+#   virtio-blk, virtio-net, virtio-vga -- all in Kali's kernel. virtio-vga passes the
+#     VNC viewer's size to the guest as the connector's preferred mode. Xorg does not
+#     switch to it by itself: Kali's xautoresize does, but its stock launcher exits
+#     unless the hypervisor is VirtualBox or VMware. The guest needs
+#     ~kali/.config/autostart/xautoresize.desktop with Exec=xautoresize, which
+#     `reset` discards; recreate it after one.
 #   -rtc base=utc -- Linux keeps the RTC in UTC.
 set -euo pipefail
 
