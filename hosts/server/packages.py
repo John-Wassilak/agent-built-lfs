@@ -804,6 +804,12 @@ PACKAGES = BASE + [
     book(270, "json-glib", "general/json-glib.html", "json-glib-1.10.8.tar.xz"),
     hand(271, "libtpms", "libtpms-v0.10.2.tar.gz", "libtpms-0.10.2 (hand-authored, shared recipe)"),
     hand(272, "swtpm", "swtpm-v0.10.2.tar.gz", "swtpm-0.10.2 (hand-authored, shared recipe)"),
+    # spice-protocol, so qemu builds its qemu-vdagent chardev: the VNC viewer's clipboard
+    # to a guest's spice-vdagent, for the Kali guest (operator, 2026-10-27). Headers
+    # only; qemu's meson picks it up as an auto feature. Not in BLFS, in Arch [extra],
+    # so a hand() recipe. Fractional seq because qemu has to find it at configure time;
+    # the live qemu was rebuilt after it with --only blfs-qemu --force.
+    hand(272.5, "spice-protocol", "spice-protocol-0.14.5.tar.xz", "spice-protocol-0.14.5 (hand-authored, shared recipe)"),
     book(273, "qemu", "postlfs/qemu.html", "qemu-11.1.1.tar.xz"),
 
     # virtio-fs, to share /mnt/big_drive/vm/share with the Windows guest (operator,

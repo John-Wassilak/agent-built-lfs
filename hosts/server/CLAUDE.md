@@ -59,3 +59,6 @@ Things worth knowing before changing anything here:
   systemd-networkd files in `overlay/etc/systemd/network/50-lab*`, and a new lab target
   gets its own `50-lab-<name>.netdev`. The firewall routes nothing into or out of lab0 and
   lets it reach only DHCP on the host. Console: VNC on 10.0.0.4:5902, wg0 only.
+  Since 2026-10-27 it also mounts `/mnt/big_drive/vm-share`, the same directory Windows
+  sees as `Z:`, at `/mnt/share` (virtiofs, host ids squashed to `kali`).
+  The lab tap runs on vhost-net (`VHOST_NET=m` in `kernel-config.sh`, 2026-10-27).

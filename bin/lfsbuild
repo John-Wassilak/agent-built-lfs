@@ -94,6 +94,9 @@ MANIFEST_NOISE = "|".join([
     r"^/var/tmp/",
     r"^/var/lib/lfsmaint/",
     r"^/var/lib/systemd/(timesync/clock|random-seed)",
+    # networkd's runtime state (DHCP server leases); a lab0 lease landed in
+    # blfs-nvidia-470xx's manifest on 2026-10-27 when the Kali tap went down mid-build.
+    r"^/var/lib/systemd/network/",
     r"^/etc/(mtab|resolv\.conf|ld\.so\.cache|adjtime)$",
     r"^/etc/udev/hwdb\.bin$",
     r"^/etc/ssh/ssh_host_",

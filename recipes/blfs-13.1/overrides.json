@@ -894,8 +894,9 @@
       "reason": "BLFS 13.1 postlfs/qemu.html, 'Installation of qemu': `usermod -a -G kvm <username>` is a placeholder (taken literally, bash reads <username> as an input redirect and fails). john is the one human account on these hosts, the same substitution the sudo page's decision makes, and he needs kvm both to open /dev/kvm when the VM runs from a service or ssh session (the book's own reason) and for qemu-bridge-helper (block 4's note). Guarded the same way as sudo's usermod so a fresh build where adduser-john has not run yet does not fail."
     },
     "5": {
-      "action": "enable",
-      "reason": "BLFS 13.1 postlfs/qemu.html: the /usr/bin/qemu symlink is a convenience Note, flagged by the admonition heuristic, but the book's own 'Using Qemu' section says its instructions assume the link exists. Cheap and harmless, so installed."
+      "action": "replace",
+      "cmd": "ln -sfv qemu-system-`uname -m` /usr/bin/qemu",
+      "reason": "BLFS 13.1 postlfs/qemu.html: the /usr/bin/qemu symlink is a convenience Note, flagged by the admonition heuristic, but the book's own 'Using Qemu' section says its instructions assume the link exists. Cheap and harmless, so installed. -f added 2026-10-27: the book's `ln -sv` fails with 'File exists' on any rebuild, which stopped server's `lfsbuild --only blfs-qemu --force` after a complete install (rebuilt for spice-protocol). Same link, same target."
     },
     "6": {
       "action": "drop",

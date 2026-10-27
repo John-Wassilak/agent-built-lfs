@@ -408,3 +408,7 @@ blfs-libcap-ng
 blfs-virtiofsd
 ch10-kernel
 blfs-nvidia-470xx
+blfs-spice-protocol
+blfs-qemu
+ch10-kernel
+blfs-nvidia-470xx

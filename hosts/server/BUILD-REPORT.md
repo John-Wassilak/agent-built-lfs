@@ -6015,3 +6015,125 @@ Fix, inside the guest: `~kali/.config/autostart/xautoresize.desktop` with
 overlay, so `kali-vm reset` discards it; the launcher's header says so. `xautoresize` was
 also started in the running session through the guest agent. The operator confirmed the
 desktop now follows the viewer window.
+
+### Kali guest: the Windows share, same directory (2026-10-27)
+
+The operator wanted Kali to get the same host directory Windows mounts as `Z:`, so
+`/mnt/big_drive/vm-share` is now shared with both guests. `kali-vm` starts its own virtiofsd
+as kalivm (tag `share`) the way `win11-vm` does. Guest RAM moves to a file on a
+`huge=advise` tmpfs (`TemporaryFileSystem=/run/kalivm-ram` in `kali-vm.service`, 8G
+ceiling) because vhost-user needs memory virtiofsd can map. The anonymous RAM that got
+hugepages before cannot be shared.
+
+- **Host ACL**: `setfacl -m u:kalivm:rwx -d -m u:kalivm:rwx` on the directory, plus the
+  access entry on the two files already there. The setgid bit still makes new files group
+  john.
+- **Ownership**: on the first boot every file showed as 65534 in the guest and `kali` got
+  `permission denied` writing. Unprivileged in its user namespace, virtiofsd maps only
+  kalivm's own uid; john (1000) and win11vm (998) fall to the overflow id. Windows never
+  showed this because it ignores the uids. Fixed with `--translate-uid/--translate-gid
+  squash-host:0:1000:4294967295`, which shows every host id as Kali's `kali` (1000), and
+  `squash-guest:0:<kalivm>:4294967295`, which records every guest id as kalivm. That is
+  the only owner virtiofsd could create files as anyway. Not combinable with
+  `--posix-acl`, which is not used.
+- **Guest side**: `/mnt/share` and the fstab line `share /mnt/share virtiofs
+  defaults,nofail 0 0`, added through the guest agent. Both live in the overlay, so
+  `kali-vm reset` discards them; the launcher header has the two commands.
+
+| Check | Result |
+|---|---|
+| `findmnt /mnt/share` in the guest | `share virtiofs rw,relatime` |
+| Guest view of john's and win11vm's files | `1000 1000`, i.e. kali:kali |
+| As `kali`: new file, append to john's file, mkdir + file | all succeed |
+| Host view of kali's file | `kalivm:john`, ACL rwx for john, win11vm, kalivm |
+| john appends to kali's file; win11vm writes in kali's dir | both succeed |
+| Guest RAM after restart | `ShmemPmdMapped` 1427456 kB of 1504272 kB RSS |
+
+The test files were removed afterwards. Windows was not running and its virtiofsd is
+separate, so nothing changed on that side. Both guests can mount the share at once through
+two daemons. Neither guest sees the other's writes until its cache revalidates
+(`--cache=auto`), so the share suits handing files back and forth and does not suit two
+guests writing the same file.
+
+### Kali guest: clipboard over VNC, and qemu rebuilt with spice-protocol (2026-10-27)
+
+The operator asked for the guest tools to be complete, the clipboard in particular. Inside
+Kali's image, `qemu-guest-agent` (running), `spice-vdagent`, `xautoresize` (fixed
+2026-10-25) and `fstrim.timer` (enabled) were already present. The gap was the host: qemu's
+VNC server passes the viewer's clipboard only to a `qemu-vdagent` chardev, and
+`qemu-system-x86_64 -chardev help` did not list one. qemu 11.1.1 compiles `ui/vdagent.c`
+only when its meson finds `spice-protocol` >= 0.14.3 through pkg-config (an auto feature).
+It does not need the spice server.
+
+- **spice-protocol 0.14.5**: `packages.py` seq 272.5, a hand() recipe
+  (`recipes/blfs-spice-protocol.sh`). Not in BLFS; Arch [extra]. The release tarball's
+  sha256 matches upstream's `.sha256sum`, and the GitLab archive matches Arch's PKGBUILD.
+  The fractional seq puts it ahead of qemu for a fresh build, the same approach as
+  libjpeg-turbo at 65.5. Built in 0.1 min, 14 files: headers under `/usr/include/spice-1`
+  and `/usr/share/pkgconfig/spice-protocol.pc`.
+- **qemu rebuild**: `lfsbuild --only blfs-qemu --force`, 6.8 min. Configure reported
+  `spice protocol support: YES 0.14.5`. The step then failed at its last command: the book's
+  `ln -sv qemu-system-x86_64 /usr/bin/qemu` exits on `File exists` whenever the step is
+  re-run. Block 5's decision in `recipes/blfs-13.1/overrides.json` is now a replace with
+  `ln -sfv`. Only that line of the generated recipe changed, and drift is zero. The re-run
+  took 6.9 min and captured a 150-file manifest. It lost `/etc/group`, `/etc/group-`,
+  `/etc/gshadow` and `/etc/gshadow-`, which the first build captured only because its
+  `usermod` added john to kvm; qemu should not own them.
+- **Launcher**: `-chardev qemu-vdagent,clipboard=on,mouse=off` on a `virtserialport` named
+  `com.redhat.spice.0`. mouse=off because usb-tablet already gives an absolute pointer.
+  Windows is unchanged (its clipboard is RDP's).
+
+| Check | Result |
+|---|---|
+| `qemu-system-x86_64 -chardev help` | lists `qemu-vdagent` |
+| `/dev/virtio-ports` in the guest | `com.redhat.spice.0`, `org.qemu.guest_agent.0` |
+| `spice-vdagentd.socket` | active, pulled in by Kali's udev rule for the port |
+| `/mnt/share` after the restart | mounted from fstab |
+
+Follow-up the same day. The guest had restarted at 01:50 and sat at the lightdm greeter,
+so no `spice-vdagent` session agent or `xautoresize` was running. Both are xdg-autostart
+entries and start only in a logged-in session. After the operator logged in as `kali` over
+VNC (17:06 CDT, after the vhost restart below), `spice-vdagent` and `xautoresize` ran in the
+session and `spice-vdagentd` was active, and the operator confirmed the clipboard works. Also added `-device
+virtio-rng-pci`: the i5-2500K has no RDRAND, so the guest had no hardware RNG. After a
+restart the guest's `rng_current` is `virtio_rng.0`. server's kernel had
+`CONFIG_VHOST_NET` unset, so the lab tap ran in qemu's userspace; the operator asked for
+the rebuild below.
+
+### Kernel rebuild with VHOST_NET, Kali lab tap on vhost (2026-10-27)
+
+`hosts/server/kernel-config.sh` now has `VHOST_NET=m` next to KVM. It is in the host file
+because only KVM, which is host-only, can use it.
+- **Dry run**: against the 7.1.8 tarball, both gates passed. `diffconfig` against
+  `/boot/config-7.1.8` is `VHOST_NET n -> m` plus `VHOST` and `VHOST_IOTLB` as `m`, and
+  nothing built in. With `MODVERSIONS` and `RANDSTRUCT` both off, the new modules can
+  load into the running kernel, so this rebuild needs no reboot.
+- **Backup**: `/boot/*.pre-vhost` and `/lib/modules/7.1.8.pre-vhost` (59M, with the five
+  nvidia modules).
+- **Rebuild**: `ch10-kernel --force` 21.6 min, then `blfs-nvidia-470xx --force` 23.8 min
+  (198-file manifest). The installed `/boot/config-7.1.8` is byte-identical to the dry
+  run. The five nvidia modules and `vhost_net.ko` all carry vermagic `7.1.8 SMP preempt
+  mod_unload`.
+- **Load**: `modprobe vhost_net` on the running kernel loaded `vhost_net`, `vhost` and
+  `vhost_iotlb` with nothing in dmesg. `/dev/vhost-net` is `root:kvm 0660` by systemd's
+  `50-udev-default.rules`, and kalivm is in kvm. `modules.devname` lists `vhost-net
+  c10:238`, so after a reboot the static node exists and its first open loads the module.
+- **Launcher**: `kali-vm` adds `vhost=on` to the lab tap when `/dev/vhost-net` is
+  writable, and otherwise logs and runs the tap in userspace. The slirp NIC cannot use
+  vhost.
+- **Verified**: a throwaway qemu run as kalivm (`-S`, no disk) with `vhost=on` on
+  `lab-kali` held `/dev/vhost-net` open and had a `vhost-<pid>` kernel worker.
+- **Not yet verified**: Kali booted with `vhost=on`. The operator stopped Kali at 14:22
+  and started Windows. A restart at 14:25 then failed with `virtiofsd did not create
+  .../virtiofs.sock`. The launcher waited only 2 s, and the host was loaded from the nvidia
+  build that had just finished and from Windows booting. Started by hand afterwards,
+  virtiofsd made its socket in 0.03 s. All three socket waits (kali-vm's virtiofsd,
+  win11-vm's swtpm and virtiofsd) are now 10 s, and both launchers are redeployed. The
+  running Windows guest is unaffected. Kali was left stopped.
+- **Booted** (17:01, with Windows running, at the operator's request): it started first
+  try. qemu's lab netdev reads `vhost=on`, the process holds `/dev/vhost-net`, and the
+  `vhost-<pid>` worker exists. The guest's eth1 (virtio_net) took its DHCP lease from
+  server, 192.168.56.10, in 0.23 s, the full exchange over vhost, with no errors or
+  drops on the interface. A ping to .1 gets no reply because the firewall accepts only
+  udp/67 from lab0 and drops everything else, as designed. `/mnt/share` is mounted, and
+  `rng_current` is `virtio_rng.0`.

@@ -68,7 +68,7 @@ chmod 4750 /usr/libexec/qemu-bridge-helper
 # --- block 5 --------------------------------------------------
 #   ctx: Note For convenience you may want to create a symbolic link to run the installed
 #   ctx: program. For instance (as the root user):
-ln -sv qemu-system-`uname -m` /usr/bin/qemu
+ln -sfv qemu-system-`uname -m` /usr/bin/qemu
 
 # --- block 6 --------------------------------------------------
 #   ctx: running under qemu the “guest.” We'll use these notations in the following text. Note

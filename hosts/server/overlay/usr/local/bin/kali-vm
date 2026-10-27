@@ -36,13 +36,25 @@
 #   install -d -m 750 -o kalivm -g kalivm /mnt/big_drive/kali
 # then the networkd files above, `networkctl reload`, and the firewall script.
 #
+# The file share is /mnt/big_drive/vm-share, the same directory win11-vm gives Windows
+# as Z:, so a file dropped there by john or either guest is visible to all three. It
+# needs kalivm in both of its ACLs (see win11-vm for the rest of its setup):
+#   setfacl -m u:kalivm:rwx -d -m u:kalivm:rwx /mnt/big_drive/vm-share
+#   find /mnt/big_drive/vm-share -mindepth 1 -exec setfacl -m u:kalivm:rwx {} +
+# The find gives kalivm the files that already exist; new ones inherit the default ACL.
+#
 # Hardware choices:
 #   q35, SeaBIOS -- Kali's qemu image boots with legacy BIOS; no Secure Boot or TPM.
 #   -cpu host -- the guest sees the real i5-2500K (AES-NI, AVX), which hashcat and
 #     john use.
-#   Guest RAM is plain anonymous memory. THP is madvise here and qemu madvises guest
-#     RAM, so it gets hugepages without win11-vm's tmpfs, which exists only because
-#     virtiofsd needs a shared backend.
+#   virtio-fs (vhost-user-fs-pci, tag "share") -- $SHARE, served by virtiofsd as
+#     kalivm in its namespace sandbox, as win11-vm does. virtiofs is in Kali's kernel.
+#     Guest side, once per overlay (`reset` discards it), as root:
+#       mkdir -p /mnt/share
+#       echo 'share /mnt/share virtiofs defaults,nofail 0 0' >>/etc/fstab
+#   Guest RAM is a file in $RAM_DIR, the unit's private huge=advise tmpfs, because
+#     vhost-user needs RAM virtiofsd can map; win11-vm explains why memfd gets no THP.
+#     Outside the unit it falls back to memfd on 4K pages.
 #   virtio-blk, virtio-net, virtio-vga -- all in Kali's kernel. virtio-vga passes the
 #     VNC viewer's size to the guest as the connector's preferred mode. Xorg does not
 #     switch to it by itself: Kali's xautoresize does, but its stock launcher exits
@@ -50,6 +62,19 @@
 #     ~kali/.config/autostart/xautoresize.desktop with Exec=xautoresize, which
 #     `reset` discards; recreate it after one.
 #   -rtc base=utc -- Linux keeps the RTC in UTC.
+#   virtio-rng-pci -- host /dev/urandom for the guest's RNG. The i5-2500K has no RDRAND,
+#     so -cpu host gives the guest none; virtio_rng is in Kali's kernel.
+#   vhost=on on the lab tap -- the kernel's vhost_net moves the tap's packets, not
+#     qemu's main loop (kernel-config.sh, 2026-10-27). /dev/vhost-net is kvm 0660 by
+#     systemd's udev rule, and kalivm is in kvm. Without it the tap falls back to
+#     userspace. The slirp NIC cannot use vhost.
+#   qemu-vdagent (clipboard=on) on the com.redhat.spice.0 port -- copy and paste
+#     between the VNC viewer and the guest. qemu's VNC server hands the viewer's
+#     clipboard to this chardev, which speaks the spice agent protocol to Kali's
+#     spice-vdagent; no spice server involved. Needs qemu built with spice-protocol
+#     (packages.py seq 272.5). mouse=off: usb-tablet already gives an absolute pointer.
+#     The guest agent (qemu-ga) and spice-vdagent ship in Kali's image and start by
+#     themselves when their ports appear.
 set -euo pipefail
 
 VM=${KALI_VM_DIR:-/mnt/big_drive/kali}
@@ -64,6 +89,9 @@ DISK=$VM/kali.qcow2
 MONITOR=$VM/monitor.sock
 QGA=$VM/qga.sock
 VNC_PASS=$VM/vnc.pass
+SHARE=${KALI_SHARE:-/mnt/big_drive/vm-share}
+VFS_SOCK=$VM/virtiofs.sock
+RAM_DIR=/run/kalivm-ram
 
 die() { echo "kali-vm: $*" >&2; exit 1; }
 
@@ -110,6 +138,50 @@ create() {
     vnc_password
 }
 
+# Same as win11-vm: one connection, exits with qemu, stays in the unit's cgroup.
+# The socket wait is 10 s. It was 2 s until 2026-10-27, when a start under load
+# (a kernel build finishing, Windows booting) died at 2 s; unloaded it takes 0.03 s.
+#
+# The translate options are what a Linux guest needs and Windows did not. Unprivileged
+# in its namespace, virtiofsd can see only kalivm's own uid, so the guest saw john's
+# and win11vm's files as 65534 with no write bit for kali (2026-10-27). squash-host
+# shows every host uid/gid to the guest as 1000, Kali's `kali`, so kali owns the whole
+# share in the guest. squash-guest records every guest uid/gid as kalivm, which is all
+# virtiofsd could create files as anyway. On the host the setgid bit and default ACL
+# still make each new file group john, rwx for john, win11vm and kalivm.
+start_virtiofsd() {
+    [ -d "$SHARE" ] && [ -w "$SHARE" ] || die "$SHARE is not writable by $(id -un) -- see the share setup above"
+    rm -f "$VFS_SOCK"
+    /usr/libexec/virtiofsd --socket-path="$VFS_SOCK" --shared-dir="$SHARE" \
+                           --sandbox=namespace --cache=auto \
+                           --translate-uid squash-host:0:1000:4294967295 \
+                           --translate-uid squash-guest:0:"$(id -u)":4294967295 \
+                           --translate-gid squash-host:0:1000:4294967295 \
+                           --translate-gid squash-guest:0:"$(id -g)":4294967295 &
+    for _ in $(seq 50); do
+        [ -S "$VFS_SOCK" ] && return 0
+        sleep 0.2
+    done
+    die "virtiofsd did not create $VFS_SOCK"
+}
+
+ram_backend() {
+    if [ -d "$RAM_DIR" ] && [ -w "$RAM_DIR" ]; then
+        echo "memory-backend-file,id=mem0,size=$MEM,share=on,mem-path=$RAM_DIR/kali,align=2M,discard-data=on"
+    else
+        echo "kali-vm: no $RAM_DIR, guest RAM on memfd without hugepages" >&2
+        echo "memory-backend-memfd,id=mem0,size=$MEM,share=on"
+    fi
+}
+
+vhost() {
+    if [ -w /dev/vhost-net ]; then
+        echo ",vhost=on"
+    else
+        echo "kali-vm: no writable /dev/vhost-net, lab tap in userspace" >&2
+    fi
+}
+
 reset() {
     preflight
     [ -e "$BASE" ] || die "no $BASE -- run 'kali-vm create' first"
@@ -125,24 +197,32 @@ run() {
     [ -e "$DISK" ] || die "no $DISK -- run 'kali-vm create' first"
     [ -d /sys/class/net/$LAB_TAP ] || die "no $LAB_TAP -- are the lab0 networkd files installed (networkctl reload)?"
     vnc_password
+    start_virtiofsd
     exec qemu-system-x86_64 \
         -name kali \
         -machine q35,accel=kvm \
         -cpu host \
         -smp "$CPUS",sockets=1,cores="$CPUS",threads=1 \
         -m "$MEM" \
+        -object "$(ram_backend)" \
+        -numa node,memdev=mem0 \
         -rtc base=utc \
         -drive file="$DISK",if=none,id=disk0,format=qcow2,cache=none,aio=native,discard=unmap \
         -device virtio-blk-pci,drive=disk0,bootindex=1 \
         -netdev user,id=nat,ipv6=off \
         -device virtio-net-pci,netdev=nat \
-        -netdev tap,id=lab,ifname="$LAB_TAP",script=no,downscript=no \
+        -netdev tap,id=lab,ifname="$LAB_TAP",script=no,downscript=no"$(vhost)" \
         -device virtio-net-pci,netdev=lab,mac="$LAB_MAC" \
+        -device virtio-rng-pci \
         -device qemu-xhci -device usb-tablet \
         -monitor unix:"$MONITOR",server,nowait \
         -device virtio-serial-pci \
         -chardev socket,id=qga0,path="$QGA",server=on,wait=off \
         -device virtserialport,chardev=qga0,name=org.qemu.guest_agent.0 \
+        -chardev qemu-vdagent,id=vdagent0,name=vdagent,clipboard=on,mouse=off \
+        -device virtserialport,chardev=vdagent0,name=com.redhat.spice.0 \
+        -chardev socket,id=vfs0,path="$VFS_SOCK" \
+        -device vhost-user-fs-pci,chardev=vfs0,tag=share \
         -vga none -device virtio-vga \
         -object tls-creds-anon,id=vnctls,endpoint=server \
         -object secret,id=vncpw,file="$VNC_PASS",format=raw \

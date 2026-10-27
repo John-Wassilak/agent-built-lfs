@@ -126,14 +126,18 @@ $K --module  SND_HDA_GENERIC
 # appears once KVM is on. It is pinned here so that turning on KVM can never
 # leave VMSCAPE unmitigated.
 #
+# VHOST_NET (added 2026-10-27) -- in-kernel virtio-net backend for tap devices, so
+# a guest's packets on a tap skip qemu's userspace loop. Left out on 2026-10-21
+# because Windows uses -netdev user (libslirp), which never touches vhost. The Kali
+# lab guest's second NIC is the tap lab-kali on lab0, and the operator asked for the
+# fast path there (`vhost=on` in kali-vm). It selects VHOST and VHOST_IOTLB, both =m.
+#
 # Deliberately NOT enabled:
-#   VHOST_NET -- in-kernel virtio-net backend for tap devices. The guest uses
-#     -netdev user (libslirp), which is userspace and never touches vhost; RDP
-#     traffic is far below where that matters.
 #   BRIDGE / TUN -- already =m from the shared base (docker, tailscale), so the book's
 #     bridge setup is available if a host ever wants it.
 $K --module  KVM
 $K --module  KVM_INTEL
 $K --enable  MITIGATION_VMSCAPE
+$K --module  VHOST_NET
 
 kernel_config_finish
