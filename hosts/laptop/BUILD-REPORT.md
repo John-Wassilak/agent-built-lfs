@@ -7186,3 +7186,33 @@ removed from `/usr/share`, and the new ones were installed and indexed with
 
 Unchanged on server: `win11-vm` still serves the guest's console on VNC at 10.0.0.4:5901,
 and the firewall still accepts 5901 on wg0.
+
+## ALSA bypassed PipeWire, RDP audio went to the built-in chip (2026-10-28)
+
+Symptom: the Windows guest's sound over sdl-freerdp (`/sound:sys:alsa`) played on card 0,
+the built-in HDA Intel PCH, and not on the default sink, the OneLink dock (card 2).
+`pactl list sink-inputs` showed no FreeRDP stream. sdl-freerdp (pid 1474751) held
+`/dev/snd/pcmC0D0p` and `/dev/snd/controlC0` open.
+
+Two faults.
+
+**ALSA never loaded PipeWire's config.** pipewire installs `50-pipewire.conf` and
+`99-pipewire-default.conf` to `/usr/share/alsa/alsa.conf.d/`. The `@hooks` block in
+`/usr/share/alsa/alsa.conf` loads only `/var/lib/alsa/conf.d`, `/usr/etc/alsa/conf.d` and
+`/etc/alsa/conf.d`, and `/etc/alsa` did not exist. So ALSA's `default` was the first
+hardware card, and every program using ALSA directly skipped PipeWire. The pipewire book
+page does not cover this. Fixed in the shared `recipes/blfs-pipewire.sh`, which now links
+both files into `/etc/alsa/conf.d`. The links were made by hand on this machine and added
+to `manifests/blfs-pipewire.txt`; pipewire was not rebuilt. Checked with a throwaway
+`snd_pcm_open("default")` client (alsa-utils is not built here): the PCM type was
+`IOPLUG`, the process held no `/dev/snd` node, and `pactl` listed it as
+"PipeWire ALSA [alsatest]" on sink 53, the dock. `server` builds pipewire from its own
+`hosts/server/recipes/blfs-pipewire.sh`, which lacks the links; not yet checked there.
+
+**FreeRDP was built without PulseAudio** (upstream bug, 3.22.0). `cmake/ConfigOptions.cmake:174`
+is `option(WITH_PULSE ... ${PULSE_FOUND})`, but FreeRDP ships no `FindPulseAudio.cmake`,
+so `find_package(PulseAudio)` uses PulseAudio's own `PulseAudioConfig.cmake`, which sets
+`PULSEAUDIO_FOUND`. The installed `libfreerdp-client3` has only the `rdpsnd_alsa_*` and
+`rdpsnd_oss_*` backends. With the ALSA fix in place this no longer misroutes audio. The
+`-D WITH_PULSE=ON` override and rebuild of seq 419 are deferred until the operator's RDP
+session is closed, because the install replaces the loaded libfreerdp3.
