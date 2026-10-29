@@ -75,6 +75,10 @@
 #     (packages.py seq 272.5). mouse=off: usb-tablet already gives an absolute pointer.
 #     The guest agent (qemu-ga) and spice-vdagent ship in Kali's image and start by
 #     themselves when their ports appear.
+#
+# Terminal logging, which the lab sheet requires: ../kali-guest/session-log.sh in the
+# repo (hosts/server/kali-guest/), sourced from the guest's /etc/zsh/zshrc and
+# /etc/bash.bashrc. Its header has the install lines. `reset` discards it.
 set -euo pipefail
 
 VM=${KALI_VM_DIR:-/mnt/big_drive/kali}

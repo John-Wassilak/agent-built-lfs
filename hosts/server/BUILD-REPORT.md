@@ -6159,3 +6159,23 @@ because only KVM, which is host-only, can use it.
   `disable_s3=<uint8>`, and a bad value fails at startup. Redeployed to
   `/usr/local/bin/win11-vm`. The running guest still has S3 until the next cold start
   of `win11-vm@run`, so do not put it to sleep before then.
+
+### Kali guest: every terminal session recorded (2026-10-28)
+
+- **Requirement**: the lab sheet asks for terminal logging on every session, suggesting
+  `script -a ~/logs/$(date +%F).log` at the start of each.
+- **Change**: `hosts/server/kali-guest/session-log.sh`, sourced from the guest's
+  `/etc/zsh/zshrc` and `/etc/bash.bashrc` so every interactive zsh or bash records
+  itself, for any user, login shell or not. It execs `script -q -a -f -T`, one log plus a
+  `.timing` file per session in `~/logs/`, named `YYYY-MM-DD_HHMMSS_PID`, mode 0600. Per
+  session rather than per day because concurrent terminals appending to one file
+  interleave. `SESSION_LOG` in the environment stops the inner shell and its children
+  from wrapping again; shells without a terminal and `NO_SESSION_LOG=1` are skipped.
+- **Checked on server** (bash 5.3, util-linux script 2.42.2, scratch HOME under a pty):
+  log and timing created 0600, inner shell keeps umask 0002 and sees `SESSION_LOG`,
+  a nested `bash -i` does not start a second log, no log without a tty or with the
+  opt-out, and an unwritable HOME gives a live unrecorded shell. zsh is not installed on
+  server, so the zsh path is untested until it runs in the guest.
+- **Not yet installed in the guest**: its sshd is closed, so nothing here can reach it.
+  A copy is in `/mnt/big_drive/vm-share/`, which Kali sees as `/mnt/share/`; the install
+  lines are in the script's header. `kali-vm reset` discards it.
