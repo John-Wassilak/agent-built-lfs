@@ -6179,3 +6179,24 @@ because only KVM, which is host-only, can use it.
 - **Not yet installed in the guest**: its sshd is closed, so nothing here can reach it.
   A copy is in `/mnt/big_drive/vm-share/`, which Kali sees as `/mnt/share/`; the install
   lines are in the script's header. `kali-vm reset` discards it.
+
+### Kali guest: disk snapshots (2026-10-28)
+
+- **Change**: `kali-vm snapshot NAME`, `kali-vm snapshot` (list) and `kali-vm revert NAME`.
+  They are qcow2 internal snapshots inside `kali.qcow2`, disk only. Full-state `savevm`
+  was not tried: vhost-user-fs devices block migration, and savevm is a migration into
+  the image. A running guest's filesystems are frozen through qemu-ga
+  (`guest-fsfreeze-freeze`) around HMP `snapshot_blkdev_internal`, then thawed. A stopped
+  VM uses `qemu-img snapshot -c`. Revert requires the VM to be stopped and uses
+  `qemu-img snapshot -a`. `reset` deletes `kali.qcow2`, so it now refuses while
+  snapshots exist, unless given `--discard-snapshots`.
+- **First snapshot**: `clean-base`, taken live at 21:23:58 by hand before the subcommand
+  existed (one filesystem frozen, then thawed).
+- **Checked**: against the running VM, from the repo copy: the list, name validation, a
+  duplicate tag refused, a live snapshot `test-snap` (froze 1, thawed; afterwards
+  `guest-fsfreeze-status` said `thawed`), and revert and reset refused while running.
+  `test-snap` was then deleted with `snapshot_delete_blkdev_internal`. The stopped paths
+  ran on a 64M scratch base plus overlay: snapshot, overwrite 1M, revert, `qemu-io`
+  pattern read back the pre-snapshot data; revert of an unknown tag refused; reset
+  refused with a snapshot present and went ahead with `--discard-snapshots`. A
+  revert of the real disk has not run, because that needs the guest stopped.

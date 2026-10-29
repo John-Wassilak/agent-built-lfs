@@ -8,6 +8,9 @@
 #   kali-vm run            boot Kali
 #   kali-vm stop           shut Kali down (guest agent, else ACPI power button)
 #   kali-vm reset          throw away every change since create (VM must be stopped)
+#   kali-vm snapshot NAME  save the disk as NAME (running or stopped)
+#   kali-vm snapshot       list the snapshots
+#   kali-vm revert NAME    put the disk back to NAME (VM must be stopped)
 #
 # run is normally started as the kali-vm unit. The screen is VNC on 10.0.0.4:5902
 # (wg0 only; TLS, and the password in $VM/vnc.pass, which create writes).
@@ -24,6 +27,15 @@
 # Disk: create stores the image as $BASE, read-only, and the guest writes to $DISK,
 # a qcow2 overlay backed by it. reset is a new overlay, so a lab can start over from a
 # clean Kali without importing the 16G image again.
+#
+# Snapshots are qcow2 internal snapshots inside $DISK, disk only: reverting is a cold
+# boot into that disk. savevm (disk plus RAM) is not available because vhost-user-fs
+# blocks migration, and savevm is a migration to the image. A running guest's
+# filesystems are frozen through the guest agent for the moment of the snapshot, so
+# the disk is consistent rather than crash-consistent; without an agent answer the
+# snapshot is still taken, with a warning. They live in $DISK, so reset would delete
+# them: it refuses while any exist, unless given --discard-snapshots. First one,
+# clean-base, 2026-10-28.
 #
 # Host-specific, hence hosts/server/overlay: it names /mnt/big_drive (sda2; / has 24G
 # free and the image alone is 16G), wg0's address and lab0's tap. 2 vCPUs and 4G, the
@@ -186,14 +198,95 @@ vhost() {
     fi
 }
 
+running() {
+    [ -S "$MONITOR" ] && python3 -c 'import socket,sys
+s=socket.socket(socket.AF_UNIX); s.connect(sys.argv[1])' "$MONITOR" 2>/dev/null
+}
+
+# Tags in $DISK, one per line. -U: readable while qemu holds the write lock.
+snapshot_tags() {
+    qemu-img snapshot -U -l "$DISK" | awk 'NR > 2 { print $2 }'
+}
+
 reset() {
     preflight
     [ -e "$BASE" ] || die "no $BASE -- run 'kali-vm create' first"
-    [ -S "$MONITOR" ] && python3 -c 'import socket,sys
-s=socket.socket(socket.AF_UNIX); s.connect(sys.argv[1])' "$MONITOR" 2>/dev/null \
-        && die "the VM is running; stop it first"
+    running && die "the VM is running; stop it first"
+    if [ -e "$DISK" ] && [ -n "$(snapshot_tags)" ] && [ "${1:-}" != --discard-snapshots ]; then
+        die "$DISK holds snapshots ($(snapshot_tags | paste -sd ' ')); reset deletes them. 'kali-vm reset --discard-snapshots' to go ahead"
+    fi
     rm -f "$DISK"
     overlay
+}
+
+# One guest agent command; prints its "return" value. Exits 1 if the agent does not
+# answer guest-sync within 3 s (not installed, not started, guest still booting).
+qga() {
+    [ -S "$QGA" ] || return 1
+    python3 -c 'import json,socket,sys
+s=socket.socket(socket.AF_UNIX); s.settimeout(3); s.connect(sys.argv[1])
+f=s.makefile("rb")
+def call(cmd):
+    s.sendall(json.dumps(cmd).encode()+b"\n")
+    while True:
+        r=json.loads(f.readline() or sys.exit(1))
+        if "return" in r or "error" in r: return r
+while call({"execute":"guest-sync","arguments":{"id":4242}}).get("return")!=4242: pass
+s.settimeout(60)
+r=call({"execute":sys.argv[2]})
+if "error" in r: sys.exit(r["error"].get("desc","error"))
+print(r["return"])' "$QGA" "$1"
+}
+
+# A human monitor command with its output. HMP echoes the line back with terminal
+# escapes, so the reply is everything after the echo, up to the next prompt.
+hmp() {
+    python3 -c 'import re,socket,sys
+s=socket.socket(socket.AF_UNIX); s.settimeout(120); s.connect(sys.argv[1])
+out=b""
+while b"(qemu)" not in out: out+=s.recv(65536)
+s.sendall(sys.argv[2].encode()+b"\n")
+out=b""
+while out.count(b"(qemu)")<1: out+=s.recv(65536)
+text=re.sub(r"\x1b\[[0-9;]*[A-Za-z]","",out.decode(errors="replace"))
+print(text.split("\n",1)[-1].rsplit("(qemu)",1)[0].strip())' "$MONITOR" "$1"
+}
+
+snapshot() {
+    local name=${1:-}
+    [ -e "$DISK" ] || die "no $DISK -- run 'kali-vm create' first"
+    if [ -z "$name" ]; then
+        qemu-img snapshot -U -l "$DISK"
+        return
+    fi
+    [[ $name =~ ^[A-Za-z0-9._-]+$ ]] || die "snapshot names are letters, digits, . _ -"
+    snapshot_tags | grep -qxF -- "$name" && die "$DISK already has a snapshot $name"
+    if running; then
+        local frozen= out
+        if frozen=$(qga guest-fsfreeze-freeze 2>/dev/null); then
+            trap 'qga guest-fsfreeze-thaw >/dev/null || echo "kali-vm: THAW FAILED -- guest filesystems may still be frozen; stop and start the VM" >&2' EXIT
+            echo "kali-vm: froze $frozen guest filesystem(s)"
+        else
+            echo "kali-vm: no guest agent answer; snapshot is crash-consistent" >&2
+        fi
+        out=$(hmp "snapshot_blkdev_internal disk0 $name")
+        [ -n "$frozen" ] && { qga guest-fsfreeze-thaw >/dev/null; trap - EXIT; echo "kali-vm: thawed"; }
+        [ -z "$out" ] || die "monitor: $out"
+    else
+        qemu-img snapshot -c "$name" "$DISK"
+    fi
+    snapshot_tags | grep -qxF -- "$name" || die "snapshot $name is not in $DISK"
+    echo "kali-vm: snapshot $name taken"
+}
+
+revert() {
+    local name=${1:-}
+    [ -n "$name" ] || die "usage: kali-vm revert NAME ('kali-vm snapshot' lists them)"
+    [ -e "$DISK" ] || die "no $DISK -- run 'kali-vm create' first"
+    running && die "the VM is running; stop it first"
+    snapshot_tags | grep -qxF -- "$name" || die "no snapshot $name in $DISK"
+    qemu-img snapshot -a "$name" "$DISK"
+    echo "kali-vm: disk is back at $name"
 }
 
 run() {
@@ -263,6 +356,8 @@ case "${1:-}" in
     create) create "${2:-}" ;;
     run)    run ;;
     stop)   shutdown_guest ;;
-    reset)  reset ;;
+    reset)  reset "${2:-}" ;;
+    snapshot) snapshot "${2:-}" ;;
+    revert) revert "${2:-}" ;;
     *) sed -n '/^# Usage/,/^#$/p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac
