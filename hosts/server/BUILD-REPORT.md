@@ -6137,3 +6137,25 @@ because only KVM, which is host-only, can use it.
   drops on the interface. A ping to .1 gets no reply because the firewall accepts only
   udp/67 from lab0 and drops everything else, as designed. `/mnt/share` is mounted, and
   `rng_current` is `virtio_rng.0`.
+
+### Windows guest: sleep hung the guest, S3 disabled (2026-10-27)
+
+- **Symptom**: the operator put Windows to sleep. Afterwards the qemu process was running
+  but RDP did not connect. The monitor reported `VM status: paused (suspended)`, which is
+  ACPI S3.
+- **Wake**: `system_wakeup` on the monitor socket moved qemu to `running`, but the guest
+  never came back. An RDP X.224 Connection Request got no reply in two probes about a
+  minute apart. The guest agent's `guest-ping` timed out at 30 s. `screendump` showed
+  "Display output is not active." An HMP `sendkey` and `mouse_move` changed nothing. Both
+  vCPUs ran at 100% (1007 ticks in 5 s) in CPL 0. vCPU0 sat at `RIP=fffff803a586b8fa` in
+  every sample across 30 s, and vCPU1 looped a few hundred bytes from `fffff803a57c3000`.
+  A TCP connect to 10.0.0.4:3389 succeeds whatever the guest's state, because slirp's
+  hostfwd is the listener, so only a protocol reply proves the guest is up.
+- **Recovery**: `system_reset` on the monitor, at the operator's request. The qemu process,
+  swtpm, virtiofsd and the forwards stayed up. RDP answered with a Connection Confirm
+  (`0300 0013 0ed0...`) about 60 s later.
+- **Fix**: `win11-vm` passes `-global ICH9-LPC.disable_s3=1`, so the firmware offers the
+  guest no S3 and Sleep leaves its power menu. Checked: `-device ICH9-LPC,help` lists
+  `disable_s3=<uint8>`, and a bad value fails at startup. Redeployed to
+  `/usr/local/bin/win11-vm`. The running guest still has S3 until the next cold start
+  of `win11-vm@run`, so do not put it to sleep before then.
