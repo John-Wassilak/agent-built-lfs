@@ -717,3 +717,12 @@ blfs-freerdp	native	9.1	1
 blfs-freerdp	native	151.0	0
 blfs-sdl3-ttf	native	8.8	0
 blfs-freerdp	native	154.0	0
+blfs-nlohmann-json	native	7.5	0
+blfs-xcb-imdkit	native	10.4	0
+blfs-fcitx5	native	471.3	0
+blfs-fcitx5-gtk	native	17.2	0
+blfs-fcitx5-qt	native	141.5	0
+blfs-kitemviews	native	52.8	0
+blfs-kwidgetsaddons	native	271.8	0
+blfs-fcitx5-configtool	native	298.2	0
+blfs-fcitx5-bamboo	native	25.3	0

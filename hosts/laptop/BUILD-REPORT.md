@@ -7187,6 +7187,59 @@ removed from `/usr/share`, and the new ones were installed and indexed with
 Unchanged on server: `win11-vm` still serves the guest's console on VNC at 10.0.0.4:5901,
 and the firewall still accepts 5901 on wg0.
 
+## fcitx5 and Bamboo, Vietnamese input (seq 421-429, built 2026-10-21/22)
+
+Operator request, for a language course. Two layers.
+
+**XKB layout, no build.** `/usr/share/X11/xkb/symbols/vn` was already installed.
+`~/.config/hypr/hyprland.lua` now has `kb_layout = "us,vn"`, `kb_variant = ",us"` and
+`grp:alt_shift_toggle` beside the existing `caps:escape`. `vn(us)` keeps US punctuation,
+puts â ă ê ô ư ơ đ on AltGr, and makes `` ` `` `'` `.` `/` dead tone keys. `hyprctl
+switchxkblayout at-translated-set-2-keyboard 1` reported "Vietnamese (US)", and 0
+switched back to "English (US)".
+
+**fcitx5 with Bamboo, for Telex/VNI.** The recipes and sourcing are in `3944bb7`. All nine
+tarballs were verified: fcitx's six by detached signature (Weng Xuetian,
+2CC8A0609AD2A479C65B6D5C8E8B898CBF2412F9), nlohmann_json by signature (Niels Lohmann,
+797167AE41C0A6D9232E48457F3CEA63AE251B69), and KItemViews/KWidgetsAddons by the md5s on
+BLFS 13.0's frameworks6 page.
+
+lfsbuild's 8 GB guard refused the first step with 2.0 GB free on `/`. On the operator's
+call it was skipped for this run with the same throwaway wrapper as linux-id. All nine
+steps passed in one run:
+
+| step | min | manifest |
+|---|---|---|
+| nlohmann-json | 0.1 | 50 |
+| xcb-imdkit | 0.2 | 15 |
+| fcitx5 | 7.9 | 445 |
+| fcitx5-gtk | 0.3 | 17 |
+| fcitx5-qt | 2.4 | 48 |
+| kitemviews | 0.9 | 129 |
+| kwidgetsaddons | 4.5 | 280 |
+| fcitx5-configtool | 5.0 | 38 |
+| fcitx5-bamboo | 0.4 | 14 |
+
+Installed: `/usr/lib/fcitx5/libbamboo.so`, `im-fcitx5.so` for GTK3 (in the regenerated
+module cache), `libim-fcitx5.so` for GTK4, and
+`/opt/qt6/plugins/platforminputcontexts/libfcitx5platforminputcontextplugin.so`. Bamboo's Go
+core built from the vendored `bamboo-core` with `GOPROXY=off`. `/` had 6.1 GB free when
+checked after the build. Other work ran on this machine in between, so that number is
+not a measure of these steps.
+
+**Session wiring** (operator dotfiles, not tracked here). `hyprland.lua` sets `QT_IM_MODULE`,
+`XMODIFIERS=@im=fcitx` and `SDL_IM_MODULE`, and leaves `GTK_IM_MODULE` unset so Wayland GTK
+apps use text-input-v3. It starts `fcitx5 -d --replace` at `hyprland.start`.
+`~/.config/fcitx5/profile` was seeded with one group: keyboard-us, then bamboo. Checked
+live:
+
+- `fcitx5-diagnose` lists "Bamboo Wrapper For Fcitx 1.0.11", and its input contexts are
+  on the `wayland_v2` frontend (Hyprland's zwp_input_method_v2).
+- Over D-Bus, `FullInputMethodGroupInfo Default` returns keyboard-us and bamboo.
+
+**Not yet done:** typing a Telex word into a real window. The env vars only reach apps
+started after the next Hyprland login.
+
 ## ALSA bypassed PipeWire, RDP audio went to the built-in chip (2026-10-28)
 
 Symptom: the Windows guest's sound over sdl-freerdp (`/sound:sys:alsa`) played on card 0,
