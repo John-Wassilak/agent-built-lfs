@@ -6137,3 +6137,28 @@ because only KVM, which is host-only, can use it.
   drops on the interface. A ping to .1 gets no reply because the firewall accepts only
   udp/67 from lab0 and drops everything else, as designed. `/mnt/share` is mounted, and
   `rng_current` is `virtio_rng.0`.
+
+## 2026-11-03 -- Hotspot-era routing confirmed gone, DNS pinned to pi-router
+
+While the house was on a phone hotspot (LAN 192.168.0.0/24, pi-router at 192.168.0.30),
+three runtime changes were made by hand on 2026-11-01, all visible in the journal's sudo
+records: `ip route add 192.168.0.0/24 dev enp6s0 table 172`, and two `nat PREROUTING`
+DNATs sending docker0's DNS for 192.168.0.30 to 1.1.1.1. None was persisted. Checked
+after today's 20:25 boot: table 172 is empty, no `ip rule` points at it, and `nat` holds
+only docker's own chains. `ip_forward=1` is docker's and expected.
+
+DNS was not pinned. enp6s0 took 192.168.1.30 and 192.168.1.1 from DHCP, wg0.conf's
+`DNS=10.0.0.1` claimed `~.`, and resolved's compiled-in fallback (Cloudflare, Google,
+Quad9) was live. Now:
+
+- `overlay/etc/systemd/network/10-dhcp.network.d/50-pi-router-dns.conf`: `DNS=192.168.1.30`,
+  `UseDNS=no` for DHCPv4 and RA. A drop-in, so the shared ch09 file is untouched.
+- `overlay/etc/systemd/resolved.conf.d/50-pi-router.conf`: `FallbackDNS=` (empty).
+- `/etc/wireguard/wg0.conf`: `DNS=10.0.0.1` removed (server is always on the LAN, and
+  10.0.0.1 is the same pi-router over the tunnel), applied live with `resolvectl revert
+  wg0`. The file was `john:john 0644` after today's `mv` from `~/server-wg0-split.conf`,
+  which left the private key world-readable; now `root:root 0600`. Previous copy kept as
+  `wg0.conf.bak-20261103`, same mode.
+
+Verified: `resolvectl dns` lists 192.168.1.30 on enp6s0 and nothing on any other link or
+globally; `resolvectl query debian.org` answers from the network; wg0 still handshakes.

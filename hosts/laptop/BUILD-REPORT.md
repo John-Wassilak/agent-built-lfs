@@ -7216,3 +7216,20 @@ so `find_package(PulseAudio)` uses PulseAudio's own `PulseAudioConfig.cmake`, wh
 `rdpsnd_oss_*` backends. With the ALSA fix in place this no longer misroutes audio. The
 `-D WITH_PULSE=ON` override and rebuild of seq 419 are deferred until the operator's RDP
 session is closed, because the install replaces the loaded libfreerdp3.
+
+## 2026-11-03 -- Home DNS pinned to pi-router, no fallback resolvers
+
+The house LAN's DHCP offers 192.168.1.30 (pi-router) and 192.168.1.1, and resolved had
+failed over to .1: `resolvectl status` showed "Current DNS Server: 192.168.1.1". At 19:48
+today it also used its compiled-in fallback, 1.1.1.1, while Wi-Fi was between networks.
+
+- NetworkManager profile `Awesomeness` (home Wi-Fi, SSID-bound): `ipv4.dns 192.168.1.30`,
+  `ipv4.ignore-auto-dns yes`, `ipv6.ignore-auto-dns yes`, applied with `nmcli dev reapply`.
+  The keyfile holds the PSK, so it is not tracked. Other profiles are untouched: the phone
+  hotspots must keep their own DHCP DNS, and `Wired connection 1/2` already ignore DHCP
+  DNS and name no server.
+- `overlay/etc/systemd/resolved.conf.d/50-no-fallback.conf`: `FallbackDNS=` (empty).
+
+wg0 keeps `DNS=10.0.0.1` with `~.`: it is the same pi-router over the tunnel and the only
+path to it away from home. Verified: `resolvectl dns` shows 192.168.1.30 on wlp4s0 and no
+global or fallback servers; `debian.org` and `server` (10.0.0.4) resolve.
