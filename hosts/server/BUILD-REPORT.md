@@ -6162,3 +6162,38 @@ Quad9) was live. Now:
 
 Verified: `resolvectl dns` lists 192.168.1.30 on enp6s0 and nothing on any other link or
 globally; `resolvectl query debian.org` answers from the network; wg0 still handshakes.
+
+## 2026-11-03 -- Firewall review, applied
+
+Operator request after the DNS change above. All changes went into the live rule set
+in place (`iptables -I/-R/-D`), not through `systemctl restart iptables`: the script's
+`iptables -F; -X` would have dropped docker's chains and wg1's PostUp rules.
+
+- **SSH scoped.** tcp/22 had matched every interface but lab0, docker0 and the compose
+  bridge included. It is now `-i wg0 -s 10.0.0.0/24` and `-i enp6s0 -s 192.168.1.0/24`.
+  sshd's journal since 2026-09-01 shows logins only from 10.0.0.2 and the laptop's LAN
+  addresses; connections from the guests' qemu processes arrive on lo. Checked: a new
+  ssh from 10.0.0.2 logs in, tcp/22 on 192.168.1.231 answers the LAN, and
+  `nc -z 172.18.0.1 22` from inside piquiti-grafana-1 is blocked.
+- **wg0 services limited to the laptop.** tcp/80, 5900, 5901, 5902 and 3389 now take
+  `-s 10.0.0.2`. pi-router forwards between peers, so wg0 alone also admitted android,
+  jumpbox, nextcloud and pi-master-tv. nginx's access log has no client besides 10.0.0.2
+  (and 10.0.0.4 itself).
+- **iptables.service ordering.** server never got `3591a50`: the unit still had
+  `After=network.target`. Applied the same sed `recipes/blfs-iptables-unit.sh` runs; the
+  unit is now `Wants=`/`Before=network-pre.target`, and docker.service stays after it.
+- **LLMNR and mDNS off.** `overlay/etc/systemd/resolved.conf.d/50-no-llmnr-mdns.conf`. The
+  5353/5355 listeners are gone; lookups through 192.168.1.30 still answer.
+- **/etc/hosts.** `pi-router-local` 192.168.1.241 -> .30 and `server-local` .233 -> .231
+  (both confirmed: pi-router's eth0 is .30, and enp6s0's DHCP lease is .231). The
+  previous copy is `/etc/hosts.bak-20261103`.
+- `50-lab0.network`'s header said enp6s0 was 192.168.0.0/24; corrected to 192.168.1.0/24,
+  in the overlay and live (comment only, no reload).
+
+The firewall changes are in `blfs-overrides.json` (`blfs-iptables` block 2, with the
+reason extended), and the regenerated recipe was installed as `/etc/systemd/scripts/iptables`.
+`extract-blfs.py --host server --check` reports no drift.
+
+Not done: the LAN's DHCP server is the home router at 192.168.1.1 (enp6s0's lease says
+"acquired from 192.168.1.1"), not pi-router, and it still offers .1 as a second
+resolver. Fixing that for every device on the LAN is a setting in the router's admin page.

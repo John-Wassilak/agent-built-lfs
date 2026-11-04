@@ -110,8 +110,9 @@ iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 # Not in the book's example: lab0, the host-only bridge for lab guests (Kali and its
 # targets, 2026-10-22; hosts/server/overlay/etc/systemd/network/50-lab0.*). A lab target
 # is assumed hostile, so from lab0 the host answers DHCP (networkd's server on udp/67)
-# and nothing else -- not sshd, which the next rule opens on every other interface.
-# Placed before that rule for this reason. Replies to connections server opens into
+# and nothing else -- not sshd. Placed first so no later rule can open lab0 by
+# accident.
+# Replies to connections server opens into
 # the lab are covered by ESTABLISHED,RELATED above.
 iptables -A INPUT -i lab0 -p udp --dport 67 -j ACCEPT
 iptables -A INPUT -i lab0 -j DROP
@@ -121,27 +122,37 @@ iptables -A INPUT -i lab0 -j DROP
 # SSH included -- applying it unmodified would have locked out the only way
 # in. Explicit allow for new inbound SSH connections; the ESTABLISHED,RELATED
 # rule above already covers the rest of each session once it exists.
-iptables -A INPUT -p tcp --dport 22 -m conntrack --ctstate NEW -j ACCEPT
+# Scoped 2026-11-03 to the WireGuard subnet on wg0 and the home LAN on enp6s0. Until
+# then it matched every interface, docker0 and the compose bridge included, so any
+# container could open sshd. sshd's journal since 2026-09-01 shows logins only from
+# 10.0.0.2 (laptop over wg0) and the laptop's LAN addresses; connections the guests'
+# qemu processes make to the host arrive on lo and are accepted above.
+iptables -A INPUT -i wg0    -s 10.0.0.0/24    -p tcp --dport 22 -m conntrack --ctstate NEW -j ACCEPT
+iptables -A INPUT -i enp6s0 -s 192.168.1.0/24 -p tcp --dport 22 -m conntrack --ctstate NEW -j ACCEPT
 
 # Not in the book's example: nginx on the WireGuard tunnel only (2026-09-24). New
 # inbound HTTP is accepted on wg0 and nowhere else -- not enp6s0, and not tailscale0,
 # which tailscaled's own ts-input chain opens wholesale ahead of these rules. That
 # is also why nginx binds 10.0.0.4 and loopback by address rather than `listen 80`;
 # see hosts/server/overlay/etc/nginx/nginx.conf. No v6 rule: wg0 carries no v6.
-iptables -A INPUT -i wg0 -p tcp --dport 80 -m conntrack --ctstate NEW -j ACCEPT
+# Since 2026-11-03 this rule and the four console rules after it accept only
+# 10.0.0.2 (laptop), the one client in nginx's access log. pi-router forwards
+# between peers, so wg0 alone also admitted the phone, jumpbox, nextcloud and
+# pi-master-tv. A new client is a new -s here.
+iptables -A INPUT -i wg0 -s 10.0.0.2 -p tcp --dport 80 -m conntrack --ctstate NEW -j ACCEPT
 # VNC (x0vncserver sharing :0, packages.py seq 267) likewise wg0 only; it also
 # binds 10.0.0.4 alone, see hosts/server/overlay/etc/systemd/system/x0vncserver.service.
-iptables -A INPUT -i wg0 -p tcp --dport 5900 -m conntrack --ctstate NEW -j ACCEPT
+iptables -A INPUT -i wg0 -s 10.0.0.2 -p tcp --dport 5900 -m conntrack --ctstate NEW -j ACCEPT
 # RDP into the Windows 11 guest (qemu, packages.py seq 273; 2026-10-21) likewise wg0
 # only. qemu's user-mode network forwards 10.0.0.4:3389 to the guest, so this is an
 # INPUT rule to a host socket, not FORWARD; hosts/server/overlay/usr/local/bin/win11-vm
 # binds the forward to 10.0.0.4 alone for the same reason as VNC.
-iptables -A INPUT -i wg0 -p tcp --dport 3389 -m conntrack --ctstate NEW -j ACCEPT
+iptables -A INPUT -i wg0 -s 10.0.0.2 -p tcp --dport 3389 -m conntrack --ctstate NEW -j ACCEPT
 # The guest's screen: qemu's VNC server on 10.0.0.4:5901 (TLS plus a password, see
 # win11-vm), wg0 only like 5900.
-iptables -A INPUT -i wg0 -p tcp --dport 5901 -m conntrack --ctstate NEW -j ACCEPT
+iptables -A INPUT -i wg0 -s 10.0.0.2 -p tcp --dport 5901 -m conntrack --ctstate NEW -j ACCEPT
 # The Kali lab guest's screen, 10.0.0.4:5902 (kali-vm), the same way.
-iptables -A INPUT -i wg0 -p tcp --dport 5902 -m conntrack --ctstate NEW -j ACCEPT
+iptables -A INPUT -i wg0 -s 10.0.0.2 -p tcp --dport 5902 -m conntrack --ctstate NEW -j ACCEPT
 
 # Not in the book's example: wg1, the egress tunnel to nextcloud that carries only the
 # Windows 11 guest's traffic (2026-10-21; routing in /usr/local/sbin/win11vm-route).

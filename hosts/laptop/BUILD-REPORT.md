@@ -7233,3 +7233,20 @@ today it also used its compiled-in fallback, 1.1.1.1, while Wi-Fi was between ne
 wg0 keeps `DNS=10.0.0.1` with `~.`: it is the same pi-router over the tunnel and the only
 path to it away from home. Verified: `resolvectl dns` shows 192.168.1.30 on wlp4s0 and no
 global or fallback servers; `debian.org` and `server` (10.0.0.4) resolve.
+
+## 2026-11-03 -- Firewall review, applied
+
+- **SSH scoped to the tunnel.** tcp/22 had been accepted on every interface, so every
+  hotspot and public network this machine joined could reach sshd. It is now
+  `-i wg+ -s 10.0.0.0/24`. sshd's journal since 2026-09-01 shows logins only from
+  10.0.0.4 (server). The change is in `blfs-overrides.json`, the regenerated recipe's
+  script is installed, and the live rule was replaced in place with `iptables -R`
+  (a service restart would flush tailscaled's ts-* chains). Checked from server: tcp/22
+  answers on 10.0.0.2 and does not answer on 192.168.1.146. tailscale0 is unchanged;
+  tailscaled's ts-input chain runs first and decides that interface.
+- **LLMNR and mDNS off.** `overlay/etc/systemd/resolved.conf.d/50-no-llmnr-mdns.conf`.
+  No 5353/5355 listeners remain; `debian.org` and `server` still resolve.
+- **/etc/hosts.** `NVR cam` was 192.168.0.189, an address from the old LAN that does not
+  reply; now 192.168.1.189, which does. The previous copy is `/etc/hosts.bak-20261103`.
+
+`extract-blfs.py --host laptop --check` reports no drift.

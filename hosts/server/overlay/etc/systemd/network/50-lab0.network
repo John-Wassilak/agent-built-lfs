@@ -3,7 +3,7 @@
 # Copyright (c) 2026 John Wassilak
 #
 # 192.168.56.0/24, VirtualBox's default host-only subnet, so lab write-ups that assume it
-# work unchanged. It does not collide with enp6s0 (192.168.0.0/24), wg0, wg1 or docker.
+# work unchanged. It does not collide with enp6s0 (192.168.1.0/24), wg0, wg1 or docker.
 #
 # The DHCP server hands out addresses only. EmitRouter=no and EmitDNS=no keep a guest's
 # default route and resolver on its NAT NIC; with a router option the guest would get a
