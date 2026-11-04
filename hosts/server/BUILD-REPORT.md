@@ -6260,3 +6260,34 @@ reason extended), and the regenerated recipe was installed as `/etc/systemd/scri
 Not done: the LAN's DHCP server is the home router at 192.168.1.1 (enp6s0's lease says
 "acquired from 192.168.1.1"), not pi-router, and it still offers .1 as a second
 resolver. Fixing that for every device on the LAN is a setting in the router's admin page.
+
+## 2026-11-04 -- wg1 to nextcloud dead after the IP changes, fixed on nextcloud
+
+Reported: the Windows guest's route via wg1 was broken after the recent IP changes. The
+fault was on nextcloud, not here; nothing on server changed.
+
+What server showed:
+
+- Policy routing intact. uid 998 (win11vm) and 997 (kalivm) each had their pref 1000/1001/
+  1002 rules, and table 51 held `default dev wg1` and the `unreachable` backstop. Both
+  guests were blocked, not leaking to enp6s0, which is what `vm-wg1-route` is meant to do
+  when wg1 has no peer.
+- `wg show wg1`: no handshake ever, 0 B received, 1.04 MiB sent since wg1 came up at
+  21:20 on 2026-11-03.
+- Temporary counting-only iptables rules (no target, deleted after) over 20 s: 4 packets
+  of 176 bytes (handshake initiations) out to 66.228.48.68:51821, 0 back from it.
+- Keys and endpoint match `~/wg1-nextcloud.md`. No hotspot-era 192.168.0.x address left in
+  `/etc/systemd/network`, `/etc/wireguard`, the units or either overlay tree.
+
+On nextcloud (ssh to 66.228.48.68; `ssh nextcloud` goes over wg0 to 10.0.0.8 and hung):
+`wg-quick@wg1` active, listening on 51821/udp, wg1 at 0 packets both ways. Reading ufw
+needs sudo there, so the operator checked it and fixed the ufw rule for 51821/udp.
+Server's public IP is now 68.12.160.31.
+
+Verified after the fix: wg1 handshake 16 s old, 193 KiB received; `curl ifconfig.me` as
+win11vm and as kalivm both print 66.228.48.68, as john 68.12.160.31.
+
+The symptom of this failure is quiet: the guests lose internet, nothing falls back, and
+every unit on server stays `active`. If the home public IP changes again and the guests
+go dark, check `wg show wg1` for a handshake first, then nextcloud's ufw rule for
+51821/udp.
