@@ -2,7 +2,7 @@
 # agent-built-lfs -- Windows 11 guest as a unit: win11-vm@install or win11-vm@run
 # Copyright (c) 2026 John Wassilak
 #
-# Runs as win11vm, whose traffic win11vm-route sends out wg1 to nextcloud. Do not
+# Runs as win11vm, whose traffic vm-wg1-route sends out wg1 to nextcloud. Do not
 # start both instances at once; qemu's qcow2 lock refuses the second anyway.
 #
 # BindReadOnlyPaths: slirp forwards the guest's DNS (10.0.2.3) to the nameserver in

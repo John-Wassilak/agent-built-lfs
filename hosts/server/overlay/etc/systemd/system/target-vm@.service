@@ -1,0 +1,38 @@
+# SPDX-License-Identifier: MIT
+# agent-built-lfs -- a lab target guest as a unit: target-vm@<name>
+# Copyright (c) 2026 John Wassilak
+#
+# One template for every target on lab0. `systemctl start target-vm@basic-pentesting-1`
+# boots the target named basic-pentesting-1; the name is %i throughout. Not enabled at
+# boot -- a lab is started by hand.
+#
+# Runs as labvm, the unprivileged owner of the target images, which (like kalivm) cannot
+# create a tap. So the tap is made and destroyed by lab-tap with the '+' prefix, which
+# runs it as root regardless of User=; qemu then opens the ready-made tap unprivileged.
+# ExecStopPost deletes the tap whether qemu exited cleanly or was killed.
+#
+# ExecStop sends the ACPI power button and waits for qemu to exit; without the wait
+# systemd would kill qemu the moment ExecStop returned, mid-shutdown. A target that
+# ignores ACPI is killed at TimeoutStopSec by KillMode=mixed.
+#
+# No RAM TemporaryFileSystem (unlike the Kali and Windows units): a target has no
+# vhost-user device, so its guest RAM needs no shareable backing file.
+
+[Unit]
+Description=Lab target guest (%i)
+After=systemd-networkd.service wg-quick@wg0.service
+Wants=wg-quick@wg0.service
+
+[Service]
+Type=simple
+User=labvm
+Group=labvm
+ExecStartPre=+/usr/local/sbin/lab-tap up %i
+ExecStart=/usr/local/bin/target-vm run %i
+ExecStop=/bin/sh -c '/usr/local/bin/target-vm stop %i; while kill -0 $MAINPID 2>/dev/null; do sleep 1; done'
+ExecStopPost=+/usr/local/sbin/lab-tap down %i
+TimeoutStopSec=120
+KillMode=mixed
+
+[Install]
+WantedBy=multi-user.target

@@ -21,7 +21,7 @@
 # the hex pair lsusb prints, e.g. 0bc2:ab38.
 #
 # Why win11vm and not john: the guest's internet traffic leaves through qemu's own
-# sockets, and /usr/local/sbin/win11vm-route sends that uid's traffic out wg1 to
+# sockets, and /usr/local/sbin/vm-wg1-route sends that uid's traffic out wg1 to
 # nextcloud, with no fallback to enp6s0. Run as anyone else, the guest would go out
 # the home connection.
 #

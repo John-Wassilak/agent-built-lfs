@@ -1,9 +1,10 @@
 # SPDX-License-Identifier: MIT
-# agent-built-lfs -- uid policy routing for the Windows 11 guest (see win11vm-route)
+# agent-built-lfs -- uid policy routing for the Windows 11 guest (see vm-wg1-route)
 # Copyright (c) 2026 John Wassilak
 #
 # Before wg1 and before the guest, so the unreachable default in table 51 exists
-# whether or not wg1 ever comes up.
+# whether or not wg1 ever comes up. Ports: RDP 3389 and the qemu VNC display :1 (5901)
+# reach the laptop over wg0; everything else from win11vm goes out wg1.
 
 [Unit]
 Description=Policy routing for the win11vm user (Windows 11 guest via wg1)
@@ -13,8 +14,8 @@ After=network-pre.target
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/usr/local/sbin/win11vm-route up
-ExecStop=/usr/local/sbin/win11vm-route down
+ExecStart=/usr/local/sbin/vm-wg1-route up win11vm 3389 5901
+ExecStop=/usr/local/sbin/vm-wg1-route down win11vm
 
 [Install]
 WantedBy=multi-user.target

@@ -6,18 +6,24 @@
 # kali-vm` when a lab needs it. ExecStop asks the guest to shut down and waits for qemu
 # to exit, as win11-vm@.service does.
 #
+# Requires kalivm-route, whose uid policy rules send kalivm's slirp egress out wg1 (like
+# win11vm); stopping the route unit stops this one. BindReadOnlyPaths gives qemu its own
+# resolv.conf so the guest's DNS leaves through wg1 too, not resolved over the home link.
+#
 # TemporaryFileSystem: guest RAM, as in win11-vm@.service, which explains each option.
 # size= must stay above KALI_MEM.
 
 [Unit]
 Description=Kali Linux lab guest
-After=systemd-networkd.service wg-quick@wg0.service
-Wants=wg-quick@wg0.service
+Requires=kalivm-route.service
+After=systemd-networkd.service kalivm-route.service wg-quick@wg0.service wg-quick@wg1.service
+Wants=wg-quick@wg0.service wg-quick@wg1.service
 
 [Service]
 Type=simple
 User=kalivm
 Group=kalivm
+BindReadOnlyPaths=/etc/kalivm/resolv.conf:/etc/resolv.conf
 TemporaryFileSystem=/run/kalivm-ram:huge=advise,size=8G,mode=1777
 ExecStart=/usr/local/bin/kali-vm run
 ExecStop=/bin/sh -c '/usr/local/bin/kali-vm stop; while kill -0 $MAINPID 2>/dev/null; do sleep 1; done'

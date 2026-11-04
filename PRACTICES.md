@@ -1140,3 +1140,31 @@ still sitting on disk.
   generated file against what the overrides say to generate. They agreed perfectly the
   whole time, because the recipe on disk *was* exactly what the decisions asked for. Zero
   drift and zero blocks awaiting review were both true and both meaningless here.
+
+## systemd-networkd prunes hand-managed policy rules on every link reconfigure
+
+A guest whose egress is pinned to a VPN by uid policy routing (`ip rule add uidrange ...
+lookup <table>`, added by a boot-time oneshot) will silently revert to the default route
+the first time any link reconfigures after boot. `systemd-networkd` defaults to
+`ManageForeignRoutingPolicyRules=yes` and `ManageForeignRoutes=yes`: on `networkctl
+reconfigure` of *any* link -- which happens whenever a new interface appears, a tap is
+added, DHCP renews -- it deletes every routing policy rule and route it did not add from a
+`.network` file. The hand-added uid rules are foreign, so they vanish; the guest's traffic
+then falls through to the main table and leaves by the wrong interface.
+
+Nothing reports it. The oneshot still shows `active` (it ran once, successfully, and
+`RemainAfterExit` holds it active). `wg-quick`'s own default route survives because its
+`PostUp` re-adds it on every VPN restart, which makes the surviving route look like proof
+the whole setup is intact. The tell is that the `ip rule` list has only the three default
+entries (0/32766/32767) despite the routing unit being active, and `ip route get <ext> uid
+<guest-uid>` picks the wrong device.
+
+Two fixes, and the first is not enough on its own: (1) a `networkd.conf.d` drop-in with
+`ManageForeignRoutingPolicyRules=no` and `ManageForeignRoutes=no` stops the pruning, but it
+needs a networkd *restart*, not a reload, to take effect; (2) a `prohibit` rule at the
+lowest-priority uid pref is the backstop that matters -- as long as it survives, a guest
+with its VPN down is blocked, not leaked, whichever way the default route is pointing.
+Found 2026-10-29: the Windows guest had been egressing out the home link, not wg1, since
+the first lab-network change a week after it was built. (See [[A fix in the overlay is not
+a fix on the machine]]: the live `win11vm-route` had also drifted a VNC-port rule ahead of
+the repo copy, so the deployed behaviour and the source disagreed on top of the leak.)
