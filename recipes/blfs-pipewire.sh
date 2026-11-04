@@ -59,6 +59,18 @@
 # options, which is correct here: they are genuinely optional extra codecs, none is
 # built, and their absence costs only codec choice on a connected device, not
 # Bluetooth audio itself. That is the case `auto` is actually for.
+#
+# The /etc/alsa/conf.d symlinks were added 2026-10-28, after FreeRDP's ALSA sound
+# backend on laptop was found writing straight to card 0 (/dev/snd/pcmC0D0p held
+# open by sdl-freerdp) and not going through PipeWire. pipewire installs its ALSA
+# plugin config, 50-pipewire.conf and 99-pipewire-default.conf, to
+# /usr/share/alsa/alsa.conf.d/. This alsa-lib's /usr/share/alsa/alsa.conf never
+# reads that directory: its @hooks load only /var/lib/alsa/conf.d,
+# /usr/etc/alsa/conf.d and /etc/alsa/conf.d. So the files were inert, `default`
+# stayed the first hardware card, and every program using ALSA directly bypassed
+# PipeWire, again with no error anywhere. The pipewire book page does not mention
+# this. The fix links them in the same way distributions do, which leaves the
+# files pipewire owns where it put them. Any machine running this book wants it.
 set -e
 
 mkdir build
@@ -73,6 +85,11 @@ meson setup .. \
 ninja
 
 ninja install
+
+install -v -d -m755 /etc/alsa/conf.d
+for f in 50-pipewire.conf 99-pipewire-default.conf; do
+  ln -sfv /usr/share/alsa/alsa.conf.d/$f /etc/alsa/conf.d/$f
+done
 
 echo "### pkg-config"
 pkg-config --modversion libpipewire-0.3 2>&1 || true

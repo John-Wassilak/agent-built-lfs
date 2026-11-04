@@ -1,3 +1,5 @@
+/etc/alsa/conf.d/50-pipewire.conf
+/etc/alsa/conf.d/99-pipewire-default.conf
 /etc/security/limits.d/25-pw-rlimits.conf
 /usr/bin/pipewire
 /usr/bin/pipewire-aes67

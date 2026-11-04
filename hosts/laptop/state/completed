@@ -629,3 +629,12 @@ blfs-linux-id
 blfs-freerdp
 blfs-sdl3-ttf
 blfs-freerdp
+blfs-nlohmann-json
+blfs-xcb-imdkit
+blfs-fcitx5
+blfs-fcitx5-gtk
+blfs-fcitx5-qt
+blfs-kitemviews
+blfs-kwidgetsaddons
+blfs-fcitx5-configtool
+blfs-fcitx5-bamboo

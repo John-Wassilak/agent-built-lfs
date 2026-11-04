@@ -7186,3 +7186,120 @@ removed from `/usr/share`, and the new ones were installed and indexed with
 
 Unchanged on server: `win11-vm` still serves the guest's console on VNC at 10.0.0.4:5901,
 and the firewall still accepts 5901 on wg0.
+
+## fcitx5 and Bamboo, Vietnamese input (seq 421-429, built 2026-10-21/22)
+
+Operator request, for a language course. Two layers.
+
+**XKB layout, no build.** `/usr/share/X11/xkb/symbols/vn` was already installed.
+`~/.config/hypr/hyprland.lua` now has `kb_layout = "us,vn"`, `kb_variant = ",us"` and
+`grp:alt_shift_toggle` beside the existing `caps:escape`. `vn(us)` keeps US punctuation,
+puts â ă ê ô ư ơ đ on AltGr, and makes `` ` `` `'` `.` `/` dead tone keys. `hyprctl
+switchxkblayout at-translated-set-2-keyboard 1` reported "Vietnamese (US)", and 0
+switched back to "English (US)".
+
+**fcitx5 with Bamboo, for Telex/VNI.** The recipes and sourcing are in `3944bb7`. All nine
+tarballs were verified: fcitx's six by detached signature (Weng Xuetian,
+2CC8A0609AD2A479C65B6D5C8E8B898CBF2412F9), nlohmann_json by signature (Niels Lohmann,
+797167AE41C0A6D9232E48457F3CEA63AE251B69), and KItemViews/KWidgetsAddons by the md5s on
+BLFS 13.0's frameworks6 page.
+
+lfsbuild's 8 GB guard refused the first step with 2.0 GB free on `/`. On the operator's
+call it was skipped for this run with the same throwaway wrapper as linux-id. All nine
+steps passed in one run:
+
+| step | min | manifest |
+|---|---|---|
+| nlohmann-json | 0.1 | 50 |
+| xcb-imdkit | 0.2 | 15 |
+| fcitx5 | 7.9 | 445 |
+| fcitx5-gtk | 0.3 | 17 |
+| fcitx5-qt | 2.4 | 48 |
+| kitemviews | 0.9 | 129 |
+| kwidgetsaddons | 4.5 | 280 |
+| fcitx5-configtool | 5.0 | 38 |
+| fcitx5-bamboo | 0.4 | 14 |
+
+Installed: `/usr/lib/fcitx5/libbamboo.so`, `im-fcitx5.so` for GTK3 (in the regenerated
+module cache), `libim-fcitx5.so` for GTK4, and
+`/opt/qt6/plugins/platforminputcontexts/libfcitx5platforminputcontextplugin.so`. Bamboo's Go
+core built from the vendored `bamboo-core` with `GOPROXY=off`. `/` had 6.1 GB free when
+checked after the build. Other work ran on this machine in between, so that number is
+not a measure of these steps.
+
+**Session wiring** (operator dotfiles, not tracked here). `hyprland.lua` sets `QT_IM_MODULE`,
+`XMODIFIERS=@im=fcitx` and `SDL_IM_MODULE`, and leaves `GTK_IM_MODULE` unset so Wayland GTK
+apps use text-input-v3. It starts `fcitx5 -d --replace` at `hyprland.start`.
+`~/.config/fcitx5/profile` was seeded with one group: keyboard-us, then bamboo. Checked
+live:
+
+- `fcitx5-diagnose` lists "Bamboo Wrapper For Fcitx 1.0.11", and its input contexts are
+  on the `wayland_v2` frontend (Hyprland's zwp_input_method_v2).
+- Over D-Bus, `FullInputMethodGroupInfo Default` returns keyboard-us and bamboo.
+
+**Not yet done:** typing a Telex word into a real window. The env vars only reach apps
+started after the next Hyprland login.
+
+## ALSA bypassed PipeWire, RDP audio went to the built-in chip (2026-10-28)
+
+Symptom: the Windows guest's sound over sdl-freerdp (`/sound:sys:alsa`) played on card 0,
+the built-in HDA Intel PCH, and not on the default sink, the OneLink dock (card 2).
+`pactl list sink-inputs` showed no FreeRDP stream. sdl-freerdp (pid 1474751) held
+`/dev/snd/pcmC0D0p` and `/dev/snd/controlC0` open.
+
+Two faults.
+
+**ALSA never loaded PipeWire's config.** pipewire installs `50-pipewire.conf` and
+`99-pipewire-default.conf` to `/usr/share/alsa/alsa.conf.d/`. The `@hooks` block in
+`/usr/share/alsa/alsa.conf` loads only `/var/lib/alsa/conf.d`, `/usr/etc/alsa/conf.d` and
+`/etc/alsa/conf.d`, and `/etc/alsa` did not exist. So ALSA's `default` was the first
+hardware card, and every program using ALSA directly skipped PipeWire. The pipewire book
+page does not cover this. Fixed in the shared `recipes/blfs-pipewire.sh`, which now links
+both files into `/etc/alsa/conf.d`. The links were made by hand on this machine and added
+to `manifests/blfs-pipewire.txt`; pipewire was not rebuilt. Checked with a throwaway
+`snd_pcm_open("default")` client (alsa-utils is not built here): the PCM type was
+`IOPLUG`, the process held no `/dev/snd` node, and `pactl` listed it as
+"PipeWire ALSA [alsatest]" on sink 53, the dock. `server` builds pipewire from its own
+`hosts/server/recipes/blfs-pipewire.sh`, which lacks the links; not yet checked there.
+
+**FreeRDP was built without PulseAudio** (upstream bug, 3.22.0). `cmake/ConfigOptions.cmake:174`
+is `option(WITH_PULSE ... ${PULSE_FOUND})`, but FreeRDP ships no `FindPulseAudio.cmake`,
+so `find_package(PulseAudio)` uses PulseAudio's own `PulseAudioConfig.cmake`, which sets
+`PULSEAUDIO_FOUND`. The installed `libfreerdp-client3` has only the `rdpsnd_alsa_*` and
+`rdpsnd_oss_*` backends. With the ALSA fix in place this no longer misroutes audio. The
+`-D WITH_PULSE=ON` override and rebuild of seq 419 are deferred until the operator's RDP
+session is closed, because the install replaces the loaded libfreerdp3.
+
+## 2026-11-03 -- Home DNS pinned to pi-router, no fallback resolvers
+
+The house LAN's DHCP offers 192.168.1.30 (pi-router) and 192.168.1.1, and resolved had
+failed over to .1: `resolvectl status` showed "Current DNS Server: 192.168.1.1". At 19:48
+today it also used its compiled-in fallback, 1.1.1.1, while Wi-Fi was between networks.
+
+- NetworkManager profile `Awesomeness` (home Wi-Fi, SSID-bound): `ipv4.dns 192.168.1.30`,
+  `ipv4.ignore-auto-dns yes`, `ipv6.ignore-auto-dns yes`, applied with `nmcli dev reapply`.
+  The keyfile holds the PSK, so it is not tracked. Other profiles are untouched: the phone
+  hotspots must keep their own DHCP DNS, and `Wired connection 1/2` already ignore DHCP
+  DNS and name no server.
+- `overlay/etc/systemd/resolved.conf.d/50-no-fallback.conf`: `FallbackDNS=` (empty).
+
+wg0 keeps `DNS=10.0.0.1` with `~.`: it is the same pi-router over the tunnel and the only
+path to it away from home. Verified: `resolvectl dns` shows 192.168.1.30 on wlp4s0 and no
+global or fallback servers; `debian.org` and `server` (10.0.0.4) resolve.
+
+## 2026-11-03 -- Firewall review, applied
+
+- **SSH scoped to the tunnel.** tcp/22 had been accepted on every interface, so every
+  hotspot and public network this machine joined could reach sshd. It is now
+  `-i wg+ -s 10.0.0.0/24`. sshd's journal since 2026-09-01 shows logins only from
+  10.0.0.4 (server). The change is in `blfs-overrides.json`, the regenerated recipe's
+  script is installed, and the live rule was replaced in place with `iptables -R`
+  (a service restart would flush tailscaled's ts-* chains). Checked from server: tcp/22
+  answers on 10.0.0.2 and does not answer on 192.168.1.146. tailscale0 is unchanged;
+  tailscaled's ts-input chain runs first and decides that interface.
+- **LLMNR and mDNS off.** `overlay/etc/systemd/resolved.conf.d/50-no-llmnr-mdns.conf`.
+  No 5353/5355 listeners remain; `debian.org` and `server` still resolve.
+- **/etc/hosts.** `NVR cam` was 192.168.0.189, an address from the old LAN that does not
+  reply; now 192.168.1.189, which does. The previous copy is `/etc/hosts.bak-20261103`.
+
+`extract-blfs.py --host laptop --check` reports no drift.

@@ -112,7 +112,13 @@ iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 # SSH included -- applying it unmodified would have locked out the only way
 # in. Explicit allow for new inbound SSH connections; the ESTABLISHED,RELATED
 # rule above already covers the rest of each session once it exists.
-iptables -A INPUT -p tcp --dport 22 -m conntrack --ctstate NEW -j ACCEPT
+#
+# Scoped 2026-11-03 to the WireGuard subnet on wg+ (wg0 split, wg1 full tunnel).
+# This machine roams, and an any-interface rule offered sshd to every hotspot and
+# public network it joined. sshd's journal since 2026-09-01 shows logins only from
+# 10.0.0.4 (server). tailscale0 is not covered by this rule either way: tailscaled's
+# ts-input chain runs first and decides that interface itself.
+iptables -A INPUT -i wg+ -s 10.0.0.0/24 -p tcp --dport 22 -m conntrack --ctstate NEW -j ACCEPT
 
 # Not in the book's example either, and the reason it is here rather than in the shared
 # file: it names this machine's VPN subnet and interface. nginx (blfs-nginx, seq 320)

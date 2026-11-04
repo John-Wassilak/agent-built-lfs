@@ -1,0 +1,15 @@
+/usr/include/xcb-imdkit/encoding.h
+/usr/include/xcb-imdkit/imclient.h
+/usr/include/xcb-imdkit/imdkit.h
+/usr/include/xcb-imdkit/xcbimdkit_export.h
+/usr/include/xcb-imdkit/ximcommon.h
+/usr/include/xcb-imdkit/ximproto-gen.h
+/usr/include/xcb-imdkit/ximproto.h
+/usr/lib/cmake/XCBImdkit/XCBImdkitConfig.cmake
+/usr/lib/cmake/XCBImdkit/XCBImdkitConfigVersion.cmake
+/usr/lib/cmake/XCBImdkit/XCBImdkitLibraryTargets-release.cmake
+/usr/lib/cmake/XCBImdkit/XCBImdkitLibraryTargets.cmake
+/usr/lib/libxcb-imdkit.so
+/usr/lib/libxcb-imdkit.so.1
+/usr/lib/libxcb-imdkit.so.1.0.9
+/usr/lib/pkgconfig/xcb-imdkit.pc
