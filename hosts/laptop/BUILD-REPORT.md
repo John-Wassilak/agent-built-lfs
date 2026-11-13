@@ -7303,3 +7303,20 @@ global or fallback servers; `debian.org` and `server` (10.0.0.4) resolve.
   reply; now 192.168.1.189, which does. The previous copy is `/etc/hosts.bak-20261103`.
 
 `extract-blfs.py --host laptop --check` reports no drift.
+
+### Windows VM: VNC menu entry restored alongside RDP (2026-11-12)
+
+Operator request: keep both launchers for the Windows 11 guest on server. RDP stays the
+usual way in. In the `~/Scripts` repo, `vnc-windows.sh` and
+`desktop-files/vnc-windows.desktop` ("Windows VM (VNC)") are back. The 2026-10-22 versions
+were never committed there, so they were rewritten to follow `vnc-kali.sh`. The script
+opens qemu's console at `10.0.0.4::5901` (display `:1`, served by `win11-vm`), so it shows
+the guest before Windows has started. The password comes from `vnc/windows` in pass-auto,
+falling back to plain `pass`, and reaches `vncviewer` as `VNC_PASSWORD`. `RemoteResize`
+stays at its default, because the guest follows the window size through virtio-vga.
+The icon is a copy of `rdp-windows.png`, which is the original `vnc-windows.png` renamed.
+The entry passes `desktop-file-validate`. A run with stub `pass` and `vncviewer` commands
+passed `10.0.0.4::5901` plus the extra arguments, with the password set. The entry
+and icon are installed in `/usr/share` and indexed with `update-desktop-database`.
+
+**Not yet done:** a live connection to the guest's console from the new entry.
