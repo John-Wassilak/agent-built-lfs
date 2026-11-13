@@ -1,0 +1,69 @@
+#!/bin/bash
+# SPDX-License-Identifier: MIT
+# agent-built-lfs -- policy routing that sends a VM user's traffic out wg1
+# Copyright (c) 2026 John Wassilak
+
+# Usage (root):  vm-wg1-route up USER [WG0PORT...]   |   vm-wg1-route down USER
+#
+# One script for every slirp guest whose egress belongs on wg1 (win11vm, kalivm, ...).
+# A guest on qemu's user-mode network (slirp) sends everything through sockets owned by
+# the qemu process, which runs as USER, so these rules route by that uid:
+#
+#   1000  USER, tcp from a WG0PORT to the laptop (10.0.0.2)  -> main (wg0)
+#         console replies only (RDP 3389, VNC 59xx); nothing else from USER reaches wg0.
+#   1001  USER                                               -> table 51 (default dev wg1)
+#   1002  USER                                               -> prohibit
+#
+# Table 51 holds `default dev wg1` (added by wg1.conf PostUp, gone while wg1 is down) and
+# an `unreachable default` set here. With wg1 down the guest has no default route; pref
+# 1002 prohibit is the real backstop, so a guest never falls back to enp6s0 whether or not
+# the unreachable default is present. The `local` table (pref 0) still comes first, so the
+# guest reaches host addresses (slirp's 10.0.2.2/10.0.2.3 on loopback); the guest's unit
+# binds its own resolv.conf so DNS leaves through wg1, not resolved over the home link.
+#
+# These rules and the unreachable route are foreign to systemd-networkd, which by default
+# prunes every foreign routing policy rule and route on any link reconfigure -- which would
+# silently drop a guest back onto enp6s0 the first time a link reconfigures after boot (it
+# did, for win11, until 2026-10-29). etc/systemd/networkd.conf.d/50-keep-foreign-policy.conf
+# turns that pruning off; without it this script's effect does not survive the next
+# `networkctl reconfigure`.
+#
+# Deletions are scoped by uidrange, and `up` touches only its own uid's rules, so two
+# guests at the same prefs do not disturb each other. The shared unreachable default is set
+# with `replace` (idempotent) and left in place on `down`: it is a harmless backstop and
+# may still be needed by another guest.
+set -euo pipefail
+
+TABLE=51
+LAPTOP=10.0.0.2
+
+cmd=${1:-}
+user=${2:-}
+[ -n "$user" ] || { echo "usage: vm-wg1-route up USER [WG0PORT...] | down USER" >&2; exit 2; }
+uid=$(id -u "$user") || { echo "vm-wg1-route: no user $user" >&2; exit 1; }
+shift 2 || true
+ports=("$@")
+
+down() {
+    local pref
+    for pref in 1000 1001 1002; do
+        while ip rule del pref "$pref" uidrange "$uid-$uid" 2>/dev/null; do :; done
+    done
+}
+
+up() {
+    down
+    ip route replace unreachable default metric 4096 table "$TABLE"
+    local port
+    for port in "${ports[@]}"; do
+        ip rule add pref 1000 uidrange "$uid-$uid" to "$LAPTOP" ipproto tcp sport "$port" lookup main
+    done
+    ip rule add pref 1001 uidrange "$uid-$uid" lookup "$TABLE"
+    ip rule add pref 1002 uidrange "$uid-$uid" prohibit
+}
+
+case "$cmd" in
+    up)   up ;;
+    down) down ;;
+    *)    echo "usage: vm-wg1-route up USER [WG0PORT...] | down USER" >&2; exit 2 ;;
+esac

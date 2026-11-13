@@ -6201,6 +6201,120 @@ because only KVM, which is host-only, can use it.
   refused with a snapshot present and went ahead with `--discard-snapshots`. A
   revert of the real disk has not run, because that needs the guest stopped.
 
+## 2026-10-29 -- Lab target guests on lab0, parameterized (target-vm)
+
+The lab needed the other half of the host-only network: the boxes Kali attacks. First one
+is VulnHub's `basic_pentesting_1` (`~/basic_pentesting_1.ova`, a VirtualBox appliance,
+Ubuntu 16.04), with "many more" to follow -- so the brief was to consolidate the
+infrastructure into one parameterized tool rather than a script per box.
+
+Built three files in `hosts/server/overlay`, installed live and applied the one-time
+setup (`useradd -r -M -d /mnt/big_drive/lab -s /sbin/nologin -U -G kvm labvm`; the lab
+dir 750 labvm):
+
+- `usr/local/bin/target-vm` -- one script, every subcommand takes a target NAME: `import`,
+  `run`, `stop`, `reset`, `snapshot`, `revert`, `rm`, `ls`. House style copied from
+  `kali-vm` (same `die`/`preflight`/`running`/`hmp`/snapshot helpers), stripped of NAT,
+  virtiofs, clipboard and guest agent, with appliance import and a VBox-matching hardware
+  profile added. A target is a directory under `/mnt/big_drive/lab/<name>` holding a
+  read-only `base.qcow2`, an overlay `disk.qcow2`, `target.conf` (ID, MAC, source, date)
+  and `vnc.pass`.
+- `etc/systemd/system/target-vm@.service` -- one template, `%i` is the target name.
+- `usr/local/sbin/lab-tap` -- a root helper the unit calls with the systemd `+` prefix to
+  create tap `lab-t<id>` (owned by labvm, enslaved to lab0) before qemu and delete it
+  after. This is what lets adding a target cost no new networkd file and no reload: the
+  Kali tap is a persistent networkd tap, but a target's is on-demand. The helper never
+  sources `target.conf` (labvm-writable); it pulls ID out with sed restricted to digits,
+  so nothing labvm writes there runs as root.
+
+Adding target N forever after: `target-vm import NAME FILE` then
+`systemctl start target-vm@NAME`. Nothing else.
+
+Hardware profile mimics the appliance so the box boots unmodified: `-machine pc` (i440fx)
++ SeaBIOS, AHCI disk (`ich9-ahci` + `ide-hd`), e1000 NIC, `-vga std`, `-cpu host`. The OVF
+confirmed the shape -- PIIX4/AHCI controllers, an E1000 adapter, streamOptimized VMDK,
+BIOS boot, no TPM. No virtio anywhere: reliability over speed, and targets are tiny.
+`import` streams the one `.vmdk` out of the `.ova` with bsdtar and converts it with
+`qemu-img convert -O qcow2`.
+
+Isolation: a target has only the lab0 NIC. No NAT, so no internet. The existing firewall
+answers only DHCP from lab0 and drops the rest inbound, and FORWARD is DROP, so a target
+cannot reach the host's services or route anywhere. Kali (.10) reaches a target because
+both are ports on the same bridge and inter-port forwarding is pure L2 -- it never enters
+the FORWARD chain, because `br_netfilter` is not loaded (confirmed:
+`net.bridge.bridge-nf-call-iptables` does not exist and the module is absent).
+
+Addressing: each target's MAC is fixed at `52:54:00:56:01:<id>` (id 1..254, lowest free),
+so lab0's DHCP server hands it a stable lease without a static-lease entry. `target-vm ls`
+reports the address by parsing `networkctl status lab0`'s offered leases by MAC (the ARP
+table was the first cut and was wrong -- it fills only after traffic, so a freshly booted
+target read as having no address when it had one). Console is VNC on 10.0.0.4:`<5910+id>`,
+wg0 only, TLS + password like the other guests.
+
+First target proven end to end: `target-vm import basic-pentesting-1 ~/basic_pentesting_1.ova`
+(id 1), `systemctl start target-vm@basic-pentesting-1`. It booted to the Ubuntu 16.04
+LightDM login (hostname `vtcsec`, user `marlinspike`), NetworkManager DHCP'd the e1000,
+and lab0 leased it 192.168.56.124. The host pinged it (ICMP reply allowed by the firewall's
+ESTABLISHED,RELATED rule); Kali was already running at .10 on the same bridge. A baseline
+`clean-import` snapshot was taken on the running box so a lab can always revert to pristine.
+
+Diagnostic worth keeping: this kernel has no `nbd` module, so `qemu-nbd -c` cannot map an
+image. To read a guest filesystem offline, `qemu-img convert -O raw` then `losetup -f -P`
+and mount read-only. Used it to confirm `basic_pentesting_1` has an empty
+`/etc/network/interfaces` (lo only), no `70-persistent-net.rules`, and NetworkManager with
+`[ifupdown] managed=false` -- so NM manages the unlisted NIC and DHCPs it regardless of the
+interface name. That is why the box needed no guest edits; a box that pins a connection to
+its original MAC would, and the fix would be to set that MAC in its `target.conf`.
+
+## 2026-10-29 -- Kali egress pinned to wg1, and a networkd leak fixed for both guests
+
+Asked to route the Kali guest's outbound traffic through wg1 the way the Windows guest
+does. Doing it surfaced that the Windows guest's own wg1 pinning had silently stopped
+working, so this is two things: the Kali wiring, and a structural fix that both guests
+needed.
+
+The mechanism (unchanged in principle): a slirp guest sends everything through sockets
+owned by its qemu process, so uid policy rules route by that uid -- to wg1's table (51)
+for egress, to `main` for the console reply to the laptop over wg0, and `prohibit` as the
+backstop so a guest with wg1 down is blocked rather than leaked. This was `win11vm-route`.
+
+The bug: those `ip rule` entries and the `unreachable default` in table 51 are foreign to
+systemd-networkd, and networkd defaults to `ManageForeignRoutingPolicyRules=yes` /
+`ManageForeignRoutes=yes`, which delete every foreign rule and route on any link
+reconfigure. `networkctl reconfigure lab0` reproduced it exactly: the uid rules went from
+present to gone, while wg1's own default route survived (its `PostUp` re-adds it, which is
+what made the setup look intact). The route oneshot runs once at boot and never re-asserts,
+so from the first lab-network change after the Windows guest was built, win11vm had been
+egressing out enp6s0, not wg1, with nothing reporting it -- `systemctl status` showed the
+oneshot `active` the whole time. A plain `networkctl reload` and even a `wg1` restart did
+*not* trigger the prune; only a genuine link reconfigure did, which is why it went unnoticed.
+
+Fixes:
+
+- `overlay/etc/systemd/networkd.conf.d/50-keep-foreign-policy.conf` sets both
+  `ManageForeign*` to no. networkd reads networkd.conf at startup, so this needs a
+  `systemctl restart systemd-networkd`, not a reload (the restart was non-disruptive here:
+  lab0 kept .1, both guests kept their leases). Verified the fix: with the rules re-asserted,
+  `networkctl reconfigure lab0` now leaves all of them in place (before the drop-in the same
+  command flushed them to zero).
+- Consolidated `win11vm-route` into one parameterized script `vm-wg1-route up USER
+  [WG0PORT...]`, since Kali needed the same thing. Deletions are scoped by uidrange and
+  `up` touches only its own uid, so two guests sharing prefs 1000/1001/1002 don't disturb
+  each other; the shared `unreachable default` is set with `replace` and left on `down`.
+  `win11vm-route.service` now calls `vm-wg1-route up win11vm 3389 5901`; new
+  `kalivm-route.service` calls `vm-wg1-route up kalivm 5902` (Kali has no RDP; 5902 is its
+  VNC display :2). This also folded in a drift fix: the live `win11vm-route` had grown the
+  5901 VNC rule while the repo copy still had only 3389.
+- `kali-vm.service` now `Requires=kalivm-route.service`, orders after it and wg1, and
+  `BindReadOnlyPaths=/etc/kalivm/resolv.conf:/etc/resolv.conf` (Quad9) so the guest's DNS
+  leaves through wg1 too, mirroring win11. `overlay/etc/kalivm/resolv.conf` is new.
+
+Verified with `ip route get ... uid`: 997 (kalivm) and 998 (win11vm) both egress `dev wg1`
+(src 10.99.0.2); uid 0 still `dev enp6s0`; kalivm's VNC reply (`from 10.0.0.4 sport 5902 to
+10.0.0.2`) stays `dev wg0`. The uid rules apply to the already-running Kali process
+immediately for new connections; the resolv.conf bind takes effect on the next
+`systemctl restart kali-vm` (until then the running guest's DNS still goes to resolved).
+
 ## 2026-11-03 -- Hotspot-era routing confirmed gone, DNS pinned to pi-router
 
 While the house was on a phone hotspot (LAN 192.168.0.0/24, pi-router at 192.168.0.30),
@@ -6260,3 +6374,34 @@ reason extended), and the regenerated recipe was installed as `/etc/systemd/scri
 Not done: the LAN's DHCP server is the home router at 192.168.1.1 (enp6s0's lease says
 "acquired from 192.168.1.1"), not pi-router, and it still offers .1 as a second
 resolver. Fixing that for every device on the LAN is a setting in the router's admin page.
+
+## 2026-11-04 -- wg1 to nextcloud dead after the IP changes, fixed on nextcloud
+
+Reported: the Windows guest's route via wg1 was broken after the recent IP changes. The
+fault was on nextcloud, not here; nothing on server changed.
+
+What server showed:
+
+- Policy routing intact. uid 998 (win11vm) and 997 (kalivm) each had their pref 1000/1001/
+  1002 rules, and table 51 held `default dev wg1` and the `unreachable` backstop. Both
+  guests were blocked, not leaking to enp6s0, which is what `vm-wg1-route` is meant to do
+  when wg1 has no peer.
+- `wg show wg1`: no handshake ever, 0 B received, 1.04 MiB sent since wg1 came up at
+  21:20 on 2026-11-03.
+- Temporary counting-only iptables rules (no target, deleted after) over 20 s: 4 packets
+  of 176 bytes (handshake initiations) out to 66.228.48.68:51821, 0 back from it.
+- Keys and endpoint match `~/wg1-nextcloud.md`. No hotspot-era 192.168.0.x address left in
+  `/etc/systemd/network`, `/etc/wireguard`, the units or either overlay tree.
+
+On nextcloud (ssh to 66.228.48.68; `ssh nextcloud` goes over wg0 to 10.0.0.8 and hung):
+`wg-quick@wg1` active, listening on 51821/udp, wg1 at 0 packets both ways. Reading ufw
+needs sudo there, so the operator checked it and fixed the ufw rule for 51821/udp.
+Server's public IP is now 68.12.160.31.
+
+Verified after the fix: wg1 handshake 16 s old, 193 KiB received; `curl ifconfig.me` as
+win11vm and as kalivm both print 66.228.48.68, as john 68.12.160.31.
+
+The symptom of this failure is quiet: the guests lose internet, nothing falls back, and
+every unit on server stays `active`. If the home public IP changes again and the guests
+go dark, check `wg show wg1` for a handshake first, then nextcloud's ufw rule for
+51821/udp.

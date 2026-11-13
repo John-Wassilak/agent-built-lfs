@@ -1,0 +1,45 @@
+#!/bin/bash
+# SPDX-License-Identifier: MIT
+# agent-built-lfs -- create/destroy a lab target's tap on lab0 (root; systemd '+' only)
+# Copyright (c) 2026 John Wassilak
+
+# target-vm@.service calls `lab-tap up %i` and `lab-tap down %i` with systemd's '+'
+# prefix, which runs them as root while the unit itself runs as labvm. qemu (labvm) then
+# opens the tap unprivileged -- the same reason Kali's tap is a networkd tap owned by
+# kalivm, except a target's tap is created on demand and deleted on stop, so no
+# per-target networkd file and no `networkctl reload` as targets come and go.
+#
+# The tap is lab-t<id>, id from the target's target.conf, owned by labvm, enslaved to
+# lab0. 50-lab-taps.network (Match lab-*) enslaves lab-* too; doing it here as well is
+# harmless and means a target boots whether or not networkd reacts first.
+#
+# target.conf is written by target-vm, which runs as labvm, so this root helper never
+# sources it: ID is pulled out with sed and must be digits, so nothing labvm writes there
+# runs as root.
+set -euo pipefail
+
+LAB=${LAB_DIR:-/mnt/big_drive/lab}
+VMUSER=labvm
+BRIDGE=lab0
+
+cmd=${1:-}
+name=${2:-}
+[ -n "$name" ] || { echo "lab-tap: usage: lab-tap up|down NAME" >&2; exit 2; }
+
+conf="$LAB/$name/target.conf"
+[ -r "$conf" ] || { echo "lab-tap: no $conf" >&2; exit 1; }
+id=$(sed -n 's/^ID=\([0-9]\{1,3\}\)$/\1/p' "$conf")
+[ -n "$id" ] || { echo "lab-tap: $conf has no numeric ID" >&2; exit 1; }
+tap=lab-t$id
+
+case "$cmd" in
+    up)
+        ip link show "$tap" >/dev/null 2>&1 || ip tuntap add dev "$tap" mode tap user "$VMUSER"
+        ip link set "$tap" master "$BRIDGE"
+        ip link set "$tap" up
+        ;;
+    down)
+        ip link show "$tap" >/dev/null 2>&1 && ip link del "$tap" || true
+        ;;
+    *) echo "lab-tap: usage: lab-tap up|down NAME" >&2; exit 2 ;;
+esac

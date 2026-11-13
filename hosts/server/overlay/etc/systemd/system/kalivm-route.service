@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: MIT
+# agent-built-lfs -- uid policy routing for the Kali lab guest (see vm-wg1-route)
+# Copyright (c) 2026 John Wassilak
+#
+# Before wg1 and before the guest, so the unreachable default in table 51 exists
+# whether or not wg1 ever comes up. Port: the qemu VNC display :2 (5902) reaches the
+# laptop over wg0; everything else from kalivm goes out wg1. Kali has no RDP.
+
+[Unit]
+Description=Policy routing for the kalivm user (Kali lab guest via wg1)
+Before=wg-quick@wg1.service kali-vm.service
+After=network-pre.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/vm-wg1-route up kalivm 5902
+ExecStop=/usr/local/sbin/vm-wg1-route down kalivm
+
+[Install]
+WantedBy=multi-user.target

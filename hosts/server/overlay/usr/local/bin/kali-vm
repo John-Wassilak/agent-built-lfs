@@ -17,8 +17,10 @@
 #
 # Two NICs, the order the lab sheet asks for:
 #   NIC 1, NAT: qemu's user-mode network (libslirp), the qemu equivalent of
-#     VirtualBox NAT. Outbound only, no hostfwd. It leaves through enp6s0, the home
-#     connection; unlike win11vm, kalivm has no policy routing to wg1.
+#     VirtualBox NAT. Outbound only, no hostfwd. Like win11vm, kalivm's egress is pinned
+#     to wg1 by uid policy routing (kalivm-route.service -> vm-wg1-route), with the VNC
+#     console (5902) the one exception that still reaches the laptop over wg0; it never
+#     falls back to enp6s0. DNS goes out wg1 too via the unit's resolv.conf bind.
 #   NIC 2, host-only: the tap lab-kali on the bridge lab0, 192.168.56.0/24, which
 #     systemd-networkd creates (overlay/etc/systemd/network/50-lab*). The MAC is fixed
 #     so networkd's DHCP server always gives Kali 192.168.56.10. The firewall forwards

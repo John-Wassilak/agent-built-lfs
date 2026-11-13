@@ -1,0 +1,337 @@
+#!/bin/bash
+# SPDX-License-Identifier: MIT
+# agent-built-lfs -- lab target guest manager for `server` (qemu + KVM)
+# Copyright (c) 2026 John Wassilak
+
+# One script for every target on lab0, the host-only network Kali attacks across. Each
+# target is a directory under $LAB named by the operator; every subcommand takes that
+# name. Adding the next target is two commands and no new files:
+#   target-vm import NAME FILE   (once)   and then   systemctl start target-vm@NAME
+#
+# Usage, as labvm (sudo -u labvm target-vm ...), or via the target-vm@ unit:
+#   target-vm import NAME FILE   import a VirtualBox/VMware appliance or a disk image
+#                                (.ova, .ovf dir's .vmdk, .vmdk, or .qcow2) as target NAME
+#   target-vm run NAME           boot NAME (its tap must already exist -- see below)
+#   target-vm stop NAME          ACPI power button
+#   target-vm reset NAME         throw away every change since import (must be stopped)
+#   target-vm snapshot NAME TAG  save the disk as TAG (running or stopped)
+#   target-vm snapshot NAME      list NAME's snapshots
+#   target-vm revert NAME TAG    put NAME's disk back to TAG (must be stopped)
+#   target-vm rm NAME            delete NAME entirely (must be stopped)
+#   target-vm ls                 every target: id, address, running, VNC port
+#
+# run is normally the target-vm@NAME unit, which as root (systemd '+') has lab-tap create
+# the tap lab-t<id> before qemu starts and delete it after; run by hand would need the tap
+# to exist already. The screen is VNC on 10.0.0.4:<5910+id> (wg0 only; TLS, password in
+# NAME/vnc.pass).
+#
+# One NIC only: the tap lab-t<id> on lab0, 192.168.56.0/24, which the host's DHCP server
+# addresses (50-lab0.network). No NAT NIC: a target reaches neither the internet nor the
+# host (the firewall answers only DHCP from lab0, and FORWARD is DROP), only the other
+# guests on the bridge. The MAC is fixed per target (52:54:00:56:01:<id>), so its lease is
+# stable across reboots without a static-lease entry. Kali (.10) attacks across the bridge
+# in L2, which never touches the FORWARD policy because br_netfilter is not loaded.
+#
+# Disk: import stores the converted image as NAME/base.qcow2, read-only, and the guest
+# writes to NAME/disk.qcow2, a qcow2 overlay backed by it. reset is a fresh overlay, so a
+# lab starts over from the pristine box without importing again. Snapshots are qcow2
+# internal snapshots inside disk.qcow2 (disk only, crash-consistent -- a target runs no
+# guest agent to freeze its filesystems); reset refuses while any exist unless given
+# --discard-snapshots.
+#
+# Hardware mimics the VirtualBox/VMware appliance so the box boots unmodified: i440fx +
+# SeaBIOS (legacy boot, no Secure Boot or TPM), an AHCI SATA disk, and an e1000 NIC --
+# the controllers and the Intel NIC these appliances ship with. -cpu host; -vga std for a
+# generic framebuffer. No virtio, no virtiofs share, no clipboard, no guest agent: a
+# target is treated as hostile and given nothing it did not come asking for. e1000 cannot
+# use vhost-net (that accelerates virtio-net only); a target's traffic is small.
+#
+# Host-specific, hence hosts/server/overlay: it names /mnt/big_drive, wg0's VNC address,
+# lab0 and the labvm user. No new packages: qemu is packages.py seq 268, bsdtar
+# (libarchive) reads the .ova, qemu-img converts the .vmdk.
+#
+# One-time setup, as root:
+#   useradd -r -M -d /mnt/big_drive/lab -s /sbin/nologin -U -G kvm labvm
+#   install -d -m 750 -o labvm -g labvm /mnt/big_drive/lab
+# lab0 and its DHCP server already exist for Kali (50-lab0.*); targets need nothing more.
+set -euo pipefail
+
+LAB=${LAB_DIR:-/mnt/big_drive/lab}
+VNC_ADDR=${TARGET_VNC_ADDR:-10.0.0.4}
+CPUS=${TARGET_CPUS:-1}
+MEM=${TARGET_MEM:-1G}
+BRIDGE=lab0
+
+die() { echo "target-vm: $*" >&2; exit 1; }
+
+# --- per-target paths and config -------------------------------------------------------
+
+valid_name() { [[ $1 =~ ^[a-z0-9][a-z0-9_-]{0,31}$ ]]; }
+
+dir_of()  { echo "$LAB/$1"; }
+conf_of() { echo "$LAB/$1/target.conf"; }
+base_of() { echo "$LAB/$1/base.qcow2"; }
+disk_of() { echo "$LAB/$1/disk.qcow2"; }
+mon_of()  { echo "$LAB/$1/monitor.sock"; }
+pass_of() { echo "$LAB/$1/vnc.pass"; }
+
+# A config value, or empty. Parsed, never sourced: callers (incl. root lab-tap) must not
+# execute anything the guest's owner could write here.
+conf_get() { sed -n "s/^$2=\(.*\)\$/\1/p" "$(conf_of "$1")" 2>/dev/null; }
+
+id_of()      { conf_get "$1" ID; }
+mac_of()     { conf_get "$1" MAC; }
+tap_of()     { echo "lab-t$(id_of "$1")"; }
+display_of() { echo $(( 10 + $(id_of "$1") )); }           # VNC :10+id -> port 5910+id
+vncport_of() { echo $(( 5900 + $(display_of "$1") )); }
+
+preflight() {
+    [ -c /dev/kvm ] || die "/dev/kvm missing -- is kvm_intel loaded?"
+    [ -r /dev/kvm ] && [ -w /dev/kvm ] || die "no access to /dev/kvm -- $(id -un) is not in the kvm group"
+    [ -d "$LAB" ] && [ -w "$LAB" ] || die "$LAB is not writable -- see the one-time setup in $0"
+}
+
+require() {
+    valid_name "$1" || die "target names are a lowercase letter or digit then [a-z0-9_-], <=32 chars"
+    [ -d "$(dir_of "$1")" ] || die "no target '$1' (target-vm ls)"
+    [ -n "$(id_of "$1")" ] || die "$(conf_of "$1") has no ID"
+}
+
+# Lowest id in 1..254 not already taken by another target.
+next_id() {
+    local used id
+    used=$(grep -rhs '^ID=' "$LAB"/*/target.conf 2>/dev/null | sed 's/^ID=//' | sort -n)
+    for id in $(seq 1 254); do
+        grep -qxF "$id" <<<"$used" || { echo "$id"; return; }
+    done
+    die "no free target id (1..254 all in use)"
+}
+
+# Same scheme as kali-vm/win11-vm: DES VNC auth reads 8 characters, no trailing newline.
+vnc_password() {
+    local f=$1
+    [ -e "$f" ] && return 0
+    local pw
+    pw=$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom 2>/dev/null | head -c 8) || true
+    [ ${#pw} -eq 8 ] || die "could not generate a VNC password"
+    (umask 077; printf %s "$pw" >"$f")
+}
+
+overlay() {
+    qemu-img create -f qcow2 -F qcow2 -b "$(base_of "$1")" "$(disk_of "$1")" >/dev/null
+}
+
+# --- import ----------------------------------------------------------------------------
+
+# Pull the one .vmdk out of an .ova (a tar of .ovf + .vmdk) to a temp file, because
+# qemu-img cannot read a vmdk from a pipe. Convert, then drop the temp vmdk.
+import() {
+    local name=${1:-} src=${2:-}
+    preflight
+    valid_name "$name" || die "target names are a lowercase letter or digit then [a-z0-9_-], <=32 chars"
+    [ -r "$src" ] || die "usage: target-vm import NAME FILE (.ova/.vmdk/.qcow2, readable by $(id -un))"
+    local d; d=$(dir_of "$name")
+    [ -e "$d" ] && die "$d already exists; pick another name or 'target-vm rm $name'"
+
+    local id; id=$(next_id)
+    local mac; mac=$(printf '52:54:00:56:01:%02x' "$id")
+
+    mkdir -p "$d"
+    local base; base=$(base_of "$name")
+    local tmp="$d/import.vmdk"
+    case "$src" in
+        *.ova)
+            local member
+            member=$(bsdtar -tf "$src" | grep -m1 '\.vmdk$') || die "no .vmdk inside $src"
+            echo "target-vm: extracting $member"
+            bsdtar -xOf "$src" "$member" >"$tmp"
+            echo "target-vm: converting to qcow2"
+            qemu-img convert -p -O qcow2 "$tmp" "$base.part"
+            rm -f "$tmp"
+            ;;
+        *.vmdk)
+            echo "target-vm: converting to qcow2"
+            qemu-img convert -p -O qcow2 "$src" "$base.part"
+            ;;
+        *.qcow2)
+            cp -v "$src" "$base.part"
+            ;;
+        *) rmdir "$d"; die "want a .ova, .vmdk or .qcow2, got $src" ;;
+    esac
+    qemu-img check -q "$base.part" || die "$base.part fails qemu-img check"
+    mv "$base.part" "$base"
+    chmod 440 "$base"
+    overlay "$name"
+
+    umask 077
+    cat >"$(conf_of "$name")" <<EOF
+ID=$id
+MAC=$mac
+SOURCE=$(basename "$src")
+CREATED=$(date +%F)
+EOF
+    vnc_password "$(pass_of "$name")"
+    echo "target-vm: imported '$name' as id $id, MAC $mac, VNC :$(( 10 + id )) (port $(( 5910 + id )))"
+    echo "target-vm: start it with  systemctl start target-vm@$name"
+}
+
+# --- lifecycle -------------------------------------------------------------------------
+
+running() {
+    local m; m=$(mon_of "$1")
+    [ -S "$m" ] && python3 -c 'import socket,sys
+s=socket.socket(socket.AF_UNIX); s.connect(sys.argv[1])' "$m" 2>/dev/null
+}
+
+run() {
+    local name=${1:-}
+    require "$name"
+    preflight
+    local disk tap mac mon
+    disk=$(disk_of "$name"); tap=$(tap_of "$name"); mac=$(mac_of "$name"); mon=$(mon_of "$name")
+    [ -e "$disk" ] || die "no $disk -- run 'target-vm import' first"
+    [ -d "/sys/class/net/$tap" ] || die "no $tap -- start '$name' with 'systemctl start target-vm@$name' (the unit creates the tap)"
+    vnc_password "$(pass_of "$name")"
+    exec qemu-system-x86_64 \
+        -name "$name" \
+        -machine pc,accel=kvm \
+        -cpu host \
+        -smp "$CPUS" \
+        -m "$MEM" \
+        -rtc base=utc \
+        -drive file="$disk",if=none,id=disk0,format=qcow2,cache=none,aio=native,discard=unmap \
+        -device ich9-ahci,id=ahci \
+        -device ide-hd,drive=disk0,bus=ahci.0,bootindex=1 \
+        -netdev tap,id=lab,ifname="$tap",script=no,downscript=no \
+        -device e1000,netdev=lab,mac="$mac" \
+        -device qemu-xhci -device usb-tablet \
+        -monitor unix:"$mon",server,nowait \
+        -vga std \
+        -object tls-creds-anon,id=vnctls,endpoint=server \
+        -object secret,id=vncpw,file="$(pass_of "$name")",format=raw \
+        -display vnc="$VNC_ADDR":"$(display_of "$name")",tls-creds=vnctls,password-secret=vncpw
+}
+
+# A monitor command; waits briefly so qemu acts before the socket closes.
+monitor() {
+    local m; m=$(mon_of "$1")
+    [ -S "$m" ] || die "no monitor socket at $m -- is '$1' running?"
+    python3 -c 'import socket,sys,time
+s=socket.socket(socket.AF_UNIX); s.connect(sys.argv[1]); s.sendall(sys.argv[2].encode()+b"\n")
+time.sleep(0.5)' "$m" "$2"
+}
+
+# A human monitor command with its reply (HMP echoes the line, so the reply is between the
+# echo and the next prompt). Same parser as kali-vm.
+hmp() {
+    local m; m=$(mon_of "$1")
+    python3 -c 'import re,socket,sys
+s=socket.socket(socket.AF_UNIX); s.settimeout(120); s.connect(sys.argv[1])
+out=b""
+while b"(qemu)" not in out: out+=s.recv(65536)
+s.sendall(sys.argv[2].encode()+b"\n")
+out=b""
+while out.count(b"(qemu)")<1: out+=s.recv(65536)
+text=re.sub(r"\x1b\[[0-9;]*[A-Za-z]","",out.decode(errors="replace"))
+print(text.split("\n",1)[-1].rsplit("(qemu)",1)[0].strip())' "$m" "$2"
+}
+
+stop() {
+    require "$1"
+    running "$1" || die "'$1' is not running"
+    monitor "$1" system_powerdown
+    echo "target-vm: ACPI power button sent to '$1'"
+}
+
+reset() {
+    require "$1"
+    running "$1" && die "'$1' is running; stop it first"
+    local disk; disk=$(disk_of "$1")
+    if [ -e "$disk" ] && [ -n "$(snapshot_tags "$1")" ] && [ "${2:-}" != --discard-snapshots ]; then
+        die "$disk holds snapshots ($(snapshot_tags "$1" | paste -sd ' ')); reset deletes them. add --discard-snapshots to go ahead"
+    fi
+    rm -f "$disk"
+    overlay "$1"
+    echo "target-vm: '$1' is back to its imported state"
+}
+
+rm_target() {
+    require "$1"
+    running "$1" && die "'$1' is running; stop it first"
+    [ -d "/sys/class/net/$(tap_of "$1")" ] && die "'$1' still has a tap -- 'systemctl stop target-vm@$1' first"
+    rm -rf "$(dir_of "$1")"
+    echo "target-vm: removed '$1'"
+}
+
+# --- snapshots (disk-only, crash-consistent: targets run no guest agent) ----------------
+
+snapshot_tags() { qemu-img snapshot -U -l "$(disk_of "$1")" 2>/dev/null | awk 'NR > 2 { print $2 }'; }
+
+snapshot() {
+    require "$1"
+    local disk; disk=$(disk_of "$1")
+    local tag=${2:-}
+    if [ -z "$tag" ]; then
+        qemu-img snapshot -U -l "$disk"
+        return
+    fi
+    [[ $tag =~ ^[A-Za-z0-9._-]+$ ]] || die "snapshot names are letters, digits, . _ -"
+    snapshot_tags "$1" | grep -qxF -- "$tag" && die "'$1' already has a snapshot $tag"
+    if running "$1"; then
+        local out; out=$(hmp "$1" "snapshot_blkdev_internal disk0 $tag")
+        [ -z "$out" ] || die "monitor: $out"
+    else
+        qemu-img snapshot -c "$tag" "$disk"
+    fi
+    snapshot_tags "$1" | grep -qxF -- "$tag" || die "snapshot $tag is not in $disk"
+    echo "target-vm: snapshot $tag taken on '$1'"
+}
+
+revert() {
+    require "$1"
+    local tag=${2:-}
+    [ -n "$tag" ] || die "usage: target-vm revert NAME TAG ('target-vm snapshot NAME' lists them)"
+    running "$1" && die "'$1' is running; stop it first"
+    snapshot_tags "$1" | grep -qxF -- "$tag" || die "no snapshot $tag on '$1'"
+    qemu-img snapshot -a "$tag" "$(disk_of "$1")"
+    echo "target-vm: '$1' disk is back at $tag"
+}
+
+# --- listing ---------------------------------------------------------------------------
+
+# A target's address, read from lab0's DHCP server lease table by MAC -- authoritative and
+# present the moment the guest takes its lease, unlike the ARP table (which fills only
+# after traffic). Falls back to the neighbour table if networkctl is unavailable.
+addr_of() {
+    local mac a; mac=$(mac_of "$1")
+    [ -n "$mac" ] || return 0
+    a=$(networkctl status "$BRIDGE" 2>/dev/null | awk -v m="${mac,,}" \
+        'tolower($0) ~ "to " m {for(i=1;i<=NF;i++) if($i ~ /^192\.168\.56\./){print $i; exit}}')
+    [ -n "$a" ] || a=$(ip neigh show dev "$BRIDGE" 2>/dev/null | awk -v m="$mac" 'tolower($5)==tolower(m){print $1; exit}')
+    echo "$a"
+}
+
+ls_targets() {
+    [ -d "$LAB" ] || die "$LAB does not exist"
+    printf '%-24s %3s %-17s %-6s %-5s\n' NAME ID ADDRESS STATE VNC
+    local c name
+    for c in "$LAB"/*/target.conf; do
+        [ -e "$c" ] || continue
+        name=$(basename "$(dirname "$c")")
+        printf '%-24s %3s %-17s %-6s %-5s\n' \
+            "$name" "$(id_of "$name")" "$(addr_of "$name" || echo -)" \
+            "$(running "$name" && echo up || echo down)" "$(vncport_of "$name")"
+    done
+}
+
+case "${1:-}" in
+    import)   import "${2:-}" "${3:-}" ;;
+    run)      run "${2:-}" ;;
+    stop)     stop "${2:-}" ;;
+    reset)    reset "${2:-}" "${3:-}" ;;
+    snapshot) snapshot "${2:-}" "${3:-}" ;;
+    revert)   revert "${2:-}" "${3:-}" ;;
+    rm)       rm_target "${2:-}" ;;
+    ls)       ls_targets ;;
+    *) sed -n '/^# Usage/,/^#$/p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+esac

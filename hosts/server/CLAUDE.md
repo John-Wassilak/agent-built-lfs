@@ -48,17 +48,47 @@ Things worth knowing before changing anything here:
   wg0 alone (`blfs-overrides.json` page `blfs-iptables` block 2; the recipe is
   generated). USB devices pass through with `win11-vm usb-attach`. The CPU has no VT-d,
   so do not propose GPU or PCI passthrough. Since 2026-10-21/22: it runs as `win11vm`
-  from `win11-vm@run`, its internet traffic leaves only through wg1
-  (`win11vm-route`), its console is VNC on 10.0.0.4:5901, and `/mnt/big_drive/vm-share`
-  is shared to it as `Z:` through virtiofsd (seq 274-275).
+  from `win11-vm@run`, its internet traffic leaves only through wg1 (`win11vm-route.service`
+  -> the shared `vm-wg1-route`, since 2026-10-29), its console is VNC on 10.0.0.4:5901, and
+  `/mnt/big_drive/vm-share` is shared to it as `Z:` through virtiofsd (seq 274-275).
 - **A Kali lab guest runs under the same qemu** (2026-10-22, no new packages):
   `overlay/usr/local/bin/kali-vm` and `kali-vm.service`, as `kalivm`, images on
   `/mnt/big_drive/kali` (read-only base plus an overlay; `kali-vm reset` starts over).
-  NIC 1 is slirp NAT out enp6s0; NIC 2 is the tap `lab-kali` on `lab0`, the host-only
-  bridge, 192.168.56.0/24, server .1, Kali pinned to .10 by MAC. lab0 and its taps are
-  systemd-networkd files in `overlay/etc/systemd/network/50-lab*`, and a new lab target
-  gets its own `50-lab-<name>.netdev`. The firewall routes nothing into or out of lab0 and
-  lets it reach only DHCP on the host. Console: VNC on 10.0.0.4:5902, wg0 only.
+  NIC 1 is slirp NAT; like win11, its egress is pinned to wg1 by uid policy routing
+  (`kalivm-route.service` -> `vm-wg1-route`, 2026-10-29), with the VNC console (5902) the
+  one exception reaching the laptop over wg0, and DNS out wg1 via the unit's resolv.conf
+  bind. NIC 2 is the tap `lab-kali` on `lab0`, the host-only bridge, 192.168.56.0/24,
+  server .1, Kali pinned to .10 by MAC. lab0 and its taps are systemd-networkd files in
+  `overlay/etc/systemd/network/50-lab*` (targets get on-demand taps instead -- see the next
+  bullet). The firewall routes nothing into or out of lab0 and lets it reach only DHCP on
+  the host. Console: VNC on 10.0.0.4:5902, wg0 only.
   Since 2026-10-27 it also mounts `/mnt/big_drive/vm-share`, the same directory Windows
   sees as `Z:`, at `/mnt/share` (virtiofs, host ids squashed to `kali`).
   The lab tap runs on vhost-net (`VHOST_NET=m` in `kernel-config.sh`, 2026-10-27).
+- **Lab target guests are the boxes Kali attacks on lab0** (2026-10-29, no new packages):
+  one parameterized tool for all of them, not a script per box. `overlay/usr/local/bin/
+  target-vm` (every subcommand takes a target NAME: `import`, `run`, `stop`, `reset`,
+  `snapshot`, `revert`, `rm`, `ls`), the template unit `target-vm@.service`, and the root
+  tap helper `overlay/usr/local/sbin/lab-tap`. They run as `labvm` (parallel to `kalivm`,
+  images on `/mnt/big_drive/lab`, read-only base plus overlay). Adding the next target is
+  `target-vm import NAME FILE` then `systemctl start target-vm@NAME` -- no new files and no
+  `networkctl reload`, because the tap `lab-t<id>` is created on demand by `lab-tap` (via
+  the unit's systemd `+` prefix, as root) and deleted on stop. A target has one NIC, the
+  tap on lab0; no NAT, no share, no guest agent -- it reaches only the other guests on the
+  bridge, never the host (DHCP only) or the internet (FORWARD DROP). Kali (.10) attacks
+  across the bridge in L2, which bypasses the FORWARD policy because `br_netfilter` is not
+  loaded. Hardware mimics a VirtualBox/VMware appliance so a VulnHub box boots unmodified:
+  i440fx + SeaBIOS, AHCI disk, e1000 NIC, `-vga std`; `import` converts the appliance's
+  streamOptimized VMDK out of the .ova with `qemu-img`. Each target's MAC is fixed
+  (`52:54:00:56:01:<id>`) so its DHCP lease is stable; `target-vm ls` reports the address
+  from lab0's server lease table. Console is VNC on 10.0.0.4:`<5910+id>`, wg0 only. First
+  target: `basic-pentesting-1` (VulnHub, Ubuntu 16.04), id 1, 192.168.56.124.
+- **Guest egress on wg1 depends on a networkd drop-in; do not remove it.** `win11vm` and
+  `kalivm` egress is pinned to wg1 by hand-managed uid policy rules (`vm-wg1-route`). These
+  rules are foreign to systemd-networkd, which by default deletes foreign routing policy
+  rules and routes on every link reconfigure -- so
+  `overlay/etc/systemd/networkd.conf.d/50-keep-foreign-policy.conf`
+  (`ManageForeignRoutingPolicyRules=no`, `ManageForeignRoutes=no`) is what keeps the
+  pinning alive past the next `networkctl reconfigure`. Without it both guests silently
+  revert to enp6s0 (this had already happened to Windows; found and fixed 2026-10-29). The
+  `prohibit` rule in `vm-wg1-route` is the leak backstop. See PRACTICES.md.
