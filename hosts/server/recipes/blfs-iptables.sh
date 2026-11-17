@@ -148,6 +148,11 @@ iptables -A INPUT -i wg0 -s 10.0.0.2 -p tcp --dport 5900 -m conntrack --ctstate 
 # INPUT rule to a host socket, not FORWARD; hosts/server/overlay/usr/local/bin/win11-vm
 # binds the forward to 10.0.0.4 alone for the same reason as VNC.
 iptables -A INPUT -i wg0 -s 10.0.0.2 -p tcp --dport 3389 -m conntrack --ctstate NEW -j ACCEPT
+# ssh into the same guest (its OpenSSH Server, key-only), 2026-11-16. qemu forwards
+# 10.0.0.4:2222 to the guest's 22 (the host's own sshd holds 22). The one client is a
+# container on nextcloud (10.0.0.8); pi-router admits that one NEW flow from .8 and
+# no other.
+iptables -A INPUT -i wg0 -s 10.0.0.8 -p tcp --dport 2222 -m conntrack --ctstate NEW -j ACCEPT
 # The guest's screen: qemu's VNC server on 10.0.0.4:5901 (TLS plus a password, see
 # win11-vm), wg0 only like 5900.
 iptables -A INPUT -i wg0 -s 10.0.0.2 -p tcp --dport 5901 -m conntrack --ctstate NEW -j ACCEPT

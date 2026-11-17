@@ -4,7 +4,8 @@
 #
 # Before wg1 and before the guest, so the unreachable default in table 51 exists
 # whether or not wg1 ever comes up. Ports: RDP 3389 and the qemu VNC display :1 (5901)
-# reach the laptop over wg0; everything else from win11vm goes out wg1.
+# reach the laptop over wg0, and the guest's sshd forward (2222) reaches nextcloud
+# (10.0.0.8) over wg0; everything else from win11vm goes out wg1.
 
 [Unit]
 Description=Policy routing for the win11vm user (Windows 11 guest via wg1)
@@ -14,7 +15,7 @@ After=network-pre.target
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/usr/local/sbin/vm-wg1-route up win11vm 3389 5901
+ExecStart=/usr/local/sbin/vm-wg1-route up win11vm 3389 5901 2222@10.0.0.8
 ExecStop=/usr/local/sbin/vm-wg1-route down win11vm
 
 [Install]

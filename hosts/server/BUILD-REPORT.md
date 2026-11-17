@@ -6405,3 +6405,85 @@ The symptom of this failure is quiet: the guests lose internet, nothing falls ba
 every unit on server stays `active`. If the home public IP changes again and the guests
 go dark, check `wg show wg1` for a handshake first, then nextcloud's ufw rule for
 51821/udp.
+
+## 2026-11-16 -- sshd in the Windows 11 guest, for a container on nextcloud
+
+Operator request: OpenSSH Server in `win11`, one standard account (`ggxreader`) that
+accepts one ed25519 key (`ggx-advisor-readonly-test`), reachable from an agent running in
+a container on nextcloud (10.0.0.8).
+
+In the guest, run as SYSTEM through the qemu guest agent (`guest-exec` on
+`$VM/qga.sock`, PowerShell passed with `-EncodedCommand`). The VM had no console session open
+for this:
+
+- `Add-WindowsCapability OpenSSH.Server` came back `RestartNeeded: True` and the capability
+  sat at `InstallPending`, with no `sshd.exe` and no service, until a guest reboot
+  (operator-approved, `Restart-Computer` through the agent). On Windows 11 build 26300
+  this one cannot be finished without a restart.
+- `ggxreader` is in `Users` only. Its password is random and was never printed or stored,
+  because `Read-Host` cannot prompt through the agent and login is key-only anyway.
+- The profile was created with `userenv!CreateProfile` before `.ssh` was written. If
+  `C:\Users\<name>` exists before the account's first logon, Windows can register the profile
+  as `C:\Users\<name>.<PC>`, and sshd then looks for `authorized_keys` there. ProfileList
+  confirms `C:\Users\ggxreader`.
+- `icacls ... /inheritance:r` belongs on the `.ssh` directory only. Run with `/T`, it also
+  stripped inheritance from `authorized_keys` and left it with an empty DACL, because
+  `(OI)(CI)` grants do not apply to a file. Even SYSTEM, which sshd runs as, could not
+  read it. `icacls <file> /reset` fixed it, and the file now inherits ggxreader, SYSTEM and
+  Administrators from the directory.
+- `PasswordAuthentication no` alone left sshd offering `publickey,keyboard-interactive`,
+  and on Windows keyboard-interactive will take a password. `KbdInteractiveAuthentication no`
+  was added below it, and `sshd -t` passes. A refused login now offers `publickey` only.
+- The `OpenSSH-Server-In-TCP` rule ships Private-only, and the slirp NIC is classified
+  Public, which would block 22 even from qemu's forward. It is now set to `-Profile Any`.
+  This is safe because the guest is reachable only through hostfwds bound to 10.0.0.4.
+
+On server:
+
+- `win11-vm` gains a second hostfwd, `10.0.0.4:2222 -> guest :22`, because host sshd
+  holds 10.0.0.4:22. It was added to the running VM with `hostfwd_add` on the monitor, and
+  the launcher was deployed to `/usr/local/bin`.
+- The `blfs-iptables` override (block 2) accepts tcp/2222 NEW on wg0 from 10.0.0.8 only.
+  The recipe was regenerated, `--check` is at zero drift, and the rule was applied live
+  and installed in `/etc/systemd/scripts/iptables`.
+
+pi-router drops every NEW flow from 10.0.0.8 (FORWARD and INPUT). Two routes were weighed:
+a reverse tunnel opened from server (pi-router untouched, but a long-running `ssh -R`,
+`GatewayPorts` on nextcloud and a docker0 rule there), or a single-flow FORWARD exception
+on pi-router. The operator chose the exception: `-s 10.0.0.8 -d 10.0.0.4 -p tcp --dport
+2222 --ctstate NEW -j ACCEPT`, inserted above the .8 drop. pi-router's config is not in
+this repo.
+
+Verified from server: `ssh -p 2222 ggxreader@10.0.0.4` reaches the guest's sshd (banner
+`OpenSSH_for_Windows_9.5`) and is refused with `publickey` only, which is correct, since server
+does not hold the advisor's key. A real login from the container is the remaining check.
+
+Later the same day: connections from nextcloud to 10.0.0.4:2222 hung. Temporary count-only
+rules in raw PREROUTING showed the SYNs arriving on wg0 and passing the INPUT accept, so
+pi-router's exception worked. The reply was the problem. The kernel routes a listener's
+SYN-ACK by the listening socket's uid, which is win11vm (998). `vm-wg1-route` exempts from
+wg1 only console replies to the laptop (10.0.0.2), so the SYN-ACK to 10.0.0.8 followed
+pref 1001 into table 51 and out wg1, and was lost. `ip route get 10.0.0.8 uid 998`
+showed `dev wg1 table 51`. Any future hostfwd that a wg0 peer other than the laptop uses
+will fail the same way. `vm-wg1-route` now takes `PORT@ADDR` beside bare `PORT` (bare
+still means the laptop), and `win11vm-route.service` passes `2222@10.0.0.8`. Both were
+deployed. The live rule was added by hand instead of restarting the unit, because `up`
+begins with `down` and would leave the guest unpinned from wg1 for a moment. The nextcloud
+host then reached the guest's sshd (`Permission denied (publickey)`, correct without the
+advisor's key).
+
+The container (`agent-ifd-fleet`, sharing the netns of its tailscale sidecar
+`agent-ifd-fleet-ts`, bridge network, route to 10.0.0.4 via 172.17.0.1) still got an
+immediate `No route to host`, and nothing reached server's wg0. tailscale is not the
+cause: table 52 holds only tailnet /32s, RouteAll is false and there is no exit node. The
+block is on the nextcloud host. ufw is active with `DEFAULT_FORWARD_POLICY="DROP"`, and
+container-to-wg0 is a routed docker0-to-wg0 flow. The rule files there can only be read
+by root, so the operator checks them.
+
+Cause of the container's `No route to host`, found later: not ufw. `agent-ifd-fleet` runs
+`~/agent-sandbox/firewall.sh` as its entrypoint, in the netns it shares with
+`agent-ifd-fleet-ts`. Its OUTPUT chain rejects every private range (10.0.0.0/8 included)
+with `icmp-admin-prohibited`, which surfaces as EHOSTUNREACH, and allows only lo,
+tailscale0 and DNS to 1.1.1.1. The fix is an opt-in single-destination accept ahead of
+those rejects. It is a change to the agent sandbox's egress policy on nextcloud, so it is
+the operator's to make. Nothing on server changed for it.

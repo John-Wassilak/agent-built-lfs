@@ -13,6 +13,7 @@
 #
 # Both modes put the guest's screen on VNC at 10.0.0.4:5901 (wg0 only; TLS, and
 # the password in $VM/vnc.pass, which create writes) and RDP at 10.0.0.4:3389.
+# The guest's OpenSSH Server (key-only) is forwarded at 10.0.0.4:2222.
 #
 # install and run are normally started as systemd units, win11-vm@install and
 # win11-vm@run, which give qemu its own resolv.conf (see the unit).
@@ -77,9 +78,12 @@
 #     memfd backend got none: qemu maps it 4K-aligned, one page off a 2M boundary,
 #     and a shmem mapping is THP-eligible only when PMD-aligned to its file offset.
 #     Run outside the unit (no $RAM_DIR), it falls back to memfd on 4K pages.
-#   -netdev user (libslirp) with one hostfwd, bound to 10.0.0.4 only, so RDP
-#     exists on wg0 and nowhere else. The firewall rule in blfs-iptables.sh is
-#     the second layer. If wg0 is down at start, qemu cannot bind and exits.
+#   -netdev user (libslirp) with two hostfwds, bound to 10.0.0.4 only, so RDP
+#     and the guest's sshd exist on wg0 and nowhere else. The firewall rules in
+#     blfs-iptables.sh are the second layer. If wg0 is down at start, qemu cannot
+#     bind and exits. sshd is on 2222 because the host's own sshd holds
+#     10.0.0.4:22; the client is a container on nextcloud (10.0.0.8), the one
+#     source the firewall admits (2026-11-16, BUILD-REPORT.md).
 #     ipv6=off: wg1 carries IPv4 only and server blocks v6 outright, so the guest
 #     is not offered v6 to try.
 #   usb-host on the guest's xHCI -- USB passthrough through libusb, which works
@@ -209,7 +213,7 @@ qemu_vm() {
         -device tpm-tis,tpmdev=tpm0 \
         -drive file="$DISK",if=none,id=disk0,format=qcow2,cache=none,aio=native,discard=unmap \
         -device virtio-blk-pci,drive=disk0,bootindex=1 \
-        -netdev user,id=net0,ipv6=off,hostfwd=tcp:"$RDP_ADDR":3389-:3389 \
+        -netdev user,id=net0,ipv6=off,hostfwd=tcp:"$RDP_ADDR":3389-:3389,hostfwd=tcp:"$RDP_ADDR":2222-:22 \
         -device virtio-net-pci,netdev=net0 \
         -device qemu-xhci -device usb-tablet \
         -monitor unix:"$MONITOR",server,nowait \

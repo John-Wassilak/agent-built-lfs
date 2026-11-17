@@ -3,14 +3,20 @@
 # agent-built-lfs -- policy routing that sends a VM user's traffic out wg1
 # Copyright (c) 2026 John Wassilak
 
-# Usage (root):  vm-wg1-route up USER [WG0PORT...]   |   vm-wg1-route down USER
+# Usage (root):  vm-wg1-route up USER [WG0PORT[@ADDR]...]   |   vm-wg1-route down USER
 #
 # One script for every slirp guest whose egress belongs on wg1 (win11vm, kalivm, ...).
 # A guest on qemu's user-mode network (slirp) sends everything through sockets owned by
 # the qemu process, which runs as USER, so these rules route by that uid:
 #
-#   1000  USER, tcp from a WG0PORT to the laptop (10.0.0.2)  -> main (wg0)
-#         console replies only (RDP 3389, VNC 59xx); nothing else from USER reaches wg0.
+#   1000  USER, tcp from a WG0PORT to its peer               -> main (wg0)
+#         replies from a forwarded port only (RDP 3389, VNC 59xx, the guest's sshd on
+#         2222); nothing else from USER reaches wg0. A bare PORT answers the laptop
+#         (10.0.0.2); PORT@ADDR answers another wg0 peer (2222@10.0.0.8, nextcloud).
+#         Without this rule the reply to a hostfwd follows rule 1001 out wg1, because
+#         the kernel routes a listener's SYN-ACK by the listening socket's uid: the
+#         client's SYN arrives on wg0 and the SYN-ACK leaves on wg1, so the connection
+#         hangs with no error on either end (2026-11-16, BUILD-REPORT.md).
 #   1001  USER                                               -> table 51 (default dev wg1)
 #   1002  USER                                               -> prohibit
 #
@@ -39,7 +45,7 @@ LAPTOP=10.0.0.2
 
 cmd=${1:-}
 user=${2:-}
-[ -n "$user" ] || { echo "usage: vm-wg1-route up USER [WG0PORT...] | down USER" >&2; exit 2; }
+[ -n "$user" ] || { echo "usage: vm-wg1-route up USER [WG0PORT[@ADDR]...] | down USER" >&2; exit 2; }
 uid=$(id -u "$user") || { echo "vm-wg1-route: no user $user" >&2; exit 1; }
 shift 2 || true
 ports=("$@")
@@ -54,9 +60,11 @@ down() {
 up() {
     down
     ip route replace unreachable default metric 4096 table "$TABLE"
-    local port
-    for port in "${ports[@]}"; do
-        ip rule add pref 1000 uidrange "$uid-$uid" to "$LAPTOP" ipproto tcp sport "$port" lookup main
+    local spec port peer
+    for spec in "${ports[@]}"; do
+        port=${spec%%@*}
+        peer=$LAPTOP; [ "$spec" = "$port" ] || peer=${spec#*@}
+        ip rule add pref 1000 uidrange "$uid-$uid" to "$peer" ipproto tcp sport "$port" lookup main
     done
     ip rule add pref 1001 uidrange "$uid-$uid" lookup "$TABLE"
     ip rule add pref 1002 uidrange "$uid-$uid" prohibit
@@ -65,5 +73,5 @@ up() {
 case "$cmd" in
     up)   up ;;
     down) down ;;
-    *)    echo "usage: vm-wg1-route up USER [WG0PORT...] | down USER" >&2; exit 2 ;;
+    *)    echo "usage: vm-wg1-route up USER [WG0PORT[@ADDR]...] | down USER" >&2; exit 2 ;;
 esac
