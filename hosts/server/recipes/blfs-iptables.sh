@@ -135,11 +135,12 @@ iptables -A INPUT -i enp6s0 -s 192.168.1.0/24 -p tcp --dport 22 -m conntrack --c
 # which tailscaled's own ts-input chain opens wholesale ahead of these rules. That
 # is also why nginx binds 10.0.0.4 and loopback by address rather than `listen 80`;
 # see hosts/server/overlay/etc/nginx/nginx.conf. No v6 rule: wg0 carries no v6.
-# Since 2026-11-03 this rule and the four console rules after it accept only
-# 10.0.0.2 (laptop), the one client in nginx's access log. pi-router forwards
-# between peers, so wg0 alone also admitted the phone, jumpbox, nextcloud and
-# pi-master-tv. A new client is a new -s here.
-iptables -A INPUT -i wg0 -s 10.0.0.2 -p tcp --dport 80 -m conntrack --ctstate NEW -j ACCEPT
+# 2026-11-03 to 2026-11-16 this rule accepted only 10.0.0.2 (laptop); since
+# 2026-11-16 it accepts the whole WireGuard subnet, so any peer can reach pi-quiti
+# (Grafana, proxied at /pi-quiti/ from 127.0.0.1:3000). The console rules after it
+# still accept only 10.0.0.2: pi-router forwards between peers, so wg0 alone would
+# also admit the phone, jumpbox, nextcloud and pi-master-tv.
+iptables -A INPUT -i wg0 -s 10.0.0.0/24 -p tcp --dport 80 -m conntrack --ctstate NEW -j ACCEPT
 # VNC (x0vncserver sharing :0, packages.py seq 267) likewise wg0 only; it also
 # binds 10.0.0.4 alone, see hosts/server/overlay/etc/systemd/system/x0vncserver.service.
 iptables -A INPUT -i wg0 -s 10.0.0.2 -p tcp --dport 5900 -m conntrack --ctstate NEW -j ACCEPT

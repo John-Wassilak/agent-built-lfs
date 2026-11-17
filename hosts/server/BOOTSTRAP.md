@@ -257,7 +257,10 @@ In order, all against `/mnt/target`:
    `hosts/server/overlay/etc/nginx/nginx.conf` replaces the stub `blfs-nginx` writes, and
    `etc/systemd/system/nginx.service.d/10-wg0.conf` orders nginx after `wg-quick@wg0`;
    `systemctl daemon-reload` after both. Without the drop-in nginx can race wg0 at boot
-   and fail to bind 10.0.0.4.
+   and fail to bind 10.0.0.4. `etc/nginx/locations/pi-quiti.conf` must come with it: the
+   server block includes `locations/*.conf`, and that file is the /pi-quiti/ proxy to
+   Grafana. Pi-quiti itself (the compose stack in `~/Pi-quiti`, its `.env` and docker
+   volumes) is not in this repo.
    `etc/systemd/system/x0vncserver.service` (TigerVNC sharing `:0` on 10.0.0.4) needs
    `systemctl enable`, and `~john/.config/tigervnc/passwd` is not in the repo: carry it
    from the old root or re-run `vncpasswd` as john.

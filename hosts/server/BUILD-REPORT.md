@@ -6487,3 +6487,34 @@ with `icmp-admin-prohibited`, which surfaces as EHOSTUNREACH, and allows only lo
 tailscale0 and DNS to 1.1.1.1. The fix is an opt-in single-destination accept ahead of
 those rejects. It is a change to the agent sandbox's egress policy on nextcloud, so it is
 the operator's to make. Nothing on server changed for it.
+
+## 2026-11-16 -- pi-quiti open to every WireGuard peer
+
+Operator request: reach pi-quiti from any WireGuard host. Grafana
+(`piquiti-grafana-1`) is published on 127.0.0.1:3000 only. nginx proxies it at
+`http://10.0.0.4/pi-quiti/`, so the gate is the tcp/80 INPUT rule, which has accepted
+only 10.0.0.2 since 2026-11-03.
+
+- `blfs-iptables` block 2 in `blfs-overrides.json`: tcp/80 on wg0 now takes
+  `-s 10.0.0.0/24`, and the reason is extended. The console ports (5900-5902, 3389) are
+  still laptop-only. The recipe was regenerated and `extract-blfs.py --host server
+  --check` reports no drift. The live rule (INPUT 8) was replaced with `iptables -R`, not
+  a service restart, for the reason given on 2026-11-03. The regenerated script is
+  installed as `/etc/systemd/scripts/iptables` (root:root 0700), and a diff against the
+  recipe's heredoc is empty.
+- The overlay was behind live nginx. Live `nginx.conf` has had `include
+  /etc/nginx/locations/*.conf;` since 2026-09-24, and `locations/pi-quiti.conf` was never
+  in the repo, so a re-image would have dropped the proxy. Both are now in
+  `hosts/server/overlay/etc/nginx/`. The snippet is a verbatim copy of
+  `~/Pi-quiti/deploy/nginx/pi-quiti.conf`, which is identical to the live one. The
+  overlay `nginx.conf` (only comments differ from live) was installed, and `nginx -t`
+  passes. BOOTSTRAP.md step 2 names the snippet.
+
+Checked from server: `/pi-quiti/` answers 302 to `http://10.0.0.4/pi-quiti/login`, which
+answers 200. Not yet checked from a peer other than the laptop.
+
+Not covered: pi-router drops every NEW flow from 10.0.0.8, so nextcloud does not reach
+tcp/80 without a FORWARD exception there. pi-quiti's `.env` sets
+`GRAFANA_ROOT_URL=http://server/pi-quiti/`. Redirects keep the client's host, but any
+absolute link Grafana builds from root_url names `server`, which a peer resolves only if
+its DNS knows that name.
