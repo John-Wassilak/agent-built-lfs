@@ -6270,5 +6270,19 @@
     "blocks": 1,
     "enabled": 1,
     "disabled": 0
+  },
+  {
+    "seq": 430,
+    "order": "blfs.430",
+    "name": "blfs-herdr",
+    "chapter": "blfs",
+    "page": "herdr",
+    "title": "herdr-0.9.5 (hand-authored, shared recipe, upstream static binary)",
+    "context": "chroot",
+    "tarball": "",
+    "manifest": true,
+    "blocks": 1,
+    "enabled": 1,
+    "disabled": 0
   }
 ]

@@ -1674,4 +1674,9 @@ PACKAGES = sorted(BASE + [
          "fcitx5-configtool-5.1.16 (hand-authored, shared recipe)"),
     hand(429, "fcitx5-bamboo", "fcitx5-bamboo-1.0.11.tar.zst",
          "fcitx5-bamboo-1.0.11 (hand-authored, shared recipe)"),
+    # herdr 0.9.5, a terminal multiplexer for coding agents (operator request,
+    # 2026-11-13). No BLFS page. Upstream's static x86_64 binary with a pinned sha256:
+    # the source build needs Zig 0.16 and Rust 1.96, neither on this host. The recipe
+    # explains both and why `herdr update` must not be used here.
+    hand(430, "herdr", "", "herdr-0.9.5 (hand-authored, shared recipe, upstream static binary)"),
 ], key=lambda p: p["seq"])

@@ -7320,3 +7320,32 @@ passed `10.0.0.4::5901` plus the extra arguments, with the password set. The ent
 and icon are installed in `/usr/share` and indexed with `update-desktop-database`.
 
 **Not yet done:** a live connection to the guest's console from the new entry.
+
+## 2026-11-13 -- herdr 0.9.5 (seq 430), upstream static binary
+
+Operator request: install herdr (github.com/herdrdev/herdr, Apache-2.0), a terminal
+multiplexer for coding agents. The plan was a source build, like alacritty. The v0.9.5
+tree rules that out on this host:
+
+- `crates/ghostty-vt/build.rs` builds the vendored libghostty-vt with `zig build` and
+  stops without Zig 0.16.0. There is no Zig here.
+- `rust-toolchain.toml` pins Rust 1.96.1. BLFS 13.0's rustc is 1.93.1.
+
+Operator decision: install upstream's release binary as a tracked step instead of into
+`~/.local/bin`. `recipes/blfs-herdr.sh` (shared) fetches `herdr-linux-x86_64`, checks it
+against the sha256 pinned in the recipe (GitHub's asset digest, matched by a scratch
+download first), and installs it to `/usr/bin` with bash and zsh completions. The asset
+is a static-pie executable (`file`; `ldd` says "statically linked"), so it links nothing
+from this system.
+
+The recipe touches `/etc/resolv.conf` only when `github.com` fails to resolve, so the
+pi-router pin from 2026-11-03 stayed in place during the run (symlink unchanged
+afterwards).
+
+- Step ran in 0.2 min; manifest has 3 files. `lfsmaint db` rebuilt from this host's plan
+  and manifests; `lfsmaint owns /usr/bin/herdr` resolves to `herdr (BLFS)`.
+- `extract-blfs.py --host laptop --check` reported no drift before the plan was
+  regenerated.
+- herdr checks for new releases in the background and only shows a notice. `herdr
+  update` would overwrite `/usr/bin/herdr` outside the manifest; bump the recipe
+  instead.
