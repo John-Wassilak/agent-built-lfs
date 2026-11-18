@@ -51,6 +51,11 @@ Things worth knowing before changing anything here:
   from `win11-vm@run`, its internet traffic leaves only through wg1 (`win11vm-route.service`
   -> the shared `vm-wg1-route`, since 2026-10-29), its console is VNC on 10.0.0.4:5901, and
   `/mnt/big_drive/vm-share` is shared to it as `Z:` through virtiofsd (seq 274-275).
+  Since 2026-11-16 the guest runs OpenSSH Server (key-only, account `ggxreader`),
+  forwarded at 10.0.0.4:2222 and admitted only from nextcloud (10.0.0.8), which needs a
+  matching FORWARD exception on pi-router (BUILD-REPORT.md 2026-11-16). A hostfwd that
+  a wg0 peer uses also needs a reply exemption in the guest's route unit
+  (`vm-wg1-route ... PORT@ADDR`), or its SYN-ACK leaves on wg1 and the client hangs.
 - **A Kali lab guest runs under the same qemu** (2026-10-22, no new packages):
   `overlay/usr/local/bin/kali-vm` and `kali-vm.service`, as `kalivm`, images on
   `/mnt/big_drive/kali` (read-only base plus an overlay; `kali-vm reset` starts over).
