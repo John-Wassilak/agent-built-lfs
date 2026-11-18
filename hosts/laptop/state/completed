@@ -639,3 +639,9 @@ blfs-kwidgetsaddons
 blfs-fcitx5-configtool
 blfs-fcitx5-bamboo
 blfs-herdr
+blfs-pipewire
+blfs-hyprutils
+blfs-hyprland-protocols
+blfs-hyprtoolkit
+blfs-hyprland-guiutils
+blfs-xdg-desktop-portal-hyprland

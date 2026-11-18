@@ -270,16 +270,16 @@ PACKAGES = sorted(BASE + [
     hand(106, "re2", "re2-2025-11-05.tar.gz", "re2 (hand-authored, shared recipe)"),
     hand(107, "tomlplusplus", "tomlplusplus-3.4.0.tar.gz", "tomlplusplus (hand-authored, shared recipe)"),
     hand(108, "hyprwayland-scanner", "hyprwayland-scanner-0.4.6.tar.gz", "hyprwayland-scanner (hand-authored, shared recipe)"),
-    hand(109, "hyprutils", "hyprutils-0.14.1.tar.gz", "hyprutils (hand-authored, shared recipe)"),
+    hand(109, "hyprutils", "hyprutils-0.14.2.tar.gz", "hyprutils (hand-authored, shared recipe)"),
     hand(110, "hyprlang", "hyprlang-0.6.8.tar.gz", "hyprlang (hand-authored, shared recipe)"),
     hand(111, "hyprcursor", "hyprcursor-0.1.13.tar.gz", "hyprcursor (hand-authored, shared recipe)"),
     hand(112, "hyprgraphics", "hyprgraphics-0.5.1.tar.gz", "hyprgraphics (hand-authored, shared recipe)"),
     hand(113, "hyprwire", "hyprwire-0.3.1.tar.gz", "hyprwire (hand-authored, shared recipe)"),
-    hand(114, "hyprland-protocols", "hyprland-protocols-0.7.0.tar.gz", "hyprland-protocols (hand-authored, shared recipe)"),
+    hand(114, "hyprland-protocols", "hyprland-protocols-0.8.0.tar.gz", "hyprland-protocols (hand-authored, shared recipe)"),
     hand(115, "glaze", "glaze-8.1.0.tar.gz", "glaze (hand-authored, shared recipe)"),
     hand(116, "aquamarine", "aquamarine-0.14.0.tar.gz", "aquamarine (hand-authored, shared recipe)"),
     hand(117, "iniparser", "iniparser-4.2.6.tar.gz", "iniparser (hand-authored, shared recipe)"),
-    hand(118, "hyprtoolkit", "hyprtoolkit-0.5.4.tar.gz", "hyprtoolkit (hand-authored, shared recipe)"),
+    hand(118, "hyprtoolkit", "hyprtoolkit-0.6.0.tar.gz", "hyprtoolkit (hand-authored, shared recipe)"),
     hand(119, "hyprland-guiutils", "hyprland-guiutils-0.2.2.tar.gz", "hyprland-guiutils (hand-authored, shared recipe)"),
     hand(120, "lua5.5", "lua-5.5.1.tar.gz", "lua5.5 (hand-authored, shared recipe)"),
     hand(121, "hyprland", "source-v0.56.2.tar.gz", "Hyprland-0.56.2 (hand-authored, shared recipe)"),
@@ -350,7 +350,7 @@ PACKAGES = sorted(BASE + [
     # Moved here from seq 123/124 on 2026-09-04 -- see the note at the old numbers
     # above. Must come after alsa-lib (130) or pipewire builds with no ALSA support
     # and says nothing about it; and after bluez/sbc above for -D bluez5=enabled.
-    hand(130.5, "pipewire", "pipewire-1.6.0.tar.bz2", "pipewire-1.6.0 (hand-authored, shared recipe)"),
+    hand(130.5, "pipewire", "pipewire-1.6.11.tar.bz2", "pipewire-1.6.11 (hand-authored, shared recipe)"),
     hand(130.6, "wireplumber", "wireplumber-0.5.13.tar.bz2", "Wireplumber-0.5.13 (hand-authored, shared recipe)"),
 
     book(131, "speex", "multimedia/speex.html", "speex-1.2.1.tar.gz"),
@@ -1197,7 +1197,7 @@ PACKAGES = sorted(BASE + [
     # no override needed, which is why the book's command is used unchanged.
     book(316, "xdg-desktop-portal-gtk", "x/xdg-desktop-portal-gtk.html", "xdg-desktop-portal-gtk-1.15.3.tar.xz"),
     hand(317, "sdbus-cpp", "sdbus-cpp-2.3.1.tar.gz", "sdbus-c++-2.3.1 (hand-authored, shared recipe)"),
-    hand(318, "xdg-desktop-portal-hyprland", "xdg-desktop-portal-hyprland-1.4.1.tar.gz", "xdg-desktop-portal-hyprland-1.4.1 (hand-authored, shared recipe)"),
+    hand(318, "xdg-desktop-portal-hyprland", "xdg-desktop-portal-hyprland-1.5.0.tar.gz", "xdg-desktop-portal-hyprland-1.5.0 (hand-authored, shared recipe)"),
 
     # Operator-requested (2026-09-08): "need to install sshpass". BLFS 13.0-systemd has
     # no sshpass page (grepped the whole book tree, zero hits), so this is a hand()

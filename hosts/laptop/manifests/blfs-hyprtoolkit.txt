@@ -1,5 +1,8 @@
+/usr/include/hyprtoolkit/core/Animation.hpp
 /usr/include/hyprtoolkit/core/Backend.hpp
+/usr/include/hyprtoolkit/core/BackendServices.hpp
 /usr/include/hyprtoolkit/core/CoreMacros.hpp
+/usr/include/hyprtoolkit/core/EmbeddedBackend.hpp
 /usr/include/hyprtoolkit/core/Input.hpp
 /usr/include/hyprtoolkit/core/LogTypes.hpp
 /usr/include/hyprtoolkit/core/Output.hpp
@@ -13,6 +16,8 @@
 /usr/include/hyprtoolkit/element/Image.hpp
 /usr/include/hyprtoolkit/element/Line.hpp
 /usr/include/hyprtoolkit/element/Null.hpp
+/usr/include/hyprtoolkit/element/ProgressBar.hpp
+/usr/include/hyprtoolkit/element/RadioGroup.hpp
 /usr/include/hyprtoolkit/element/Rectangle.hpp
 /usr/include/hyprtoolkit/element/RowLayout.hpp
 /usr/include/hyprtoolkit/element/ScrollArea.hpp
@@ -21,14 +26,16 @@
 /usr/include/hyprtoolkit/element/Text.hpp
 /usr/include/hyprtoolkit/element/Textbox.hpp
 /usr/include/hyprtoolkit/palette/Color.hpp
+/usr/include/hyprtoolkit/palette/Gradient.hpp
 /usr/include/hyprtoolkit/palette/Palette.hpp
 /usr/include/hyprtoolkit/system/Icons.hpp
 /usr/include/hyprtoolkit/types/FontTypes.hpp
 /usr/include/hyprtoolkit/types/ImageTypes.hpp
 /usr/include/hyprtoolkit/types/PointerShape.hpp
 /usr/include/hyprtoolkit/types/SizeType.hpp
+/usr/include/hyprtoolkit/window/EmbeddedSurface.hpp
 /usr/include/hyprtoolkit/window/Window.hpp
 /usr/lib/libhyprtoolkit.so
-/usr/lib/libhyprtoolkit.so.0.5.4
-/usr/lib/libhyprtoolkit.so.5
+/usr/lib/libhyprtoolkit.so.0.6.0
+/usr/lib/libhyprtoolkit.so.6
 /usr/lib/pkgconfig/hyprtoolkit.pc

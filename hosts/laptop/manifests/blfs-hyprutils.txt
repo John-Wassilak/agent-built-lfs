@@ -5,7 +5,14 @@
 /usr/include/hyprutils/animation/Spring.hpp
 /usr/include/hyprutils/cli/ArgumentParser.hpp
 /usr/include/hyprutils/cli/Logger.hpp
+/usr/include/hyprutils/eventLoop/EventLoop.hpp
+/usr/include/hyprutils/eventLoop/EventMask.hpp
+/usr/include/hyprutils/eventLoop/Executor.hpp
+/usr/include/hyprutils/eventLoop/FDSource.hpp
+/usr/include/hyprutils/eventLoop/PostDispatchHook.hpp
+/usr/include/hyprutils/eventLoop/Timer.hpp
 /usr/include/hyprutils/i18n/I18nEngine.hpp
+/usr/include/hyprutils/macros/Enums.hpp
 /usr/include/hyprutils/math/Box.hpp
 /usr/include/hyprutils/math/Edges.hpp
 /usr/include/hyprutils/math/Mat3x3.hpp
@@ -34,6 +41,6 @@
 /usr/include/hyprutils/string/VarList2.hpp
 /usr/include/hyprutils/utils/ScopeGuard.hpp
 /usr/lib/libhyprutils.so
-/usr/lib/libhyprutils.so.0.14.1
+/usr/lib/libhyprutils.so.0.14.2
 /usr/lib/libhyprutils.so.13
 /usr/lib/pkgconfig/hyprutils.pc

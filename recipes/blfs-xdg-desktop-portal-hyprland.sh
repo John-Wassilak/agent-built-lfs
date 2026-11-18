@@ -1,10 +1,28 @@
 #!/bin/bash
 # HAND-AUTHORED recipe -- no BLFS book page for xdg-desktop-portal-hyprland.
-# source: github.com/hyprwm/xdg-desktop-portal-hyprland, tag v1.4.1 (2026-07-29)
-# provenance: sha256 3652c14f63a9666acea2c841e196782dbc0f74ea5b4783622dd04a32f08b709f
-# matches Arch's own xdg-desktop-portal-hyprland PKGBUILD for the same 1.4.1 tag
-# archive, which also confirms 1.4.1 is the currently packaged release rather than a
-# tag nobody ships. Same cross-check pattern as the rest of the hypr* steps here.
+# source: github.com/hyprwm/xdg-desktop-portal-hyprland, tag v1.5.0 (2026-10-28)
+# provenance: sha256 8f9eddad706b0bbca2dc24f9894e07969ec5aed163249d6eac3932cfaf38e6a9
+# matches Arch's own xdg-desktop-portal-hyprland PKGBUILD for the same 1.5.0 tag
+# archive. Same cross-check pattern as the rest of the hypr* steps here.
+#
+# 1.4.1 -> 1.5.0 on laptop, 2026-11-18. A window share went into a renegotiation
+# loop ("Out of buffers", "Retrying screencopy", "Incompatible formats, renegotiate
+# stream") and the pipewire 1.6.0 daemon aborted under it. 1.5.0 carries the upstream
+# fixes for that loop: PR #424 (out-of-buffers path destroyed its own new frame
+# callback and reallocated the buffer pool on every retry), PR #425 (same re-entrancy
+# in the format-mismatch branch) and PR #447 (u32 underflow building the DMA-BUF
+# modifier list).
+#
+# What changed in the build for 1.5.0, read from its CMakeLists.txt files:
+#   - hyprland-share-picker is no longer Qt6. It is a hyprtoolkit app and requires
+#     hyprtoolkit >= 0.6.0, hyprutils >= 0.2.6 and libdrm. The old Qt6 assertion is
+#     gone from this recipe because nothing here uses Qt any more.
+#   - hyprland-protocols >= 0.8.0 is required, and CMake stops if
+#     hyprland-workspace-image-capture-source-v1.xml is missing. 0.8.0 is the first
+#     release that ships it.
+#   - Four more wayland-protocols staging XMLs are compiled in: ext-foreign-
+#     toplevel-list, ext-image-copy-capture, ext-image-capture-source, ext-workspace.
+#     All four are in wayland-protocols 1.49 here.
 #
 # rationale: THIS is the package that makes screen sharing work under Hyprland, and
 # the reason it was missing was diagnosed live (2026-09-07, laptop): Google Meet in
@@ -18,10 +36,9 @@
 #   /usr/libexec/xdg-desktop-portal-hyprland      the backend daemon
 #   /usr/bin/hyprland-share-picker                the "what do you want to share?"
 #                                                 dialog -- the popup whose absence
-#                                                 was the reported symptom. Qt6
-#                                                 Widgets app; /opt/qt6 has both
-#                                                 Widgets and WaylandClient, checked
-#                                                 before building.
+#                                                 was the reported symptom. A Qt6
+#                                                 Widgets app through 1.4.1, a
+#                                                 hyprtoolkit app from 1.5.0.
 #   /usr/share/xdg-desktop-portal/portals/hyprland.portal
 #                                                 declares which portal interfaces
 #                                                 this backend implements
@@ -41,15 +58,10 @@
 #   - The tag archive's subprojects/hyprland-protocols and subprojects/sdbus-cpp are
 #     git submodules and arrive EMPTY. XDPH's CMakeLists uses them only as a fallback
 #     when pkg-config finds nothing, so both must come from the system: sdbus-c++
-#     >=2.0.0 is built at seq 317, and hyprland-protocols 0.7.0 at seq 114 already
-#     supplies all four XML files this version compiles bindings from
-#     (hyprland-global-shortcuts-v1, hyprland-toplevel-export-v1,
-#     hyprland-toplevel-mapping-v1, hyprland-input-capture-v1 -- checked against the
-#     installed /usr/share/hyprland-protocols/protocols). Arch's PKGBUILD pins an
-#     extra hyprland-protocols commit tarball into that subproject directory; ignored
-#     here deliberately, because that commit contains only two of the four XMLs and is
-#     therefore older than the release this host already has -- CMake prefers the
-#     pkg-config copy anyway.
+#     >=2.0.0 is built at seq 317, and hyprland-protocols at seq 114 must be 0.8.0 or
+#     later for 1.5.0 (see above). Arch's PKGBUILD pins an extra hyprland-protocols
+#     commit tarball into that subproject directory; ignored here deliberately, because
+#     CMake prefers the pkg-config copy whenever it is new enough.
 #   - No --prefix games with libexec: GNUInstallDirs' default puts the daemon in
 #     ${prefix}/libexec, which is /usr/libexec and matches both BLFS's own
 #     xdg-desktop-portal layout ("several daemons in /usr/libexec") and the path this
@@ -60,17 +72,6 @@
 #     (src/core/PortalManager.cpp checks both on PATH), so the screenshot portal comes
 #     up complete on this host.
 set -e
-
-# Qt6 lives in /opt/qt6 on this system (BLFS's own recommended prefix). CMake finds it
-# without an explicit CMAKE_PREFIX_PATH because /etc/profile.d/qt6.sh puts
-# /opt/qt6/bin on PATH and CMake searches the parent of every PATH entry -- the same
-# mechanism blfs-quickshell.sh relies on, and the driver runs recipes under
-# `bash --login` so profile.d is sourced. Asserted rather than assumed: a missing Qt6
-# would otherwise fail deep inside the share-picker subdirectory.
-test -d /opt/qt6/lib/cmake/Qt6Widgets || {
-    echo "Qt6 Widgets not found under /opt/qt6 -- hyprland-share-picker cannot build" >&2
-    exit 1
-}
 
 cmake -B build -S . \
       -D CMAKE_BUILD_TYPE=Release \

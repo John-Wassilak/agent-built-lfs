@@ -1,7 +1,15 @@
 #!/bin/bash
 # HAND-AUTHORED recipe from the BLFS 13.0-systemd book.
 # source : book/blfs-13.0/multimedia/pipewire.html
-# title  : pipewire-1.6.0
+# title  : pipewire-1.6.0 (the book's version; laptop builds 1.6.11, see below)
+#
+# Bumped on laptop 2026-11-18, 1.6.0 -> 1.6.11, out of the book: the 1.6.0 daemon
+# aborted with "free(): double free detected in tcache 2" while xdg-desktop-portal-
+# hyprland churned screencast sessions. Upstream issue #5162 (fixed in 1.6.2) is a
+# tcache double free in pw_impl_node_remove_target, reproduced by repeated screen-cast
+# session setup and teardown. 1.6.x is an API/ABI-compatible bugfix series. The
+# alsa, bluez5 and session-managers options this recipe sets all still exist in
+# 1.6.11's meson_options.txt, so only the version pin in packages.py moved.
 # rationale: Operator-requested, queued before Firefox. Built with just its
 # core Recommended dep already present (PulseAudio, tier 11) -- the rest of
 # the Recommended list (BlueZ, gstreamer, SBC, v4l-utils) is Bluetooth/video-

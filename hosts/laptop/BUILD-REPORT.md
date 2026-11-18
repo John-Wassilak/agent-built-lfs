@@ -7349,3 +7349,112 @@ afterwards).
 - herdr checks for new releases in the background and only shows a notice. `herdr
   update` would overwrite `/usr/bin/herdr` outside the manifest; bump the recipe
   instead.
+
+## 2026-11-18 -- PipeWire crash in a meeting; pipewire 1.6.11, xdph 1.5.0 and its chain
+
+During a video call at 09:34:48 the headset dropped and screen sharing stopped working.
+The journal and core dump show three linked failures:
+
+1. Firefox asked to share a window. xdg-desktop-portal-hyprland 1.4.1 failed to settle a
+   DMA-BUF format (`DMA-BUF fixation failed after 2 attempts, falling back to SHM`) and
+   went into a loop of `Out of buffers`, `Retrying screencopy`, `Incompatible formats,
+   renegotiate stream`, destroying and recreating sessions.
+2. The pipewire 1.6.0 daemon aborted under that churn: `free(): double free detected in
+   tcache 2`, SIGABRT, core dumped. wireplumber and pipewire-pulse went down with it,
+   which is the headset drop. systemd restarted all three within a second.
+3. xdph (running since 2026-11-02) does not reconnect to a restarted PipeWire. It held
+   no PipeWire connection afterwards and logged nothing, and the frontend timed out on
+   the next share attempt (`Failed to close session implementation: Timeout was
+   reached`, 09:38:46).
+
+No backtrace: systemd-coredump here is built without elfutils and there is no gdb. The
+pipewire match below is by symptom and scenario, not by stack.
+
+Fixes found upstream:
+
+- pipewire #5162, "Double free / SIGABRT in pw_impl_node_remove_target", same glibc tcache
+  check, reproduced by repeated screen-cast session setup/teardown. Fixed in 1.6.2 ("Don't
+  try to free invalid memory or close invalid fds when the client aborted before
+  allocating buffer memory"). Later 1.6.x also fix a buffer-allocation race (1.6.6) and
+  client-node buffer-check overflows (1.6.9).
+- xdph 1.5.0 (2026-10-28): PR #424 (the out-of-buffers path destroyed its own new frame
+  callback and reallocated the buffer pool on every retry, "one late buffer snowballed
+  into continuous renegotiation"), PR #425 (the same re-entrancy in the format-mismatch
+  branch), PR #447 (u32 underflow building the DMA-BUF modifier list).
+
+Operator decision: take both fixes and add a restart tie for the portal.
+
+### What was built
+
+| seq | step | from | to | time | manifest |
+|---|---|---|---|---|---|
+| 130.5 | pipewire | 1.6.0 | 1.6.11 | 9.4 min | 520 |
+| 109 | hyprutils | 0.14.1 | 0.14.2 | 0.7 min | 46 |
+| 114 | hyprland-protocols | 0.7.0 | 0.8.0 | 0.0 min | 10 |
+| 118 | hyprtoolkit | 0.5.4 | 0.6.0 | 2.8 min | 41 |
+| 119 | hyprland-guiutils | 0.2.2 | 0.2.2 (rebuild) | 0.3 min | 5 |
+| 318 | xdg-desktop-portal-hyprland | 1.4.1 | 1.5.0 | 1.5 min | 6 |
+
+xdph 1.5.0 needed more than hyprland-protocols, read out of its CMakeLists files:
+
+- hyprland-protocols >= 0.8.0, for `hyprland-workspace-image-capture-source-v1.xml`.
+- hyprland-share-picker is now a hyprtoolkit app, not Qt6, and needs hyprtoolkit >= 0.6.0.
+- hyprtoolkit 0.6.0 needs hyprutils >= 0.14.2 (soname stays 13, additive) and adds
+  abseil (`absl_flat_hash_map`, already here at seq 18). Its soname moves 5 -> 6, so
+  hyprland-guiutils was rebuilt against it. Arch rebuilt the same 0.2.2 against hyprtoolkit
+  0.6.0 with no patch (their commit b0717d4), and it compiled clean here too.
+- Four wayland-protocols staging XMLs (ext-foreign-toplevel-list, ext-image-copy-capture,
+  ext-image-capture-source, ext-workspace); all present in wayland-protocols 1.49.
+
+Sources: every tarball's sha256 matched Arch's PKGBUILD at the commit for that version.
+pipewire is the exception, since Arch builds it from the git tag: the freedesktop
+1.6.11 tarball was instead diffed against GitHub's mirror tarball for the same tag, and
+the trees are identical.
+
+Recipe changes, all in shared hand-authored recipes (only laptop pins these steps):
+
+- `recipes/blfs-pipewire.sh`: version note only. The `alsa`, `bluez5` and
+  `session-managers` options all still exist in 1.6.11.
+- `recipes/blfs-hyprland-protocols.sh`: meson -> CMake. 0.8.0 dropped `meson.build`; the
+  first run failed at configure ("Neither source directory 'build' nor build directory
+  '.' contain a build file meson.build") and installed nothing. The CMake install
+  writes the same XML and `.pc` paths.
+- `recipes/blfs-xdg-desktop-portal-hyprland.sh`: header updated for 1.5.0, and the Qt6
+  assertion removed because the picker no longer uses Qt.
+
+`extract-blfs.py --host laptop --check` exited 0 before each plan regeneration, and
+each regenerated `blfs-plan.json` differed from the previous one only in these pins.
+
+### Restart tie
+
+`hosts/laptop/overlay/etc/systemd/user/xdg-desktop-portal-hyprland.service.d/50-restart-with-pipewire.conf`
+adds `PartOf=pipewire.service` and `After=pipewire.service`, installed by hand to
+`/etc/systemd/user/`. PartOf only forwards stop and restart, so the backend never pulls
+PipeWire in. Tested both paths: `systemctl --user restart pipewire` moved xdph from PID
+2320 to a new PID, and `systemctl --user kill -s KILL pipewire` (the on-failure restart
+path, as in the real crash) restarted xdph too, which re-registered as a PipeWire client
+(`pw-cli ls Client`). pipewire-pulse came back socket-activated on its next client, as
+expected.
+
+### Cleanup and verification
+
+- Removed as orphaned, after checking nothing linked or pointed at them:
+  `libpipewire-0.3.so.0.1600.0`, the three `jack/*.so.0.3.1600`, `libhyprutils.so.0.14.1`,
+  `libhyprtoolkit.so.0.5.4` and `libhyprtoolkit.so.5`. `ldconfig` run.
+- `blfs-hyprutils.txt` was missing `/usr/lib/libhyprutils.so`: the symlink was unchanged
+  so CMake skipped it as up to date and the capture did not see it. Added back by hand.
+- `lfsmaint db` rebuilt. `lfsmaint owns` attributes `/usr/bin/pipewire`,
+  `/usr/libexec/xdg-desktop-portal-hyprland`, `/usr/bin/hyprland-share-picker`,
+  `libhyprtoolkit.so.6`, `libhyprutils.so{,.13}` and `hyprland-protocols.pc` to the new
+  versions.
+- `pw-cli info 0` reports 1.6.11; `xdg-desktop-portal-hyprland --version` reports v1.5.0;
+  hyprland-dialog/-run/-welcome and hyprland-share-picker link `libhyprtoolkit.so.6` with
+  nothing unresolved.
+
+**Not yet done:** a live screen share through the 1.5.0 picker. The running Hyprland
+session still has hyprutils 0.14.1 mapped until its next login; the soname is unchanged,
+so nothing needs it sooner.
+
+Unrelated, seen on the way: the Bluetooth headset (JLab JBuds) disconnected at 10:37,
+before any of this work. The restarted portal frontend also logs `Failed to load
+RealtimeKit property` because there is no rtkit on this host.

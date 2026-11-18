@@ -727,3 +727,10 @@ blfs-kwidgetsaddons	native	271.8	0
 blfs-fcitx5-configtool	native	298.2	0
 blfs-fcitx5-bamboo	native	25.3	0
 blfs-herdr	native	9.9	0
+blfs-pipewire	native	566.0	0
+blfs-hyprutils	native	43.1	0
+blfs-hyprland-protocols	native	0.4	1
+blfs-hyprland-protocols	native	1.8	0
+blfs-hyprtoolkit	native	169.6	0
+blfs-hyprland-guiutils	native	20.4	0
+blfs-xdg-desktop-portal-hyprland	native	92.9	0
